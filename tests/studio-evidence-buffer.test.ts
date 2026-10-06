@@ -27,11 +27,16 @@ import {hasStudioEvidenceInput,updateStudioEvidenceInput,clearStudioEvidenceInpu
 import {appendConnectedStudioItem} from './studio-action-editing';
 import {shouldDiscardStudioDraft} from './studio-session-authority';
 import {StudioTaxWriteBaseline} from './studio-tax-write-baseline';
+import {mayPersistStudioDraftOnDevice} from './studio-device-storage';
+import {studioReplacementMessage} from './studio-replacement-message';
 export {StudioEvidenceComposer};
 export function owner(original,confirm,context={customCaseId:null,isPrivate:false}) {
   const state={draft:original,buffers:{},revision:0,timeline:null,selected:null,notice:'',purges:0,prompt:'Retained input'};
   const studioEvidenceBuffersRef={current:state.buffers},studioChangedBeforeRestoreRef={current:false};
   const locale='en',window={confirm};
+  const cancelCategoryDemo=()=>{},mayLeaveStudio=()=>true,studioStorageScope=null,studioCanDuplicate=true;
+  const studioSessionAuthority={getSnapshot:()=>({phase:'anonymous'})},draftRef={get current(){return state.draft;}},prompt=state.prompt;
+  const showSessionNotice=value=>state.notice=value;
   const studioTaxWriteBaseline={current:new StudioTaxWriteBaseline()};
   const setStudioEvidenceBuffers=value=>state.buffers=value;
   const setStudioOpenRevision=fn=>state.revision=fn(state.revision);
@@ -101,7 +106,7 @@ test("controlled composer recovers title, explanation and selection after remoun
 test("actual parent replacement cancellation preserves working input and graph, explicit replacement and purge clear memory", () => {
   let approved = false, prompts = 0;
   const original = buildCanopyPackage("base").draft, replacement = buildCanopyPackage("upside").draft;
-  const owner = actual.owner(original, message => { prompts++; assert.match(message, /unadded working items/); return approved; });
+  const owner = actual.owner(original, message => { prompts++; assert.match(message, /unadded form items/); return approved; });
   owner.change("evidence", { title: "Keep this unadded source" });
   const before = structuredClone(owner.state);
   assert.equal(owner.replace(replacement), false);assert.deepEqual(owner.state, before);

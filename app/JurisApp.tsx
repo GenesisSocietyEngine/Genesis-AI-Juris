@@ -16,6 +16,9 @@ import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
+import type { ExampleLaunch } from "./ExampleLaunchStatus";
+import { retainStudioReplacement, purgeKnownStudioArchive, restoreArchivedStudioDraft, type ArchivedStudioDraft } from "./studio-draft-archive";
+import { studioReplacementMessage } from "./studio-replacement-message";
 import { matchingCategoryDemos } from "./category-demos";
 import { CASE_TYPE_REGISTRY } from "./case-type-registry";
 import DemoCatalogueCards, { matchesCanopy, type DemoFormat } from "./DemoCatalogueCards";
@@ -113,6 +116,7 @@ async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
 
 const CategoryDemoCards = lazy(() => import("./CategoryDemoCards"));
 const HelpCenter = lazy(() => import("./HelpCenter"));
+const StudioDraftArchive = lazy(() => import("./StudioDraftArchive"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
 const PlayView = lazy(() => import("./PlayWorkspace"));
 const DecisionModal = lazy(() => import("./PlayWorkspace").then(module => ({ default: module.DecisionModal })));
@@ -493,6 +497,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [studioCanDuplicate, setStudioCanDuplicate] = useState(true);
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
   const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveVersion, setArchiveVersion] = useState(0);
   const [studioRecovery, setStudioRecovery] = useState<StudioRecovery | null>(null);
   const [studioSessionAuthority] = useState(() => new StudioSessionAuthority());
   const studioSession = useSyncExternalStore(studioSessionAuthority.subscribe, studioSessionAuthority.getSnapshot, studioSessionAuthority.getSnapshot);
@@ -527,6 +533,13 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const localCanonicalRuntimeRef = useRef<CanonicalRuntimeState | null>(null);
   const catalogueLaunchRef = useRef(0);
   const catalogueRequestGateRef = useRef(new LatestRequestGate());
+  const exampleRequestGateRef = useRef(new LatestRequestGate());
+  const [exampleLaunch, setExampleLaunch] = useState<ExampleLaunch | null>(null);
+  const exampleContext = JSON.stringify([locale, view, workspaceLocation, studioSession.scope, studioSession.epoch, prompt]);
+  const exampleContextRef = useRef(exampleContext);
+  exampleContextRef.current = exampleContext;
+  const visibleExampleLaunch = exampleLaunch?.context === exampleContext ? exampleLaunch : null;
+  useEffect(() => { const gate = exampleRequestGateRef.current; return () => { gate.abort(); catalogueLaunchRef.current += 1; }; }, [exampleContext]);
   const studioChangedBeforeRestoreRef = useRef(false);
   const starterCancelledRef = useRef(false);
   const text = ui[locale];
@@ -587,6 +600,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       }
     }
     if (currentStudioScopeRef.current !== studioSession.scope) { setStudioRecovery(null); studioTaxWriteBaseline.current.clear(); }
+    if (currentStudioScopeRef.current !== studioSession.scope) cancelCategoryDemo();
     currentStudioScopeRef.current = studioSession.scope;
     setStudioStorageScope(studioSession.scope);
     setStudioAIEntitlement(studioSession.phase === "ready"
@@ -597,6 +611,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
 
   useEffect(() => {
     function restoreView() {
+      cancelCategoryDemo();
       catalogueLaunchRef.current += 1;
       setCatalogueLoading(false);
       const requested = new URLSearchParams(window.location.search).get("view");
@@ -882,6 +897,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const packageRequiresPlayableRoute = packageValidationSettled ? packageValidation.requiresPlayableRoute : true;
 
   function syncStudioDraft(next: StudioDraft) {
+    cancelCategoryDemo();
     studioChangedBeforeRestoreRef.current = true;
     draftRef.current = next;
     setDraftState(next);
@@ -890,8 +906,22 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     studioTimelineRef.current = next;
     setStudioTimelineState(next);
   }
-  function replaceStudioDraft(next: StudioDraft) {
-    if (hasStudioEvidenceInput(studioEvidenceBuffersRef.current) && !window.confirm(locale === "en" ? "Replace this case and discard its unadded working items? Cancel to return to Sources and evidence and add or copy the form text first." : "Заменить кейс и удалить его недобавленные рабочие элементы? Отмените действие, чтобы вернуться к источникам и добавить или скопировать текст формы.")) return false;
+  function replaceStudioDraft(next: StudioDraft, confirmed = false) {
+    if (!mayLeaveStudio()) return false;
+    const eligible = mayPersistStudioDraftOnDevice({ draft: draftRef.current, canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate });
+    const retention = eligible && studioSessionAuthority.getSnapshot().phase === "ready" && studioStorageScope !== null;
+    const hasWork = Boolean(draftRef.current.nodes.length || draftRef.current.links.length || draftRef.current.title || draftRef.current.editHistory.length || prompt.trim() || hasStudioEvidenceInput(studioEvidenceBuffersRef.current));
+    if (!confirmed && hasWork && !window.confirm(studioReplacementMessage(locale, next.title, retention))) return false;
+    try {
+      if (studioStorageScope) {
+        retainStudioReplacement(window.localStorage, studioStorageScope, retention ? { draft: draftRef.current, prompt } : null);
+        removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope);
+        setArchiveVersion(value => value + 1);
+      }
+    } catch {
+      showSessionNotice(locale === "en" ? "Replacement stopped: earlier drafts could not be retained. Your open case is unchanged. Open Earlier device drafts, export recovery data and explicitly delete an unwanted entry if the archive is full; otherwise recover browser storage, then retry." : "Замена остановлена: не удалось сохранить предыдущие черновики. Открытый кейс не изменён. Откройте предыдущие черновики, экспортируйте данные и явно удалите ненужную запись, если архив заполнен; иначе восстановите хранилище и повторите попытку.");
+      return false;
+    }
     clearStudioEvidenceBuffers();
     studioTaxWriteBaseline.current.clear();
     setStudioOpenRevision((revision) => revision + 1);
@@ -904,6 +934,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     setStudioEvidenceBuffers({});
   }
   function changeStudioEvidenceInput(type: StudioNodeType, patch: Partial<StudioEvidenceInput>) {
+    cancelCategoryDemo();
     studioChangedBeforeRestoreRef.current = true;
     const next = updateStudioEvidenceInput(studioEvidenceBuffersRef.current, type, patch);
     studioEvidenceBuffersRef.current = next;
@@ -914,18 +945,17 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     studioEvidenceBuffersRef.current = next;
     setStudioEvidenceBuffers(next);
   }
-  function enterNewLocalDraft(next: StudioDraft, nextSelectedNodeId: string | null) {
+  function enterNewLocalDraft(next: StudioDraft, nextSelectedNodeId: string | null, confirmed = false) {
     const isolated = structuredClone(next);
     delete isolated.protection;
     isolated.parent = null;
-    if (!replaceStudioDraft(isolated)) return false;
+    if (!replaceStudioDraft(isolated, confirmed)) return false;
     studioSavedBaseline.current = null;
     savedCaseRequestRef.current += 1;
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete("custom_case"); cleanUrl.searchParams.delete("resume_action");
     window.history.replaceState(window.history.state, "", cleanUrl);
     restoredSavedCaseRef.current = null;
-    try { if (studioStorageScope) removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope); } catch { /* Explicit replacement must still complete when device storage is unavailable. */ }
     setStudioPrivate(false);
     setStudioCustomCaseId(null);
     setStudioCanManagePrivacy(true);
@@ -1004,6 +1034,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   function navigate(next: View, step?: GuidedStudioStep) {
     if (next !== "studio" && !mayLeaveStudio()) return;
     if (next !== "studio") starterCancelledRef.current = true;
+    cancelCategoryDemo();
     const destination = next;
     const url = new URL(window.location.href);
     url.searchParams.set("view", destination);
@@ -1741,6 +1772,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     link.click(); URL.revokeObjectURL(url);
   }
   function importDraft(file: File, loaded?: (draft: StudioDraft) => void) {
+    cancelCategoryDemo();
     if (!mayLeaveStudio()) return;
     const importGeneration = ++savedCaseRequestRef.current;
     const source = draftRef.current;
@@ -2056,9 +2088,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
   function resetStudioDraft(next = blankStudioDraft(), nextPrompt = "", replacementMessage?: string) {
     if (!mayLeaveStudio()) return false;
-    const hasWork = Boolean(draftRef.current.nodes.length || draftRef.current.links.length || draftRef.current.title || draftRef.current.editHistory.length || prompt.trim());
-    if (hasWork && !window.confirm(replacementMessage ?? (locale === "en" ? "Start a completely blank draft? The current local graph, prompt and undo history will be cleared." : "Создать полностью пустой черновик? Текущий локальный граф, промпт и история отмены будут очищены."))) return false;
-    if (!enterNewLocalDraft(next, null)) return false;
+    cancelCategoryDemo();
+    const hasWork = Boolean(draftRef.current.nodes.length || draftRef.current.links.length || draftRef.current.title || draftRef.current.editHistory.length || prompt.trim() || hasStudioEvidenceInput(studioEvidenceBuffersRef.current));
+    const retention = Boolean(studioStorageScope && studioSessionAuthority.getSnapshot().phase === "ready" && mayPersistStudioDraftOnDevice({ draft: draftRef.current, canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate }));
+    if (hasWork && !window.confirm(replacementMessage ?? studioReplacementMessage(locale, next.title, retention))) return false;
+    if (!enterNewLocalDraft(next, null, true)) return false;
     setPrompt(nextPrompt);
     return true;
   }
@@ -2068,27 +2102,49 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (!resetStudioDraft(prepared.draft, prepared.prompt)) return;
     navigate("studio", 1);
   }
+  function cancelCategoryDemo() {
+    exampleRequestGateRef.current.abort();
+    setExampleLaunch(null);
+  }
   async function openCategoryDemo(id: CaseTypeId) {
+    if (!mayLeaveStudio()) return;
+    cancelCategoryDemo();
+    catalogueLaunchRef.current += 1;
     starterCancelledRef.current = true;
-    let next: StudioDraft, nextPrompt: string;
+    const ticket = exampleRequestGateRef.current.start();
+    const context = exampleContextRef.current;
+    const before = draftRef.current;
+    const { epoch, scope } = studioSessionAuthority.getSnapshot();
+    const current = () => exampleRequestGateRef.current.isCurrent(ticket)
+      && context === exampleContextRef.current && before === draftRef.current
+      && epoch === studioSessionAuthority.getSnapshot().epoch
+      && scope === studioSessionAuthority.getSnapshot().scope;
+    setExampleLaunch({ id, phase: "loading", context });
     try {
-      ({ draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale));
+      const { draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale);
+      if (!current()) return;
+      if (!mayLeaveStudio()) { cancelCategoryDemo(); return; }
+      if (!resetStudioDraft(next, nextPrompt)) { cancelCategoryDemo(); return; }
+      navigate("studio", 4);
     } catch {
-      showSessionNotice(locale === "en" ? "The worked example could not load. Your draft is unchanged. Please try again." : "Не удалось загрузить учебный пример. Черновик не изменён. Повторите попытку.");
-      return;
+      if (!current()) return;
+      setExampleLaunch({ id, phase: "error", context });
+    } finally {
+      if (current()) {
+        setExampleLaunch(value => value?.phase === "loading" ? null : value);
+        exampleRequestGateRef.current.finish(ticket);
+      }
     }
-    if (!resetStudioDraft(next, nextPrompt, locale === "en"
-      ? "Open this worked example? Save to workspace or export case JSON first to keep your work. Device-only saves will be removed. Your local graph, prompt and undo history will be replaced."
-      : "Открыть учебный пример? Сначала сохраните работу в рабочем пространстве или экспортируйте JSON кейса. Копии, сохранённые только на устройстве, будут удалены. Локальный граф, промпт и история отмены будут заменены.")) return;
-    navigate("studio", 4);
   }
   function purgeLocalStudioState() {
+    cancelCategoryDemo();
+    setArchiveOpen(false);
     setStudioRecovery(null);
     studioTaxWriteBaseline.current.clear();
     clearStudioEvidenceBuffers();
     studioSavedBaseline.current = null;
     studioChangedBeforeRestoreRef.current = true;
-    try { const scope = currentStudioScopeRef.current; if (scope) removeKnownStudioDeviceDrafts(window.localStorage, scope); } catch { /* Memory state still clears when browser storage is restricted. */ }
+    try { const scope = currentStudioScopeRef.current; if (scope) { removeKnownStudioDeviceDrafts(window.localStorage, scope); purgeKnownStudioArchive(window.localStorage, scope); } } catch { /* Memory state still clears when browser storage is restricted. */ }
     const clean = blankStudioDraft();
     const cleanTimeline = emptyStudioTimeline();
     draftRef.current = clean;
@@ -2104,17 +2160,23 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     setStudioCopyProtectionLocked(false);
     setSelectedNodeId(null);
   }
+  function restoreEarlierDraft(entry: ArchivedStudioDraft) {
+    if (!studioStorageScope || studioSessionAuthority.getSnapshot().phase !== "ready" || currentStudioScopeRef.current !== studioStorageScope) return;
+    try {
+      if (!resetStudioDraft(restoreArchivedStudioDraft(entry), entry.prompt)) return;
+      setArchiveOpen(false);
+      navigate("studio", 1);
+    } catch { showSessionNotice(locale === "en" ? "This earlier draft needs recovery. Your open case is unchanged." : "Предыдущий черновик требует восстановления. Открытый кейс не изменён."); }
+  }
   async function loadCanopyDemo(id: CanopyScenarioId) {
     starterCancelledRef.current = true;
+    if (!mayLeaveStudio()) return;
+    cancelCategoryDemo();
     const before = draftRef.current;
-    const hasWork = Boolean(before.title.trim() || before.nodes.length || prompt.trim());
-    if (hasWork && !window.confirm(locale === "en"
-      ? "Open a fresh Canopy demo? Save your current draft first if you want to keep it."
-      : "Открыть новый демо-кейс Canopy? Сначала сохраните текущий черновик, если он вам нужен.")) return;
     const launchVersion = ++catalogueLaunchRef.current;
     const { buildCanopyPackage } = await import("./canopy-fixture");
     if (launchVersion !== catalogueLaunchRef.current) return;
-    if (draftRef.current !== before) throw new Error("Draft changed while opening demo");
+    if (draftRef.current !== before) return;
     const prepared = buildCanopyPackage(id, true);
     if (!enterNewLocalDraft(prepared.draft, prepared.draft.nodes.find(node => node.type === "decision")?.id ?? prepared.draft.nodes[0]?.id ?? null)) return;
     setPrompt("");
@@ -2139,9 +2201,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")}/>
       <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
+      {studioSession.phase === "ready" && studioStorageScope && <div className="page-width"><button type="button" className="secondary-cta" aria-expanded={archiveOpen} onClick={() => setArchiveOpen(value => !value)}>{locale === "en" ? "Earlier device drafts" : "Предыдущие черновики устройства"}</button>{archiveOpen && <Suspense fallback={<p role="status">{locale === "en" ? "Loading earlier drafts…" : "Загрузка предыдущих черновиков…"}</p>}><StudioDraftArchive key={`${studioStorageScope}:${archiveVersion}`} scope={studioStorageScope} locale={locale} context={`${exampleContext}:${studioOpenRevision}:${draft.updatedAt}`} restore={restoreEarlierDraft}/></Suspense>}</div>}
       {view === "studio" && <CaseVantDomainNotice locale={locale}/>}
-      {view === "templates" && <CaseTemplates locale={locale} onStart={startCaseTemplate} onExample={openCategoryDemo} onDemo={() => navigate("demos")} />}
-      {(view === "library" || view === "demos") && <LibraryView locale={locale} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} openTemplates={() => navigate("templates")} openCategoryDemo={openCategoryDemo} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
+      {view === "templates" && <CaseTemplates locale={locale} onStart={startCaseTemplate} onExample={openCategoryDemo} exampleLaunch={visibleExampleLaunch} cancelExample={cancelCategoryDemo} onDemo={() => navigate("demos")} />}
+      {(view === "library" || view === "demos") && <LibraryView locale={locale} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} openTemplates={() => navigate("templates")} openCategoryDemo={openCategoryDemo} exampleLaunch={visibleExampleLaunch} cancelExample={cancelCategoryDemo} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
       {view === "play" && !activeScenario && <main className="workspace-empty page-width"><span className="workspace-eyebrow">{locale === "en" ? "Operations" : "Операции"}</span><h1>{locale === "en" ? "Choose a case to work through" : "Выберите кейс для прохождения"}</h1><p>{locale === "en" ? "Open a playable demo, or restore a previous session to continue its decisions and deadlines." : "Откройте игровой демо-кейс или восстановите сессию, чтобы продолжить решения и задачи."}</p><div><button type="button" className="primary-cta" onClick={() => navigate("demos")}>{locale === "en" ? "Open demo case" : "Открыть демо-кейс"}</button><button type="button" className="secondary-cta" onClick={() => playedCaseImportRef.current?.click()}>{locale === "en" ? "Restore session" : "Восстановить сессию"}</button></div></main>}
       {view === "play" && !privatePlayConcealed && activeScenario && stage && runLedger && <Suspense fallback={<p className="page-width" role="status">{locale === "en" ? "Loading the operation…" : "Загрузка операции…"}</p>}><PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
@@ -2252,7 +2315,7 @@ function editorialReviewLabel(level: string | undefined, locale: Locale) {
   return locale === "en" ? "Editorial preview" : "Редакционный предпросмотр";
 }
 
-function LibraryView({ locale, restorePlaySession, text, records, loadedScenarios, launchCase, requestFeedback, openCanopy, canopyWorkflowHref, openTemplates, openCategoryDemo, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openCanopy: (id: CanopyScenarioId) => Promise<void>; canopyWorkflowHref: string; openTemplates: () => void; openCategoryDemo: (id: CaseTypeId) => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
+function LibraryView({ locale, restorePlaySession, text, records, loadedScenarios, launchCase, requestFeedback, openCanopy, canopyWorkflowHref, openTemplates, openCategoryDemo, exampleLaunch, cancelExample, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openCanopy: (id: CanopyScenarioId) => Promise<void>; canopyWorkflowHref: string; openTemplates: () => void; openCategoryDemo: (id: CaseTypeId) => void; exampleLaunch: ExampleLaunch | null; cancelExample: () => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
   const [format, setFormat] = useState<DemoFormat>("all");
   const [query, setQuery] = useState("");
   const [practiceFilter, setPracticeFilter] = useState("all");
@@ -2305,7 +2368,7 @@ function LibraryView({ locale, restorePlaySession, text, records, loadedScenario
     {error && <p className="catalogue-status page-width" role="status">{error}</p>}
     <section className="page-width demo-catalogue-results" aria-label={text.library} aria-busy={loading}>
       <DemoCatalogueCards locale={locale} cards={cards} showCanopy={showCanopy} busy={loading} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref} launch={id => { const record = records.find(item => item.id === id); if (record) launchCase(record); }} feedback={id => { const record = records.find(item => item.id === id); if (record) requestFeedback({ caseId: record.id, version: record.currentVersion, title: record.title, source: "playable", fingerprint: record.fingerprint }); }}/>
-      {categoryDemos.length > 0 && <Suspense fallback={<p role="status">{locale === "en" ? "Loading worked examples…" : "Загрузка учебных примеров…"}</p>}><CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo}/></Suspense>}
+      {categoryDemos.length > 0 && <Suspense fallback={<p role="status">{locale === "en" ? "Loading worked examples…" : "Загрузка учебных примеров…"}</p>}><CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo} exampleLaunch={exampleLaunch} cancelExample={cancelExample}/></Suspense>}
       {!showCanopy && cards.length === 0 && categoryDemos.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No demo cases match these filters." : "По этим фильтрам демо-кейсы не найдены."}</b><button type="button" className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}
       {nextCursor && (format === "all" || format === "simulation") && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{locale === "en" ? `More simulations (${records.length} / ${total})` : `Ещё симуляции (${records.length} / ${total})`}</button>}
     </section>
@@ -3696,3 +3759,4 @@ function RelationRuleEditor({ locale, link, developerMode, disabled, beginFieldE
     <p>{developerMode ? (locale === "en" ? "Typed rules are validated and interpreted deterministically; no uploaded JavaScript or eval is executed." : "Типизированные правила валидируются и исполняются детерминированно; загружаемый JavaScript и eval не используются.") : (locale === "en" ? "These fields define what the player sees and the time, cost and consequence of this choice." : "Эти поля задают, что увидит игрок, а также время, стоимость и последствие выбора.")}</p>
   </section>;
 }
+

@@ -12,7 +12,7 @@ concurrency:
 jobs:
   editor-process-restart:
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: apps/juris-mobile
@@ -70,7 +70,9 @@ jobs:
       - name: Exercise the actual editor across application termination and relaunch
         env:
           IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
-        timeout-minutes: 30
+        # 900s preparation + six 300s phases, cleanup and evidence checks.
+        # Keep individual deadlines unchanged; the enclosing budget must fit them.
+        timeout-minutes: 50
         shell: bash
         run: |
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_tax_application.sh" \

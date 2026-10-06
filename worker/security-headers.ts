@@ -1,3 +1,5 @@
+import { isPrivateSearchSurface } from "../app/seo-policy";
+
 const BASE_CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   // Vinext streams React hydration instructions as inline scripts. Keep those
@@ -37,6 +39,7 @@ function contentSecurityPolicy(requestUrl: URL, development: boolean) {
 
 export function withSecurityHeaders(response: Response, requestUrl: URL, development = false) {
   const headers = new Headers(response.headers);
+  if (isPrivateSearchSurface(requestUrl)) headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   headers.set("Content-Security-Policy", contentSecurityPolicy(requestUrl, development));
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

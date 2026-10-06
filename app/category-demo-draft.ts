@@ -19,7 +19,7 @@ export function buildCategoryDemo(id: CaseTypeId, locale: "en" | "ru", updatedAt
     ["actor", "actor", en ? "Owner & reviewer" : "Ответственный и рецензент", demo.owner[locale]],
     ["fact-1", "fact", en ? "Scenario record" : "Данные сценария", demo.facts[0][locale]],
     ["fact-2", "fact", en ? "Assumption / unresolved issue" : "Допущение / открытый вопрос", demo.facts[1][locale]],
-    ["evidence", "evidence", en ? "Fictional source dossier" : "Учебные материалы", demo.evidence[locale]],
+    ["evidence", "evidence", en ? "Fictional source dossier" : "Учебные материалы", `${en ? "Authored synthetic excerpts, not verified external sources." : "Созданные учебные выдержки, не проверенные внешние источники."}\n\nS1: ${demo.facts[0][locale]}\n\nS2: ${demo.facts[1][locale]}\n\n${en ? "Evidence annotation" : "Аннотация доказательств"}: ${demo.evidence[locale]}`],
     ["deadline", "deadline", en ? "Review checkpoint" : "Контрольная дата", en ? "Internal teaching checkpoint: day 5. The owner must confirm actual legal or reporting deadlines; none are asserted here." : "Учебная контрольная точка: день 5. Ответственный должен проверить реальные сроки; здесь они не утверждаются."],
   ];
   if (id === "tax_planning" || id === "tax_compliance") entries.push(
@@ -33,8 +33,10 @@ export function buildCategoryDemo(id: CaseTypeId, locale: "en" | "ru", updatedAt
     ["outcome-pause", "outcome", en ? "Alternative / unresolved route" : "Альтернатива / открытый маршрут", demo.pause[locale]],
   );
   const nodes = entries.map((entry, index) => node(...entry, index));
-  nodes.find(item => item.id === "outcome-proceed")!.runtime = { terminalOutcome: "strong" };
-  nodes.find(item => item.id === "outcome-pause")!.runtime = { terminalOutcome: "weak" };
+  if (id === "training_simulation") {
+    nodes.find(item => item.id === "outcome-proceed")!.runtime = { terminalOutcome: "strong" };
+    nodes.find(item => item.id === "outcome-pause")!.runtime = { terminalOutcome: "weak" };
+  }
   const route = entries.filter(entry => entry[1] !== "outcome").map(entry => entry[0]);
   const links = route.slice(1).map((to, index) => ({ id: `route-${index + 1}`, from: route[index], to }));
   const draft = applyCaseType({

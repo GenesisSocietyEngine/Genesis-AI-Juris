@@ -10,6 +10,9 @@ import {
 } from "../app/server-observability";
 import { runObservedWorkerRequest } from "./request-lifecycle";
 import { withSecurityHeaders } from "./security-headers";
+import { casevantCanonicalRedirect } from "../app/seo-policy";
+import robotsText from "../public/robots.txt?raw";
+import sitemapXml from "../public/sitemap.xml?raw";
 
 interface Env extends ObservabilityBindings {
   ASSETS: Fetcher;
@@ -54,6 +57,14 @@ const worker = {
         },
       },
       async dispatch(observedRequest, url) {
+        const canonical = casevantCanonicalRedirect(url);
+        if (canonical) return Response.redirect(canonical.href, 308);
+        if ((observedRequest.method === "GET" || observedRequest.method === "HEAD") && (url.pathname === "/robots.txt" || url.pathname === "/sitemap.xml")) {
+          const robots = url.pathname === "/robots.txt";
+          return new Response(observedRequest.method === "HEAD" ? null : robots ? robotsText : sitemapXml, {
+            headers: { "Content-Type": robots ? "text/plain; charset=utf-8" : "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" },
+          });
+        }
         if (url.pathname === "/_vinext/image") {
           const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
           return handleImageOptimization(observedRequest, {

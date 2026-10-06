@@ -46,7 +46,7 @@ export function importer(context) {
  const studioTaxWriteBaseline={current:context.baseline};
  let reader;
  class FileReader {constructor(){reader=this;} readAsArrayBuffer(file){this.result=file.bytes;}}
- const mayLeaveStudio=()=>true,replaceStudioDraft=next=>{state.draft=next;draftRef.current=next;studioTaxWriteBaseline.current.clear();return true;};
+ const cancelCategoryDemo=()=>{},mayLeaveStudio=()=>true,replaceStudioDraft=next=>{state.draft=next;draftRef.current=next;studioTaxWriteBaseline.current.clear();return true;};
  const setStudioRecovery=value=>state.recovery=value,setView=()=>{},setSessionNotice=value=>state.notices.push(value),showSessionNotice=setSessionNotice;
  const setStudioPrivate=()=>{},setStudioCustomCaseId=()=>{},setStudioCanManagePrivacy=()=>{},setStudioServerFingerprint=()=>{},setStudioServerPublicationFingerprint=()=>{},setStudioCanDuplicate=()=>{},setStudioCopyProtectionLocked=()=>{},setPrompt=()=>{},setSelectedNodeId=()=>{},navigate=()=>{};
  const window=context.window??{location:{href:'https://workspace.invalid/studio'},history:{state:null,replaceState(){}}};

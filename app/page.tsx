@@ -14,10 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "CaseVant — Make your case.",
     description: "A professional workbench for tax and legal advisers to structure cases, compare scenarios and preserve a canonical methodology.",
+    alternates: { canonical: "/" },
     openGraph: {
       title: "CaseVant — Make your case.",
       description: "Build, review and document professional tax and legal cases in one auditable workspace.",
       type: "website",
+      url: "https://casevant.pro/",
       images: [],
     },
     twitter: {

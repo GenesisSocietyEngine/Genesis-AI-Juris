@@ -1,20 +1,20 @@
 ---
 document_type: cumulative_development_handoff
-project: "GENESIS: JURIS"
-current_release_track: reviewed_web_production_amendment
-current_release_pr: 58
+project: "CaseVant by Falcon-Merlin Group"
+current_release_track: casevant_first_use_operations
+current_release_pr: 87
 current_release_source_branch: main
-current_release_code_merge: 354689f17b908628ccdf659d3a8dc3eb5162d00e
-current_release_checkpoint: c86c83bd6dc62c5eee2ae825272e65e3821e7aa5
-current_release_tree: 484669cc62614527b7a1848b24b68d255f724fb1
-current_release_status: web_production_published_mobile_and_full_acceptance_open
+current_release_code_merge: 8063bf697dbfad0ba96225a8ab98fbb3c265072a
+current_release_checkpoint: 3c8134f599e7d5b47dfa818cb8b713cb7b823024
+current_release_tree: ac8989e56be3d241d5ac0adf402628d55371a9c3
+current_release_status: web_production_published_human_acceptance_and_build_dependency_audit_open
 current_release_main_contains_candidate: true
-current_release_site_version: 104
-current_release_deployed_source: 4cb050f51a3448f6e051d11d16e58d5ee547e9ec
-current_release_deployed_tree: 4688e29451d2b7eb9a25abe5e7f117bef094dc01
-current_release_environment_revision: 40
-current_release_receipt: docs/testing/release-amendment-2026-09-29/WEB_PRODUCTION_V104.md
-current_release_deployment_id: appgdep_6abc2257fec4819193797814bd0c64f5
+current_release_site_version: 109
+current_release_deployed_source: 3d8b870d82acb3650e4089618a8f9c4f9e1963b8
+current_release_deployed_tree: adfa48810b907be078adae3f55d09f347341e629
+current_release_environment_revision: 42
+current_release_receipt: docs/testing/casevant-first-use-operations-2026-10-05.md
+current_release_deployment_id: appgdep_6ac3a133de148191a6c9a58c11103a9d
 current_release_deployment_status: succeeded
 historical_recovery_pr: 47
 historical_recovery_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
@@ -217,6 +217,13 @@ decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_un
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
 last_updated: 2026-09-30
 ---
+
+## Current live checkpoint — CaseVant v109, 2026-10-05
+
+The current public web version is **109**, **CaseVant by Falcon-Merlin Group**, from `3d8b870d82acb3650e4089618a8f9c4f9e1963b8`, deployed successfully with runtime environment revision **42**. [The release receipt](../testing/casevant-first-use-operations-2026-10-05.md) records first-case guidance, diagnostic refresh/export, the corrected runtime release identity and ordinary [PR #87](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/87) integration.
+
+Production-source tests: **1,170 passed / 0 failed / 3 skipped**. Canonical PR tests: **1,191 passed / 0 failed / 3 skipped**; PDF visual, build and packaged runtime checks passed. The **complete CI remains red** on the development/build `braces` advisory; a separate production-only dependency audit has zero findings. Browser/user-study, external notifications, professional acceptance and external-pilot GO remain separate open gates. Older release statements below are historical and do not replace this checkpoint.
+
 
 # Current Progress
 
