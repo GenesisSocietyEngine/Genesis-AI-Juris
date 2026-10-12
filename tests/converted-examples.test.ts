@@ -103,15 +103,18 @@ test('revised packages preserve authored judicial, task, deadline and decision c
     const text = records.map(record => record.detail).join('\n');
     for (const effect of effects) {
       if (effect.type === 'set_judicial_result') {
-        assert.ok(text.includes('Hypothetical judgment: ' + judicial[effect.result ?? ''] + ' (unrecorded).'), owner);
+        assert.ok(effect.result, owner);
+        assert.ok(text.includes('Hypothetical judgment: ' + judicial[effect.result] + ' (unrecorded).'), owner);
       } else if (effect.task && roles[effect.type]) {
         assert.ok(text.includes('Hypothetical task ' + roles[effect.type] + ': ' + effect.task), owner);
       } else if (effect.deadline && roles[effect.type]) {
         assert.ok(text.includes('Hypothetical deadline ' + roles[effect.type] + ': ' + effect.deadline), owner);
       } else if (effect.type === 'resolve_deterministic_decision') {
+        assert.ok(effect.decision, owner);
         assert.ok(text.includes('Hypothetical scenario comparison: ' + effect.decision), owner);
         assert.ok(text.includes('no branch is selected'), owner);
       } else if (effect.type === 'create_inbox_item' || effect.type === 'resolve_inbox_item') {
+        assert.ok(effect.item, owner);
         assert.ok(text.includes('Hypothetical correspondence ' + (effect.type === 'create_inbox_item' ? 'creation' : 'resolution') + ' (unrecorded):'), owner);
         assert.ok(text.includes(effect.item), owner);
       } else continue;
