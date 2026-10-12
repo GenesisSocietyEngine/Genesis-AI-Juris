@@ -1,4 +1,5 @@
 import vinext from "vinext";
+import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from "vite";
 import hostingConfig from "./.openai/hosting.json" with { type: "json" };
 import { sites } from "./build/sites-vite-plugin.ts";
@@ -36,6 +37,7 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  const qaArtifactDirectory = resolve('.artifacts').replaceAll('\\', '/');
   const identity = buildReleaseIdentity(process.cwd());
   const packagedIdentity = Object.fromEntries(Object.entries(identity).filter(([key]) => key !== "files"));
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
@@ -52,9 +54,15 @@ export default defineConfig(async () => {
     server: {
       host: "0.0.0.0",
       allowedHosts: ["terminal.local"],
-      ...(isCodexSeatbeltSandbox
-        ? { watch: { useFsEvents: false, usePolling: true } }
-        : {}),
+      watch: {
+        // QA outputs are not application source. Windows may lock a generated
+        // PDF while Poppler or a viewer reads it, which can crash fs.watch.
+        ignored: path => {
+          const normalized = path.replaceAll('\\', '/');
+          return normalized === qaArtifactDirectory || normalized.startsWith(qaArtifactDirectory + '/');
+        },
+        ...(isCodexSeatbeltSandbox ? { useFsEvents: false, usePolling: true } : {}),
+      },
     },
     plugins: [
       vinext(),

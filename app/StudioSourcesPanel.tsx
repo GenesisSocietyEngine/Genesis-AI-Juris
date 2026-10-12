@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { StudioOverviewProps } from "./StudioOverview";
 import { openStudioSourceFragment, studioOverview, studioSourceFragmentId } from "./studio-overview";
 import { studioGovernedEvidenceDestination } from "./studio-governed-evidence";
+import { reportStatementStatus } from "./report-statement-status";
 import { useWorkspaceLocation } from "./use-interface-locale";
 import styles from "./studio-overview.module.css";
 
@@ -14,6 +15,10 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
   const [notice, setNotice] = useState("");
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const records = [...model.facts, ...model.evidence];
+  function linkedStatements(nodeId: string) {
+    const connected = new Set(draft.links.flatMap(link => link.from === nodeId ? [link.to] : link.to === nodeId ? [link.from] : []));
+    return model.facts.filter(fact => connected.has(fact.id));
+  }
   function jump(document: string, version: number, section: string) {
     const opened = root.current && openStudioSourceFragment(root.current, studioSourceFragmentId(document, version, section));
     setNotice(opened ? "" : t("That exact reference section is unavailable. No substitute version has been opened.", "Точный фрагмент недоступен. Другая версия не была подставлена."));
@@ -24,7 +29,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
     <p className={styles.muted}>{model.documentCount !== null ? t("The nine fictional documents and their retained versions are reference material. The graph record count measures structure, not the number of uploaded documents or accepted facts. Presence, connection and human review are separate.", "Девять вымышленных документов и сохранённые версии — эталонные материалы. Счётчик записей показывает структуру графа, а не число загруженных документов или принятых фактов. Наличие, связь и человеческая проверка различаются.") : t("Studio stores authored graph records and text references. Uploaded document versions, reviewed assertions and exact evidence anchors belong to the case evidence workflow; no such review is inferred here.", "Studio хранит записи графа и текстовые ссылки. Версии документов, проверенные утверждения и точные ссылки на доказательства находятся в процессе проверки дела; здесь их проверка не предполагается.")}</p>
     {notice && <p role="alert" className={styles.notice}>{notice}</p>}
 
-    <section className={styles.block}><h3>{t("Recorded facts and evidence", "Записанные факты и материалы")}</h3>{records.length ? <ul className={styles.records}>{records.map(node => <li key={node.id}><span className={styles.muted}>{node.type === "fact" ? t("Authored fact record", "Авторская запись факта") : t("Evidence record", "Запись материала")}</span><h4>{node.title}</h4><p>{node.detail}</p><button type="button" onClick={() => onNode(node.id)}>{t("Inspect this graph record", "Открыть запись на схеме")}</button></li>)}</ul> : <p>{t("No fact or evidence graph records are present.", "На схеме пока нет записей фактов или материалов.")}</p>}<button type="button" onClick={() => onAction ? onAction({ step: 3, id: "studio-evidence-composer", nodeType: "evidence" }) : onStep(3)}>{t("Add a connected working record", "Добавить связанную рабочую запись")}</button></section>
+    <section className={styles.block}><h3>{t("Recorded facts and evidence", "Записанные факты и материалы")}</h3>{records.length ? <ul className={styles.records}>{records.map(node => <li key={node.id}><span className={styles.muted}>{node.type === "fact" ? reportStatementStatus(node, locale) || t("Authored fact record", "Авторская запись факта") : t("Evidence record", "Запись материала")}</span><h4>{node.title}</h4><p>{node.detail}</p>{node.type === 'evidence' && linkedStatements(node.id).length > 0 && <div><p className={styles.muted}>{t('Linked authored statements · review required', 'Связанные авторские утверждения · требуется проверка')}</p><ul>{linkedStatements(node.id).map(fact => <li key={fact.id}><button type="button" aria-label={t("Inspect linked statement: ", "Открыть связанное утверждение: ") + fact.title} onClick={() => onNode(fact.id)}>{fact.title}</button>{fact.factStatus && <span className={styles.muted}> — {reportStatementStatus(fact, locale)}</span>}</li>)}</ul></div>}<button type="button" onClick={() => onNode(node.id)}>{t("Inspect this graph record", "Открыть запись на схеме")}</button></li>)}</ul> : <p>{t("No fact or evidence graph records are present.", "На схеме пока нет записей фактов или материалов.")}</p>}<button type="button" onClick={() => onAction ? onAction({ step: 3, id: "studio-evidence-composer", nodeType: "evidence" }) : onStep(3)}>{t("Add a connected working record", "Добавить связанную рабочую запись")}</button></section>
     <section className={styles.block} aria-labelledby="studio-governed-evidence-title">
       <h3 id="studio-governed-evidence-title">{t("Facts, assumptions and review", "Факты, допущения и проверка")}</h3>
       <p>{t("Organization cases provide source versions, typed assertions and review in Evidence.", "В разделе «Доказательства» дела организации доступны версии источников, типы утверждений и проверка.")}</p>

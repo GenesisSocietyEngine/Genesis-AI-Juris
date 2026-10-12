@@ -10,7 +10,11 @@ import { createPasswordCredential } from "../app/auth-crypto";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import { taxAttachmentDigest, type TaxAttachmentV1 } from "../app/tax-authoring";
 import type { StudioDraft } from "../app/types";
-import { buildCanopyPackage } from "../app/canopy-fixture";
+import { buildCanopyPackage, CANOPY_SCENARIOS } from "../app/canopy-fixture";
+import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-examples';
+import { createExampleWorkingCopy } from '../app/example-working-copy';
+import { verifiedStudioSaveReceipt } from '../app/studio-save-receipt';
+import { studioOverview } from '../app/studio-overview';
 
 // Ordinary password login + production routes + fully migrated D1. No mocked
 // authorization, tax mutation guard, SQL transaction, or financial execution.
@@ -79,6 +83,55 @@ before(async () => {
   const response = await storage.run(request, () => routes.login.POST(request)); await expect(response, 200); cookie = response.headers.get("set-cookie")!.split(";")[0];
 });
 after(async () => { await mf?.dispose(); });
+
+test('migrated examples survive real authenticated save, reopen, scenario amendment and stale writes', async () => {
+  const examples = Object.keys(CONVERTED_EXAMPLES).map(id => buildConvertedExample(id, 'en'))
+    .concat(CANOPY_SCENARIOS.map(scenario => buildCanopyPackage(scenario.id, true).draft));
+  for (const source of examples) {
+    const existing = normalizeStudioDraft({ ...structuredClone(source), parent: null, title: 'Existing saved user work: ' + source.title });
+    existing.nodes[0].detail += '\nPreviously saved independent notes.';
+    const existingSave = await expect(await call({ action: 'save', draft: existing, isPrivate: true }), 200);
+    const originalPayload = (await stored(existing.caseId)).payload;
+    const originalEnvelope = await d1.prepare('select * from custom_cases where id=?').bind(existingSave.customCase.id).first();
+    const copies = [createExampleWorkingCopy(source), createExampleWorkingCopy(source)];
+    const ids: number[] = [];
+    for (const copy of copies) {
+      const saved = await expect(await call({ action: 'save', draft: copy, isPrivate: true }), 200);
+      assert.equal(verifiedStudioSaveReceipt(saved, copy, 'save')?.id, saved.customCase.id);
+      ids.push(saved.customCase.id);
+      const reopenedResponse = await expect(await requestRoute(routes.custom, 'GET', `/api/custom-cases?id=${saved.customCase.id}`), 200);
+      const reopened = normalizeStudioDraft(reopenedResponse.draft);
+      assert.equal(reopened.caseType?.id, source.caseType?.id);
+      assert.equal(caseFingerprint(reopened), caseFingerprint(copy));
+      assert.deepEqual(reopened.exampleSource, copy.exampleSource);
+      assert.deepEqual(reopened.nodes.filter(node => node.type === 'evidence'), copy.nodes.filter(node => node.type === 'evidence'));
+      if (source.caseId.startsWith('project_canopy')) {
+        assert.equal(studioOverview(reopened, 'en').documentCount, 9);
+        assert.equal(studioOverview(reopened, 'en').exactScenario, studioOverview(source, 'en').exactScenario);
+      }
+      const amended = structuredClone(reopened);
+      amended.nodes.find(node => node.type === 'outcome')!.detail += '\nHypothetical review scenario: independent verification is still outstanding.';
+      const updated = await expect(await call({ action: 'save', draft: amended, expectedFingerprint: caseFingerprint(reopened), expectedPublicationFingerprint: casePublicationFingerprint(reopened) }), 200);
+      assert.equal(verifiedStudioSaveReceipt(updated, amended, 'save')?.id, saved.customCase.id);
+      const currentPayload = (await stored(copy.caseId)).payload;
+      await expect(await call({ action: 'save', draft: reopened, expectedFingerprint: caseFingerprint(reopened), expectedPublicationFingerprint: casePublicationFingerprint(reopened) }), 409);
+      assert.equal((await stored(copy.caseId)).payload, currentPayload, 'a stale save cannot erase the scenario amendment');
+      const finalResponse = await expect(await requestRoute(routes.custom, 'GET', `/api/custom-cases?id=${saved.customCase.id}`), 200);
+      const final = normalizeStudioDraft(finalResponse.draft);
+      assert.equal(caseFingerprint(final), caseFingerprint(amended));
+      assert.deepEqual(final.exampleSource, copy.exampleSource);
+      assert.deepEqual(final.nodes.filter(node => node.type === 'evidence'), copy.nodes.filter(node => node.type === 'evidence'));
+      if (source.caseId.startsWith('project_canopy')) {
+        assert.equal(studioOverview(final, 'en').recommendation.state, 'reassessment');
+        assert.equal(studioOverview(final, 'en').documentCount, 9);
+      }
+      await expect(await requestRoute(routes.custom, 'GET', `/api/custom-cases?id=${saved.customCase.id}`, undefined, 'foreign'), 404);
+    }
+    assert.notEqual(ids[0], ids[1], 'repeated launches save as independent workspace envelopes');
+    assert.equal((await stored(existing.caseId)).payload, originalPayload);
+    assert.deepEqual(await d1.prepare('select * from custom_cases where id=?').bind(existingSave.customCase.id).first(), originalEnvelope);
+  }
+});
 
 test("new tax writes require explicit capability and complete-carrier expected digest; legacy writes remain valid", async () => {
   const draft = initial("tax_guard_create");
