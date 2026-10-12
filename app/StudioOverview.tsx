@@ -26,7 +26,7 @@ export default function StudioOverview({ draft, locale, onStep, onNode, onAction
       <button type="button" onClick={() => onStep(3)}>{t("Inspect sources and evidence", "Проверить источники и материалы")}</button>
     </section>
     {model.recommendation.conditions && <section className={styles.block}><h3>{t("Basis and unresolved conditions", "Основания и нерешённые условия")}</h3><p lang="en">{model.recommendation.conditions}</p></section>}
-    {model.planningRecords.length > 0 && <section className={styles.block} aria-labelledby="studio-planning-title">
+    {model.planningRecords.length > 0 && <section className={`${styles.block} ${styles.planning}`} aria-labelledby="studio-planning-title">
       <h3 id="studio-planning-title">{t("Chronology and follow-up planning", "Хронология и план дальнейших действий")}</h3>
       <p>{t("These are authored planning records, not events that have occurred. Their order is not an execution route. Confirm owners, actual dates and completion against the sources before relying on them.", "Это авторские записи планирования, а не произошедшие события. Порядок записей не задаёт маршрут выполнения. Сверьте ответственных, фактические даты и выполнение с источниками перед использованием.")}</p>
       <details><summary>{t(`Review ${model.planningRecords.length} planning records`, `Просмотреть записи планирования: ${model.planningRecords.length}`)}</summary><ul className={styles.records}>{model.planningRecords.map(node => <li key={node.id}>
