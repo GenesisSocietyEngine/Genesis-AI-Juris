@@ -39,7 +39,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy
     {error && <p className="demo-error" role="alert">{error}</p>}
     <section className="demo-canopy-feature" aria-labelledby="canopy-demo-title">
       <div className="demo-canopy-introduction">
-        <span className="workspace-eyebrow">{locale === "en" ? "Canonical demo · Business decision" : "Канонический демо-кейс · Бизнес-решение"}</span>
+        <span className="workspace-eyebrow">{locale === "en" ? "Featured example · Advisory decision" : "Канонический демо-кейс · Бизнес-решение"}</span>
         <h2 id="canopy-demo-title">Project Canopy</h2>
         <p className="demo-canopy-question">{locale === "en" ? CANOPY_QUESTION : "Стоит ли Verdant Atelier принять предложение по расширению управляемого объекта, одобрить условный 90-дневный пилот, пересмотреть условия или отказаться?"}</p>
         <p className="demo-synthetic-note">{locale === "en" ? "Fictional training case. Sources, assumptions and decision conditions are identified separately." : "Учебный вымышленный кейс. Источники, допущения и условия решения обозначены отдельно."}</p>
@@ -53,7 +53,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy
         <h3>{locale === "en" ? "Choose a scenario" : "Выберите сценарий"}</h3>
         <p>{locale === "en" ? "Start with Base, then compare what changes." : "Начните с базового варианта, затем сравните изменения."}</p>
         <fieldset><legend className="visually-hidden">{locale === "en" ? "Canopy scenario" : "Сценарий Canopy"}</legend>{canopyExamples.map(example => <label key={example.id} className={selected === example.id ? "selected" : ""}><input type="radio" name="canopy-scenario" value={example.id} checked={selected === example.id} onChange={() => setSelected(example.id)}/><span><b>{example[locale]}</b><small>{example.detail[locale]}</small></span></label>)}</fieldset>
-        <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open Canopy in Studio" : "Открыть Canopy в Студии")}<WorkspaceIcon name="arrow"/></button>
+        <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open example case" : "Открыть Canopy в Студии")}<WorkspaceIcon name="arrow"/></button>
         <small>{locale === "en" ? "Opens a separate working copy. The reference case is preserved." : "Открывается отдельный рабочий черновик. Эталонный кейс сохраняется."}</small>
       </div>
     </section>

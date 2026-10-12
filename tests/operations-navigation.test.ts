@@ -20,8 +20,15 @@ test("both Studio shells retain public routes and operation actions without inve
     assert.ok(markup.includes(locale === "en" ? "Sign in" : "Войти"));
     assert.doesNotMatch(markup, /Manage organizations|Users &amp; access|Sign out/);
     assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");
-    assert.ok(markup.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
-    assert.ok(markup.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));
+    assert.ok(!markup.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
+    assert.ok(!markup.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));
+    const training = renderToStaticMarkup(createElement(AppNavigation, {
+      locale, studioOnly, view: 'play', workspaceLocation: `/studio?lang=${locale}`,
+      navigate: noop, openOperations: noop, restoreSession: noop, exportSession: noop,
+      hasActiveScenario: true, toggleLocale: noop,
+    }));
+    assert.ok(training.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
+    assert.ok(training.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));
   }
 });
 

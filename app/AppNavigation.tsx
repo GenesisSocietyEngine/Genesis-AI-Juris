@@ -23,7 +23,7 @@ export default function AppNavigation({ locale, view, studioOnly, workspaceLocat
     onNavigate={(next) => next === "play" ? openOperations() : navigate(next as AppView)}
     onLanguage={toggleLocale}
     allowDeparture={allowDeparture} newCase={newCase} importCase={importCase}
-    operationsActions={<><button type="button" onClick={restoreSession}>{en ? "Restore a play session" : "Восстановить прохождение"}</button>{hasActiveScenario && <button type="button" onClick={exportSession}>{en ? "Export play session" : "Экспорт прохождения"}</button>}</>}
+    operationsActions={view === "play" ? <><button type="button" onClick={restoreSession}>{en ? "Restore a play session" : "Восстановить прохождение"}</button>{hasActiveScenario && <button type="button" onClick={exportSession}>{en ? "Export play session" : "Экспорт прохождения"}</button>}</> : <></>}
     menu={<>
       <hr/>
       {studioOnly && <a href="https://www.falcon-merlin.com/" target="_top">Falcon-Merlin.com</a>}

@@ -89,6 +89,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
   };
   return {
     caseId: draft.caseId.trim(),
+    ...(draft.exampleSource ? { exampleSource: draft.exampleSource } : {}),
     ...(draft.caseType ? { caseType: normalizeCaseTypeReference(draft.caseType) } : {}),
     parent: draft.parent,
     title: draft.title.trim(),
@@ -160,8 +161,11 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
     ? value.premisePublication
     : undefined;
 
+  const sourceRef = value.exampleSource;
+  if (sourceRef !== undefined && (!isRecord(sourceRef) || sourceRef.format !== "casevant-example-source-v1" || typeof sourceRef.caseId !== "string" || sourceRef.caseId.length > 140 || !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(sourceRef.caseId) || typeof sourceRef.version !== "string" || !/^\d+\.\d+\.\d+$/.test(sourceRef.version) || typeof sourceRef.fingerprint !== "string" || !/^sha256-[a-f0-9]{64}$/.test(sourceRef.fingerprint))) throw new Error("Invalid example source reference");
   const normalized: StudioDraft = {
     caseId,
+    ...(isRecord(sourceRef) ? { exampleSource: {format:"casevant-example-source-v1" as const, caseId:sourceRef.caseId as string, version:sourceRef.version as string, fingerprint:sourceRef.fingerprint as string} } : {}),
     version,
     ...(caseType ? { caseType } : {}),
     parent,
@@ -236,9 +240,11 @@ function normalizeNode(value: unknown): StudioNode {
   if (typeof value.type !== "string" || !nodeTypes.has(value.type as StudioNodeType)) throw new Error("Invalid node type");
   if (typeof value.x !== "number" || !Number.isFinite(value.x) || value.x < 0 || value.x > 5_000) throw new Error("Invalid node coordinate");
   if (typeof value.y !== "number" || !Number.isFinite(value.y) || value.y < 0 || value.y > 5_000) throw new Error("Invalid node coordinate");
+  if (value.factStatus !== undefined && (value.type !== "fact" || (value.factStatus !== "asserted" && value.factStatus !== "assumed"))) throw new Error("Invalid authored fact status");
   return {
     id: value.id,
     type: value.type as StudioNodeType,
+    ...(value.factStatus !== undefined ? { factStatus: value.factStatus as "asserted" | "assumed" } : {}),
     title: boundedString(value.title, "node title", 1, 200),
     detail: safeString(value.detail, "", 4_000),
     x: value.x,

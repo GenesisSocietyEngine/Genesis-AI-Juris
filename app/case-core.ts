@@ -11,7 +11,7 @@ export function projectCaseCoreV2(draft: StudioDraft): CaseCoreV2 {
   return {
     schemaVersion: 2,
     caseType: reference,
-    identity: { caseId: draft.caseId, version: draft.version, parent: draft.parent },
+    identity: { ...(draft.exampleSource ? {exampleSource:draft.exampleSource} : {}), caseId: draft.caseId, version: draft.version, parent: draft.parent },
     matter: { title: draft.title, summary: draft.premise, professionalRole: draft.role },
     jurisdiction: {
       label: draft.jurisdiction,
@@ -22,7 +22,7 @@ export function projectCaseCoreV2(draft: StudioDraft): CaseCoreV2 {
       .map((node) => ({ id: node.id, type: node.type as "actor" | "entity", title: node.title, detail: node.detail })),
     facts: draft.nodes
       .filter((node) => node.type === "fact")
-      .map((node) => ({ id: node.id, statement: node.detail || node.title, status: "asserted" as const })),
+      .map((node) => ({ id: node.id, statement: node.detail || node.title, status: node.factStatus ?? "asserted" as const })),
     evidence: draft.nodes
       .filter((node) => node.type === "evidence")
       .map((node) => ({ id: node.id, title: node.title, detail: node.detail })),

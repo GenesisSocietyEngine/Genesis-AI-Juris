@@ -2,6 +2,7 @@ import type { Content, ContentTable, TableCell, TDocumentDefinitions } from "pdf
 import type { CaseReportOptions } from "./case-report";
 import type { CanonicalReportModel } from "./report-model";
 import type { StudioDraft } from "./types";
+import { reportStatementStatus } from "./report-statement-status";
 import { decisionEconomics } from "./report-decision-analysis";
 import type { TaxReportModel } from "./tax-report-model";
 import { buildTaxReportPdfSection } from "./tax-report-pdf";
@@ -163,7 +164,7 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
   if (options.includeRegisters) {
     const records = draft.nodes.filter(n => ["fact", "evidence", "tax_rule"].includes(n.type));
     content.push(h(t("Evidence to reconcile", "Основания для сверки")));
-    content.push({ ul: records.map(n => n.title), fontSize: 9, margin: [10, 0, 0, 12] });
+    content.push({ ul: records.map(n => { const status = reportStatementStatus(n, options.language); return status ? `${n.title} — ${status}` : n.title; }), fontSize: 9, margin: [10, 0, 0, 12] });
     content.push(p(t("These titles index the recorded material; they do not certify it. Full text, conditions and provenance remain in the case and the full analysis export.", "Заголовки указывают на записанные материалы, но не подтверждают их. Полные тексты, условия и происхождение доступны в деле и полном отчёте.")));
   }
   if (options.includeSources) {

@@ -65,3 +65,4 @@ next-env.d.ts
 /scripts/training/render-cache/
 /scripts/training/output/
 /scripts/training/__pycache__/
+/.vinext/
