@@ -57,7 +57,7 @@ export default defineConfig(async () => {
       watch: {
         // QA outputs are not application source. Windows may lock a generated
         // PDF while Poppler or a viewer reads it, which can crash fs.watch.
-        ignored: path => {
+        ignored: (path: string) => {
           const normalized = path.replaceAll('\\', '/');
           return normalized === qaArtifactDirectory || normalized.startsWith(qaArtifactDirectory + '/');
         },
