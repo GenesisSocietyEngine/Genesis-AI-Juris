@@ -45,3 +45,5 @@ Browser discovery again failed while loading the connected browser policy. No al
 Prior v118 web/PDF, Rust, Flutter and Android CI passed. iOS tax UI preparation timed out at its existing deadline while running Xcode; native iOS was queued at baseline. These are not recorded as successful native acceptance. New-source canonical CI state is reported separately at delivery. No timeout increase, rule bypass, permission expansion or unrelated native change is introduced.
 
 Canonical PR, exact merged build provenance, saved Site version, production deployment and final CI status are recorded in the delivery receipt.
+
+Canonical web CI caught an explicit-any lint error in the new semantic regression helper after the initial integration. Replaced it with a typed audited-effect shape; no lint rule was disabled and no application behavior changed. The corrected source receives a new exact merged release build before publication.
