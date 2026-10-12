@@ -275,7 +275,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   const css = source("app/matters/matters.module.css");
   const page = source("app/matters/page.tsx");
   const runtimeConstants = source("app/runtime-constants.ts");
-  const app = source("app/JurisApp.tsx");
+  const app = source("app/JurisApp.tsx") + source("app/CaseExampleLibrary.tsx");
   const navigation = source("app/WorkspaceNavigation.tsx");
   const boundary = source("app/organizations/OrganizationBoundary.tsx");
 
