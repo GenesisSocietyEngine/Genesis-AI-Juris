@@ -15,8 +15,9 @@ test("catalogue shows neutral choices without opening Canopy or launching a simu
   assert.equal(calls,0);
   assert.match(html, /Project Canopy/);
   assert.match(html, /GreenFire — The First 72 Hours/);
-  assert.match(html, /Guided walkthrough/);
-  assert.match(html, /Decision simulation/);
+  assert.match(html, /Take guided walkthrough/);
+  assert.match(html, /Open example case/);
+  assert.doesNotMatch(html, /Decision simulation|Start simulation|35 min/);
   assert.doesNotMatch(html, /featured-case|selected|<details[^>]* open|demo-walkthrough|Open Canopy in Studio/);
 });
 test("Canopy obeys text and format filters and never appears as an empty-result fallback", () => {
