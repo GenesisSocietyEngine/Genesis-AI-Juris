@@ -11,6 +11,39 @@ import type { StudioOverviewProps } from "../app/StudioOverview";
 import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-examples';
 
 const base = buildCanopyPackage("base").draft;
+
+test('planning projection exposes retained phases and tasks without inferring completion or changing saved content', async () => {
+  const { StudioOverview } = await components;
+  for (const id of Object.keys(CONVERTED_EXAMPLES)) for (const locale of ['en', 'ru'] as const) {
+    const draft = buildConvertedExample(id, locale);
+    const before = JSON.stringify(draft), fingerprint = caseFingerprint(draft);
+    const expected = draft.nodes.filter(node => node.type === 'deadline' || (node.type === 'decision' && node.id.startsWith('stage-')));
+    const model = studioOverview(draft, locale);
+    assert.deepEqual(model.planningRecords, expected);
+    if (id === 'be_commercial_failed_erp_001') assert.equal(model.planningRecords.filter(node => node.id.startsWith('stage-')).length, 21);
+    const opened: string[] = [];
+    const props: StudioOverviewProps = { draft, locale, onStep() {}, onNode: nodeId => opened.push(nodeId) };
+    const tree = StudioOverview(props);
+    const buttons = elements(tree).filter(element => element.type === 'button' && String(element.props['aria-label']).startsWith(locale === 'en' ? 'Inspect planning record: ' : 'Открыть запись планирования: '));
+    for (const button of buttons) (button.props.onClick as () => void)();
+    assert.deepEqual(opened, expected.map(node => node.id), 'each planning action opens the exact retained node');
+    const html = renderToStaticMarkup(createElement(StudioOverview, props));
+    assert.match(html, locale === 'en' ? /not events that have occurred/ : /не произошедшие события/);
+    assert.match(html, locale === 'en' ? /order is not an execution route/ : /Порядок записей не задаёт маршрут/);
+    for (const node of expected) assert.ok(html.includes(node.detail.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')), 'full owner/timing/conditions preserved for ' + node.id);
+    assert.equal(JSON.stringify(draft), before);
+    assert.equal(caseFingerprint(draft), fingerprint);
+  }
+});
+
+test('generic and legacy drafts expose typed deadlines but do not classify arbitrary decisions as migrated phases', () => {
+  const draft = structuredClone(base);
+  draft.nodes.push({ id: 'stage-user-choice', type: 'decision', title: 'User choice', detail: 'No recorded task.', x: 0, y: 0 });
+  draft.nodes.push({ id: 'user-deadline', type: 'deadline', title: 'Review date', detail: 'Owner and date to confirm.', x: 0, y: 0 });
+  assert.deepEqual(studioOverview(draft, 'en').planningRecords.map(node => node.id), ['user-deadline']);
+  const empty = { ...draft, nodes: [], links: [] };
+  assert.deepEqual(studioOverview(empty, 'en').planningRecords, []);
+});
 test("each exact existing Canopy declaration is an expected recommendation, never a selected outcome", () => {
   for (const declaration of [...CANOPY_SCENARIOS, CANOPY_UNAVAILABLE]) for (const independent of [false, true]) {
     const prepared = buildCanopyPackage(declaration.id, independent);
