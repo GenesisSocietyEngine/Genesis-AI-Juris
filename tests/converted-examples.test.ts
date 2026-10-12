@@ -25,6 +25,8 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   for (const item of raw.inbox_items) if (!item.initially_visible) { assert.ok(!core.facts.some(f => f.id === "inbox-" + item.id)); assert.ok(core.outcomes.some(o => o.id === "inbox-" + item.id)); }
   for (const fact of raw.facts) assert.equal(core.facts.find(f => f.id === "fact-" + fact.id)?.status, ["proven", "admitted"].includes(fact.initial_status) ? "asserted" : "assumed");
   assert.equal(draft.caseType?.id, spec.category);
+  if ("initial_resources" in raw && raw.initial_resources?.authorized_budget_eur !== undefined) assert.ok(draft.nodes.find(n => n.id === "review-assumptions")!.detail.includes(String(raw.initial_resources.authorized_budget_eur)));
+  if ("deterministic_decisions" in raw) for (const decision of raw.deterministic_decisions ?? []) for (const branch of decision.branches) for (const effect of branch.effects) if (effect.type === "set_resource" && "resource" in effect && "value" in effect && effect.resource?.endsWith("_eur")) assert.ok(draft.nodes.find(n => n.id === "branch-" + decision.id + "-" + branch.id)!.detail.includes("EUR " + effect.value));
   assert.equal(caseTypePlaybook(draft.caseType).test.requiresPlayableRoute, false);
   assert.ok(draft.nodes.length <= 200);
   assert.ok(!studioStructuralIssues(draft).includes("disconnected_graph"));
