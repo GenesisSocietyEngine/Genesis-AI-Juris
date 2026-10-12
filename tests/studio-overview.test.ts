@@ -8,6 +8,7 @@ import { buildCanopyPackage, CANOPY_SCENARIOS, CANOPY_UNAVAILABLE } from "../app
 import { caseFingerprint } from "../app/case-integrity";
 import { openStudioSourceFragment, studioOverview, studioOverviewAction, studioSourceFragmentId } from "../app/studio-overview";
 import type { StudioOverviewProps } from "../app/StudioOverview";
+import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-examples';
 
 const base = buildCanopyPackage("base").draft;
 test("each exact existing Canopy declaration is an expected recommendation, never a selected outcome", () => {
@@ -144,4 +145,28 @@ test("empty and generic source views expose next action without fake document or
   const html = renderToStaticMarkup(createElement(StudioSourcesPanel, props));
   assert.match(html, /Not attached/); assert.match(html, /Text references only/);
   assert.doesNotMatch(html, /Retained fictional source packet/);
+});
+
+test('converted evidence panels distinguish assumptions and link the actual authored statements', async () => {
+  const { StudioSourcesPanel } = await components;
+  for (const id of Object.keys(CONVERTED_EXAMPLES)) for (const locale of ['en', 'ru'] as const) {
+    const draft = buildConvertedExample(id, locale);
+    const before = JSON.stringify(draft);
+    const html = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft, locale, onStep() {}, onNode() {} }));
+    assert.match(html, locale === 'en' ? /Assumed statement — requires verification/ : /Допущение — требует проверки/);
+    for (const link of draft.links) {
+      const from = draft.nodes.find(node => node.id === link.from)!;
+      const to = draft.nodes.find(node => node.id === link.to)!;
+      if (from.type === 'evidence' && to.type === 'fact') {
+        const label = (locale === 'en' ? 'Inspect linked statement: ' : 'Открыть связанное утверждение: ') + to.title;
+        assert.ok(html.includes(label.replaceAll('&','&amp;').replaceAll('"','&quot;')), 'actual evidence relationship ' + link.id);
+      }
+    }
+    assert.equal(JSON.stringify(draft), before, 'viewing evidence neither changes nor accepts records');
+    const legacy = structuredClone(draft);
+    for (const node of legacy.nodes) delete node.factStatus;
+    const legacyHtml = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft: legacy, locale, onStep() {}, onNode() {} }));
+    assert.match(legacyHtml, locale === 'en' ? /Authored fact record/ : /Авторская запись факта/);
+    assert.ok(!legacyHtml.includes(locale === 'en' ? 'Assumed statement — requires verification' : 'Допущение — требует проверки'));
+  }
 });
