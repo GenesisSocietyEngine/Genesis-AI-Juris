@@ -18,6 +18,7 @@
 .workspace button:disabled { opacity: .55; cursor: not-allowed; }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .block { margin-top: 24px; min-width: 0; }
+.planning summary { padding: 10px 0; min-height: 42px; cursor: pointer; line-height: 1.5; overflow-wrap: anywhere; }
 .muted, .footer { color: var(--muted); font-size: .87rem; }
 .actions, .outcomes, .records, .references { list-style: none; padding: 0; margin: 0; }
 .actions li, .outcomes li, .records li, .references li { padding: 14px 0; border-bottom: 1px solid var(--rule); }

@@ -53,6 +53,9 @@ export function studioOverview(draft: StudioDraft, locale: Locale) {
       : { state: family ? "reassessment" as const : "missing" as const, text: null, basis: null, conditions: null, scenarioId: null, version: null },
     blockers: checks.filter(check => check.level === "warn"),
     outcomes: draft.nodes.filter(node => node.type === "outcome"),
+    // Retained planning records, not a dated history or an inferred execution route.
+    planningRecords: draft.nodes.filter(node => node.type === "deadline"
+      || (node.type === "decision" && node.id.startsWith("stage-") && draft.classification?.tags.includes("converted-example"))),
     facts, evidence,
     requiredRecordCount: recordGroup?.minimum ?? null,
     recordedCount: recordGroup ? draft.nodes.filter(node => recordGroup.types.includes(node.type)).length : facts.length + evidence.length,
