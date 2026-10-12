@@ -24,5 +24,11 @@ for(const [index, reference] of cases.entries()){
  const rendered=spawnSync(tools.pdftoppm,['-f','1','-l','1','-scale-to','900','-png','-singlefile',path,path+'-first'],{windowsHide:true}); if(rendered.status!==0)throw new Error('PDF render failed '+path); const text=extractPdfText(tools,path,path+".txt");
  if(buffer.length<1000||!text.includes(draft.title.split(' — ')[0]))throw new Error('Invalid report '+draft.caseId);
  for(const node of draft.nodes.filter(n=>n.id.startsWith('evidence-')))if(!text.includes(node.id.slice(9)))throw new Error('Missing source '+node.id);
+ if (draft.nodes.some(n => n.factStatus === 'assumed')) {
+  const page = text.split('\f').findIndex(value => value.includes('Assumed statement')) + 1;
+  if (!page) throw new Error('Missing assumed-statement label ' + draft.caseId);
+  const statusPage = spawnSync(tools.pdftoppm, ['-f', String(page), '-l', String(page), '-scale-to', '1200', '-png', '-singlefile', path, path+'-status'], {windowsHide:true});
+  if (statusPage.status !== 0) throw new Error('Status-page render failed ' + path);
+ }
  console.log('PASS PDF',draft.caseId,draft.version,buffer.length,info.pages + " pages");
 }

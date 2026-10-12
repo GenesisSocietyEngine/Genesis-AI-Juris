@@ -31,12 +31,12 @@ export default function StudioEntryScreen({ locale, recentTitle, savedCasesHref 
         <p className="entry-saving-note">{en ? "You can start without signing in. Sign in when you save to keep the case in your account and return later." : "Начать можно без входа. При сохранении войдите в аккаунт, чтобы вернуться к кейсу позже."}</p>
       </div>
       <div className="studio-entry-demo">
-        <span className="workspace-eyebrow">{en ? "Featured example · Advisory decision" : "Изучите пример"}</span>
-        <h2>{en ? "Explore an example case" : "Впервые здесь? Изучите готовый пример"}</h2>
-        <p>{en ? "Choose a worked case in one of nine categories. Review its sources, compare options and build a decision package." : "Начните с Project Canopy: изучите предварительный вывод, источники и вопросы, требующие проверки."}</p>
-        <button type="button" className="secondary-cta" onClick={onDemo}>{en ? "Open Canopy example" : "Открыть обзор Canopy"}</button>
+        <span className="workspace-eyebrow">{en ? "Featured example · Advisory decision" : "Рекомендуемый пример · Консультационное решение"}</span>
+        <h2>{en ? "Explore an example case" : "Изучите пример кейса"}</h2>
+        <p>{en ? "Choose a worked case in one of nine categories. Review its sources, compare options and build a decision package." : "Выберите готовый кейс одной из девяти категорий. Проверьте источники, сравните варианты и подготовьте пакет решения."}</p>
+        <button type="button" className="secondary-cta" onClick={onDemo}>{en ? "Open Canopy example" : "Открыть пример Canopy"}</button>
         <small>{en ? "Find the proposed decision, open a supporting source and spot what still needs checking. No sign-in needed." : "Найдите предварительное решение, откройте подтверждающий источник и определите, что ещё нужно проверить. Вход не требуется."}</small>
-        {onBrowseDemos && <button type="button" className="secondary-cta" onClick={onBrowseDemos}>{en ? "Browse example cases" : "Все демо и учебные симуляции"}</button>}
+        {onBrowseDemos && <button type="button" className="secondary-cta" onClick={onBrowseDemos}>{en ? "Browse example cases" : "Просмотреть примеры кейсов"}</button>}
       </div>
     </section>
     <section className="studio-entry-recent" aria-labelledby="entry-recent-title">

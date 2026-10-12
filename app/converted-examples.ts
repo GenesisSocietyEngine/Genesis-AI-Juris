@@ -14,16 +14,26 @@ export const CONVERTED_EXAMPLES: Record<string, { category: CaseTypeId; title: s
 
 type RecordItem = { id: string; title?: string; name?: string; description?: string; statement?: string; summary?: string; initial_status?: string; initially_available?: boolean; initially_visible?: boolean; supports_facts?: string[]; related_actors?: string[]; role?: string; body?: string; sender?: string; subject?: string; exit_actions?: string[]; terminal_stage?: string; effects?: Effect[]; trigger?: Condition; condition?: Condition; available_when?: Condition; due_at?: { day: number; minute_of_day: number }; completion_actions?: string[]; start_action?: string; completion_event?: string; duration_minutes?: number; time_cost_minutes?: number; cost_eur?: number; branches?: RecordItem[] };
 type Effect = { type: string; resource?: string; amount?: number; stage?: string; event?: string; decision?: string; outcome?: string; evidence?: string; fact?: string; flag?: string; item?: string; status?: string; value?: unknown };
-type Condition = { type?: string; stage?: string; action?: string; event?: string; evidence?: string; fact?: string; flag?: string; value?: unknown; status?: string; conditions?: Condition[]; condition?: Condition; at?: { day: number; minute_of_day: number } };
+type Condition = { type?: string; stage?: string; action?: string; event?: string; evidence?: string; fact?: string; flag?: string; deadline?: string; task?: string; result?: string; value?: unknown; status?: string; conditions?: Condition[]; condition?: Condition; at?: { day: number; minute_of_day: number } };
 type SourceCase = { case_id: string; scenario_fingerprint: string; jurisdiction: string; localizations: Record<string, { player_client_name?: string; player_client_role?: string; synopsis?: string }>; scenario_localizations?: Record<string, Record<string, Record<string, Record<string, string>>>>; scenario: { initial_resources?: Record<string, number>; metadata: { content_version: string }; initial_stage: string; actors: RecordItem[]; facts: RecordItem[]; evidence: RecordItem[]; stages: RecordItem[]; actions: RecordItem[]; deadlines: RecordItem[]; async_tasks: RecordItem[]; inbox_items: RecordItem[]; events: RecordItem[]; outcomes: RecordItem[]; deterministic_decisions?: RecordItem[] } };
 const sources = canonicalBundle.cases as unknown as SourceCase[];
 const gameOnly = (id: string) => /^(rest|rest_completed|rest_recovery_applied)$/.test(id) || /inactivity|client_warning|fatigue|stamina|strain/.test(id);
 const human = (id = "") => id.replace(/[_-]/g, " ");
 function conditionText(c?: Condition): string {
   if (!c) return "";
-  if (c.conditions) return "(" + c.conditions.map(conditionText).filter(Boolean).join(c.type === "any" ? " OR " : " AND ") + ")";
+  if (c.conditions) {
+    const items = c.conditions.map(conditionText).filter(Boolean);
+    return items.length ? "(" + items.join(c.type === "any" ? " OR " : " AND ") + ")" : "Scenario conditions require independent review.";
+  }
   if (c.condition) return (c.type === "not" ? "NOT (" + conditionText(c.condition) + ")" : conditionText(c.condition));
-  if (c.type?.includes("metric") || c.type?.includes("resource")) return "Requires independent assessment of source-level support; legacy aggregate thresholds are excluded.";
+  if (c.type === 'integer_compare' || c.type?.includes("metric") || c.type?.includes("resource")) return "Source support requires review; game thresholds excluded.";
+  if (c.deadline) return "Hypothetical deadline: " + c.deadline + " = " + (c.status ?? (c.type === 'deadline_missed' ? 'missed' : 'unresolved')) + " (verify law/date/completion)";
+  if (c.task) return "Hypothetical task: " + c.task + " = " + (c.status ?? (c.type === 'async_task_completed' ? 'completed' : 'unresolved')) + " (unverified)";
+  if (c.type === 'judicial_result_is') {
+    const judgments: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
+    const result = judgments[c.result ?? ''] ?? human(c.result);
+    return "Hypothetical judgment: " + result + " (unrecorded)";
+  }
   if (c.stage) return "Optional phase: " + human(c.stage);
   if (c.fact) return "Fact to verify: " + c.fact + " (" + (c.status ?? c.value ?? "unresolved") + ")";
   if (c.evidence) return "Evidence to verify: " + c.evidence;
@@ -31,7 +41,8 @@ function conditionText(c?: Condition): string {
   if (c.action) return "If option considered: " + c.action;
   if (c.event) return "If hypothetical event occurs: " + c.event;
   if (c.at) return "Illustrative relative date: day " + c.at.day + ", minute " + c.at.minute_of_day;
-  return "";
+  if (c.type === 'by_effect') return 'Hypothetical consequence of an authored option; occurrence is not recorded.';
+  return 'Scenario condition requires independent review: ' + human(c.type ?? 'unspecified condition') + '.';
 }
 function consequence(e: Effect): string {
   if (e.resource?.endsWith("_eur") && typeof (e.value ?? e.amount) === "number") return "Hypothetical monetary assumption: " + human(e.resource) + " " + (e.type === "add_resource" ? "change " : "estimate ") + "EUR " + String(e.value ?? e.amount) + "; provenance: authored legacy branch. Not an award, payment or verified cost that has occurred.";
@@ -94,7 +105,7 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     if (!effects.length) continue;
     const target = s.actions.find(a => (a.effects ?? []).some(e => e.event === event.id) || event.trigger?.action === a.id);
     const destination = nodes.find(n => n.id === "action-" + target?.id);
-    const text = "\nHypothetical event " + event.id + ": " + (event.title ?? "") + "\n" + conditionText(event.condition) + "\n" + effects.join("\n");
+    const text = "\nHypothetical event " + event.id + ": " + (event.title ?? "") + "\n" + conditionText(event.trigger) + "\n" + conditionText(event.condition) + "\n" + effects.join("\n");
     if (destination && destination.detail.length + text.length <= 4000) destination.detail += text;
     else add("event-" + event.id, "outcome", "Hypothetical: " + (event.title ?? human(event.id)), text + "\nNot established evidence; verify independently.");
   }

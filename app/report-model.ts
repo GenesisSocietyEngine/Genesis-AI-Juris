@@ -10,7 +10,7 @@ import {
 import { INVALID_REPORT_SOURCE_URL_MESSAGE, sanitizeReportSourceUrls } from "./report-source-url";
 import { isStudioDeviceScope } from "./studio-device-storage";
 import { hasTaxAttachment } from "./tax-authoring";
-import type { CaseTypeId, StudioDraft, StudioNodeType } from "./types";
+import type { CaseTypeId, StudioDraft, StudioNode, StudioNodeType } from "./types";
 
 export const REPORT_MODEL_SCHEMA_VERSION = 1 as const;
 export const REPORT_RENDERER_VERSION = "1.0.0" as const;
@@ -141,7 +141,7 @@ export type CanonicalReportModel = {
     redactions: string[];
     permissions: { confidential: boolean; external: boolean };
   };
-  sections: Array<{ id: ReportSectionId; items: Array<{ id: string; title: string; detail: string }> }>;
+  sections: Array<{ id: ReportSectionId; items: Array<{ id: string; title: string; detail: string; factStatus?: StudioNode['factStatus'] }> }>;
   readiness: ReportReadiness;
   contentFingerprint: string;
 };
@@ -168,7 +168,7 @@ export function buildCanonicalReportModel(draft: StudioDraft, input: ReportReadi
       redactions: [...redactions].sort(),
       permissions: { confidential: input.confidential, external: input.audience === "client" },
     },
-    sections: profile.sections.map((id) => ({ id, items: draft.nodes.filter((node) => nodeGroups[id].includes(node.type) && !redactions.has(node.id)).map((node) => ({ id: node.id, title: node.title, detail: node.detail })) })),
+    sections: profile.sections.map((id) => ({ id, items: draft.nodes.filter((node) => nodeGroups[id].includes(node.type) && !redactions.has(node.id)).map((node) => ({ id: node.id, title: node.title, detail: node.detail, ...(node.type === 'fact' && node.factStatus ? { factStatus: node.factStatus } : {}) })) })),
     readiness,
   };
   return { ...base, contentFingerprint: canonicalFingerprint(base) };

@@ -40,6 +40,17 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   assert.ok(!studioStructuralIssues(draft).includes("disconnected_graph"));
   assert.ok(draft.links.length <= 500);
   assert.ok(draft.nodes.every(n => n.detail.length <= 4000), 'no silently truncated records');
+  assert.ok(draft.nodes.every(n => !n.detail.includes('()')), 'no silently omitted branch conditions');
+  const requiredConditions = (value: unknown): string[] => {
+    if (!value || typeof value !== 'object') return [];
+    const c = value as Record<string, unknown>;
+    const judicial = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
+    return [typeof c.deadline === 'string' ? c.deadline : '', typeof c.task === 'string' ? c.task : '', c.type === 'judicial_result_is' ? judicial[c.result as keyof typeof judicial] : '', ...Object.values(c).flatMap(requiredConditions)].filter(Boolean);
+  };
+  for (const action of raw.actions) {
+    const node = draft.nodes.find(n => n.id === 'action-' + action.id);
+    if (node) for (const condition of requiredConditions(action.available_when)) assert.ok(node.detail.includes(condition), 'retained condition ' + condition);
+  }
   for (const e of raw.evidence) {
     const node = draft.nodes.find(n => n.id === 'evidence-' + e.id)!;
     assert.ok(node, 'stable source ID ' + e.id);

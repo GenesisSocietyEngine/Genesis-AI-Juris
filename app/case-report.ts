@@ -15,6 +15,7 @@ import { buildTaxReportPdfSection } from "./tax-report-pdf";
 import type { TaxRuntime } from "./tax-runtime/runtime";
 import { buildDecisionReport } from "./report-decision-pdf";
 import { caseReportBriefRows } from "./case-report-brief";
+import { reportStatementDetail } from "./report-statement-status";
 import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
 import type { StudioDraft, StudioNodeType } from "./types";
 import { buildCanonicalReportModel, reportReceipt, writeStoredReportReceipt, type CanonicalReportModel, type CurrentReportReceiptBinding, type ReportSectionId } from "./report-model";
@@ -313,7 +314,7 @@ function buildCaseReportDefinitionFromModels(
     const heading = reportSectionNames[profileSection.id][language === "en" ? 0 : 1];
     if (profileSection.items.length) content.push(table(
       [tr(language, "Item", "Элемент"), tr(language, "Professional record", "Профессиональная запись")],
-      profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, item.detail]), ["35%", "65%"], heading
+      profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, reportStatementDetail(item, language)]), ["35%", "65%"], heading
     ));
     else content.push({ stack: [
       { text: heading, style: "subheading", margin: [0, 10, 0, 5] },
@@ -343,7 +344,7 @@ function buildCaseReportDefinitionFromModels(
     const registerHeading = numberedSection("Facts, evidence and rules register", "Реестр фактов, доказательств и правил");
     if (registerNodes.length) content.push(table(
       [tr(language, "Category", "Категория"), tr(language, "Item", "Элемент"), tr(language, "Detail / verification note", "Описание / примечание о проверке")],
-      registerNodes.map((node) => [nodeNames[node.type][language === "en" ? 0 : 1], options.includeTechnicalIds ? `${node.title}\n[${node.id}]` : node.title, clean(node.detail)]),
+      registerNodes.map((node) => [nodeNames[node.type][language === "en" ? 0 : 1], options.includeTechnicalIds ? `${node.title}\n[${node.id}]` : node.title, clean(reportStatementDetail(node, language))]),
       ["20%", "31%", "49%"], registerHeading
     )); else content.push({ stack: [registerHeading, { text: tr(language, "No fact, evidence, entity, rule or deadline nodes are present.", "Ноды фактов, доказательств, организаций, правил или сроков отсутствуют."), style: "warning" }], unbreakable: true });
     content.push({ text: tr(language, "Each material item should be marked by the reviewer as verified, source-backed, judgment, confirmation required or uncertain before external circulation.", "Перед внешним распространением рецензент должен отметить каждый существенный элемент как проверенный, подтверждённый источником, суждение, требующий подтверждения или неопределённый."), style: "note" });

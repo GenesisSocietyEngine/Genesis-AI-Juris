@@ -28,7 +28,7 @@ const formats = {
   "canonical-markdown": { name: "genesis-juris-canonical-markdown", versions: [1, 2], taxVersion: 2, fields: ["format", "schemaVersion", "fingerprint", "status", "language", "draft"] },
   "auth-continuation": { name: undefined, versions: [1, 2], taxVersion: 2, fields: ["version", "id", "createdAt", "scope", "prompt", "draft", "selectedNodeId", "action"] },
 } as const;
-const draftFields = new Set(["caseId", "version", "caseType", "parent", "protection", "title", "jurisdiction", "role", "premise", "premisePublication", "classification", "taxEconomics", "taxAnalysis", "dealEconomics", "nodes", "links", "editHistory", "updatedAt"]);
+const draftFields = new Set(["caseId", "version", "caseType", "exampleSource", "parent", "protection", "title", "jurisdiction", "role", "premise", "premisePublication", "classification", "taxEconomics", "taxAnalysis", "dealEconomics", "nodes", "links", "editHistory", "updatedAt"]);
 
 /** Defaults may be added, but tax-bearing input cannot lose supplied data through
  * an older nested graph/protection/history normalizer. Recovery keeps its raw text. */
