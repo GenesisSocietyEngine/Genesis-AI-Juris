@@ -47,3 +47,5 @@ Prior v118 web/PDF, Rust, Flutter and Android CI passed. iOS tax UI preparation 
 Canonical PR, exact merged build provenance, saved Site version, production deployment and final CI status are recorded in the delivery receipt.
 
 Canonical web CI caught an explicit-any lint error in the new semantic regression helper after the initial integration. Replaced it with a typed audited-effect shape; no lint rule was disabled and no application behavior changed. The corrected source receives a new exact merged release build before publication.
+
+The typed helper also needed explicit required-field assertions for judicial results, comparison IDs and correspondence IDs. Complete strict typecheck and focused lint are required on this final validation correction before integration; the prior intermediate archive is not published.
