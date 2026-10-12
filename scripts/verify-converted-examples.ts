@@ -23,6 +23,7 @@ for(const [index, reference] of cases.entries()){
  const info=inspectPdf(tools,path);
  const rendered=spawnSync(tools.pdftoppm,['-f','1','-l','1','-scale-to','900','-png','-singlefile',path,path+'-first'],{windowsHide:true}); if(rendered.status!==0)throw new Error('PDF render failed '+path); const text=extractPdfText(tools,path,path+".txt");
  if(buffer.length<1000||!text.includes(draft.title.split(' — ')[0]))throw new Error('Invalid report '+draft.caseId);
+ if(!text.includes('CASEVANT')||text.includes('GENESIS: JURIS CODEX'))throw new Error('Obsolete product branding '+draft.caseId);
  for(const node of draft.nodes.filter(n=>n.id.startsWith('evidence-')))if(!text.includes(node.id.slice(9)))throw new Error('Missing source '+node.id);
  if (draft.nodes.some(n => n.factStatus === 'assumed')) {
   const page = text.split('\f').findIndex(value => value.includes('Assumed statement')) + 1;

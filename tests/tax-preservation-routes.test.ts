@@ -89,6 +89,7 @@ test('migrated examples survive real authenticated save, reopen, scenario amendm
     .concat(CANOPY_SCENARIOS.map(scenario => buildCanopyPackage(scenario.id, true).draft));
   for (const source of examples) {
     const existing = normalizeStudioDraft({ ...structuredClone(source), parent: null, title: 'Existing saved user work: ' + source.title });
+    if (source.caseId in CONVERTED_EXAMPLES) existing.version = '2.0.0';
     existing.nodes[0].detail += '\nPreviously saved independent notes.';
     const existingSave = await expect(await call({ action: 'save', draft: existing, isPrivate: true }), 200);
     const originalPayload = (await stored(existing.caseId)).payload;

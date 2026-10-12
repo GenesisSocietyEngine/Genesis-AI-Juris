@@ -1,6 +1,6 @@
 "use client";
 import { lazy, Suspense, useState } from 'react';
-import { CONVERTED_EXAMPLES } from './converted-examples';
+import { CONVERTED_EXAMPLES, CONVERTED_EXAMPLE_VERSION } from './converted-examples';
 import { caseTypePlaybook } from './case-type-playbooks';
 import { caseTypePresentation } from './case-type-presentation';
 import { caseTypeReference } from './case-type-reference';
@@ -32,7 +32,7 @@ export default function LibraryView({locale, restorePlaySession, records, launch
   const [guided, setGuided] = useState(false);
   const label = (id: CaseTypeId) => caseTypePresentation(caseTypePlaybook(caseTypeReference(id)), locale).label;
   const bundled = records;
-  const topics = [...new Set(Object.values(CONVERTED_EXAMPLES).flatMap(item => item.topics).concat(["Business expansion", "Investment decision", "Operational readiness", "category-demo"]))].sort();
+  const topics = [...new Set(Object.values(CONVERTED_EXAMPLES).flatMap(item => item.topics).concat(["Business expansion", "Investment decision", "Operational readiness"]))].sort();
   const jurisdictions = [...new Set(bundled.map(item => item.jurisdiction).concat(["Fictional Gulf market", locale === "en" ? "Fictional / unspecified" : "Учебная / не указана"]))].sort();
   const matches = (id: CaseTypeId, words: string, place: string, tags: string[], walkthrough = false) =>
     (category === "all" || category === id) && (!query.trim() || words.toLowerCase().includes(query.trim().toLowerCase()))
@@ -42,9 +42,12 @@ export default function LibraryView({locale, restorePlaySession, records, launch
     return spec && matches(spec.category, [spec.title, spec.description, label(spec.category), record.jurisdiction, ...spec.topics].join(" "), record.jurisdiction, spec.topics);
   }).map(record => {
     const spec = CONVERTED_EXAMPLES[record.id];
-    return { id: record.id, title: spec.title, summary: spec.description, jurisdiction: record.jurisdiction, practice: label(spec.category), output: caseTypePlaybook(caseTypeReference(spec.category)).primaryOutcome[locale], duration: 0, version: "2.0.0", review: editorialReviewLabel(record.reviewLevel, locale), author: record.authorName };
+    const review = locale === 'en'
+      ? `Converted template · review required. Legacy source v${record.currentVersion}: ${editorialReviewLabel(record.reviewLevel, locale)}`
+      : `Преобразованный шаблон · требуется проверка. Исходный пакет v${record.currentVersion}: ${editorialReviewLabel(record.reviewLevel, locale)}`;
+    return { id: record.id, title: spec.title, summary: spec.description, jurisdiction: record.jurisdiction, practice: label(spec.category), output: caseTypePlaybook(caseTypeReference(spec.category)).primaryOutcome[locale], duration: 0, version: CONVERTED_EXAMPLE_VERSION, review, author: record.authorName };
   });
-  const showCanopy = matches("general_advisory", "Project Canopy Verdant Atelier Advisory decision Business expansion Investment decision Operational readiness", "Fictional Gulf market", ["Business expansion", "Investment decision", "Operational readiness"], true);
+  const showCanopy = matches("general_advisory", `Project Canopy Verdant Atelier Advisory decision ${label("general_advisory")} Business expansion Investment decision Operational readiness`, "Fictional Gulf market", ["Business expansion", "Investment decision", "Operational readiness"], true);
   const categoryDemos = matchingCategoryDemos({ query, practice: "all", jurisdiction, difficulty: "all", duration: "all", tag: topic, format: "all" }, locale).filter(demo => (category === "all" || category === demo.caseTypeId) && !guided);
   const reset = () => { setQuery(""); setCategory("all"); setTopic("all"); setJurisdiction("all"); setGuided(false); };
   return <main className="library-view demo-catalogue">

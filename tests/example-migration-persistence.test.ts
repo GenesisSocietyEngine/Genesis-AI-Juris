@@ -35,6 +35,7 @@ for (const source of examples) test(source.caseId + ' survives independent datab
     };
     // Simulate a user's pre-existing saved case under the legacy source identity.
     const existing = structuredClone(source);
+    if (source.caseId in CONVERTED_EXAMPLES) existing.version = '2.0.0';
     existing.title = 'Existing user case — preserve my edits';
     existing.nodes[0].detail += '\nPreviously saved private notes.';
     const existingId = save(existing);

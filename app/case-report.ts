@@ -247,7 +247,7 @@ function buildCaseReportDefinitionFromModels(
   for (const link of draft.links) outgoing.set(link.from, [...(outgoing.get(link.from) ?? []), link.to]);
   const titleById = new Map(draft.nodes.map((node) => [node.id, node.title]));
   const content: Content[] = [
-    { text: "GENESIS: JURIS CODEX", style: "brand" },
+    { text: "CASEVANT · BY FALCON-MERLIN GROUP", style: "brand" },
     { text: clean(options.profileLabel, tr(language, "PROFESSIONAL CASE REPORT", "ПРОФЕССИОНАЛЬНЫЙ ОТЧЁТ ПО КЕЙСУ")).toUpperCase(), style: "kicker" },
     { text: clean(draft.title, tr(language, "Untitled case", "Кейс без названия")), style: "coverTitle" },
     { text: safePremise, style: "coverSummary" },
@@ -407,7 +407,7 @@ function buildCaseReportDefinitionFromModels(
     // to the next page. Only actual body content can keep a heading on this page.
     pageBreakBefore: (current, following) => Boolean(current.headlineLevel)
       && !following.some((node) => !node.headlineLevel && !node.id?.startsWith("report-furniture-") && Boolean(node.text || node.svg || node.canvas)),
-    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: `report-furniture-brand-${currentPage}`, text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { id: `report-furniture-case-${currentPage}`, text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
+    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: `report-furniture-brand-${currentPage}`, text: "CASEVANT · BY FALCON-MERLIN GROUP", style: "headerBrand" }, { id: `report-furniture-case-${currentPage}`, text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
     footer: (currentPage: number, pageCount: number) => ({ columns: [{ id: `report-furniture-classification-${currentPage}`, text: confidentialityLabel, color: palette.gold, bold: true }, { id: `report-furniture-page-${currentPage}`, text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
     styles: {
       brand: { fontSize: 10, bold: true, color: palette.cyan, characterSpacing: 1.8, margin: [0, 8, 0, 30] },
@@ -437,10 +437,10 @@ function buildCaseReportDefinitionFromModels(
     },
     info: {
       title: `${draft.title} - ${clean(options.profileLabel, "professional case report")}`,
-      author: options.preparedBy || "GENESIS: JURIS CODEX",
+      author: options.preparedBy || "CaseVant",
       subject: `${draft.caseId} v${draft.version}`,
       keywords: `legal case report, ${classification?.practiceArea ?? "legal"}, ${draft.jurisdiction}`,
-      creator: "GENESIS: JURIS CODEX Studio",
+      creator: "CaseVant Studio",
       creationDate: generated,
     },
   };
