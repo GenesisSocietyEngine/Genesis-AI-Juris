@@ -196,6 +196,8 @@ export type StudioNode = {
   type: StudioNodeType;
   title: string;
   detail: string;
+  /** Authored assertion status; omitted legacy records retain their existing projection. */
+  factStatus?: "asserted" | "assumed";
   x: number;
   y: number;
   runtime?: {

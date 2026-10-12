@@ -236,9 +236,11 @@ function normalizeNode(value: unknown): StudioNode {
   if (typeof value.type !== "string" || !nodeTypes.has(value.type as StudioNodeType)) throw new Error("Invalid node type");
   if (typeof value.x !== "number" || !Number.isFinite(value.x) || value.x < 0 || value.x > 5_000) throw new Error("Invalid node coordinate");
   if (typeof value.y !== "number" || !Number.isFinite(value.y) || value.y < 0 || value.y > 5_000) throw new Error("Invalid node coordinate");
+  if (value.factStatus !== undefined && (value.type !== "fact" || (value.factStatus !== "asserted" && value.factStatus !== "assumed"))) throw new Error("Invalid authored fact status");
   return {
     id: value.id,
     type: value.type as StudioNodeType,
+    ...(value.factStatus !== undefined ? { factStatus: value.factStatus as "asserted" | "assumed" } : {}),
     title: boundedString(value.title, "node title", 1, 200),
     detail: safeString(value.detail, "", 4_000),
     x: value.x,

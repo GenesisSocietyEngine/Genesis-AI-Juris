@@ -1,3 +1,4 @@
+import { projectCaseCoreV2 } from "../app/case-core";
 import type { StudioNode } from "../app/types";
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -19,6 +20,10 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   const raw = bundle.cases.find(c => c.case_id === id)!.scenario!;
   const draft = buildConvertedExample(id, locale, '2026-10-12T00:00:00Z');
   assert.equal(draft.caseId, id);
+  const core = projectCaseCoreV2(draft);
+  assert.equal(core.facts.find(f => f.id === "review-assumptions")?.status, "assumed");
+  for (const item of raw.inbox_items) if (!item.initially_visible) { assert.ok(!core.facts.some(f => f.id === "inbox-" + item.id)); assert.ok(core.outcomes.some(o => o.id === "inbox-" + item.id)); }
+  for (const fact of raw.facts) assert.equal(core.facts.find(f => f.id === "fact-" + fact.id)?.status, ["proven", "admitted"].includes(fact.initial_status) ? "asserted" : "assumed");
   assert.equal(draft.caseType?.id, spec.category);
   assert.equal(caseTypePlaybook(draft.caseType).test.requiresPlayableRoute, false);
   assert.ok(draft.nodes.length <= 200);
@@ -79,3 +84,5 @@ test('ordinary cards open Studio examples and omit gameplay badges', () => {
   assert.match(html, /Take guided walkthrough/);
   assert.doesNotMatch(html, /Start simulation|Decision simulation|45 min|Stamina|Fatigue/);
 });
+
+ test("legacy fact nodes keep their exact fingerprint and default projection", () => { const draft = buildCanopyPackage("base", true).draft; const normalized = normalizeStudioDraft(draft); assert.equal(caseFingerprint(draft),caseFingerprint(normalized)); assert.ok(projectCaseCoreV2(draft).facts.every(f => f.status === "asserted")); });
