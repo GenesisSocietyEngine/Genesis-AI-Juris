@@ -52,7 +52,12 @@ test("production build keeps the canonical scenario runtime out of the initial c
   assert.ok(runtimeStats.size < 50_000, `Canonical reducer chunk grew to ${runtimeStats.size} bytes`);
   assert.ok(bundleStats.size > 300_000, "Canonical case bundle did not remain in its lazy data chunk");
   assert.ok(legacyStats.size < 20_000, `Legacy compatibility chunk grew to ${legacyStats.size} bytes`);
-  assert.ok(entry.dynamicImports.includes("app/scenarios.ts"));
+  // Ordinary examples no longer launch play. Saved-play recovery retains both
+  // current and legacy adapters behind the recovery loader's lazy boundary.
+  assert.ok(entry.dynamicImports.includes("app/played-case-loader.ts"));
+  const recovery = manifest['app/played-case-loader.ts'];
+  assert.ok(recovery.dynamicImports.includes('app/scenarios.ts'));
+  assert.ok(recovery.dynamicImports.includes('app/legacy-scenarios.ts'));
   assert.ok(entry.dynamicImports.includes("app/canonical-runtime.ts"));
   assert.ok(entry.dynamicImports.includes("app/FeedbackDialog.tsx"));
   for (const secondaryView of ["app/CommunityWorkspace.tsx", "app/PlayWorkspace.tsx", "app/HelpCenter.tsx", "app/CaseExampleLibrary.tsx"]) {
