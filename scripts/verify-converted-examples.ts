@@ -1,3 +1,4 @@
+import { createExampleWorkingCopy } from "../app/example-working-copy";
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import pdfMake from 'pdfmake/build/pdfmake.js';
@@ -12,7 +13,8 @@ import { discoverPoppler, extractPdfText, inspectPdf } from './tests/report-pdf-
 const tools = discoverPoppler(process.cwd());
 const output = '.artifacts/migration-pdfs'; mkdirSync(output,{recursive:true});
 const cases = Object.keys(CONVERTED_EXAMPLES).map(id=>buildConvertedExample(id,'en')).concat(CANOPY_SCENARIOS.map(s=>buildCanopyPackage(s.id,true).draft));
-for(const draft of cases){
+for(const [index, reference] of cases.entries()){
+ const draft = createExampleWorkingCopy(reference, (index + 1).toString(16).padStart(32,"0"));
  const profile=caseTypePlaybook(draft.caseType).outputs.find(o=>o.primary)!;
  const options:CaseReportOptions={language:'en',presentationMode:'full',includeDecisionTree:false,profileId:profile.id,profileLabel:profile.label.en,audience:'internal',confidentiality:'draft',preparedBy:'Case reviewer',preparedFor:'Decision owner',matterReference:draft.caseId,includeEconomics:false,includeRegisters:true,includeSources:true,includeAuditTrail:false,includeTechnicalIds:true,generatedAt:'2026-10-12T00:00:00Z',currentFingerprint:caseFingerprint(draft),workspaceFingerprint:null,currentPublicationFingerprint:casePublicationFingerprint(draft),workspacePublicationFingerprint:null,privateCase:false,reportReceiptStorageScope:null,persistReportReceiptOnDevice:false};
  const artifacts=buildCaseReportArtifacts(draft,options);

@@ -1,3 +1,4 @@
+import { createExampleWorkingCopy } from "../app/example-working-copy";
 import { projectCaseCoreV2 } from "../app/case-core";
 import type { StudioNode } from "../app/types";
 import assert from 'node:assert/strict';
@@ -20,6 +21,13 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   const raw = bundle.cases.find(c => c.case_id === id)!.scenario!;
   const draft = buildConvertedExample(id, locale, '2026-10-12T00:00:00Z');
   assert.equal(draft.caseId, id);
+  const firstCopy = createExampleWorkingCopy(draft), secondCopy = createExampleWorkingCopy(draft);
+  assert.notEqual(firstCopy.caseId, secondCopy.caseId); assert.notEqual(firstCopy.caseId, draft.caseId);
+  assert.equal(firstCopy.exampleSource?.caseId, id);
+  assert.deepEqual(normalizeStudioDraft(JSON.parse(JSON.stringify(firstCopy))).exampleSource, firstCopy.exampleSource);
+  const copyMarkdown = await buildCaseMarkdown(firstCopy, {status:"amended",language:locale});
+  assert.deepEqual((await parseCaseMarkdown(copyMarkdown.markdown))?.draft.exampleSource, firstCopy.exampleSource);
+  assert.equal(projectCaseCoreV2(firstCopy).identity.exampleSource?.caseId, id);
   const core = projectCaseCoreV2(draft);
   assert.equal(core.facts.find(f => f.id === "review-assumptions")?.status, "assumed");
   for (const item of raw.inbox_items) if (!item.initially_visible) { assert.ok(!core.facts.some(f => f.id === "inbox-" + item.id)); assert.ok(core.outcomes.some(o => o.id === "inbox-" + item.id)); }
@@ -66,6 +74,12 @@ test('Canopy retains nine documents, four variants, exact citations and independ
   const fingerprints = new Set<string>();
   for (const variant of CANOPY_SCENARIOS) {
     const prepared = buildCanopyPackage(variant.id, true);
+    const working = createExampleWorkingCopy(prepared.draft);
+    assert.equal(studioOverview(working, 'en').documentCount, 9);
+    assert.equal(studioOverview(working, 'en').exactScenario, variant.id);
+    working.nodes[0].detail += ' Independent edited assumption.';
+    assert.equal(studioOverview(working, 'en').recommendation.state, 'reassessment');
+    assert.equal(studioOverview(working, 'en').documentCount, 9);
     const reopened = normalizeStudioDraft(JSON.parse(JSON.stringify(prepared.draft)));
     assert.equal(reopened.caseType?.id, 'general_advisory');
     assert.equal(studioOverview(prepared.draft, 'en').documentCount, 9);

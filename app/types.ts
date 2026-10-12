@@ -21,10 +21,18 @@ export type CaseTypeReference = {
   version: string;
 };
 
+export type ExampleSourceReference = {
+  format: "casevant-example-source-v1";
+  caseId: string;
+  version: string;
+  fingerprint: string;
+};
+
 export type CaseCoreV2 = {
   schemaVersion: 2;
   caseType: CaseTypeReference;
   identity: {
+    exampleSource?: ExampleSourceReference;
     caseId: string;
     version: string;
     parent: StudioDraft["parent"];
@@ -335,6 +343,8 @@ export type CaseProtectionV1 = {
 
 export type StudioDraft = {
   caseId: string;
+  /** Stable reference identity; working-copy identity is independently generated. */
+  exampleSource?: ExampleSourceReference;
   version: string;
   /** Exact immutable case-type package. Legacy drafts omit it and resolve to general_advisory@1.0.0. */
   caseType?: CaseTypeReference;

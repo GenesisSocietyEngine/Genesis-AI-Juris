@@ -89,6 +89,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
   };
   return {
     caseId: draft.caseId.trim(),
+    ...(draft.exampleSource ? { exampleSource: draft.exampleSource } : {}),
     ...(draft.caseType ? { caseType: normalizeCaseTypeReference(draft.caseType) } : {}),
     parent: draft.parent,
     title: draft.title.trim(),
@@ -160,8 +161,11 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
     ? value.premisePublication
     : undefined;
 
+  const sourceRef = value.exampleSource;
+  if (sourceRef !== undefined && (!isRecord(sourceRef) || sourceRef.format !== "casevant-example-source-v1" || typeof sourceRef.caseId !== "string" || sourceRef.caseId.length > 140 || !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(sourceRef.caseId) || typeof sourceRef.version !== "string" || !/^\d+\.\d+\.\d+$/.test(sourceRef.version) || typeof sourceRef.fingerprint !== "string" || !/^sha256-[a-f0-9]{64}$/.test(sourceRef.fingerprint))) throw new Error("Invalid example source reference");
   const normalized: StudioDraft = {
     caseId,
+    ...(isRecord(sourceRef) ? { exampleSource: {format:"casevant-example-source-v1" as const, caseId:sourceRef.caseId as string, version:sourceRef.version as string, fingerprint:sourceRef.fingerprint as string} } : {}),
     version,
     ...(caseType ? { caseType } : {}),
     parent,

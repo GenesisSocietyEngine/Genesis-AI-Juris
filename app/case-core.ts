@@ -11,7 +11,7 @@ export function projectCaseCoreV2(draft: StudioDraft): CaseCoreV2 {
   return {
     schemaVersion: 2,
     caseType: reference,
-    identity: { caseId: draft.caseId, version: draft.version, parent: draft.parent },
+    identity: { ...(draft.exampleSource ? {exampleSource:draft.exampleSource} : {}), caseId: draft.caseId, version: draft.version, parent: draft.parent },
     matter: { title: draft.title, summary: draft.premise, professionalRole: draft.role },
     jurisdiction: {
       label: draft.jurisdiction,

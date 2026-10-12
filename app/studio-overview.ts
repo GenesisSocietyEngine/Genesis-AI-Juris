@@ -20,11 +20,15 @@ export type StudioReference = {
 /** Reading projection only. It never modifies the draft, accepts evidence or selects an outcome. */
 export function studioOverview(draft: StudioDraft, locale: Locale) {
   // A familiar title or a D01 reference alone must never attach another case's sources.
-  const family = draft.caseId === "project_canopy_managed_site_expansion"
-    || [...CANOPY_SCENARIOS, CANOPY_UNAVAILABLE].some(({ id }) => draft.caseId === `project_canopy_managed_site_expansion_${id}`);
+  const source = draft.exampleSource;
+  const sourceCandidate = source && canopyPackages().find(item => item.draft.caseId === source.caseId && item.draft.version === source.version && item.studioFingerprint === source.fingerprint);
+  const sourceId = sourceCandidate ? source!.caseId : draft.caseId;
+  const referenceDraft = sourceCandidate ? { ...draft, caseId: sourceId, exampleSource: undefined } : draft;
+  const family = sourceId === "project_canopy_managed_site_expansion"
+    || [...CANOPY_SCENARIOS, CANOPY_UNAVAILABLE].some(({ id }) => sourceId === `project_canopy_managed_site_expansion_${id}`);
   const candidates = family ? canopyPackages() : [];
-  const fingerprint = family ? caseFingerprint(draft) : null;
-  const exact = candidates.find(item => item.draft.caseId === draft.caseId && item.draft.version === draft.version && item.studioFingerprint === fingerprint);
+  const fingerprint = family ? caseFingerprint(referenceDraft) : null;
+  const exact = candidates.find(item => item.draft.caseId === sourceId && item.draft.version === draft.version && item.studioFingerprint === fingerprint);
   const references: StudioReference[] = [];
   if (family) for (const node of draft.nodes) {
     const seen = new Set<string>();

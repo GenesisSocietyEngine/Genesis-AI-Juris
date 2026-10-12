@@ -19,6 +19,7 @@ import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
 import type { ExampleLaunch } from "./ExampleLaunchStatus";
 import { retainStudioReplacement, purgeKnownStudioArchive, restoreArchivedStudioDraft, type ArchivedStudioDraft } from "./studio-draft-archive";
 import { studioReplacementMessage } from "./studio-replacement-message";
+import { createExampleWorkingCopy } from "./example-working-copy";
 import { CONVERTED_EXAMPLES } from "./converted-examples";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import { caseTypePresentation } from "./case-type-presentation";
@@ -114,7 +115,7 @@ async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
   const [{ buildCategoryDemo }, { categoryDemoPrompt }] = await Promise.all([
     import("./category-demo-draft"), import("./category-demo-prompts"),
   ]);
-  return { draft: buildCategoryDemo(id, locale), prompt: categoryDemoPrompt(id, locale) };
+  return { draft: createExampleWorkingCopy(buildCategoryDemo(id, locale)), prompt: categoryDemoPrompt(id, locale) };
 }
 
 const CategoryDemoCards = lazy(() => import("./CategoryDemoCards"));
@@ -2121,7 +2122,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       const { buildConvertedExample } = await import("./converted-examples");
       if (launchVersion !== catalogueLaunchRef.current || context !== exampleContextRef.current || before !== draftRef.current
         || epoch !== studioSessionAuthority.getSnapshot().epoch || scope !== studioSessionAuthority.getSnapshot().scope) return;
-      const next = buildConvertedExample(id, locale);
+      const next = createExampleWorkingCopy(buildConvertedExample(id, locale));
       if (!resetStudioDraft(next, next.premise)) return;
       navigate("studio", 1);
     } catch { showSessionNotice(locale === "en" ? "The example could not be opened. Your current case remains available." : "Не удалось открыть пример. Текущий кейс сохранён."); }
@@ -2200,7 +2201,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (launchVersion !== catalogueLaunchRef.current) return;
     if (context !== exampleContextRef.current || draftRef.current !== before || epoch !== studioSessionAuthority.getSnapshot().epoch || scope !== studioSessionAuthority.getSnapshot().scope) return;
     const prepared = buildCanopyPackage(id, true);
-    if (!resetStudioDraft(prepared.draft, prepared.draft.premise)) return;
+    const workingCopy = createExampleWorkingCopy(prepared.draft);
+    if (!resetStudioDraft(workingCopy, workingCopy.premise)) return;
     navigate("studio", 1);
     const overviewUrl = new URL(window.location.href);
     overviewUrl.searchParams.set("studio_panel", "overview");
