@@ -6,9 +6,26 @@ import DemoCatalogueCards, { matchesCanopy, type DemoCard } from "../app/DemoCat
 import CaseTemplates from "../app/CaseTemplates";
 import { bundledCataloguePresentation } from "../app/catalogue-fallback";
 import { demoLearningPrompt } from "../app/demo-learning-prompts";
+import DemoCases from '../app/DemoCases';
+import CaseExampleLibrary from '../app/CaseExampleLibrary';
+import { CONVERTED_EXAMPLES, CONVERTED_EXAMPLE_VERSION } from '../app/converted-examples';
+import type { PublishedCaseSummary } from '../app/JurisApp';
 
 const card: DemoCard = { id:"greenfire_first_72_hours", title:"GreenFire — The First 72 Hours", summary:"A fictional industrial incident.", jurisdiction:"NL", practice:"Environmental & crisis", duration:35, version:"0.4.0", review:"Editorial preview", author:"GENESIS" };
 const props = { locale:"en" as const, cards:[card], showCanopy:true, busy:false, launch:()=>{}, feedback:()=>{}, openCanopy:async()=>{}, canopyWorkflowHref:"/canopy" };
+
+test('library metadata and Canopy walkthrough use the current package version and actual category', () => {
+  const records = Object.keys(CONVERTED_EXAMPLES).map(id => ({id, jurisdiction:'BE', authorName:'CaseVant', currentVersion:'1.0.0'} as PublishedCaseSummary));
+  for (const locale of ['en', 'ru'] as const) {
+    const html = renderToStaticMarkup(createElement(CaseExampleLibrary, { locale, records, restorePlaySession() {}, launchCase() {}, requestFeedback() {}, openCanopy:async()=>{}, canopyWorkflowHref:'/canopy', openTemplates() {}, openCategoryDemo() {}, exampleLaunch:null, cancelExample() {} }));
+    assert.equal((html.match(new RegExp('v' + CONVERTED_EXAMPLE_VERSION.replaceAll('.', '\\.'), 'g')) ?? []).length, 5);
+    assert.ok(!html.includes('<option value="category-demo">'));
+    assert.match(html, locale === 'en' ? /Converted template · review required\. Legacy source v1\.0\.0/ : /Преобразованный шаблон · требуется проверка\. Исходный пакет v1\.0\.0/);
+    const walkthrough = renderToStaticMarkup(createElement(DemoCases, {locale,openCanopy:async()=>{},canopyWorkflowHref:'/canopy'}));
+    assert.match(walkthrough, locale === 'en' ? /Featured example · Advisory decision/ : /Рекомендуемый пример · Консультационное решение/);
+    assert.doesNotMatch(walkthrough, /Канонический демо-кейс · Бизнес-решение/);
+  }
+});
 test("catalogue shows neutral choices without opening Canopy or launching a simulation", () => {
   let calls = 0;
   const html = renderToStaticMarkup(createElement(DemoCatalogueCards, { ...props, launch:()=>{calls++;}, openCanopy:async()=>{calls++;} }));

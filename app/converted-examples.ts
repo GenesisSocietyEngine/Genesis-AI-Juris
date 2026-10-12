@@ -11,14 +11,27 @@ export const CONVERTED_EXAMPLES: Record<string, { category: CaseTypeId; title: s
   nl_food_safety_goldenshell_001: { category: "compliance", title: "GoldenShell — Recall at Dawn", description: "Assess GoldenShell's food-safety response. Trace affected products, review containment and recall options, and build a remediation plan with owners, evidence requirements and release conditions.", topics: ["Food safety", "Product recall", "Regulatory response"] },
   us_environmental_desert_water_001: { category: "litigation_strategy", title: "Desert Water", description: "Assess a potential groundwater contamination claim. Separate suspected exposure from proven causation, identify sampling and expert-evidence gaps, and compare investigation, negotiated resolution and litigation routes.", topics: ["Environmental claims", "Investigation", "Groundwater"] },
 };
+export const CONVERTED_EXAMPLE_VERSION = "2.1.0";
 
-type RecordItem = { id: string; title?: string; name?: string; description?: string; statement?: string; summary?: string; initial_status?: string; initially_available?: boolean; initially_visible?: boolean; supports_facts?: string[]; related_actors?: string[]; role?: string; body?: string; sender?: string; subject?: string; exit_actions?: string[]; terminal_stage?: string; effects?: Effect[]; trigger?: Condition; condition?: Condition; available_when?: Condition; due_at?: { day: number; minute_of_day: number }; completion_actions?: string[]; start_action?: string; completion_event?: string; duration_minutes?: number; time_cost_minutes?: number; cost_eur?: number; branches?: RecordItem[] };
-type Effect = { type: string; resource?: string; amount?: number; stage?: string; event?: string; decision?: string; outcome?: string; evidence?: string; fact?: string; flag?: string; item?: string; status?: string; value?: unknown };
+type RecordItem = { id: string; title?: string; name?: string; description?: string; statement?: string; summary?: string; initial_status?: string; initially_available?: boolean; initially_visible?: boolean; supports_facts?: string[]; related_actors?: string[]; role?: string; body?: string; sender?: string; subject?: string; exit_actions?: string[]; terminal_stage?: string; effects?: Effect[]; trigger?: Condition; condition?: Condition; available_when?: Condition; due_at?: { day: number; minute_of_day: number }; completion_actions?: string[]; start_action?: string; completion_event?: string; usable_until_event?: string; duration_minutes?: number; time_cost_minutes?: number; cost_eur?: number; branches?: RecordItem[] };
+type ResponseWindow = { id: string; source_actor_id: string; activation_event_id: string; response_deadline_id: string; response_action_ids: string[]; countermove_event_id: string };
+type Effect = { type: string; resource?: string; amount?: number; stage?: string; event?: string; decision?: string; outcome?: string; evidence?: string; fact?: string; flag?: string; item?: string; task?: string; deadline?: string; result?: string; status?: string; value?: unknown };
 type Condition = { type?: string; stage?: string; action?: string; event?: string; evidence?: string; fact?: string; flag?: string; deadline?: string; task?: string; result?: string; value?: unknown; status?: string; conditions?: Condition[]; condition?: Condition; at?: { day: number; minute_of_day: number } };
-type SourceCase = { case_id: string; scenario_fingerprint: string; jurisdiction: string; localizations: Record<string, { player_client_name?: string; player_client_role?: string; synopsis?: string }>; scenario_localizations?: Record<string, Record<string, Record<string, Record<string, string>>>>; scenario: { initial_resources?: Record<string, number>; metadata: { content_version: string }; initial_stage: string; actors: RecordItem[]; facts: RecordItem[]; evidence: RecordItem[]; stages: RecordItem[]; actions: RecordItem[]; deadlines: RecordItem[]; async_tasks: RecordItem[]; inbox_items: RecordItem[]; events: RecordItem[]; outcomes: RecordItem[]; deterministic_decisions?: RecordItem[] } };
+type SourceCase = {
+  case_id: string; scenario_fingerprint: string; jurisdiction: string;
+  localizations: Record<string, { player_client_name?: string; player_client_role?: string; synopsis?: string }>;
+  scenario_localizations?: Record<string, Record<string, Record<string, Record<string, string>>>>;
+  scenario: {
+    initial_resources?: Record<string, number>; metadata: { content_version: string }; initial_stage: string;
+    actors: RecordItem[]; facts: RecordItem[]; evidence: RecordItem[]; stages: RecordItem[]; actions: RecordItem[];
+    deadlines: RecordItem[]; async_tasks: RecordItem[]; pressure_windows?: ResponseWindow[];
+    inbox_items: RecordItem[]; events: RecordItem[]; outcomes: RecordItem[]; deterministic_decisions?: RecordItem[];
+  };
+};
 const sources = canonicalBundle.cases as unknown as SourceCase[];
 const gameOnly = (id: string) => /^(rest|rest_completed|rest_recovery_applied)$/.test(id) || /inactivity|client_warning|fatigue|stamina|strain/.test(id);
 const human = (id = "") => id.replace(/[_-]/g, " ");
+const judgments: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
 function conditionText(c?: Condition): string {
   if (!c) return "";
   if (c.conditions) {
@@ -27,10 +40,9 @@ function conditionText(c?: Condition): string {
   }
   if (c.condition) return (c.type === "not" ? "NOT (" + conditionText(c.condition) + ")" : conditionText(c.condition));
   if (c.type === 'integer_compare' || c.type?.includes("metric") || c.type?.includes("resource")) return "Source support requires review; game thresholds excluded.";
-  if (c.deadline) return "Hypothetical deadline: " + c.deadline + " = " + (c.status ?? (c.type === 'deadline_missed' ? 'missed' : 'unresolved')) + " (verify law/date/completion)";
+  if (c.deadline) return "Deadline condition: " + c.deadline + " = " + (c.status ?? (c.type === 'deadline_missed' ? 'missed' : 'unresolved')) + " (unverified)";
   if (c.task) return "Hypothetical task: " + c.task + " = " + (c.status ?? (c.type === 'async_task_completed' ? 'completed' : 'unresolved')) + " (unverified)";
   if (c.type === 'judicial_result_is') {
-    const judgments: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
     const result = judgments[c.result ?? ''] ?? human(c.result);
     return "Hypothetical judgment: " + result + " (unrecorded)";
   }
@@ -45,16 +57,37 @@ function conditionText(c?: Condition): string {
   return 'Scenario condition requires independent review: ' + human(c.type ?? 'unspecified condition') + '.';
 }
 function consequence(e: Effect): string {
-  if (e.resource?.endsWith("_eur") && typeof (e.value ?? e.amount) === "number") return "Hypothetical monetary assumption: " + human(e.resource) + " " + (e.type === "add_resource" ? "change " : "estimate ") + "EUR " + String(e.value ?? e.amount) + "; provenance: authored legacy branch. Not an award, payment or verified cost that has occurred.";
+  if (e.resource?.endsWith("_eur") && typeof (e.value ?? e.amount) === "number") return "Hypothetical monetary assumption: " + human(e.resource) + " " + (e.type === "add_resource" ? "change " : "estimate ") + "EUR " + String(e.value ?? e.amount) + " (legacy branch; not a recorded award/payment/cost).";
   if (e.type === "set_stage") return "Optional next phase: " + e.stage;
   if (e.type === "trigger_event") return "Hypothetical event: " + e.event;
-  if (e.type === "resolve_decision") return "Scenario comparison: " + e.decision;
+  if (e.type === "resolve_decision" || e.type === "resolve_deterministic_decision") return "Hypothetical scenario comparison: " + e.decision + "; no branch is selected or recorded as completed.";
+  if (e.type === "set_judicial_result") return "Hypothetical judgment: " + (judgments[e.result ?? ''] ?? human(e.result)) + " (unrecorded).";
+  if (e.task) {
+    const taskChanges: Record<string, string> = { start_async_task: 'start', review_async_task: 'review', mark_async_task_ready: 'ready for review', expire_async_task: 'expiry' };
+    if (taskChanges[e.type]) return "Hypothetical task " + taskChanges[e.type] + ": " + e.task + " (timing/completion unverified; status unchanged).";
+  }
+  if (e.deadline && (e.type === "complete_deadline" || e.type === "miss_deadline")) return "Hypothetical deadline " + (e.type === "complete_deadline" ? "completion" : "miss") + ": " + e.deadline + " (law/date/completion unverified; not recorded).";
   if (e.type.includes("outcome")) return "Hypothetical outcome: " + e.outcome;
   if (e.type.includes("evidence") && e.evidence) return "Evidence requirement: " + e.evidence + "; obtain and review before relying on it.";
   if (e.type.includes("fact") && e.fact) return "Hypothetical fact change: " + e.fact + " — " + (e.status ?? e.value ?? "review required");
   if (e.type === "set_flag" && e.flag && !gameOnly(e.flag)) return "Scenario assumption: " + human(e.flag) + " = " + String(e.value);
-  if (e.type.includes("inbox") && e.item) return "Follow-up correspondence: " + e.item + "; completion is not recorded.";
+  if (e.type.includes("inbox") && e.item) return "Hypothetical correspondence " + (e.type === "resolve_inbox_item" ? "resolution" : "creation") + ": " + e.item + " (unrecorded).";
   return "";
+}
+function consequences(effects: Effect[]): string[] {
+  const texts: string[] = [];
+  for (let index = 0; index < effects.length; index++) {
+    const effect = effects[index];
+    if (effect.item && (effect.type === "create_inbox_item" || effect.type === "resolve_inbox_item")) {
+      const items = [effect.item];
+      while (effects[index + 1]?.type === effect.type && effects[index + 1]?.item) items.push(effects[++index].item!);
+      texts.push("Hypothetical correspondence " + (effect.type === "resolve_inbox_item" ? "resolution" : "creation") + " (unrecorded): " + items.join(", "));
+    } else {
+      const text = consequence(effect);
+      if (text) texts.push(text);
+    }
+  }
+  return texts;
 }
 
 /** Pure, additive migration. Canonical simulation payloads and session fingerprints stay untouched.
@@ -89,36 +122,61 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
   }
   for (const stage of s.stages) add("stage-" + stage.id, "decision", translated("stages", stage, "title", stage.title ?? stage.id), "Canonical phase: " + stage.id + "\n" + (stage.id === s.initial_stage ? "Opening review task." : "Optional procedural / chronology task, not an event that has occurred.") + "\nOwner: " + owner + "\nDate: unresolved; verify before scheduling.\nOptions: " + (stage.exit_actions?.filter(id => !gameOnly(id)).join(", ") || "Review source evidence and determine next actions.") + "\nNo mandatory route, action quota or score threshold applies.");
   for (const action of s.actions.filter(a => !gameOnly(a.id))) {
-    add("action-" + action.id, "decision", translated("actions", action, "title", action.title ?? action.id), translated("actions", action, "description", action.description ?? "") + "\nCanonical option: " + action.id + "\nOwner: " + owner + "\n" + conditionText(action.available_when) + "\n" + (action.effects ?? []).map(consequence).filter(Boolean).join("\n") + "\n" + (action.cost_eur !== undefined ? "Illustrative authored cost estimate: EUR " + action.cost_eur + "; provenance: legacy option " + action.id + ".\n" : "") + (action.time_cost_minutes !== undefined ? "Illustrative elapsed-time estimate: " + action.time_cost_minutes + " minutes; confirm actual timing.\n" : "") + "Consequences are hypothetical; selecting this option does not record completion or establish evidence.");
+    const conditions = conditionText(action.available_when);
+    const conditionId = "conditions-" + action.id;
+    const separateConditions = conditions.length > 850;
+    if (separateConditions) {
+      add(conditionId, "fact", "Hypothetical conditions: " + translated("actions", action, "title", action.title ?? action.id), "Canonical option: " + action.id + "\nUnverified optional conditions:\n" + conditions + "\nNo completion or source verification is recorded.");
+      nodes[nodes.length - 1].factStatus = "assumed";
+    }
+    const detail = [translated("actions", action, "description", action.description ?? ""),
+      "Canonical option: " + action.id, "Owner: " + owner, separateConditions ? "Unverified option conditions: " + conditionId + "; inspect the linked assumptions record." : conditions,
+      ...consequences(action.effects ?? []),
+      action.cost_eur !== undefined ? "Illustrative cost: EUR " + action.cost_eur + " (legacy option " + action.id + "; unverified)." : "",
+      action.time_cost_minutes !== undefined ? "Illustrative duration: " + action.time_cost_minutes + " minutes (unverified)." : "",
+      "Hypothetical only; no completion or source verification is recorded."].filter(Boolean).join("\n");
+    add("action-" + action.id, "decision", translated("actions", action, "title", action.title ?? action.id), detail);
+    if (separateConditions) edge(conditionId, "action-" + action.id, "Hypothetical option conditions");
   }
   for (const deadline of s.deadlines) add("deadline-" + deadline.id, "deadline", deadline.title ?? deadline.id, "Task ID: " + deadline.id + "\nOwner: " + owner + "\nIllustrative relative date: day " + deadline.due_at?.day + ", minute " + deadline.due_at?.minute_of_day + "; provenance: legacy scenario deadline. Not a verified jurisdiction-specific deadline. Anchor to a confirmed incident / procedural date before use.\nCandidate actions: " + deadline.completion_actions?.join(", ") + "\nStatus: not completed; verify applicable law and actual due date.");
-  for (const task of s.async_tasks) add("task-" + task.id, "deadline", task.title ?? task.id, "Task ID: " + task.id + "\nOwner: " + owner + "\nStart option: " + task.start_action + "\nIllustrative duration: " + task.duration_minutes + " minutes; provenance: legacy task estimate. Actual start/date unresolved.\nHypothetical follow-up: " + task.completion_event + ". No expert result is established by this estimate.");
+  for (const task of s.async_tasks) add("task-" + task.id, "deadline", task.title ?? task.id, "Task ID: " + task.id + "\nOwner: " + owner + "\nStart option: " + task.start_action + "\nIllustrative duration: " + task.duration_minutes + " minutes; provenance: legacy task estimate. Actual start/date unresolved.\nHypothetical follow-up: " + task.completion_event + ". No expert result is established by this estimate." + (task.usable_until_event ? "\nIllustrative review window ends at scenario event: " + task.usable_until_event + " (legacy task assumption; actual availability/expiry unverified)." : ""));
+  for (const window of s.pressure_windows ?? []) {
+    const deadline = nodes.find(node => node.id === "deadline-" + window.response_deadline_id);
+    if (deadline) deadline.detail += "\nHypothetical response window: " + window.id + "\nSource actor: " + window.source_actor_id + "\nActivation scenario: " + window.activation_event_id + "\nCandidate responses: " + window.response_action_ids.join(", ") + "\nMissed-response scenario: " + window.countermove_event_id + " (legacy scenario context; no notice, response or deadline status is recorded).";
+  }
   for (const item of s.inbox_items) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner);
   for (const outcome of s.outcomes) add("outcome-" + outcome.id, "outcome", "Hypothetical: " + translated("outcomes", outcome, "title", outcome.title ?? outcome.id), translated("outcomes", outcome, "summary", outcome.summary ?? "") + "\nCanonical outcome: " + outcome.id + "\nAssumptions: " + conditionText(outcome.condition) + "\nThis is an optional hypothetical scenario, not a judgment, notification, finding or event that has occurred.");
   // Keep branch records and their authored semantic consequences; omit numeric roll / score mechanics.
-  for (const decision of s.deterministic_decisions ?? []) for (const branch of decision.branches ?? []) {
-    add("branch-" + decision.id + "-" + branch.id, "outcome", "Hypothetical: " + human(branch.id), "Decision branch: " + decision.id + " / " + branch.id + "\n" + conditionText(branch.condition) + "\n" + (branch.effects ?? []).map(consequence).filter(Boolean).join("\n") + "\nNo judgment or success probability is asserted. Reassess sources and procedural requirements independently.");
+  for (const decision of (s.deterministic_decisions ?? []).filter(item => !gameOnly(item.id))) for (const branch of decision.branches ?? []) {
+    add("branch-" + decision.id + "-" + branch.id, "outcome", "Hypothetical: " + human(branch.id), "Decision branch: " + decision.id + " / " + branch.id + "\n" + conditionText(branch.condition) + "\n" + consequences(branch.effects ?? []).join("\n") + "\nNo judgment or success probability is asserted. Reassess sources and procedural requirements independently.");
   }
   // Event consequences are explicit hypotheses, never source-level facts.
   for (const event of s.events.filter(e => !gameOnly(e.id))) {
-    const effects = (event.effects ?? []).map(consequence).filter(Boolean);
+    const effects = consequences(event.effects ?? []);
     if (!effects.length) continue;
     const target = s.actions.find(a => (a.effects ?? []).some(e => e.event === event.id) || event.trigger?.action === a.id);
-    const destination = nodes.find(n => n.id === "action-" + target?.id);
+    const planningEffect = event.effects?.find(effect => effect.task || effect.deadline);
+    const option = nodes.find(n => n.id === "action-" + target?.id);
+    const destination = option ?? nodes.find(n => n.id === (planningEffect?.task ? "task-" + planningEffect.task : "deadline-" + planningEffect?.deadline));
     const text = "\nHypothetical event " + event.id + ": " + (event.title ?? "") + "\n" + conditionText(event.trigger) + "\n" + conditionText(event.condition) + "\n" + effects.join("\n");
-    if (destination && destination.detail.length + text.length <= 4000) destination.detail += text;
+    // Keep the full event as its own hypothetical record when embedding would
+    // overfill a printable planning card. Never truncate its source semantics.
+    if (destination && destination.detail.length + text.length <= (option ? 4000 : 900)) destination.detail += text;
     else add("event-" + event.id, "outcome", "Hypothetical: " + (event.title ?? human(event.id)), text + "\nNot established evidence; verify independently.");
   }
   for (const evidence of s.evidence) for (const factId of evidence.supports_facts ?? []) edge("evidence-" + evidence.id, "fact-" + factId, "Source register support — review required");
   for (const stage of s.stages) for (const actionId of stage.exit_actions ?? []) edge("stage-" + stage.id, "action-" + actionId, "Optional task / option");
-  for (const action of s.actions) {
-
-    for (const effect of action.effects ?? []) {
-      if (effect.stage) edge("action-" + action.id, "stage-" + effect.stage, "Hypothetical next phase");
-      if (effect.evidence) edge("action-" + action.id, "evidence-" + effect.evidence, "Evidence requirement");
-      if (effect.outcome) edge("action-" + action.id, "outcome-" + effect.outcome, "Hypothetical outcome");
+  const effectLinks = (from: string, effects: Effect[]) => {
+    for (const effect of effects) {
+      if (effect.stage) edge(from, "stage-" + effect.stage, "Hypothetical next phase");
+      if (effect.evidence) edge(from, "evidence-" + effect.evidence, "Evidence requirement");
+      if (effect.outcome) edge(from, "outcome-" + effect.outcome, "Hypothetical outcome");
+      if (effect.task) edge(from, "task-" + effect.task, "Optional task reference");
+      if (effect.deadline) edge(from, "deadline-" + effect.deadline, "Optional deadline reference");
+      if (effect.decision) for (const branch of s.deterministic_decisions?.find(item => item.id === effect.decision)?.branches ?? []) edge(from, "branch-" + effect.decision + "-" + branch.id, "Compare hypothetical branch");
     }
-  }
+  };
+  for (const action of s.actions) effectLinks("action-" + action.id, action.effects ?? []);
   const groupTail = new Map<StudioNodeType, string>();
   for (const node of nodes) {
     if (node.id === "brief") continue;
@@ -127,7 +185,7 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
   }
   if (groupTail.get("decision")) edge(groupTail.get("decision")!, "report-outline", "Compare hypothetical scenarios and prepare report");
   return applyCaseType({
-    caseId, version: "2.0.0", parent: { caseId, version: s.metadata.content_version, fingerprint: source.scenario_fingerprint },
+    caseId, version: CONVERTED_EXAMPLE_VERSION, parent: { caseId, version: s.metadata.content_version, fingerprint: source.scenario_fingerprint },
     title: spec.title, jurisdiction: source.jurisdiction, role: local.player_client_role ?? "Responsible counsel",
     premise: spec.description + "\nDecision owner: " + owner + "\n" + (local.synopsis ?? "") + "\nFictional example. Branch-generated results are hypothetical. Legacy source IDs and original simulation fingerprint are retained in lineage.\nExpected output: " + output,
     premisePublication: "author-reviewed", nodes, links, editHistory: [], updatedAt,
