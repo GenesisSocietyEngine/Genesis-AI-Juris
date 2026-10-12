@@ -98,11 +98,12 @@ test('revised packages preserve authored judicial, task, deadline and decision c
   const judicial: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
   const roles: Record<string, string> = { start_async_task: 'start', review_async_task: 'review', mark_async_task_ready: 'ready for review', expire_async_task: 'expiry', complete_deadline: 'completion', miss_deadline: 'miss' };
   const covered = new Set<string>();
-  function verify(effects: any[], records: StudioNode[], owner: string) {
+  type AuditedEffect = { type: string; result?: string; task?: string; deadline?: string; decision?: string; item?: string };
+  function verify(effects: readonly AuditedEffect[], records: StudioNode[], owner: string) {
     const text = records.map(record => record.detail).join('\n');
     for (const effect of effects) {
       if (effect.type === 'set_judicial_result') {
-        assert.ok(text.includes('Hypothetical judgment: ' + judicial[effect.result] + ' (unrecorded).'), owner);
+        assert.ok(text.includes('Hypothetical judgment: ' + judicial[effect.result ?? ''] + ' (unrecorded).'), owner);
       } else if (effect.task && roles[effect.type]) {
         assert.ok(text.includes('Hypothetical task ' + roles[effect.type] + ': ' + effect.task), owner);
       } else if (effect.deadline && roles[effect.type]) {
