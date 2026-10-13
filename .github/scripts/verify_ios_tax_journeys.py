@@ -91,6 +91,32 @@ def verify_discovery(root, phase, launch, pid, discovery_tools):
         fresh_identity.observe(observation["event"], observation["origin"])
 
 
+def verify_driver(root, phase, source, nonce, launch, sdk, preparation_sha):
+    start = json.loads((root / f"{phase}-driver-start.json").read_text())
+    terminal = json.loads((root / f"{phase}-driver.json").read_text())
+    assert start["schema"] == terminal["schema"] == "tax-ios-direct-driver-v1"
+    assert start["status"] == "started" and "exit_code" not in start
+    for key in ("schema", "source_sha", "run_nonce", "phase", "runner_pid", "driver_sdk",
+                "preparation_sha256", "argv", "environment", "started_at", "runtime_acceptance"):
+        assert start[key] == terminal[key]
+    assert start["source_sha"] == source and start["run_nonce"] == nonce and start["phase"] == phase
+    assert type(start["runner_pid"]) is int and start["runner_pid"] == launch["pid"]
+    assert start["driver_sdk"] == sdk and start["preparation_sha256"] == preparation_sha
+    assert start["argv"] == [sdk["dart"], "test_driver/tax_application_driver.dart"]
+    env = start["environment"]
+    assert set(env) == {"VM_SERVICE_URL", "JURIS_TAX_APP_PHASE", "JURIS_ACCEPTANCE_SOURCE_SHA",
+                        "JURIS_ACCEPTANCE_RUN_NONCE", "JURIS_TAX_ACCEPTANCE_OUTPUT"}
+    assert env["VM_SERVICE_URL"] == launch["vm_uri"] and env["JURIS_TAX_APP_PHASE"] == phase
+    assert env["JURIS_ACCEPTANCE_SOURCE_SHA"] == source and env["JURIS_ACCEPTANCE_RUN_NONCE"] == nonce
+    output = pathlib.PurePosixPath(env["JURIS_TAX_ACCEPTANCE_OUTPUT"])
+    assert output.is_absolute() and ".." not in output.parts
+    assert start["runtime_acceptance"] is False and terminal["status"] == "completed"
+    assert type(terminal["exit_code"]) is int and terminal["exit_code"] == 0
+    began, ended = (datetime.datetime.fromisoformat(value) for value in
+                    (start["started_at"], terminal["completed_at"]))
+    assert began.tzinfo is not None and ended.tzinfo is not None and began <= ended
+
+
 def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
     assert re.fullmatch(r"[0-9a-f]{40}", source)
     assert nonce
@@ -109,6 +135,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
     simulator = re.findall(r"^simulator=([^\n]+)$", identity, re.MULTILINE)
     assert len(simulator) == 1
     preparation_sha = discovery_tools["validate_preparation"](root, source, nonce, simulator[0], bundle)
+    sdk = json.loads((root / "prepare.json").read_text())["driver_sdk"]
     prepare_log = (root / "prepare.log").read_text()
     assert re.search(r"deadline label=tax-prepare event=started pid=[0-9]+ seconds=900(?:\n|$)", prepare_log)
     assert "deadline label=tax-prepare event=exited code=0" in prepare_log
@@ -143,6 +170,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
         assert launch["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()
         assert launch["preparation_sha256"] == preparation_sha
+        verify_driver(root, phase, source, nonce, launch, sdk, preparation_sha)
         assert f"simulator={launch['simulator']}\n" in identity
         assert f"/Devices/{launch['simulator']}/" in launch["executable"]
         assert launch["executable"].endswith("/Runner.app/Runner")
