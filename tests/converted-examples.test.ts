@@ -100,12 +100,13 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
 test('substantive constraint options cannot be mistaken for training strain mechanics', () => {
   const raw = bundle.cases.find(item => item.case_id === 'be_commercial_failed_erp_001')!.scenario!;
   const original = JSON.stringify(bundle);
-  const option = { ...structuredClone(raw.actions[0]), id: 'assess_contract_constraint', title: 'Review a substantive contract constraint' };
-  raw.actions.push(option);
+  const actions: Array<(typeof raw.actions)[number]> = raw.actions;
+  const option = { ...structuredClone(actions[0]), id: 'assess_contract_constraint', title: 'Review a substantive contract constraint' };
+  actions.push(option);
   try {
     const draft = buildConvertedExample('be_commercial_failed_erp_001', 'en');
     assert.equal(draft.nodes.find(node => node.id === 'action-assess_contract_constraint')?.title, option.title);
-  } finally { raw.actions.pop(); }
+  } finally { actions.pop(); }
   assert.equal(JSON.stringify(bundle), original);
 });
 
