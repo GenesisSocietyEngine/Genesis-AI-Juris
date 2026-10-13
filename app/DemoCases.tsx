@@ -53,7 +53,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy
         <h3>{locale === "en" ? "Choose a scenario" : "Выберите сценарий"}</h3>
         <p>{locale === "en" ? "Start with Base, then compare what changes." : "Начните с базового варианта, затем сравните изменения."}</p>
         <fieldset><legend className="visually-hidden">{locale === "en" ? "Canopy scenario" : "Сценарий Canopy"}</legend>{canopyExamples.map(example => <label key={example.id} className={selected === example.id ? "selected" : ""}><input type="radio" name="canopy-scenario" value={example.id} checked={selected === example.id} onChange={() => setSelected(example.id)}/><span><b>{example[locale]}</b><small>{example.detail[locale]}</small></span></label>)}</fieldset>
-        <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open example case" : "Открыть Canopy в Студии")}<WorkspaceIcon name="arrow"/></button>
+        <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open example case" : "Открыть пример кейса")}<WorkspaceIcon name="arrow"/></button>
         <small>{locale === "en" ? "Opens a separate working copy. The reference case is preserved." : "Открывается отдельный рабочий черновик. Эталонный кейс сохраняется."}</small>
       </div>
     </section>

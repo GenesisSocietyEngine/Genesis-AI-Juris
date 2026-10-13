@@ -119,7 +119,7 @@ test("wrapper retains the existing Matter owner for deep links, exposes normal g
 
 test("Studio recent work uses unified My cases and preserves current-draft continuation", () => {
   const noop=()=>{};
-  const html = renderToStaticMarkup(createElement(components.StudioEntryScreen,{locale:"en",recentTitle:"Local draft",savedCasesHref:"/matters?lang=en&organization=receipt",onCreate:noop,onImport:noop,onDemo:noop,onContinue:noop}));
+  const html = renderToStaticMarkup(createElement(components.StudioEntryScreen,{locale:"en",recentTitle:"Local draft",savedCasesHref:"/matters?lang=en&organization=receipt",onCreate:noop,onImport:noop,onBrowseDemos:noop,onContinue:noop}));
   assert.match(html,/href="\/matters\?lang=en&amp;organization=receipt"/); assert.match(html,/My cases — Personal \/ Team/); assert.match(html,/Local draft/); assert.match(html,/Current working draft/);
   assert.doesNotMatch(html,/href="\/studio\?view=community"/);
 });

@@ -2105,6 +2105,13 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     exampleRequestGateRef.current.abort();
     setExampleLaunch(null);
   }
+  function enterExampleOverview() {
+    navigate("studio", 1);
+    const url = new URL(window.location.href);
+    url.searchParams.set("studio_panel", "overview");
+    window.history.replaceState(window.history.state, "", url);
+    window.dispatchEvent(new Event("genesis-studio-navigation"));
+  }
   async function openConvertedExample(id: string) {
     if (!mayLeaveStudio()) return;
     cancelCategoryDemo();
@@ -2119,7 +2126,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         || epoch !== studioSessionAuthority.getSnapshot().epoch || scope !== studioSessionAuthority.getSnapshot().scope) return;
       const next = createExampleWorkingCopy(buildConvertedExample(id, locale));
       if (!resetStudioDraft(next, next.premise)) return;
-      navigate("studio", 1);
+      enterExampleOverview();
     } catch { showSessionNotice(locale === "en" ? "The example could not be opened. Your current case remains available." : "Не удалось открыть пример. Текущий кейс сохранён."); }
   }
   async function openCategoryDemo(id: CaseTypeId) {
@@ -2198,11 +2205,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const prepared = buildCanopyPackage(id, true);
     const workingCopy = createExampleWorkingCopy(prepared.draft);
     if (!resetStudioDraft(workingCopy, workingCopy.premise)) return;
-    navigate("studio", 1);
-    const overviewUrl = new URL(window.location.href);
-    overviewUrl.searchParams.set("studio_panel", "overview");
-    window.history.replaceState(window.history.state, "", overviewUrl);
-    window.dispatchEvent(new Event("genesis-studio-navigation"));
+    enterExampleOverview();
   }
   function loadExampleDraft() {
     void loadCanopyDemo("base").catch(() => showSessionNotice(locale === "en" ? "Canopy could not be opened. Please try again." : "Не удалось открыть Canopy. Попробуйте ещё раз."));
@@ -3417,7 +3420,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   function enterEditor() { setEditorOpened(true); }
   if (!editorOpened && displayMode === "user") return <>
     <Suspense fallback={<main className="studio-entry"><p role="status">{locale === "en" ? "Loading your workspace…" : "Загрузка рабочего пространства…"}</p></main>}><StudioEntryScreen locale={locale} savedCasesHref={workspaceDestination("/matters", typeof window === "undefined" ? "/studio" : window.location.pathname + window.location.search + window.location.hash)} recentTitle={draft.title.trim() || (draft.nodes.length || prompt.trim() ? (locale === "en" ? "Untitled case" : "Кейс без названия") : "")}
-      onCreate={() => { if (startBlankDraft()) setEditorOpened(true); }} onImport={() => importRef.current?.click()} onDemo={startExampleDraft} onBrowseDemos={browseDemos} onContinue={enterEditor}/></Suspense>
+      onCreate={() => { if (startBlankDraft()) setEditorOpened(true); }} onImport={() => importRef.current?.click()} onBrowseDemos={browseDemos} onContinue={enterEditor}/></Suspense>
     <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" aria-label={locale === "en" ? "Import case or prompt" : "Импортировать кейс или промпт"} onChange={(event) => { const file = event.target.files?.[0]; if (file) { enterEditor(); void loadStudioFile(file); } event.target.value = ""; }}/>
   </>;
   const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={browseDemos} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
