@@ -249,6 +249,7 @@ export function stripPdfPageFurniture(value: string) {
   return value.replace(/\f/gu, "\n").split(/\r?\n/gu).filter((line) => {
     const normalized = line.normalize("NFKC").trim();
     if (/^GENESIS:\s*JURIS\s+CODEX(?:\s|$)/iu.test(normalized)) return false;
+    if (/^CASEVANT\s*[·.]?\s*BY\s+FALCON-MERLIN\s+GROUP(?:\s+\S+\s*·\s*v\d+\.\d+\.\d+)?$/iu.test(normalized)) return false;
     if (/^CONFIDENTIAL(?:\s|$).*?\d+\s*\/\s*\d+\s*$/iu.test(normalized)) return false;
     if (/^\d+\s*\/\s*\d+$/u.test(normalized)) return false;
     return true;

@@ -4,8 +4,15 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { reportPdfFixtures } from "./report-pdf-fixtures";
+import { stripPdfPageFurniture } from './report-pdf-qa';
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+
+test('report text extraction removes CaseVant and historical headers while preserving ordinary brand mentions', () => {
+  const body = 'CaseVant by Falcon-Merlin Group is mentioned in this authored record.';
+  const input = ['GENESIS: JURIS CODEX case_legacy · v2.0.0', 'CASEVANT · BY FALCON-MERLIN GROUP', 'CASEVANT · BY FALCON-MERLIN GROUP case_current · v2.1.0', body, 'Authored evidence retained.', '1 / 8'].join('\n');
+  assert.equal(stripPdfPageFurniture(input), [body, 'Authored evidence retained.'].join('\n'));
+});
 
 test("PDF corpus contains the single exact locked Bhopal decision-memorandum fixture", () => {
   const fixtures = reportPdfFixtures();
