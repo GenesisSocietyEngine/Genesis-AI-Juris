@@ -61,8 +61,9 @@ test("guided Studio renders numbered bilingual stages and explicit input and nex
     assert.match(markup, /<progress max="6"/);
     assert.ok(markup.includes(locale === "en" ? "Input" : "Нужно"));
     assert.ok(markup.includes(locale === "en" ? "Next" : "Далее"));
-    const entry = renderToStaticMarkup(createElement(StudioEntryScreen, {locale, recentTitle: "Canopy", onCreate: noop, onImport: noop, onDemo: noop, onContinue: noop}));
-    assert.ok(entry.includes(locale === "en" ? "Open Canopy example" : "Открыть пример Canopy"));
+    const entry = renderToStaticMarkup(createElement(StudioEntryScreen, {locale, recentTitle: "Canopy", onCreate: noop, onImport: noop, onBrowseDemos: noop, onContinue: noop}));
+    assert.ok(entry.includes(locale === "en" ? "Browse example cases" : "Просмотреть примеры кейсов"));
+    assert.doesNotMatch(entry, /Open Canopy example|Открыть пример Canopy|Featured example|Рекомендуемый пример/);
     assert.ok(entry.includes(locale === "en" ? "Create a case" : "Создать кейс"));
     assert.ok(entry.includes("JSON · Markdown · TXT"));
     assert.ok(entry.includes("Canopy"));

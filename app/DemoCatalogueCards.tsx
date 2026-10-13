@@ -32,7 +32,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
       <p>{en ? "Assess Verdant Atelier's managed-site expansion opportunity. Compare expansion, a conditional 90-day pilot, deferral and decline using nine illustrative source documents and four scenario variants." : "Пройдите путь от исходных документов до карты решений и отчёта. Сравните четыре сценария в рабочей копии."}</p>
       <p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {CANOPY_LEARNING_PROMPT[locale]}</p>
       <p className="demo-card-meta">{en ? "Fictional Gulf market · Advisory decision" : "Вымышленный рынок стран Залива · Консультационное решение"}</p>
-      <p><b>{en ? "Work towards" : "Результат"}:</b> {en ? "Decision memorandum" : "Меморандум решения"}</p><button type="button" className="primary-cta" disabled={busy} onClick={() => void openCanopy("base")}>{en ? "Open example case" : "Открыть пример кейса"}</button>
+      <p><b>{en ? "Work towards" : "Результат"}:</b> {en ? "Decision memorandum" : "Меморандум решения"}</p><button type="button" className="primary-cta" disabled={busy} onClick={() => void openCanopy("base")} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: Project Canopy`}>{en ? "Open example case" : "Открыть пример кейса"}</button>
       <details onToggle={event => setCanopyExpanded(event.currentTarget.open)}>
         <summary className="secondary-cta">{en ? "Take guided walkthrough" : "Посмотреть обзор"}</summary>
         {canopyExpanded && <Suspense fallback={<p role="status">{en ? "Loading walkthrough…" : "Загрузка обзора…"}</p>}><CanopyWalkthrough busy={busy} locale={locale} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref}/></Suspense>}
