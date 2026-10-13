@@ -11,11 +11,12 @@ import { deviceDraftEnvelope, mayPersistStudioDraftOnDevice, removeKnownStudioDe
 import { studioReplacementMessage } from "../app/studio-replacement-message";
 import { emptyStudioTimeline } from "../app/studio-revisions";
 import { hasStudioEvidenceInput } from "../app/studio-evidence-buffer";
+import { createExampleWorkingCopy } from "../app/example-working-copy";
 import type { StudioDraft } from "../app/types";
 
 const scope = "a".repeat(64), otherScope = "b".repeat(64);
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ["resetStudioDraft", "openCategoryDemo", "cancelCategoryDemo", "enterNewLocalDraft", "replaceStudioDraft", "syncStudioDraft", "syncStudioTimeline", "clearStudioEvidenceBuffers"];
+const names = ["resetStudioDraft", "openCategoryDemo", "cancelCategoryDemo", "enterExampleOverview", "enterNewLocalDraft", "replaceStudioDraft", "syncStudioDraft", "syncStudioTimeline", "clearStudioEvidenceBuffers"];
 const handlers: string[] = [];
 function collect(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name && names.includes(node.name.text)) handlers.push(node.getText(source));
@@ -47,7 +48,7 @@ function harness(confirm = true) {
   const code = ts.transpileModule(`${handlers.join("\n")}\n({openCategoryDemo, resetStudioDraft, cancelCategoryDemo});`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const noop = () => {};
   const functions = runInNewContext(code, {
-    URL, structuredClone, locale: "en", categoryDemoPrompt, prompt: state.prompt, draftRef, studioStorageScope: scope,
+    URL, Event, structuredClone, createExampleWorkingCopy, locale: "en", categoryDemoPrompt, prompt: state.prompt, draftRef, studioStorageScope: scope,
     studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false,
     studioSessionAuthority: { getSnapshot: () => identity }, catalogueLaunchRef: { current: 0 }, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: contextRef,
     starterCancelledRef: { current: false }, studioEvidenceBuffersRef: buffersRef, studioTimelineRef: timelineRef,
@@ -60,7 +61,7 @@ function harness(confirm = true) {
     blankStudioDraft: () => original, loadCategoryDemo: () => loads[index++].promise.then(draft => ({ draft, prompt: categoryDemoPrompt(draft.caseType!.id, "en") })),
     setExampleLaunch: (value: unknown) => { if (value === null) state.phase = ""; else if (typeof value === "object") state.phase = (value as { phase: string }).phase; },
     setPrompt: (value: string) => { state.prompt = value; }, navigate: () => { state.navigations++; }, showSessionNotice: (value: string) => state.notices.push(value),
-    window: { localStorage: storage, confirm: (value: string) => { state.confirmations.push(value); return confirm; }, get location() { return { href: state.url }; }, history: { state: {}, replaceState: (_state: unknown, _title: string, value: URL) => { state.url = value.toString(); } } },
+    window: { localStorage: storage, dispatchEvent: noop, confirm: (value: string) => { state.confirmations.push(value); return confirm; }, get location() { return { href: state.url }; }, history: { state: {}, replaceState: (_state: unknown, _title: string, value: URL) => { state.url = value.toString(); } } },
   }) as { openCategoryDemo: (id: string) => Promise<void>; resetStudioDraft: (draft: StudioDraft) => boolean; cancelCategoryDemo: () => void };
   return { state, storage, raw, loads, functions, draftRef, contextRef, identity, buffersRef, timelineRef, pending: () => { pending = true; } };
 }
@@ -70,6 +71,9 @@ test("real launch and storage: latest choice wins and original bytes are archive
   h.loads[1].resolve(buildCategoryDemo("tax_planning", "en")); await second;
   h.loads[0].resolve(buildCategoryDemo("general_advisory", "en")); await first;
   assert.equal(h.state.draft.caseType?.id, "tax_planning"); assert.equal(h.state.mutations, 1); assert.equal(h.state.navigations, 1); assert.equal(h.state.confirmations.length, 1);
+  assert.notEqual(h.state.draft.caseId, 'demo_tax_planning');
+  assert.equal(h.state.draft.exampleSource?.caseId, 'demo_tax_planning');
+  assert.equal(new URL(h.state.url).searchParams.get('studio_panel'), 'overview');
   assert.equal(h.state.prompt, categoryDemoPrompt("tax_planning", "en"));
   const archive = readStudioArchive(h.storage, scope);
   assert.equal(archive[0].original, h.raw); assert.equal(archive[0].prompt, "unapplied instruction");

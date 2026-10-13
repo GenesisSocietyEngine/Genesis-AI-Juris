@@ -105,9 +105,12 @@ Run commands from the selected checkout with the pinned installed runtime. Do no
 node node_modules/typescript/bin/tsc --noEmit --incremental false
 node --experimental-sqlite --import tsx --test tests/category-demo-launch.test.ts tests/category-demos.test.ts tests/converted-examples.test.ts tests/example-migration-persistence.test.ts tests/studio-overview.test.ts tests/studio-departure.test.ts tests/saved-case-navigation-restore.test.ts tests/play-sessions.test.ts tests/demo-catalogue.test.ts tests/report-statement-status.test.ts tests/report-model.test.ts
 node --experimental-sqlite --import tsx --test tests/tax-preservation-routes.test.ts
+node --experimental-sqlite --import tsx --test tests/studio-continuity.test.ts
 ```
 
 Run focused lint for changed application/tests and relevant build/export checks. Canonical CI is additional evidence, not an excuse to skip local failures. These commands are not substitutes for browser acceptance or domain review.
+
+When a harness extracts actual handlers into a VM, include their real new dependencies and shared transition helpers. The elevated audit's full CI caught a continuity harness missing createExampleWorkingCopy/enterExampleOverview; its resulting failed replacement was repaired in the harness without weakening the original-byte archive assertions. Keep full-suite CI in the release evidence as well as focused checks.
 
 | Surface | Required positive and adverse acceptance |
 | --- | --- |
