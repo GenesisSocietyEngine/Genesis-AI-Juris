@@ -2,6 +2,8 @@
 
 The product owner requires review and evaluation after every step, for all future work in this repository.
 
+For CaseVant product changes, read `docs/development/CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md` for the data/workflow invariants, acceptance matrix, prioritized follow-on work and release procedure. Reverify current source and deployment rather than treating a historical audit as current acceptance.
+
 - Before each implementation step, identify the intended user outcome and its acceptance criteria.
 - After that step, review the resulting behavior, wording, navigation, accessibility and preservation of existing work. Fix material findings before proceeding.
 - Use proportionate evidence: inspect the diff, run relevant existing checks, and exercise changed user flows in the browser when available. For layout changes, inspect the rendered result, including narrow layouts and long text when supported.

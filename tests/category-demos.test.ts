@@ -30,6 +30,9 @@ test("every registered category has one distinct, bilingual, saveable worked exa
     assert.equal(draft.taxAnalysis, undefined);
     assert.equal(draft.parent, null);
     assert.equal(draft.protection, undefined);
+    assert.equal(draft.version, '1.1.0');
+    assert.equal(draft.nodes.find(node => node.id === 'fact-2')?.factStatus, 'assumed');
+    assert.equal(draft.nodes.find(node => node.id === 'outcome-proceed')?.title, locale === 'en' ? 'Conditional option' : 'Условный вариант');
   }
 });
 
@@ -79,6 +82,7 @@ test("Templates exposes nine numbered empty starters and nine explicit examples 
     const cards = renderToStaticMarkup(createElement(CategoryDemoCards, { locale, demos: CATEGORY_DEMOS, onOpen: () => calls++ }));
     assert.equal((cards.match(/class="demo-catalogue-card"/g) ?? []).length, 9);
     assert.doesNotMatch(cards, /Practitioner reviewed|Law as of/);
+    assert.doesNotMatch(cards, /15 минут|Открыть учебный пример/);
     for (const demo of CATEGORY_DEMOS) {
       const prompt = categoryDemoPrompt(demo.caseTypeId, locale);
       assert.match(prompt, locale === "en" ? /^Fictional illustration:/ : /^Вымышленный пример:/);

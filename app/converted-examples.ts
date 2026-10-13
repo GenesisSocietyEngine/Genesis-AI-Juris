@@ -11,7 +11,7 @@ export const CONVERTED_EXAMPLES: Record<string, { category: CaseTypeId; title: s
   nl_food_safety_goldenshell_001: { category: "compliance", title: "GoldenShell — Recall at Dawn", description: "Assess GoldenShell's food-safety response. Trace affected products, review containment and recall options, and build a remediation plan with owners, evidence requirements and release conditions.", topics: ["Food safety", "Product recall", "Regulatory response"] },
   us_environmental_desert_water_001: { category: "litigation_strategy", title: "Desert Water", description: "Assess a potential groundwater contamination claim. Separate suspected exposure from proven causation, identify sampling and expert-evidence gaps, and compare investigation, negotiated resolution and litigation routes.", topics: ["Environmental claims", "Investigation", "Groundwater"] },
 };
-export const CONVERTED_EXAMPLE_VERSION = "2.1.0";
+export const CONVERTED_EXAMPLE_VERSION = "2.2.0";
 
 type RecordItem = { id: string; title?: string; name?: string; description?: string; statement?: string; summary?: string; initial_status?: string; initially_available?: boolean; initially_visible?: boolean; supports_facts?: string[]; related_actors?: string[]; role?: string; body?: string; sender?: string; subject?: string; exit_actions?: string[]; terminal_stage?: string; effects?: Effect[]; trigger?: Condition; condition?: Condition; available_when?: Condition; due_at?: { day: number; minute_of_day: number }; completion_actions?: string[]; start_action?: string; completion_event?: string; usable_until_event?: string; duration_minutes?: number; time_cost_minutes?: number; cost_eur?: number; branches?: RecordItem[] };
 type ResponseWindow = { id: string; source_actor_id: string; activation_event_id: string; response_deadline_id: string; response_action_ids: string[]; countermove_event_id: string };
@@ -29,7 +29,8 @@ type SourceCase = {
   };
 };
 const sources = canonicalBundle.cases as unknown as SourceCase[];
-const gameOnly = (id: string) => /^(rest|rest_completed|rest_recovery_applied)$/.test(id) || /inactivity|client_warning|fatigue|stamina|strain/.test(id);
+const trainingOnlyTerminationIds = new Set(["client_terminated_engagement", "client_engagement_terminated"]);
+const gameOnly = (id: string) => trainingOnlyTerminationIds.has(id) || /^(rest|rest_completed|rest_recovery_applied)$/.test(id) || /(?:^|_)(?:inactivity|client_warning|fatigue|stamina|strain)(?:_|$)/.test(id);
 const human = (id = "") => id.replace(/[_-]/g, " ");
 const judgments: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
 function conditionText(c?: Condition): string {
@@ -49,7 +50,7 @@ function conditionText(c?: Condition): string {
   if (c.stage) return "Optional phase: " + human(c.stage);
   if (c.fact) return "Fact to verify: " + c.fact + " (" + (c.status ?? c.value ?? "unresolved") + ")";
   if (c.evidence) return "Evidence to verify: " + c.evidence;
-  if (c.flag) return "Assumption: " + human(c.flag) + " = " + String(c.value);
+  if (c.flag) return gameOnly(c.flag) ? "Source support requires review; training eligibility excluded." : "Assumption: " + human(c.flag) + " = " + String(c.value);
   if (c.action) return "If option considered: " + c.action;
   if (c.event) return "If hypothetical event occurs: " + c.event;
   if (c.at) return "Illustrative relative date: day " + c.at.day + ", minute " + c.at.minute_of_day;
@@ -75,6 +76,7 @@ function consequence(e: Effect): string {
   return "";
 }
 function consequences(effects: Effect[]): string[] {
+  effects = effects.filter(effect => !(effect.item && gameOnly(effect.item)) && !(effect.outcome && gameOnly(effect.outcome)));
   const texts: string[] = [];
   for (let index = 0; index < effects.length; index++) {
     const effect = effects[index];
@@ -144,8 +146,8 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     const deadline = nodes.find(node => node.id === "deadline-" + window.response_deadline_id);
     if (deadline) deadline.detail += "\nHypothetical response window: " + window.id + "\nSource actor: " + window.source_actor_id + "\nActivation scenario: " + window.activation_event_id + "\nCandidate responses: " + window.response_action_ids.join(", ") + "\nMissed-response scenario: " + window.countermove_event_id + " (legacy scenario context; no notice, response or deadline status is recorded).";
   }
-  for (const item of s.inbox_items) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner);
-  for (const outcome of s.outcomes) add("outcome-" + outcome.id, "outcome", "Hypothetical: " + translated("outcomes", outcome, "title", outcome.title ?? outcome.id), translated("outcomes", outcome, "summary", outcome.summary ?? "") + "\nCanonical outcome: " + outcome.id + "\nAssumptions: " + conditionText(outcome.condition) + "\nThis is an optional hypothetical scenario, not a judgment, notification, finding or event that has occurred.");
+  for (const item of s.inbox_items.filter(item => !gameOnly(item.id))) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner);
+  for (const outcome of s.outcomes.filter(item => !gameOnly(item.id))) add("outcome-" + outcome.id, "outcome", "Hypothetical: " + translated("outcomes", outcome, "title", outcome.title ?? outcome.id), translated("outcomes", outcome, "summary", outcome.summary ?? "") + "\nCanonical outcome: " + outcome.id + "\nAssumptions: " + conditionText(outcome.condition) + "\nThis is an optional hypothetical scenario, not a judgment, notification, finding or event that has occurred.");
   // Keep branch records and their authored semantic consequences; omit numeric roll / score mechanics.
   for (const decision of (s.deterministic_decisions ?? []).filter(item => !gameOnly(item.id))) for (const branch of decision.branches ?? []) {
     add("branch-" + decision.id + "-" + branch.id, "outcome", "Hypothetical: " + human(branch.id), "Decision branch: " + decision.id + " / " + branch.id + "\n" + conditionText(branch.condition) + "\n" + consequences(branch.effects ?? []).join("\n") + "\nNo judgment or success probability is asserted. Reassess sources and procedural requirements independently.");

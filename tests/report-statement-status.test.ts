@@ -14,6 +14,8 @@ for (const language of ['en', 'ru'] as const) for (const presentationMode of ['d
   const assumed = buildCaseReportArtifacts(draft, options);
   assert.ok(assumed.reportModel.sections.flatMap(section => section.items).filter(item => item.id === fact.id).every(item => item.factStatus === 'assumed'));
   const text = JSON.stringify(assumed.definition);
+  assert.match(text, /CASEVANT · BY FALCON-MERLIN GROUP/);
+  assert.doesNotMatch(text, /GENESIS: JURIS/);
   assert.match(text, language === 'en' ? /Assumed statement — requires verification/ : /Допущение — требует проверки/);
   fact.factStatus = 'asserted';
   const asserted = buildCaseReportArtifacts(draft, options);

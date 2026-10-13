@@ -2147,8 +2147,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       const { draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale);
       if (!current()) return;
       if (!mayLeaveStudio()) { cancelCategoryDemo(); return; }
-      if (!resetStudioDraft(next, nextPrompt)) { cancelCategoryDemo(); return; }
-      navigate("studio", 4);
+      if (!resetStudioDraft(createExampleWorkingCopy(next), nextPrompt)) { cancelCategoryDemo(); return; }
+      enterExampleOverview();
     } catch {
       if (!current()) return;
       setExampleLaunch({ id, phase: "error", context });

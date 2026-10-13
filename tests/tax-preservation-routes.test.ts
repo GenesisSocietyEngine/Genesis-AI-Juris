@@ -15,6 +15,8 @@ import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-exam
 import { createExampleWorkingCopy } from '../app/example-working-copy';
 import { verifiedStudioSaveReceipt } from '../app/studio-save-receipt';
 import { studioOverview } from '../app/studio-overview';
+import { buildCategoryDemo } from '../app/category-demo-draft';
+import { CASE_TYPE_REGISTRY } from '../app/case-type-registry';
 
 // Ordinary password login + production routes + fully migrated D1. No mocked
 // authorization, tax mutation guard, SQL transaction, or financial execution.
@@ -86,14 +88,23 @@ after(async () => { await mf?.dispose(); });
 
 test('migrated examples survive real authenticated save, reopen, scenario amendment and stale writes', async () => {
   const examples = Object.keys(CONVERTED_EXAMPLES).map(id => buildConvertedExample(id, 'en'))
-    .concat(CANOPY_SCENARIOS.map(scenario => buildCanopyPackage(scenario.id, true).draft));
+    .concat(CANOPY_SCENARIOS.map(scenario => buildCanopyPackage(scenario.id, true).draft))
+    .concat(CASE_TYPE_REGISTRY.map(type => buildCategoryDemo(type.id, 'en')));
   for (const source of examples) {
     const existing = normalizeStudioDraft({ ...structuredClone(source), parent: null, title: 'Existing saved user work: ' + source.title });
-    if (source.caseId in CONVERTED_EXAMPLES) existing.version = '2.0.0';
+    if (source.caseId in CONVERTED_EXAMPLES) existing.version = '2.1.0';
+    if (source.caseId.startsWith('demo_')) {
+      existing.version = '1.0.0';
+      delete existing.nodes.find(node => node.id === 'fact-2')!.factStatus;
+    }
     existing.nodes[0].detail += '\nPreviously saved independent notes.';
     const existingSave = await expect(await call({ action: 'save', draft: existing, isPrivate: true }), 200);
     const originalPayload = (await stored(existing.caseId)).payload;
     const originalEnvelope = await d1.prepare('select * from custom_cases where id=?').bind(existingSave.customCase.id).first();
+    const earlier = source.caseId in CONVERTED_EXAMPLES ? normalizeStudioDraft({ ...structuredClone(existing), caseId: 'retained_20_' + source.caseId, version: '2.0.0' }) : null;
+    const earlierSave = earlier ? await expect(await call({ action: 'save', draft: earlier, isPrivate: true }), 200) : null;
+    const earlierPayload = earlier ? (await stored(earlier.caseId)).payload : null;
+    const earlierEnvelope = earlierSave ? await d1.prepare('select * from custom_cases where id=?').bind(earlierSave.customCase.id).first() : null;
     const copies = [createExampleWorkingCopy(source), createExampleWorkingCopy(source)];
     const ids: number[] = [];
     for (const copy of copies) {
@@ -131,6 +142,10 @@ test('migrated examples survive real authenticated save, reopen, scenario amendm
     assert.notEqual(ids[0], ids[1], 'repeated launches save as independent workspace envelopes');
     assert.equal((await stored(existing.caseId)).payload, originalPayload);
     assert.deepEqual(await d1.prepare('select * from custom_cases where id=?').bind(existingSave.customCase.id).first(), originalEnvelope);
+    if (earlier && earlierSave) {
+      assert.equal((await stored(earlier.caseId)).payload, earlierPayload);
+      assert.deepEqual(await d1.prepare('select * from custom_cases where id=?').bind(earlierSave.customCase.id).first(), earlierEnvelope);
+    }
   }
 });
 
