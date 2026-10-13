@@ -31,7 +31,10 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   assert.equal(projectCaseCoreV2(firstCopy).identity.exampleSource?.caseId, id);
   const core = projectCaseCoreV2(draft);
   assert.equal(core.facts.find(f => f.id === "review-assumptions")?.status, "assumed");
-  for (const item of raw.inbox_items) if (!item.initially_visible) { assert.ok(!core.facts.some(f => f.id === "inbox-" + item.id)); assert.ok(core.outcomes.some(o => o.id === "inbox-" + item.id)); }
+  const trainingCorrespondence = new Set(['client_inactivity_warning', 'client_final_inactivity_warning', 'client_terminated_engagement']);
+  for (const item of raw.inbox_items) if (!item.initially_visible) { assert.ok(!core.facts.some(f => f.id === "inbox-" + item.id)); if (!trainingCorrespondence.has(item.id)) assert.ok(core.outcomes.some(o => o.id === "inbox-" + item.id)); }
+  assert.ok(!draft.nodes.some(node => trainingCorrespondence.has(node.id.replace(/^inbox-/, '')) || node.id === 'outcome-client_engagement_terminated'));
+  assert.doesNotMatch(draft.nodes.map(node => node.detail).join('\n'), /three simulated hours|sustained inactivity|professional standing and client trust were materially reduced/);
   for (const fact of raw.facts) assert.equal(core.facts.find(f => f.id === "fact-" + fact.id)?.status, ["proven", "admitted"].includes(fact.initial_status) ? "asserted" : "assumed");
   assert.equal(draft.caseType?.id, spec.category);
   if ("initial_resources" in raw && raw.initial_resources?.authorized_budget_eur !== undefined) assert.ok(draft.nodes.find(n => n.id === "review-assumptions")!.detail.includes(String(raw.initial_resources.authorized_budget_eur)));
@@ -70,7 +73,7 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
     for (const id of [window.id, window.source_actor_id, window.activation_event_id, window.countermove_event_id, ...window.response_action_ids]) assert.ok(record.detail.includes(id));
     assert.match(record.detail, /Hypothetical response window/);
   }
-  for (const outcome of raw.outcomes) assert.match(draft.nodes.find(n => n.id === 'outcome-' + outcome.id)!.detail, /hypothetical scenario/);
+  for (const outcome of raw.outcomes.filter(item => item.id !== 'client_engagement_terminated')) assert.match(draft.nodes.find(n => n.id === 'outcome-' + outcome.id)!.detail, /hypothetical scenario/);
   assert.ok(draft.nodes.every(n => !n.runtime));
   assert.ok(draft.links.every(l => !l.rule?.effects && !l.rule?.guards && !l.rule?.maxUses));
   const reopened = normalizeStudioDraft(JSON.parse(JSON.stringify(draft)));
@@ -92,6 +95,19 @@ for (const [id, spec] of Object.entries(CONVERTED_EXAMPLES)) for (const locale o
   draft.nodes[0].detail = 'Independent edit';
   assert.notEqual(buildConvertedExample(id, locale).nodes[0].detail, draft.nodes[0].detail);
   assert.equal(JSON.stringify(bundle), original, 'legacy simulation and source fingerprint unchanged');
+});
+
+test('substantive constraint options cannot be mistaken for training strain mechanics', () => {
+  const raw = bundle.cases.find(item => item.case_id === 'be_commercial_failed_erp_001')!.scenario!;
+  const original = JSON.stringify(bundle);
+  const actions: Array<(typeof raw.actions)[number]> = raw.actions;
+  const option = { ...structuredClone(actions[0]), id: 'assess_contract_constraint', title: 'Review a substantive contract constraint' };
+  actions.push(option);
+  try {
+    const draft = buildConvertedExample('be_commercial_failed_erp_001', 'en');
+    assert.equal(draft.nodes.find(node => node.id === 'action-assess_contract_constraint')?.title, option.title);
+  } finally { actions.pop(); }
+  assert.equal(JSON.stringify(bundle), original);
 });
 
 test('revised packages preserve authored judicial, task, deadline and decision consequences as hypotheses', () => {

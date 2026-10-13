@@ -56,7 +56,7 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
       : t("The available records support a review agenda, not a selected outcome. Complete the missing inputs and document the reasoning for the chosen route.", "Имеющиеся записи задают план проверки, но не выбранный исход. Заполните пробелы и зафиксируйте основания выбранного решения.");
   const status = report.publication.status === "draft" ? t("REVIEW DRAFT", "ЧЕРНОВИК ДЛЯ ПРОВЕРКИ") : t("STUDIO FINAL REPORT", "ФИНАЛЬНЫЙ ОТЧЁТ STUDIO");
   const content: Content[] = [
-    { text: "GENESIS: JURIS", style: "brand", margin: [0, 2, 0, 20] },
+    { text: "CASEVANT · BY FALCON-MERLIN GROUP", style: "brand", margin: [0, 2, 0, 20] },
     { text: t("DECISION REPORT", "ОТЧЁТ ДЛЯ ПРИНЯТИЯ РЕШЕНИЯ"), style: "eyebrow", margin: [0, 0, 0, 10] },
     { text: draft.title, style: "h1", margin: [0, 0, 0, 10] },
     { text: `${t("Report purpose", "Назначение отчёта")}: ${options.profileLabel.trim() || t("Case decision review", "Проверка решения по делу")}`, color: muted, fontSize: 10, margin: [0, 0, 0, 8] },
@@ -188,13 +188,13 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
   return {
     pageSize: "A4", pageMargins: [44, 48, 44, 44], displayTitle: true, language: options.language === "en" ? "en-GB" : "ru-RU",
     defaultStyle: { font: "Roboto", fontSize: 10.2, color: ink, lineHeight: 1.2 }, content,
-    header: n => n === 1 ? null : ({ text: "GENESIS: JURIS  /  " + t("Decision report", "Отчёт для решения"), color: muted, fontSize: 8, margin: [44, 24, 44, 0] }),
+    header: n => n === 1 ? null : ({ text: "CaseVant by Falcon-Merlin Group  /  " + t("Decision report", "Отчёт для решения"), color: muted, fontSize: 8, margin: [44, 24, 44, 0] }),
     footer: (n, total) => ({ columns: [{ text: `${options.confidentiality.toUpperCase()} · ${status}` }, { text: `${n} / ${total}`, alignment: "right" }], color: muted, fontSize: 8, margin: [44, 0, 44, 20] }),
     styles: { brand: { bold: true, fontSize: 11, color: teal, characterSpacing: 1.1 }, eyebrow: { bold: true, fontSize: 8, characterSpacing: 1.3, color: teal }, h1: { bold: true, fontSize: 24, lineHeight: 1.05 }, h2: { bold: true, fontSize: 13 }, small: { fontSize: 8.3, color: muted, lineHeight: 1.2 },
       sectionTitle: { bold: true, fontSize: 18, color: ink }, subheading: { bold: true, fontSize: 12, color: ink },
       notice: { fontSize: 9, color: muted, margin: [0, 2, 0, 10] }, body: { fontSize: 10, lineHeight: 1.2 },
       graphNodeType: { bold: true, fontSize: 8, color: teal }, graphNodeDetail: { fontSize: 9, color: ink, lineHeight: 1.2 },
     },
-    info: { title: `${draft.title} - ${options.presentationMode === "medium" ? "Decision report + graph" : "Decision report"}`, author: options.preparedBy || "GENESIS: JURIS", creator: "GENESIS: JURIS", subject: `${draft.caseId} / v${draft.version} / ${options.presentationMode === "medium" ? "medium-report-v1" : "decision-report-v1"}` },
+    info: { title: `${draft.title} - ${options.presentationMode === "medium" ? "Decision report + graph" : "Decision report"}`, author: options.preparedBy || "CaseVant", creator: "CaseVant by Falcon-Merlin Group", subject: `${draft.caseId} / v${draft.version} / ${options.presentationMode === "medium" ? "medium-report-v1" : "decision-report-v1"}` },
   };
 }
