@@ -7,10 +7,27 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { buildCanopyPackage, CANOPY_SCENARIOS, CANOPY_UNAVAILABLE } from "../app/canopy-fixture";
 import { caseFingerprint } from "../app/case-integrity";
 import { openStudioSourceFragment, studioOverview, studioOverviewAction, studioSourceFragmentId } from "../app/studio-overview";
+import { searchStudioRecords } from "../app/studio-record-search";
 import type { StudioOverviewProps } from "../app/StudioOverview";
 import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-examples';
 
 const base = buildCanopyPackage("base").draft;
+
+test("source counts separate actual graph records, structural minimum and human review below, at and above threshold", async () => {
+  const { StudioSourcesPanel } = await components;
+  for (const locale of ["en", "ru"] as const) for (const count of [0, 3, 15]) {
+    const draft = buildConvertedExample("be_commercial_failed_erp_001", locale);
+    const records = draft.nodes.filter(node => node.type === "fact" || node.type === "evidence");
+    draft.nodes = [...draft.nodes.filter(node => node.type !== "fact" && node.type !== "evidence"), ...records.slice(0, count)];
+    const model = studioOverview(draft, locale);
+    assert.equal(model.recordedCount, count); assert.equal(model.requiredRecordCount, 3);
+    const html = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft, locale, onStep() {}, onNode() {} }));
+    assert.match(html, new RegExp(`<dd>${count}</dd>`));
+    assert.match(html, locale === "en" ? /Minimum graph records required<\/dt><dd>3<\/dd>/ : /Минимальное число записей графа<\/dt><dd>3<\/dd>/);
+    assert.ok(!html.includes(`${count} / 3`));
+    assert.match(html, locale === "en" ? /Not recorded in Studio/ : /Не фиксируются в Studio/);
+  }
+});
 
 test('planning projection exposes retained phases and tasks without inferring completion or changing saved content', async () => {
   const { StudioOverview } = await components;
@@ -24,13 +41,15 @@ test('planning projection exposes retained phases and tasks without inferring co
     const opened: string[] = [];
     const props: StudioOverviewProps = { draft, locale, onStep() {}, onNode: nodeId => opened.push(nodeId) };
     const tree = StudioOverview(props);
-    const buttons = elements(tree).filter(element => element.type === 'button' && String(element.props['aria-label']).startsWith(locale === 'en' ? 'Inspect planning record: ' : 'Открыть запись планирования: '));
-    for (const button of buttons) (button.props.onClick as () => void)();
-    assert.deepEqual(opened, expected.map(node => node.id), 'each planning action opens the exact retained node');
+    const navigator = elements(tree).find(element => typeof element.type === "function" && element.props.draft === draft && element.props.onNode === props.onNode);
+    assert.ok(navigator, "the visible search navigator receives the exact draft and node-opening callback");
+    for (const node of searchStudioRecords(draft, "", "planning")) (navigator.props.onNode as (id:string) => void)(node.id);
+    assert.deepEqual(opened, expected.map(node => node.id));
     const html = renderToStaticMarkup(createElement(StudioOverview, props));
     assert.match(html, locale === 'en' ? /not events that have occurred/ : /не произошедшие события/);
     assert.match(html, locale === 'en' ? /order is not an execution route/ : /Порядок записей не задаёт маршрут/);
-    for (const node of expected) assert.ok(html.includes(node.detail.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')), 'full owner/timing/conditions preserved for ' + node.id);
+    assert.match(html, locale === 'en' ? /Find case record/ : /Найти запись дела/);
+    for (const node of expected) assert.equal(searchStudioRecords(draft, node.id).find(record => record.id === node.id)?.detail, node.detail, 'full owner/timing/conditions preserved for ' + node.id);
     assert.equal(JSON.stringify(draft), before);
     assert.equal(caseFingerprint(draft), fingerprint);
   }

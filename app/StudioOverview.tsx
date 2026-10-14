@@ -4,6 +4,7 @@ import type { StudioDraft } from "./types";
 import type { StudioActionTarget } from "./StudioActionPanel";
 import type { StudioWorkflowStep } from "./studio-workflow";
 import { studioOverview, studioOverviewAction } from "./studio-overview";
+import StudioRecordNavigator from "./StudioRecordNavigator";
 import styles from "./studio-overview.module.css";
 
 export type StudioOverviewProps = {
@@ -26,18 +27,14 @@ export default function StudioOverview({ draft, locale, onStep, onNode, onAction
       <button type="button" onClick={() => onStep(3)}>{t("Inspect sources and evidence", "Проверить источники и материалы")}</button>
     </section>
     {model.recommendation.conditions && <section className={styles.block}><h3>{t("Basis and unresolved conditions", "Основания и нерешённые условия")}</h3><p lang="en">{model.recommendation.conditions}</p></section>}
-    {model.planningRecords.length > 0 && <section className={`${styles.block} ${styles.planning}`} aria-labelledby="studio-planning-title">
+    {draft.nodes.length > 0 && <section className={`${styles.block} ${styles.planning}`} aria-labelledby="studio-planning-title">
       <h3 id="studio-planning-title">{t("Chronology and follow-up planning", "Хронология и план дальнейших действий")}</h3>
       <p>{t("These are authored planning records, not events that have occurred. Their order is not an execution route. Confirm owners, actual dates and completion against the sources before relying on them.", "Это авторские записи планирования, а не произошедшие события. Порядок записей не задаёт маршрут выполнения. Сверьте ответственных, фактические даты и выполнение с источниками перед использованием.")}</p>
-      <details><summary>{t(`Review ${model.planningRecords.length} planning records`, `Просмотреть записи планирования: ${model.planningRecords.length}`)}</summary><ul className={styles.records}>{model.planningRecords.map(node => <li key={node.id}>
-        <span className={styles.muted}>{node.type === "deadline" ? t("Task / deadline — verify", "Задача / срок — требуется проверка") : t("Optional phase — not completed here", "Необязательный этап — выполнение здесь не зафиксировано")}</span>
-        <h4><button type="button" aria-label={t("Inspect planning record: ", "Открыть запись планирования: ") + node.title} onClick={() => onNode(node.id)}>{node.title}</button></h4>
-        <details><summary>{t("Read the recorded owner, timing and conditions", "Прочитать записанные сведения об ответственном, сроках и условиях")}</summary><p className={styles.preserve}>{node.detail}</p></details>
-      </li>)}</ul></details>
+      <StudioRecordNavigator key={draft.caseId} draft={draft} locale={locale} onNode={onNode}/>
     </section>}
     <div className={styles.columns}>
       <section className={styles.block}><h3>{t("Next actions", "Следующие действия")}</h3>{model.blockers.length ? <ul className={styles.actions}>{model.blockers.map((check, index) => <li key={check.id ?? index}><p>{check.text}</p><button type="button" onClick={() => open(studioOverviewAction(draft, check))}>{t("Open the relevant control", "Открыть нужное поле")}</button></li>)}</ul> : <p>{t("Structure checks are complete. Review the underlying evidence and reasoning; completeness does not establish professional approval.", "Проверки структуры пройдены. Проверьте материалы и обоснование: полнота не означает профессионального утверждения.")}</p>}</section>
-      <section className={styles.block}><h3>{t("Possible outcomes", "Возможные исходы")}</h3>{model.outcomes.length ? <ul className={styles.outcomes}>{model.outcomes.map(node => <li key={node.id}><button type="button" onClick={() => onNode(node.id)}>{node.title}</button><p>{node.detail}</p></li>)}</ul> : <><p>{t("No outcome is recorded yet.", "Исходы пока не записаны.")}</p><button type="button" onClick={() => onStep(4)}>{t("Open decision map", "Открыть карту решений")}</button></>}</section>
+      <section className={styles.block}><h3>{t("Possible outcomes", "Возможные исходы")}</h3>{model.outcomes.length ? <details><summary>{t(`Review ${model.outcomes.length} outcome and scenario records`, `Просмотреть записи исходов и сценариев: ${model.outcomes.length}`)}</summary><ul className={styles.outcomes}>{model.outcomes.map(node => <li key={node.id}><button type="button" onClick={() => onNode(node.id)}>{node.title}</button><p>{node.detail}</p></li>)}</ul></details> : <><p>{t("No outcome is recorded yet.", "Исходы пока не записаны.")}</p><button type="button" onClick={() => onStep(4)}>{t("Open decision map", "Открыть карту решений")}</button></>}</section>
     </div>
     <footer className={styles.footer}><p>{t("Studio context review and structural completeness are separate from human evidence review, a completed run and approval in the case workflow.", "Проверка контекста и полноты Studio не заменяет человеческую проверку доказательств, завершённое прохождение и утверждение в деле.")}</p><button type="button" disabled={!draft.nodes.length} onClick={() => onStep(6)}>{t("Review report options", "Перейти к отчёту")}</button></footer>
   </section>;
