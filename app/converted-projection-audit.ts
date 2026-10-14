@@ -38,7 +38,7 @@ export function buildConvertedProjectionAudit(caseId: string, template: StudioDr
       const parent = inventory.find(owner => owner.path === item.path.split("/branches/")[0]);
       return ["branch-" + parent?.sourceId + "-" + item.sourceId].filter(id => nodeIds.has(id));
     }
-    if (item.kind === "initial_resources" && item.sourceId === "authorized_budget_eur") return ["review-assumptions"];
+    if (item.kind === "initial_resources" && (item.sourceId === "authorized_budget_eur" || template.version !== "2.2.0" && ["award_eur", "billable_minutes", "outcome_costs_eur", "spend_eur"].includes(item.sourceId))) return ["review-assumptions"];
     if (item.kind === "action_reference") return ["action-" + item.sourceId].filter(id => nodeIds.has(id));
     return [];
   };
@@ -87,9 +87,10 @@ export function buildConvertedProjectionAudit(caseId: string, template: StudioDr
     } else if (isConvertedGameplayId(item.sourceId) && !trainingIds.has(item.sourceId)) {
       reason = "The projector's training ID pattern is not a reviewed exclusion for this source identity. Inspect the substance; a name alone cannot establish gameplay semantics.";
     } else if (targets.length) {
-      disposition = ["stages", "deadlines", "async_tasks", "pressure_windows"].includes(item.kind) ? "task"
+      disposition = item.kind === "initial_resources" ? "hypothetical" : ["stages", "deadlines", "async_tasks", "pressure_windows"].includes(item.kind) ? "task"
         : ["actions", "outcomes", "events", "deterministic_decisions", "branch"].includes(item.kind) || item.kind === "inbox_items" && !original.initially_visible ? "hypothetical" : "retained";
-      reason = disposition === "task" ? "Converted to undated review/planning work. Confirm actual owners, dates and jurisdiction-specific obligations."
+      reason = item.kind === "initial_resources" ? "Fictional opening budget or financial/time initialization assumption. Original units and values are retained; this is not an actual award, payment, invoice, cost, time entry or running workflow counter. Verify a separate sourced budget and billing record."
+        : disposition === "task" ? "Converted to undated review/planning work. Confirm actual owners, dates and jurisdiction-specific obligations."
         : disposition === "hypothetical" ? "Authored option, branch or later event/correspondence retained as an unrecorded hypothetical scenario; not an actual finding or completed decision."
         : item.kind === "evidence" ? "Original fictional source-register identity/description retained. Document bodies were not supplied; availability and supporting links require review."
         : item.kind === "facts" ? "Authored statement and initial fictional status retained. Asserted/assumed in the graph is not independent verification."

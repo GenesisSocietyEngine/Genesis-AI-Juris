@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { caseFingerprint } from "../app/case-integrity";
 import { createExampleWorkingCopy } from "../app/example-working-copy";
-import { EXAMPLE_REGISTRY, exampleDescriptor, prepareExample, type ExampleId } from "../app/example-registry";
+import { EXAMPLE_REGISTRY, exampleDescriptor, prepareExampleVersion, type ExampleId } from "../app/example-registry";
 
 const baseline = JSON.parse(readFileSync("tests/example-registry-baseline.json", "utf8")) as Array<{
   id: ExampleId; locale: "en" | "ru"; caseId: string; version: string; fingerprint: string; workingSourceFingerprint: string;
@@ -21,8 +21,8 @@ test("the registry groups eighteen public packages into fifteen cards and retain
 
 for (const row of baseline) test(`frozen pre-refactor ${row.locale} ${row.id} identity and semantic fingerprint survive registry preparation`, async () => {
   const descriptor = exampleDescriptor(row.id);
-  const { draft, prompt } = await prepareExample(row.id, row.locale);
-  assert.deepEqual(descriptor.source, { caseId: row.caseId, version: row.version });
+  const { draft, prompt } = await prepareExampleVersion(row.id, row.locale, row.version);
+  assert.equal(descriptor.source.caseId, row.caseId);
   assert.equal(draft.caseId, row.caseId);
   assert.equal(draft.version, row.version);
   assert.equal(caseFingerprint(draft), row.fingerprint);

@@ -1,5 +1,5 @@
 import { canonicalFingerprint, caseFingerprint, normalizeStudioDraft } from "./case-integrity";
-import { EXAMPLE_REGISTRY, prepareExample } from "./example-registry";
+import { EXAMPLE_REGISTRY, prepareExampleVersion } from "./example-registry";
 import { buildConvertedProjectionAudit } from "./converted-projection-audit";
 import { CATEGORY_DEMOS } from "./category-demos";
 import { CANOPY_SOURCES, canopyDeclaration } from "./canopy-fixture";
@@ -22,9 +22,9 @@ export async function buildExampleProvenance(draft: StudioDraft): Promise<Exampl
   const reference = draft.exampleSource;
   if (reference && reference.format !== "casevant-example-source-v1") return null;
   const sourceId = reference?.caseId ?? draft.caseId, version = reference?.version ?? draft.version;
-  const candidates = EXAMPLE_REGISTRY.filter(item => item.source.caseId === sourceId && item.source.version === version);
+  const candidates = EXAMPLE_REGISTRY.filter(item => item.source.caseId === sourceId && (item.source.version === version || item.family === "converted" && version === "2.2.0"));
   for (const descriptor of candidates) for (const language of ["en", "ru"] as const) {
-    const prepared = await prepareExample(descriptor.id, language);
+    const prepared = await prepareExampleVersion(descriptor.id, language, version);
     const template = normalizeStudioDraft(structuredClone(prepared.draft));
     const fingerprint = caseFingerprint(template);
     if (reference ? reference.fingerprint !== fingerprint : caseFingerprint(normalizeStudioDraft(structuredClone(draft))) !== fingerprint) continue;

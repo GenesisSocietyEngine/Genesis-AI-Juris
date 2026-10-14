@@ -1,6 +1,6 @@
 # CaseVant development backlog and continuation instructions
 
-Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The next substantial product step is the opt-in comparison and upgrade workflow, with review-required projection entries as explicit input.
+Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The projection-gap amendment and opt-in comparison/new-copy workflow are implemented in the next reviewed slice; see projection-upgrade-review-2026-10-14.md. The next substantial product work is inspectable source packets and concise reports/chronologies, alongside all-package authenticated browser acceptance.
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
@@ -22,7 +22,7 @@ The current layout amendment moves Canopy, converted cases and category cards in
 | --- | --- | --- | --- |
 | Completed implementation | P1 | Shared typed example descriptor and launcher registry | Application and case-data |
 | Completed implementation | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
-| 3 | P1 | Opt-in semantic version comparison and upgrade copies | Application and persistence |
+| Completed implementation | P1 | Versioned projection corrections and opt-in semantic comparison/new copies | Application and case-data |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
 | 4 | P2 | Inspectable converted-case source packets | Content and case-data |
 | 5 | P2 | Concise reports and usable large chronologies | Reporting and UX |
@@ -42,7 +42,7 @@ Acceptance: all eighteen packages retain exact source IDs, versions and unchange
 
 Delivered implementation: Sources & evidence now offers a read-only, exact-version provenance register and a separately authorized JSON audit export. It exposes source values/hashes, original-to-graph mappings, nested conditions/effects, explicit gameplay exclusions and changed/missing/additional working records. It leaves older saved payloads and template content untouched; unrecognized versions receive no substitute. See [provenance review](../testing/provenance-register-review-2026-10-14.md).
 
-Follow-up: ERP has ten and GreenFire six source entries needing projection review in the audited examples. Assign content/domain review before a future versioned template amendment; do not silently upgrade existing saved copies. Other packages have their own visible register counts. Structural audit coverage is separate from semantic/domain approval.
+Reviewed amendment: converted template 2.3.0 resolves ERP’s ten, GreenFire’s six, GoldenShell’s four and Desert Water’s four projection entries by retaining effect-free milestones as explicitly hypothetical records and explaining opening financial counters. All five current packages have zero unresolved projection entries in both languages. Exact 2.2.0 templates remain reproducible and their original gaps remain visible. Structural completeness does not establish domain approval. See [projection and upgrade review](../testing/projection-upgrade-review-2026-10-14.md).
 
 For future additions, record what came from the authored source, what was converted into a task or hypothetical scenario, what was excluded as gameplay, and which statements remain assumptions or need review. Make exclusions inspectable by stable source IDs and explicit reasons. Keep synthetic source material separate from uploaded evidence and accepted anchors.
 
@@ -50,7 +50,9 @@ Acceptance: reviewers can trace retained evidence and branches to their source; 
 
 ### Version comparison and opt-in upgrades
 
-Build a preview of semantic changes before a user accepts a newer example/template version. Compare assumptions, sources, options, chronology and conditions, then create a new independent copy or child version through the ordinary authorized save flow. Use `app/studio-aggregate.ts`, `app/case-integrity.ts` and existing persistence/recovery contracts rather than introducing a second importer.
+Delivered: Sources & evidence provides an opt-in semantic preview followed by an independent new copy. It never carries user amendments, tax work or approvals into the new template. The ordinary replacement/retention guard protects the original; normal Save to workspace remains separate. Cancellation, stale content/authority and unknown versions refuse replacement. Maintain the exact-version factory and historical fingerprint locks. Future work may add a separately reviewed three-way merge with explicit conflicts; do not imply such merging exists.
+
+For future template versions, build a preview of semantic changes before a user accepts a newer example/template version. Compare assumptions, sources, options, chronology and conditions, then create a new independent copy or child version through the ordinary authorized save flow. Use `app/studio-aggregate.ts`, `app/case-integrity.ts` and existing persistence/recovery contracts rather than introducing a second importer.
 
 Acceptance: cancellation writes nothing; old versions remain readable byte-for-byte; changed source, approval and tax-carrier relationships are explicit; stale concurrent writes fail safely. Unknown future fields or malformed records must remain recoverable rather than being normalized into apparently successful saves. Never replace an existing saved case automatically when a template changes.
 
@@ -110,3 +112,12 @@ Choose focused tests appropriate to the change and satisfy canonical release che
 A completed slice has implemented user behavior, reviewed preservation invariants, relevant passing checks, actual changed-flow evidence, ordinary canonical integration and an exact-source successful deployment where publishing applies. Retain the previous compatible saved version for rollback. Rollback does not repair user data: preserve failure evidence and investigate saved records before any separately authorized additive repair.
 
 Record each future slice's owner role, acceptance, dependency, source commit, checks, release identity and unresolved issue. Start the next substantial migration with the shared registry; do not repeat the already completed Canopy packet export or Base/Medium baseline work.
+
+## Amended continuation priorities after projection/upgrade delivery
+
+1. Reporting/UX: benchmark ERP’s actual 254-page Full-analysis output. Design a concise decision/strategy report and searchable, progressively disclosed chronology. Preserve all source records and full export; measure retrieval time and rendered page counts. Review EN/RU and print geometry before changing any governed renderer or pixel lock.
+2. Content/case-data: create inspectable packets only from available original bodies or explicitly labelled authored synthetic excerpts. Assign stable document/version/section IDs, cite exact passages, retain missing-evidence status and bump affected template versions. Do not infer review or legal approval.
+3. QA/application: expand authenticated Chrome acceptance to upgraded ERP/GreenFire and all remaining packages. Two independent saved copies; reopen/edit; stale conflict; actual report downloads; narrow layout; source identity and original saved bytes unchanged. Existing representative guest acceptance and real authenticated-handler evidence must remain separately described.
+4. Application/data: if users need to carry amendments forward, design three-way comparison against the exact historical template, explicit per-conflict choices, complete tax/evidence/approval carrier handling and a new saved identity. A fresh template copy is the delivered behavior, not an automatic user-edit merge.
+
+Maintain tests/example-registry-baseline.json unchanged; new current templates need new versioned acceptance rather than replacing historical hashes. Unknown/future versions remain recoverable without source substitution. Review each slice under docs/testing and deploy only exact merged source with a native Sites receipt.
