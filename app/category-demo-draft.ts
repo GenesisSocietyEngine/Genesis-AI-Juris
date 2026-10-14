@@ -1,11 +1,11 @@
-import { CATEGORY_DEMOS } from "./category-demos";
+import { CATEGORY_DEMOS, CATEGORY_DEMO_VERSION } from "./category-demos";
 import { applyCaseType } from "./case-type-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import { caseTypeReference } from "./case-type-reference";
 import { defaultTaxEconomics } from "./tax-economics";
 import type { CaseTypeId, StudioDraft, StudioNode, StudioNodeType } from "./types";
 
-export const CATEGORY_DEMO_VERSION = "1.1.0";
+export { CATEGORY_DEMO_VERSION } from "./category-demos";
 
 /** Each launch is a new local copy; no saved authority, review date or cached result is inherited. */
 export function buildCategoryDemo(id: CaseTypeId, locale: "en" | "ru", updatedAt = new Date().toISOString()): StudioDraft {

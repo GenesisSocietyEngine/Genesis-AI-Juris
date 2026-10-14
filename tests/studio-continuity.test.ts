@@ -11,12 +11,13 @@ import { deviceDraftEnvelope, mayPersistStudioDraftOnDevice, removeKnownStudioDe
 import { studioReplacementMessage } from "../app/studio-replacement-message";
 import { emptyStudioTimeline } from "../app/studio-revisions";
 import { hasStudioEvidenceInput } from "../app/studio-evidence-buffer";
+import { prepareExample, type ExampleId } from "../app/example-registry";
 import { createExampleWorkingCopy } from "../app/example-working-copy";
 import type { StudioDraft } from "../app/types";
 
 const scope = "a".repeat(64), otherScope = "b".repeat(64);
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ["resetStudioDraft", "openCategoryDemo", "cancelCategoryDemo", "enterExampleOverview", "enterNewLocalDraft", "replaceStudioDraft", "syncStudioDraft", "syncStudioTimeline", "clearStudioEvidenceBuffers"];
+const names = ["resetStudioDraft", "openCategoryDemo", "openRegisteredExample", "cancelCategoryDemo", "enterExampleOverview", "enterNewLocalDraft", "replaceStudioDraft", "syncStudioDraft", "syncStudioTimeline", "clearStudioEvidenceBuffers"];
 const handlers: string[] = [];
 function collect(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name && names.includes(node.name.text)) handlers.push(node.getText(source));
@@ -45,12 +46,13 @@ function harness(confirm = true) {
   const draftRef = { current: original }, contextRef = { current: "context" }, timelineRef = { current: { revisions: [], cursor: 0 } };
   const buffersRef = { current: {} };
   const identity = { phase: "ready", scope, epoch: 1 };
-  const code = ts.transpileModule(`${handlers.join("\n")}\n({openCategoryDemo, resetStudioDraft, cancelCategoryDemo});`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  const code = ts.transpileModule(`${handlers.join("\n")}\n({openCategoryDemo, openRegisteredExample, resetStudioDraft, cancelCategoryDemo});`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const noop = () => {};
+  const catalogueLaunchRef = { current: 0 };
   const functions = runInNewContext(code, {
     URL, Event, structuredClone, createExampleWorkingCopy, locale: "en", categoryDemoPrompt, prompt: state.prompt, draftRef, studioStorageScope: scope,
     studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false,
-    studioSessionAuthority: { getSnapshot: () => identity }, catalogueLaunchRef: { current: 0 }, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: contextRef,
+    studioSessionAuthority: { getSnapshot: () => identity }, catalogueLaunchRef, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: contextRef,
     starterCancelledRef: { current: false }, studioEvidenceBuffersRef: buffersRef, studioTimelineRef: timelineRef,
     studioSavedBaseline: { current: null }, savedCaseRequestRef: { current: 0 }, restoredSavedCaseRef: { current: null }, studioChangedBeforeRestoreRef: { current: false },
     studioTaxWriteBaseline: { current: { clear: noop } },
@@ -58,12 +60,12 @@ function harness(confirm = true) {
     setStudioPrivate: noop, setStudioCustomCaseId: noop, setStudioCanManagePrivacy: noop, setStudioServerFingerprint: noop, setStudioServerPublicationFingerprint: noop, setStudioCanDuplicate: noop, setStudioCopyProtectionLocked: noop, setSelectedNodeId: noop,
     setDraftState: (next: StudioDraft) => { state.draft = next; state.mutations++; }, setStudioTimelineState: noop,
     mayLeaveStudio: () => !pending, mayPersistStudioDraftOnDevice, hasStudioEvidenceInput, retainStudioReplacement, removeKnownStudioDeviceDrafts, studioReplacementMessage, emptyStudioTimeline,
-    blankStudioDraft: () => original, loadCategoryDemo: () => loads[index++].promise.then(draft => ({ draft, prompt: categoryDemoPrompt(draft.caseType!.id, "en") })),
+    blankStudioDraft: () => original, loadRegisteredExample: () => loads[index++].promise.then(draft => ({ draft, prompt: categoryDemoPrompt(draft.caseType!.id, "en") })),
     setExampleLaunch: (value: unknown) => { if (value === null) state.phase = ""; else if (typeof value === "object") state.phase = (value as { phase: string }).phase; },
     setPrompt: (value: string) => { state.prompt = value; }, navigate: () => { state.navigations++; }, showSessionNotice: (value: string) => state.notices.push(value),
     window: { localStorage: storage, dispatchEvent: noop, confirm: (value: string) => { state.confirmations.push(value); return confirm; }, get location() { return { href: state.url }; }, history: { state: {}, replaceState: (_state: unknown, _title: string, value: URL) => { state.url = value.toString(); } } },
-  }) as { openCategoryDemo: (id: string) => Promise<void>; resetStudioDraft: (draft: StudioDraft) => boolean; cancelCategoryDemo: () => void };
-  return { state, storage, raw, loads, functions, draftRef, contextRef, identity, buffersRef, timelineRef, pending: () => { pending = true; } };
+  }) as { openRegisteredExample: (id: ExampleId) => Promise<void>; openCategoryDemo: (id: string) => Promise<void>; resetStudioDraft: (draft: StudioDraft) => boolean; cancelCategoryDemo: () => void };
+  return { state, storage, raw, loads, functions, draftRef, contextRef, identity, buffersRef, timelineRef, catalogueLaunchRef, pending: () => { pending = true; } };
 }
 test("real launch and storage: latest choice wins and original bytes are archived before deletion", async () => {
   const h = harness();
@@ -182,4 +184,21 @@ test("recovery backup round-trip retains original bytes and prompt, without save
   assert.throws(() => readStudioArchiveBackup(raw, otherScope));
   assert.throws(() => readStudioArchiveBackup(raw.replace('"schemaVersion":1', '"schemaVersion":999'), scope));
   assert.throws(() => readStudioArchiveBackup('{broken', scope));
+});
+
+for (const [earlier, later] of [['category:general_advisory','converted:greenfire_first_72_hours'],['converted:be_commercial_logistics_001','canopy:hard_stop'],['canopy:downside','category:investigation']] as const) test(`cross-family race ${earlier} -> ${later}: latest wins and original bytes survive`, async () => {
+  const h = harness();
+  const first = h.functions.openRegisteredExample(earlier), second = h.functions.openRegisteredExample(later);
+  h.loads[1].resolve((await prepareExample(later, 'en')).draft); await second;
+  h.loads[0].resolve((await prepareExample(earlier, 'en')).draft); await first;
+  assert.equal(h.state.mutations, 1); assert.equal(h.state.navigations, 1);
+  assert.equal(h.state.draft.exampleSource?.caseId, (await prepareExample(later, 'en')).draft.caseId);
+  assert.equal(readStudioArchive(h.storage, scope)[0].original, h.raw);
+});
+test('a legacy catalogue request invalidates a pending registered launch', async () => {
+  const h = harness(); const pending = h.functions.openRegisteredExample('canopy:base');
+  h.catalogueLaunchRef.current++;
+  h.loads[0].resolve((await prepareExample('canopy:base','en')).draft); await pending;
+  assert.equal(h.state.mutations, 0); assert.equal(h.state.navigations, 0);
+  assert.equal(h.storage.getItem(studioDeviceDraftKey(scope)), h.raw);
 });

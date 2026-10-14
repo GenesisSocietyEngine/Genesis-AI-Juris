@@ -2,16 +2,10 @@ import canonicalBundle from "./canonical-case-bundle.json";
 import { applyCaseType } from "./case-type-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import { caseTypeReference } from "./case-type-reference";
-import type { CaseTypeId, StudioDraft, StudioNodeType, StudioLink } from "./types";
+import type { StudioDraft, StudioNodeType, StudioLink } from "./types";
 
-export const CONVERTED_EXAMPLES: Record<string, { category: CaseTypeId; title: string; description: string; topics: string[] }> = {
-  be_commercial_failed_erp_001: { category: "litigation_strategy", title: "Failed ERP Implementation", description: "Assess Asteron Systems' ERP supplier dispute. Review scope changes, acceptance records and causation evidence; compare settlement and a claim, then prepare a strategy and risk report.", topics: ["ERP", "Commercial dispute", "Contract interpretation"] },
-  be_commercial_logistics_001: { category: "litigation_strategy", title: "Unpaid Logistics Invoices", description: "Review Velmont Logistics' unpaid freight and warehousing invoices. Separate supported amounts from disputed service charges, compare negotiated recovery with a claim, and identify missing delivery evidence.", topics: ["Commercial recovery", "Logistics", "Disputed invoices"] },
-  greenfire_first_72_hours: { category: "investigation", title: "GreenFire — The First 72 Hours", description: "Investigate an industrial fire. Build a sourced chronology, preserve evidence, distinguish findings from hypotheses, and assign the urgent regulatory, insurance and operational follow-up actions.", topics: ["Industrial fire", "Insurance", "Regulatory response"] },
-  nl_food_safety_goldenshell_001: { category: "compliance", title: "GoldenShell — Recall at Dawn", description: "Assess GoldenShell's food-safety response. Trace affected products, review containment and recall options, and build a remediation plan with owners, evidence requirements and release conditions.", topics: ["Food safety", "Product recall", "Regulatory response"] },
-  us_environmental_desert_water_001: { category: "litigation_strategy", title: "Desert Water", description: "Assess a potential groundwater contamination claim. Separate suspected exposure from proven causation, identify sampling and expert-evidence gaps, and compare investigation, negotiated resolution and litigation routes.", topics: ["Environmental claims", "Investigation", "Groundwater"] },
-};
-export const CONVERTED_EXAMPLE_VERSION = "2.2.0";
+import { CONVERTED_EXAMPLES, CONVERTED_EXAMPLE_VERSION } from "./converted-example-descriptors";
+export { CONVERTED_EXAMPLES, CONVERTED_EXAMPLE_VERSION } from "./converted-example-descriptors";
 
 type RecordItem = { id: string; title?: string; name?: string; description?: string; statement?: string; summary?: string; initial_status?: string; initially_available?: boolean; initially_visible?: boolean; supports_facts?: string[]; related_actors?: string[]; role?: string; body?: string; sender?: string; subject?: string; exit_actions?: string[]; terminal_stage?: string; effects?: Effect[]; trigger?: Condition; condition?: Condition; available_when?: Condition; due_at?: { day: number; minute_of_day: number }; completion_actions?: string[]; start_action?: string; completion_event?: string; usable_until_event?: string; duration_minutes?: number; time_cost_minutes?: number; cost_eur?: number; branches?: RecordItem[] };
 type ResponseWindow = { id: string; source_actor_id: string; activation_event_id: string; response_deadline_id: string; response_action_ids: string[]; countermove_event_id: string };

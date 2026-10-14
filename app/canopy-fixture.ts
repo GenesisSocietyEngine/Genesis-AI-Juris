@@ -1,3 +1,4 @@
+import { CANOPY_INDEPENDENT_VERSIONS } from "./canopy-example-versions";
 import { caseFingerprint, normalizeStudioDraft } from "./case-integrity";
 import { compileStudioDraft } from "./studio-compiler";
 import type { MetricGuard, Scenario, StudioDraft, StudioLink, StudioNode } from "./types";
@@ -87,9 +88,8 @@ export function canopyDeclaration(id: CanopyScenarioId) {
 }
 export function buildCanopyPackage(id: CanopyScenarioId, independent=false): {declaration:CanopyDeclaration;draft:StudioDraft;studioFingerprint:string;scenario:Scenario} {
  const sourceDeclaration=canopyDeclaration(id);
- const independentVersions:Record<CanopyScenarioId,string>={base:"2.0.0",upside:"2.5.0",hard_stop:"2.6.0",hard_stop_unavailable:"2.7.0",downside:"2.4.0"};
  const standalone=independent||id==="downside"||id==="hard_stop_unavailable";
- const declaration=standalone?{...sourceDeclaration,version:independent?independentVersions[id]:sourceDeclaration.version,parent:null}:sourceDeclaration;
+ const declaration=standalone?{...sourceDeclaration,version:independent?CANOPY_INDEPENDENT_VERSIONS[id]:sourceDeclaration.version,parent:null}:sourceDeclaration;
  const previous=declaration.parent?buildCanopyPackage(declaration.parent):null;
  const guards=canopyGuardDeclaration(declaration.inputs);
  const detail=(doc:string,version:number,section:string)=>doc+" v"+version+" § "+section+": "+canopySource(doc,version).sections[section];

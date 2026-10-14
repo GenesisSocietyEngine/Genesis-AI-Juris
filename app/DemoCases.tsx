@@ -2,15 +2,10 @@
 
 import { useState } from "react";
 import { CANOPY_QUESTION, CANOPY_SCENARIOS, CANOPY_SOURCES, type CanopyScenarioId } from "./canopy-fixture";
+import { CANOPY_EXAMPLE_VARIANTS } from "./example-registry";
 import { WorkspaceIcon } from "./GenesisNavigation";
 
 type Locale = "en" | "ru";
-const canopyExamples: Array<{ id: CanopyScenarioId; en: string; ru: string; detail: Record<Locale, string> }> = [
-  { id: "base", en: "Base", ru: "Базовый", detail: { en: "Review a conditional 90-day pilot with outstanding evidence.", ru: "Проверьте условия 90-дневного пилота и недостающие подтверждения." } },
-  { id: "upside", en: "Upside", ru: "Благоприятный", detail: { en: "See how stronger demand and accepted evidence change the decision.", ru: "Посмотрите, как подтверждённый спрос и новые доказательства меняют решение." } },
-  { id: "hard_stop", en: "Hard stop", ru: "Стоп-условие", detail: { en: "Check why failed mandatory clearance blocks an attractive proposal.", ru: "Проверьте, почему обязательное условие блокирует выгодное предложение." } },
-  { id: "downside", en: "Downside", ru: "Неблагоприятный", detail: { en: "Test weaker demand, lower yield and higher energy costs.", ru: "Проверьте снижение спроса и выхода продукции при росте энергозатрат." } },
-];
 
 export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy = false }: {
   locale: Locale;
@@ -52,7 +47,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy
       <div className="demo-scenario-picker">
         <h3>{locale === "en" ? "Choose a scenario" : "Выберите сценарий"}</h3>
         <p>{locale === "en" ? "Start with Base, then compare what changes." : "Начните с базового варианта, затем сравните изменения."}</p>
-        <fieldset><legend className="visually-hidden">{locale === "en" ? "Canopy scenario" : "Сценарий Canopy"}</legend>{canopyExamples.map(example => <label key={example.id} className={selected === example.id ? "selected" : ""}><input type="radio" name="canopy-scenario" value={example.id} checked={selected === example.id} onChange={() => setSelected(example.id)}/><span><b>{example[locale]}</b><small>{example.detail[locale]}</small></span></label>)}</fieldset>
+        <fieldset><legend className="visually-hidden">{locale === "en" ? "Canopy scenario" : "Сценарий Canopy"}</legend>{CANOPY_EXAMPLE_VARIANTS.map(example => <label key={example.scenario} className={selected === example.scenario ? "selected" : ""}><input type="radio" name="canopy-scenario" value={example.scenario} checked={selected === example.scenario} onChange={() => setSelected(example.scenario)}/><span><b>{example.label[locale]}</b><small>{example.description[locale]}</small></span></label>)}</fieldset>
         <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open example case" : "Открыть пример кейса")}<WorkspaceIcon name="arrow"/></button>
         <small>{locale === "en" ? "Opens a separate working copy. The reference case is preserved." : "Открывается отдельный рабочий черновик. Эталонный кейс сохраняется."}</small>
       </div>

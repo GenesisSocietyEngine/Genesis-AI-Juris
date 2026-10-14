@@ -30,7 +30,7 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
         <p>{en ? "A pause can be the appropriate professional decision. Only the training simulation grades its explicitly unsafe restart route. This outline is not a generated or approved report." : "Пауза может быть правильным профессиональным решением. Только учебная симуляция оценивает явно небезопасный повторный запуск. Эта структура не является сформированным или утверждённым отчётом."}</p>
       </details>
       <button type="button" className="primary-cta" onClick={() => onOpen(demo.caseTypeId)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${demo.title[locale]}`}>{en ? "Open example case" : "Открыть пример кейса"}</button>
-      {exampleLaunch?.id === demo.caseTypeId && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => onOpen(demo.caseTypeId)}/>}
+      {exampleLaunch?.id === `category:${demo.caseTypeId}` && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => onOpen(demo.caseTypeId)}/>}
     </article>;
   })}</>;
 }
