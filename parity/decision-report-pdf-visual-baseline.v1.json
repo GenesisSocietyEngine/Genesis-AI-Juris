@@ -1,0 +1,301 @@
+{
+  "format": "casevant-decision-report-pdf-visual-baseline",
+  "version": 1,
+  "runtime": {
+    "platform": "win32",
+    "architecture": "x64",
+    "pdfmake": "0.2.20",
+    "fontVfsSha256": "f91db5690400fc851536c3a9322f822619f8e9f681abe42013e572d88d3c1f38"
+  },
+  "popplerVersion": "25.07.0",
+  "dpi": 96,
+  "selection": "All pages of Base and Medium, EN/RU ordinary and long-title fixtures",
+  "entries": [
+    {
+      "id": "golden-general_advisory-en-internal-decision",
+      "language": "en",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-e2f3ed55805b5bbe2c29183137913c9e49f22392d7cf89e2cb36b029515494ae",
+      "reportFingerprint": "sha256-96a6a233bb1318688618470d826c23bde9281c1cbf09ffe9479fdf3e3e881928",
+      "presentationFingerprint": "sha256-158dfdd2d0dedd8493aa20bc55dac2a8805c31b477424260b14f081cd516969c",
+      "fixtureSha256": "c434ceb6f5a57d29e9ed6e1bbdce1abe017a63ac26840ccdee531e3315c48074",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "25383910ed7418ed4594cb91b97ffbc18f0ed820a7e07070d9305e954afd28b1"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "a24ca83f5fde36869fb13edba70babb7e3e371ddfb8a1f29737a4ed3b17c4540"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "2e8ae252eeadd9d4d4690b0308c96363bc11d3cd3e6a9f7bf8b2b8d167e3c607"
+        }
+      ]
+    },
+    {
+      "id": "golden-general_advisory-en-internal-medium",
+      "language": "en",
+      "presentationMode": "medium",
+      "caseFingerprint": "sha256-e2f3ed55805b5bbe2c29183137913c9e49f22392d7cf89e2cb36b029515494ae",
+      "reportFingerprint": "sha256-96a6a233bb1318688618470d826c23bde9281c1cbf09ffe9479fdf3e3e881928",
+      "presentationFingerprint": "sha256-6794557a767c3345dd60ff4341d68e5293e2070a9810a20c33469a9304ee7a81",
+      "fixtureSha256": "c434ceb6f5a57d29e9ed6e1bbdce1abe017a63ac26840ccdee531e3315c48074",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "4fc0ae0da2593b10be930881edcdbbdb4a98d59bed8a8b10d4abd064d2fbb31d"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "3cda5f639bd17bcf5343cd77b071cd3eae7ea6e3f53974c034df8eae956c1d1a"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "85a528a528fd17e2ce000621b0214f606357044edc0fda98023d7aeff8dfd99f"
+        },
+        {
+          "page": 4,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "02ae7584253fe9c4780ab926a0dae039583e804b05b5112de9ec4c2c41699db1"
+        }
+      ]
+    },
+    {
+      "id": "golden-general_advisory-ru-internal-decision",
+      "language": "ru",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-aa8d35629d6e25909975a31e3ce09d27a6590e9423f1f3af153ac75d135ff36f",
+      "reportFingerprint": "sha256-2d4bfc8209f48765379577074d230d7938918c2ee6b05c0f69a326761241965f",
+      "presentationFingerprint": "sha256-b723ce70c15523832e6a12baadabe788d863a80c59119463b3e7384be3c35d2b",
+      "fixtureSha256": "5bd2a2b02c10e711a04cbeb56e40100a12802cbb1074be4a08f32684cd9bf48f",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "59bd72e27d71e74e2ea795aecb83d7479ca329e8ba986c91fc2a452fbe94b239"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "77519c2b27286aeccf9dc2c0ea6b8415d6372fd5dcfcdcef484a5e86c7a69fd5"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "c310942a975a12d978b26d927e76fcccdfc71d3c8366f1ebf3822ef74760be2c"
+        }
+      ]
+    },
+    {
+      "id": "golden-general_advisory-ru-internal-medium",
+      "language": "ru",
+      "presentationMode": "medium",
+      "caseFingerprint": "sha256-aa8d35629d6e25909975a31e3ce09d27a6590e9423f1f3af153ac75d135ff36f",
+      "reportFingerprint": "sha256-2d4bfc8209f48765379577074d230d7938918c2ee6b05c0f69a326761241965f",
+      "presentationFingerprint": "sha256-cd3ce4e861a00b36fe22624b347087f399be23d31c85396faba37adace22d28b",
+      "fixtureSha256": "5bd2a2b02c10e711a04cbeb56e40100a12802cbb1074be4a08f32684cd9bf48f",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "eb98fc4925a04d0abcb977baf4c1d7e6d9cae2fe2608b423e1276b4897ec7c1d"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "10a73bba42ad9a86420ae1a1b4eabeece195c48454f3499838d44f2f62b6f7de"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "0c3b36dc07e93f0bd83d154fff5acdafa3a421ba397d2b963f354e4a93863e49"
+        },
+        {
+          "page": 4,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "d60af666d16915e0eb776801d56f592d064b58f725f3aa6315e3df70d67cb6bc"
+        }
+      ]
+    },
+    {
+      "id": "stress-long-title-en-decision",
+      "language": "en",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-10fd8b0712ab78bd5f2973ae16e08abeeb904660a6c6c0fe20dbbda4a1cc3fc0",
+      "reportFingerprint": "sha256-df418d488705592c565ce7b0b9c5baa6f0dd0d450411381c57b0ce4908555d23",
+      "presentationFingerprint": "sha256-865f623c8db724f233666c562b9eb7a4ab94cd47dfb9c2344bb2d422508a3529",
+      "fixtureSha256": "e00d609d0d22992468debb085f32cc4ddcd036fe5cb92eed062afa160478fc7b",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "f9e040aa46d77bf66f486504ad2fed74cf2874529cc241ad92c6dbe16b3e195f"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "9709976e9cee80e8abe954c0451a1d7123a95e09db9aec43a6347e7e672b855d"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "7a222e95d78a4f839db75086214062ed3e9e2c1200b532ff6febb911cf6e02d6"
+        }
+      ]
+    },
+    {
+      "id": "stress-long-title-en-medium",
+      "language": "en",
+      "presentationMode": "medium",
+      "caseFingerprint": "sha256-10fd8b0712ab78bd5f2973ae16e08abeeb904660a6c6c0fe20dbbda4a1cc3fc0",
+      "reportFingerprint": "sha256-df418d488705592c565ce7b0b9c5baa6f0dd0d450411381c57b0ce4908555d23",
+      "presentationFingerprint": "sha256-6c4260baba547fb308698b64e4f79d3314ec6f253b380b6a9c24972a932ce050",
+      "fixtureSha256": "e00d609d0d22992468debb085f32cc4ddcd036fe5cb92eed062afa160478fc7b",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "6d1aee9a624a9596e8c7bd98bc4d1e62c10151182ce555e091a1e2a2b735f3e2"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "afedcc7db1992c8f82d8f239e6bfd601ffd9ec7cbf4059575ae4f03fc0d8df9a"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "14f0026a0aacfbe73a6faebc22ee81bafd0a391cc92b0db82d38e1a75b2cca22"
+        },
+        {
+          "page": 4,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "5e1a8053b9a28ee6aa040ee5d69c00776ca03e2a3878d2cd42801e0777106ce7"
+        },
+        {
+          "page": 5,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "ca44c785f19e2d42d82d7603fd2c6d8c1ae6a605c19a4f0a6ec4d0bb3876e37f"
+        },
+        {
+          "page": 6,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "b1fcfb76b4050359197d40055b3bfea50a51566fe7bb621e8171370028b30f8e"
+        }
+      ]
+    },
+    {
+      "id": "stress-long-title-ru-decision",
+      "language": "ru",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-84342b6db1c1d4e8c9ffb11d1a86c883892919ba19944d988e6d987dc77580dd",
+      "reportFingerprint": "sha256-1dfa5f1d25fab65f1acb8e840befd4c5ecd50782bf201e916b88eee9264a3637",
+      "presentationFingerprint": "sha256-cb61f09e83d1d7f9d7d80d704d724fdf45a35645bac36f6a269b7b0b26505c39",
+      "fixtureSha256": "5187dd6cd30423870202811de9dc5f02f33bc9d0d7bb95d18a8edef4d6d16143",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "0cbe6bb4bfe4175683803e90c3e731b268974d3db3fc1844bbe07e65e4b7fb55"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "68446280aae2d2f951e25256aacefe3a53ff80ce4ce4aa8018fc98740a2844da"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "f91a498d3046c9f74a93b784feb62512a3f4f4d4f38b3507f4938045b4774675"
+        }
+      ]
+    },
+    {
+      "id": "stress-long-title-ru-medium",
+      "language": "ru",
+      "presentationMode": "medium",
+      "caseFingerprint": "sha256-84342b6db1c1d4e8c9ffb11d1a86c883892919ba19944d988e6d987dc77580dd",
+      "reportFingerprint": "sha256-1dfa5f1d25fab65f1acb8e840befd4c5ecd50782bf201e916b88eee9264a3637",
+      "presentationFingerprint": "sha256-df3c5aa0f296b848d5763c135826a19b4c728a1eadf128810d77d385eda99021",
+      "fixtureSha256": "5187dd6cd30423870202811de9dc5f02f33bc9d0d7bb95d18a8edef4d6d16143",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "44bb00c20e14b73ef922699351f88018317bcd35f45429f52354b3de155aadb4"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "4a3f993770fa8dcfb80d15004424aba6897ae44ea6661eee4fe1b8ca8bb20150"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "1234bbaef752a2357b5ffd7fe4de5982c6c4ed57c35c3f0a7eee0c69941e86a6"
+        },
+        {
+          "page": 4,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "928a13e416b1d2b48ece27bfba32c66faca0180cdedeb5dad8b2c544d334f0d0"
+        },
+        {
+          "page": 5,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "6302edcaea501db6f376c8a714d5803f5cfa75e2f4f0ea41b1be6a5267b371e8"
+        },
+        {
+          "page": 6,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "5a7058e125e0dff3816a00056b715987b00a766893a17750224881de91bd1abc"
+        },
+        {
+          "page": 7,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "080dbdfbfad46127a6a68fb46d724cbb0b894b178fba74bf3f791cc92488fdb3"
+        }
+      ]
+    }
+  ]
+}

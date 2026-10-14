@@ -135,6 +135,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --exit-code -- parity/report-pdf-visual-baseline.v1.json parity/report-graph-layout-fixtures.v1.json package-lock.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify bilingual Base and Medium PDFs against their unchanged baseline
+        run: |
+          npm.cmd run reports:verify-decision 2>&1 |
+            Tee-Object .artifacts/ci-logs/decision-pdf-verification.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- parity/decision-report-pdf-visual-baseline.v1.json package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify tax-v2 PDFs with fresh shared Rust calculations
         run: |
           npm.cmd run reports:verify-tax 2>&1 |
@@ -158,6 +165,7 @@ jobs:
           name: report-pdf-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .artifacts/v62-report-qa
+            .artifacts/decision-report-qa
             .artifacts/ci-logs
           include-hidden-files: true
           if-no-files-found: error
