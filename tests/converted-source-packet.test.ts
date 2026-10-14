@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import bundle from "../app/canonical-case-bundle.json";
 import { buildConvertedExample } from "../app/converted-examples";
 import { createExampleWorkingCopy } from "../app/example-working-copy";
+import { readStudioAggregate } from "../app/studio-aggregate";
 import { buildConvertedSourcePacket, prepareConvertedSourcePacketDownload, openConvertedMessageFragment } from "../app/converted-source-packet";
 
 const counts:Record<string,[number,number]>={be_commercial_failed_erp_001:[31,5],be_commercial_logistics_001:[0,5],greenfire_first_72_hours:[7,7],nl_food_safety_goldenshell_001:[10,13],us_environmental_desert_water_001:[10,13]};
@@ -25,6 +26,7 @@ for(const [id,[messageCount,gapCount]] of Object.entries(counts)) for(const loca
   assert.ok(packet.missingDocuments.every(document=>document.originalBodySupplied===false));
   if(id==="be_commercial_failed_erp_001")assert.deepEqual(packet.excludedTrainingMessageIds,["client_inactivity_warning","client_final_inactivity_warning","client_terminated_engagement"]);
   const json=await prepareConvertedSourcePacketDownload(draft,"json",()=>true);assert.ok(json);assert.deepEqual(JSON.parse(json.content),packet);
+  assert.notEqual(readStudioAggregate(json.content,{kind:"draft"}).status,"supported","reference packets cannot be normalized into editable Studio cases");
   const markdown=await prepareConvertedSourcePacketDownload(draft,"md",()=>true);assert.ok(markdown);
   for(const message of packet.messages){assert.ok(markdown.content.includes(message.text));assert.ok(markdown.content.includes(message.contentSha256));}
   assert.deepEqual(await buildConvertedSourcePacket(JSON.parse(before)),packet);
