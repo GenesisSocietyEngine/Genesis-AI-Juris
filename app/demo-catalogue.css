@@ -57,8 +57,7 @@
 .template-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; padding-top:8px; width:100%; }
 .templates-page .template-actions>button { min-height:44px; white-space:normal; text-align:center; max-width:100%; }
 .templates-page :focus-visible { outline:3px solid var(--cyan); outline-offset:3px; }
-.category-demo-grid { margin-top:20px; }
-.category-demo-grid .primary-cta { margin-top:auto; }
+.demo-catalogue-card[data-example-family="category"]>.primary-cta { margin-top:auto; }
 @media(max-width:650px) {
   .template-toolbar { align-items:stretch; flex-direction:column; gap:8px; }
   .template-toolbar>p { margin:0; }

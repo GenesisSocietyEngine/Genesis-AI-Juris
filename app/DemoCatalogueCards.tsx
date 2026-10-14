@@ -25,7 +25,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
 }) {
   const en = locale === "en";
   const [canopyExpanded, setCanopyExpanded] = useState(false);
-  return <div className="demo-catalogue-grid">
+  return <>
     {showCanopy && <article className="demo-catalogue-card demo-catalogue-canopy">
       <span className="demo-format">{en ? "Featured example · Advisory decision" : "Рекомендуемый пример · Консультационное решение"}</span>
       <h2>Project Canopy</h2>
@@ -46,5 +46,5 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
       <p><b>{en ? "Work towards" : "Результат"}:</b> {card.output}</p><details className="demo-editorial"><summary>{en ? "Editorial details" : "Редакционные сведения"}</summary><p>{card.review} · v{card.version}</p><p>{en ? "Author" : "Автор"}: {card.author}</p><p>{card.legalAsOf ? `${en ? "Law as of" : "Право на"} ${card.legalAsOf}` : (en ? "Legal review pending" : "Проверка актуальности ожидается")}</p></details>
       <div className="demo-card-actions"><button type="button" className="primary-cta" disabled={busy} onClick={() => launch(card.id)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${card.title}`}>{en ? "Open example case" : "Открыть пример кейса"}</button><button type="button" className="secondary-cta" onClick={() => feedback(card.id)}>{en ? "Give feedback" : "Оставить отзыв"}</button></div>
     </article>)}
-  </div>;
+  </>;
 }

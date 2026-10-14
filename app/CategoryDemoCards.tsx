@@ -13,9 +13,9 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
   exampleLaunch?: ExampleLaunch | null; cancelExample?: () => void;
 }) {
   const en = locale === "en";
-  return <div className="demo-catalogue-grid category-demo-grid">{demos.map(demo => {
+  return <>{demos.map(demo => {
     const book = caseTypePlaybook(caseTypeReference(demo.caseTypeId));
-    return <article className="demo-catalogue-card" key={demo.caseTypeId}>
+    return <article className="demo-catalogue-card" data-example-family="category" key={demo.caseTypeId}>
       <span className="demo-format">{en ? "Worked Studio example" : "Учебный пример Studio"}</span>
       <h2>{demo.title[locale]}</h2><p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {categoryDemoPrompt(demo.caseTypeId, locale)}</p>
       <p className="demo-card-meta">{caseTypePresentation(book, locale).label} · {en ? "Fictional example" : "Вымышленный пример"}</p>
@@ -32,5 +32,5 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
       <button type="button" className="primary-cta" onClick={() => onOpen(demo.caseTypeId)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${demo.title[locale]}`}>{en ? "Open example case" : "Открыть пример кейса"}</button>
       {exampleLaunch?.id === demo.caseTypeId && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => onOpen(demo.caseTypeId)}/>}
     </article>;
-  })}</div>;
+  })}</>;
 }

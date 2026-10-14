@@ -63,8 +63,10 @@ export default function LibraryView({locale, restorePlaySession, records, launch
       <div className="filter-result"><b role="status" aria-live="polite">{cards.length + Number(showCanopy) + categoryDemos.length} {locale === "en" ? "shown" : "показано"}</b><button onClick={reset}>{locale === "en" ? "Reset" : "Сбросить"}</button></div>
     </section>
     <section className="page-width demo-catalogue-results" aria-label={locale === "en" ? "Example cases" : "Примеры кейсов"}>
+      <div className="demo-catalogue-grid">
       <DemoCatalogueCards locale={locale} cards={cards} showCanopy={showCanopy} busy={false} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref} launch={id => { const record = bundled.find(item => item.id === id); if (record) launchCase(record); }} feedback={id => { const record = bundled.find(item => item.id === id); if (record) requestFeedback({ caseId: record.id, version: record.currentVersion, title: record.title, source: "playable", fingerprint: record.fingerprint }); }}/>
       {categoryDemos.length > 0 && <Suspense fallback={<p role="status">Loading examples…</p>}><CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo} exampleLaunch={exampleLaunch} cancelExample={cancelExample}/></Suspense>}
+      </div>
       {!showCanopy && !cards.length && !categoryDemos.length && <p>{locale === "en" ? "No example cases match these filters." : "По этим фильтрам примеров нет."}</p>}
       {(category === "all" || category === "training_simulation") && !guided && <details className="library-restore"><summary>{locale === "en" ? "Training simulation · saved-play recovery" : "Учебная симуляция · восстановление прохождения"}</summary><p>{locale === "en" ? "Recover existing simulation sessions in their original training workflow. Converted examples open independently in Studio." : "Восстановите старые прохождения в исходном учебном процессе. Примеры открываются отдельными копиями в Studio."}</p><button className="secondary-cta" onClick={restorePlaySession}>{locale === "en" ? "Restore a play session" : "Восстановить прохождение"}</button></details>}
     </section>
