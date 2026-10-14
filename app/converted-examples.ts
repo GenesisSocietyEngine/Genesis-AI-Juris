@@ -90,7 +90,8 @@ function consequences(effects: Effect[]): string[] {
  * Case/source IDs are retained; server save identity is cleared by the standard launch workflow.
  * Evidence descriptions are the retained source register, not fabricated document contents.
  */
-export function buildConvertedExample(caseId: string, locale: "en" | "ru", updatedAt = new Date().toISOString()): StudioDraft {
+export function buildConvertedExample(caseId: string, locale: "en" | "ru", updatedAt = new Date().toISOString(), version = CONVERTED_EXAMPLE_VERSION): StudioDraft {
+  if (!["2.2.0", CONVERTED_EXAMPLE_VERSION].includes(version)) throw new Error("Unsupported converted example version");
   const spec = CONVERTED_EXAMPLES[caseId], source = sources.find(c => c.case_id === caseId);
   if (!spec || !source) throw new Error("Unknown converted example");
   const s = source.scenario, nodes: StudioDraft["nodes"] = [], links: StudioLink[] = [];
@@ -108,6 +109,10 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
   add("brief", "trigger", spec.title, spec.description + "\nDecision owner / client: " + owner + "\n" + (local.synopsis ?? "") + "\nOutput: " + output);
   add("review-assumptions", "fact", "Assumptions and evidence gaps", "Legacy source package: " + caseId + " @ " + s.metadata.content_version + "; original simulation fingerprint: " + source.scenario_fingerprint + "\nAll organisations, records and events are fictional. Source register descriptions are retained exactly; full document bodies were not supplied by the legacy package. Initially unavailable evidence remains missing. Allegations, expert conclusions, notifications and branch outcomes require review. Relative dates and costs are illustrative legacy estimates, not verified legal deadlines or market prices. Confirm jurisdiction, actual dates, owners and provenance before relying on them. No gameplay scores establish source support.");
   add("report-outline", "outcome", output + " — outline", "Mandate and decision owner; source register and exact identifiers; supported facts, disputed allegations and confidence explanations; chronology; evidence and causation gaps; competing options and hypothetical scenarios; rationale, conditions and release criteria; actions, owners and dates subject to verification; decision map and source links. This is an analytical draft, not an approved conclusion.");
+  if (version !== "2.2.0") {
+    const opening = Object.entries(s.initial_resources ?? {}).filter(([id]) => ["award_eur", "billable_minutes", "outcome_costs_eur", "spend_eur"].includes(id));
+    if (opening.length) nodes.find(node => node.id === "review-assumptions")!.detail += "\nIllustrative opening simulation counters: " + opening.map(([id, value]) => human(id) + " = " + value + (id.endsWith("_eur") ? " EUR" : " minutes")).join("; ") + ". These are fictional initialization values, not actual awards, invoices, payments, costs or time entries. Establish a separate sourced budget and billing record for real work; no counter runs in Studio.";
+  }
   for (const actor of s.actors) add("actor-" + actor.id, "actor", actor.role === "player" ? "Responsible counsel" : actor.name ?? actor.id, "Canonical actor: " + actor.id + "\nRole: " + (actor.role === "player" ? "Responsible counsel" : actor.role ?? "reviewer") + "\n" + translated("actors", actor, "description", actor.description ?? "") + "\nReview owner: " + owner);
   for (const fact of s.facts) add("fact-" + fact.id, "fact", human(fact.id), translated("facts", fact, "statement", fact.statement ?? "") + "\nCanonical fact: " + fact.id + "\nFictional source status: " + (fact.initial_status ?? "unknown") + ". This records the authored status, not independent verification.\nConfidence: assess each supporting source, contradictions and missing records before accepting this statement.");
   nodes.find(n => n.id === "review-assumptions")!.factStatus = "assumed";
@@ -149,16 +154,19 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
   // Event consequences are explicit hypotheses, never source-level facts.
   for (const event of s.events.filter(e => !gameOnly(e.id))) {
     const effects = consequences(event.effects ?? []);
-    if (!effects.length) continue;
+    if (!effects.length && version === "2.2.0") continue;
     const target = s.actions.find(a => (a.effects ?? []).some(e => e.event === event.id) || event.trigger?.action === a.id);
     const planningEffect = event.effects?.find(effect => effect.task || effect.deadline);
     const option = nodes.find(n => n.id === "action-" + target?.id);
     const destination = option ?? nodes.find(n => n.id === (planningEffect?.task ? "task-" + planningEffect.task : "deadline-" + planningEffect?.deadline));
-    const text = "\nHypothetical event " + event.id + ": " + (event.title ?? "") + "\n" + conditionText(event.trigger) + "\n" + conditionText(event.condition) + "\n" + effects.join("\n");
+    const text = "\nHypothetical event " + event.id + ": " + (event.title ?? "") + "\n" + conditionText(event.trigger) + "\n" + conditionText(event.condition) + "\n" + (effects.length ? effects.join("\n") : "Optional milestone only. Obtain supporting evidence independently; occurrence is not recorded.");
     // Keep the full event as its own hypothetical record when embedding would
     // overfill a printable planning card. Never truncate its source semantics.
-    if (destination && destination.detail.length + text.length <= (option ? 4000 : 900)) destination.detail += text;
-    else add("event-" + event.id, "outcome", "Hypothetical: " + (event.title ?? human(event.id)), text + "\nNot established evidence; verify independently.");
+    if (effects.length && destination && destination.detail.length + text.length <= (option ? 4000 : 900)) destination.detail += text;
+    else {
+      add("event-" + event.id, "outcome", "Hypothetical: " + (event.title ?? human(event.id)), text + "\nNot established evidence; verify independently.");
+      if (!effects.length) for (const action of s.actions.filter(a => (a.effects ?? []).some(effect => effect.event === event.id) || event.trigger?.action === a.id)) edge("action-" + action.id, "event-" + event.id, "Hypothetical milestone; supporting evidence required");
+    }
   }
   for (const evidence of s.evidence) for (const factId of evidence.supports_facts ?? []) edge("evidence-" + evidence.id, "fact-" + factId, "Source register support — review required");
   for (const stage of s.stages) for (const actionId of stage.exit_actions ?? []) edge("stage-" + stage.id, "action-" + actionId, "Optional task / option");
@@ -181,7 +189,7 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
   }
   if (groupTail.get("decision")) edge(groupTail.get("decision")!, "report-outline", "Compare hypothetical scenarios and prepare report");
   return applyCaseType({
-    caseId, version: CONVERTED_EXAMPLE_VERSION, parent: { caseId, version: s.metadata.content_version, fingerprint: source.scenario_fingerprint },
+    caseId, version, parent: { caseId, version: s.metadata.content_version, fingerprint: source.scenario_fingerprint },
     title: spec.title, jurisdiction: source.jurisdiction, role: local.player_client_role ?? "Responsible counsel",
     premise: spec.description + "\nDecision owner: " + owner + "\n" + (local.synopsis ?? "") + "\nFictional example. Branch-generated results are hypothetical. Legacy source IDs and original simulation fingerprint are retained in lineage.\nExpected output: " + output,
     premisePublication: "author-reviewed", nodes, links, editHistory: [], updatedAt,

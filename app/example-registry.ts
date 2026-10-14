@@ -87,3 +87,15 @@ export async function prepareExample(id: ExampleId, locale: "en" | "ru"): Promis
     || prepared.draft.caseType?.id !== descriptor.category) throw new Error("Example registry/source mismatch");
   return prepared;
 }
+
+/** Explicit historical preparation; never substitute today's template for saved lineage. */
+export async function prepareExampleVersion(id: ExampleId, locale: "en" | "ru", version: string): Promise<PreparedExample> {
+  const descriptor = exampleDescriptor(id);
+  if (version === descriptor.source.version) return prepareExample(id, locale);
+  if (descriptor.family === "converted" && version === "2.2.0") {
+    const { buildConvertedExample } = await import("./converted-examples");
+    const draft = buildConvertedExample(descriptor.source.caseId, locale, undefined, version);
+    return { draft, prompt: draft.premise };
+  }
+  throw new Error("Unsupported example version");
+}
