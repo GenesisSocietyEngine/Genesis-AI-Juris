@@ -4,6 +4,8 @@ import { caseTypePresentation } from "./case-type-presentation";
 import { caseTypeReference } from "./case-type-reference";
 import type { CaseTypeId, LocalText } from "./types";
 
+export const CATEGORY_DEMO_VERSION = "1.1.0";
+
 const text = (en: string, ru: string): LocalText => ({ en, ru });
 export type CategoryDemo = {
   caseTypeId: CaseTypeId; title: LocalText; question: LocalText; owner: LocalText;

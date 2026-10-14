@@ -3,6 +3,7 @@
 import { lazy, Suspense, useState } from "react";
 import type { CanopyScenarioId } from "./canopy-fixture";
 import { CANOPY_LEARNING_PROMPT, demoLearningPrompt } from "./demo-learning-prompts";
+import ExampleLaunchStatus, { type ExampleLaunch } from "./ExampleLaunchStatus";
 
 const CanopyWalkthrough = lazy(() => import("./DemoCases"));
 export type DemoCard = {
@@ -18,10 +19,11 @@ export function matchesCanopy(filters: { query: string; practice: string; jurisd
     && filters.difficulty === "all" && filters.duration === "all" && filters.tag === "all";
 }
 
-export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, launch, feedback, openCanopy, canopyWorkflowHref }: {
+export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, launch, feedback, openCanopy, canopyWorkflowHref, exampleLaunch, cancelExample }: {
   locale: "en" | "ru"; cards: DemoCard[]; showCanopy: boolean; busy: boolean;
   launch: (id: string) => void; feedback: (id: string) => void;
   openCanopy: (id: CanopyScenarioId) => Promise<void>; canopyWorkflowHref: string;
+  exampleLaunch?: ExampleLaunch | null; cancelExample?: () => void;
 }) {
   const en = locale === "en";
   const [canopyExpanded, setCanopyExpanded] = useState(false);
@@ -37,6 +39,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
         <summary className="secondary-cta">{en ? "Take guided walkthrough" : "Посмотреть обзор"}</summary>
         {canopyExpanded && <Suspense fallback={<p role="status">{en ? "Loading walkthrough…" : "Загрузка обзора…"}</p>}><CanopyWalkthrough busy={busy} locale={locale} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref}/></Suspense>}
       </details>
+      {exampleLaunch?.id.startsWith("canopy:") && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => void openCanopy(exampleLaunch.id.slice("canopy:".length) as CanopyScenarioId)}/>}
     </article>}
     {cards.map(card => <article className="demo-catalogue-card" key={card.id}>
       <span className="demo-format">{en ? "Example case" : "Пример кейса"}</span>
@@ -45,6 +48,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
       <p className="demo-card-meta">{card.jurisdiction} · {card.practice}</p>
       <p><b>{en ? "Work towards" : "Результат"}:</b> {card.output}</p><details className="demo-editorial"><summary>{en ? "Editorial details" : "Редакционные сведения"}</summary><p>{card.review} · v{card.version}</p><p>{en ? "Author" : "Автор"}: {card.author}</p><p>{card.legalAsOf ? `${en ? "Law as of" : "Право на"} ${card.legalAsOf}` : (en ? "Legal review pending" : "Проверка актуальности ожидается")}</p></details>
       <div className="demo-card-actions"><button type="button" className="primary-cta" disabled={busy} onClick={() => launch(card.id)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${card.title}`}>{en ? "Open example case" : "Открыть пример кейса"}</button><button type="button" className="secondary-cta" onClick={() => feedback(card.id)}>{en ? "Give feedback" : "Оставить отзыв"}</button></div>
+      {exampleLaunch?.id === `converted:${card.id}` && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => launch(card.id)}/>}
     </article>)}
   </>;
 }

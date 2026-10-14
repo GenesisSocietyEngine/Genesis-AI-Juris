@@ -9,21 +9,23 @@ import { buildCategoryDemo } from "../app/category-demo-draft";
 import { categoryDemoPrompt } from "../app/category-demo-prompts";
 import type { StudioDraft } from "../app/types";
 import { createExampleWorkingCopy } from "../app/example-working-copy";
+import { EXAMPLE_REGISTRY, prepareExample, type ExampleId } from "../app/example-registry";
 import { CASE_TYPE_REGISTRY } from "../app/case-type-registry";
 
 // Execute the real parent launch/replacement handlers, rather than duplicating their logic.
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const handlers: string[] = [];
 function collect(node: ts.Node) {
-  if (ts.isFunctionDeclaration(node) && node.name && ["resetStudioDraft", "openCategoryDemo", "cancelCategoryDemo"].includes(node.name.text)) handlers.push(node.getText(source));
+  if (ts.isFunctionDeclaration(node) && node.name && ["resetStudioDraft", "openCategoryDemo", "openRegisteredExample", "openConvertedExample", "loadCanopyDemo", "cancelCategoryDemo"].includes(node.name.text)) handlers.push(node.getText(source));
   ts.forEachChild(node, collect);
 }
 collect(source);
-assert.equal(handlers.length, 3);
-async function launch({ leave = true, confirm = true, enter = true, load = true, locale = "en" as "en" | "ru", category = "tax_planning" as typeof CASE_TYPE_REGISTRY[number]['id'], stale = "" } = {}) {
+assert.equal(handlers.length, 6);
+async function launch({ leave = true, confirm = true, enter = true, load = true, locale = "en" as "en" | "ru", category = "tax_planning" as typeof CASE_TYPE_REGISTRY[number]['id'], stale = "", exampleId = undefined as ExampleId | undefined } = {}) {
   const original = buildCategoryDemo("contract_review", "en");
   const state = { draft: original, prompts: [] as string[], destinations: [] as [string, number][], confirmations: [] as string[], replacements: 0, notices: [] as string[], launch: null as null | { phase: string } };
-  const code = ts.transpileModule(`${handlers.join("\n")}\nopenCategoryDemo(${JSON.stringify(category)});`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  const invocation = exampleId ? exampleId.startsWith("converted:") ? `openConvertedExample(${JSON.stringify(exampleId.slice(10))})` : exampleId.startsWith("canopy:") ? `loadCanopyDemo(${JSON.stringify(exampleId.slice(7))})` : `openCategoryDemo(${JSON.stringify(exampleId.slice(9))})` : `openCategoryDemo(${JSON.stringify(category)})`;
+  const code = ts.transpileModule(`${handlers.join("\n")}\n${invocation};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const requestGate = new LatestRequestGate();
   const contextRef = { current: 'context' };
   const draftRef = { current: original };
@@ -34,14 +36,15 @@ async function launch({ leave = true, confirm = true, enter = true, load = true,
     setExampleLaunch: (value: unknown) => { state.launch = typeof value === "function" ? value(state.launch) : value; },
     studioReplacementMessage, studioStorageScope: "scope", studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false, mayPersistStudioDraftOnDevice: () => true, hasStudioEvidenceInput: () => false, studioEvidenceBuffersRef: { current: {} },
     locale, categoryDemoPrompt, createExampleWorkingCopy, enterExampleOverview: () => state.destinations.push(["studio", 1]), prompt: "Unapplied instruction", draftRef, starterCancelledRef: { current: false },
-    loadCategoryDemo: async (...args: Parameters<typeof buildCategoryDemo>) => {
+    loadRegisteredExample: async (id: string, locale: "en" | "ru") => {
+
       if (!load) throw new Error("offline chunk");
       if (stale === 'context') contextRef.current = 'new navigation';
       if (stale === 'scope') session.scope = 'other account';
       if (stale === 'epoch') session.epoch++;
       if (stale === 'draft') { draftRef.current = buildCategoryDemo('investigation', 'en'); state.draft = draftRef.current; }
       if (stale === 'cancelled') requestGate.abort();
-      return { draft: buildCategoryDemo(...args), prompt: categoryDemoPrompt(args[0], args[1]) };
+      return prepareExample(id as ExampleId, locale);
     },
     showSessionNotice: (message: string) => state.notices.push(message), mayLeaveStudio: () => leave,
     window: { confirm: (message: string) => { state.confirmations.push(message); return confirm; } },
@@ -114,3 +117,27 @@ test("example confirmation explicitly distinguishes workspace/export from device
   assert.match(ru, /Предыдущие черновики устройства/);
   assert.match(ru, /до удаления активных копий устройства/);
 });
+
+// The real wrappers for every family exercise the same transition, not a simulated launcher.
+for (const descriptor of EXAMPLE_REGISTRY) {
+  for (const stale of ['context', 'scope', 'epoch', 'draft', 'cancelled']) test(`${descriptor.id}: late preparation after ${stale} cannot replace work`, async () => {
+    const { state, original } = await launch({ exampleId: descriptor.id, stale });
+    assert.equal(state.replacements, 0); assert.deepEqual(state.prompts, []); assert.deepEqual(state.destinations, []);
+    if (stale !== 'draft') assert.equal(state.draft, original);
+  });
+  test(`${descriptor.id}: offline, declined and newly blocked replacements preserve the original case`, async () => {
+    for (const options of [{ load: false }, { confirm: false }, { enter: false }]) {
+      const { state, original } = await launch({ exampleId: descriptor.id, ...options });
+      assert.equal(state.draft, original); assert.equal(state.replacements, 0); assert.deepEqual(state.destinations, []);
+      if (options.load === false) assert.equal(state.launch?.phase, 'error');
+    }
+  });
+  test(`${descriptor.id}: repeated launch reaches Overview with independent working identities`, async () => {
+    const first = (await launch({ exampleId: descriptor.id })).state;
+    const second = (await launch({ exampleId: descriptor.id })).state;
+    assert.equal(first.replacements, 1); assert.notEqual(first.draft.caseId, second.draft.caseId);
+    assert.equal(first.draft.exampleSource?.caseId, descriptor.source.caseId);
+    assert.equal(first.draft.exampleSource?.version, descriptor.source.version);
+    assert.deepEqual(first.destinations, [['studio', 1]]);
+  });
+}

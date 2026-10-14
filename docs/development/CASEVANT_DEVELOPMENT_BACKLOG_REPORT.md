@@ -1,6 +1,6 @@
 # CaseVant development backlog and continuation instructions
 
-Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The next substantial product step is a shared typed example registry, followed by an auditable provenance/projection register and an opt-in comparison and upgrade workflow.
+Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The next substantial product step is an auditable provenance/projection register, followed by an opt-in comparison and upgrade workflow.
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
@@ -20,7 +20,7 @@ The current layout amendment moves Canopy, converted cases and category cards in
 
 | Order | Priority | Deliverable | Primary owner role |
 | --- | --- | --- | --- |
-| 1 | P1 | Shared typed example descriptor and launcher registry | Application and case-data |
+| Completed implementation | P1 | Shared typed example descriptor and launcher registry | Application and case-data |
 | 2 | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
 | 3 | P1 | Opt-in semantic version comparison and upgrade copies | Application and persistence |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
@@ -32,7 +32,9 @@ The current layout amendment moves Canopy, converted cases and category cards in
 
 ### Shared example registry
 
-Start with `app/CaseExampleLibrary.tsx`, `app/DemoCatalogueCards.tsx`, `app/CategoryDemoCards.tsx`, `app/converted-examples.ts`, `app/canopy-fixture.ts`, the category demo modules and the launch handlers in `app/JurisApp.tsx`. Introduce descriptors for stable source identity, source version, category, bilingual presentation, optional guidance and an explicit draft factory. Migrate one example family first, review it, then migrate the others.
+Delivered implementation: `app/example-registry.ts` supplies lightweight metadata and lazy reference factories; all example callback families now use one guarded launch handler. Eighteen public packages and the hidden Canopy unavailable-clearance compatibility package have frozen bilingual source/copy-source fingerprint checks. Future registry changes must keep those locks and the all-family launch/recovery acceptance. See [registry review](../testing/example-registry-review-2026-10-14.md).
+
+For further changes, start with `app/CaseExampleLibrary.tsx`, `app/DemoCatalogueCards.tsx`, `app/CategoryDemoCards.tsx`, `app/converted-examples.ts`, `app/canopy-fixture.ts`, the category demo modules and the launch handlers in `app/JurisApp.tsx`. Introduce descriptors for stable source identity, source version, category, bilingual presentation, optional guidance and an explicit draft factory. Migrate one example family first, review it, then migrate the others.
 
 Acceptance: all eighteen packages retain exact source IDs, versions and unchanged-content fingerprints; every launch creates a fresh working-case ID through `createExampleWorkingCopy`; all ordinary examples use the same navigation and async ownership guards. Loading, cancellation, stale requests, changed account/epoch/draft and protected replacement cannot overwrite work. Keep one presentation grid owned by the library rather than rebuilding separate grids inside each card family.
 

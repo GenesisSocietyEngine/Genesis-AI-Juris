@@ -1,6 +1,6 @@
-import type { CaseTypeId } from "./types";
+import type { ExampleId } from "./example-registry";
 
-export type ExampleLaunch = { id: CaseTypeId; phase: "loading" | "error"; context: string };
+export type ExampleLaunch = { id: ExampleId; phase: "loading" | "error"; context: string };
 
 export default function ExampleLaunchStatus({ launch, locale, cancel, retry }: {
   launch: ExampleLaunch; locale: "en" | "ru"; cancel: () => void; retry: () => void;

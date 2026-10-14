@@ -16,10 +16,11 @@ import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
-import type { ExampleLaunch } from "./ExampleLaunchStatus";
+import ExampleLaunchStatus, { type ExampleLaunch } from "./ExampleLaunchStatus";
 import { retainStudioReplacement, purgeKnownStudioArchive, restoreArchivedStudioDraft, type ArchivedStudioDraft } from "./studio-draft-archive";
 import { studioReplacementMessage } from "./studio-replacement-message";
 import { createExampleWorkingCopy } from "./example-working-copy";
+import type { ExampleId } from "./example-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import { Icon, metricLabels, readJsonResponse } from "./JurisViewShared";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
@@ -106,11 +107,9 @@ function graphBoundsForNodes(nodes: StudioNode[]) {
     }, 0))),
   };
 }
-async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
-  const [{ buildCategoryDemo }, { categoryDemoPrompt }] = await Promise.all([
-    import("./category-demo-draft"), import("./category-demo-prompts"),
-  ]);
-  return { draft: createExampleWorkingCopy(buildCategoryDemo(id, locale)), prompt: categoryDemoPrompt(id, locale) };
+async function loadRegisteredExample(id: ExampleId, locale: Locale) {
+  const { prepareExample } = await import("./example-registry");
+  return prepareExample(id, locale);
 }
 
 const LibraryView = lazy(() => import("./CaseExampleLibrary"));
@@ -2113,38 +2112,28 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     window.dispatchEvent(new Event("genesis-studio-navigation"));
   }
   async function openConvertedExample(id: string) {
-    if (!mayLeaveStudio()) return;
-    cancelCategoryDemo();
-    starterCancelledRef.current = true;
-    const launchVersion = ++catalogueLaunchRef.current;
-    const context = exampleContextRef.current;
-    const before = draftRef.current;
-    const { epoch, scope } = studioSessionAuthority.getSnapshot();
-    try {
-      const { buildConvertedExample } = await import("./converted-examples");
-      if (launchVersion !== catalogueLaunchRef.current || context !== exampleContextRef.current || before !== draftRef.current
-        || epoch !== studioSessionAuthority.getSnapshot().epoch || scope !== studioSessionAuthority.getSnapshot().scope) return;
-      const next = createExampleWorkingCopy(buildConvertedExample(id, locale));
-      if (!resetStudioDraft(next, next.premise)) return;
-      enterExampleOverview();
-    } catch { showSessionNotice(locale === "en" ? "The example could not be opened. Your current case remains available." : "Не удалось открыть пример. Текущий кейс сохранён."); }
+    return openRegisteredExample(`converted:${id}`);
   }
   async function openCategoryDemo(id: CaseTypeId) {
+    return openRegisteredExample(`category:${id}`);
+  }
+  async function openRegisteredExample(id: ExampleId) {
     if (!mayLeaveStudio()) return;
     cancelCategoryDemo();
-    catalogueLaunchRef.current += 1;
+    const launchVersion = ++catalogueLaunchRef.current;
     starterCancelledRef.current = true;
     const ticket = exampleRequestGateRef.current.start();
     const context = exampleContextRef.current;
     const before = draftRef.current;
     const { epoch, scope } = studioSessionAuthority.getSnapshot();
     const current = () => exampleRequestGateRef.current.isCurrent(ticket)
+      && launchVersion === catalogueLaunchRef.current
       && context === exampleContextRef.current && before === draftRef.current
       && epoch === studioSessionAuthority.getSnapshot().epoch
       && scope === studioSessionAuthority.getSnapshot().scope;
     setExampleLaunch({ id, phase: "loading", context });
     try {
-      const { draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale);
+      const { draft: next, prompt: nextPrompt } = await loadRegisteredExample(id, locale);
       if (!current()) return;
       if (!mayLeaveStudio()) { cancelCategoryDemo(); return; }
       if (!resetStudioDraft(createExampleWorkingCopy(next), nextPrompt)) { cancelCategoryDemo(); return; }
@@ -2192,20 +2181,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     } catch { showSessionNotice(locale === "en" ? "This earlier draft needs recovery. Your open case is unchanged." : "Предыдущий черновик требует восстановления. Открытый кейс не изменён."); }
   }
   async function loadCanopyDemo(id: CanopyScenarioId) {
-    starterCancelledRef.current = true;
-    if (!mayLeaveStudio()) return;
-    cancelCategoryDemo();
-    const before = draftRef.current;
-    const context = exampleContextRef.current;
-    const { epoch, scope } = studioSessionAuthority.getSnapshot();
-    const launchVersion = ++catalogueLaunchRef.current;
-    const { buildCanopyPackage } = await import("./canopy-fixture");
-    if (launchVersion !== catalogueLaunchRef.current) return;
-    if (context !== exampleContextRef.current || draftRef.current !== before || epoch !== studioSessionAuthority.getSnapshot().epoch || scope !== studioSessionAuthority.getSnapshot().scope) return;
-    const prepared = buildCanopyPackage(id, true);
-    const workingCopy = createExampleWorkingCopy(prepared.draft);
-    if (!resetStudioDraft(workingCopy, workingCopy.premise)) return;
-    enterExampleOverview();
+    return openRegisteredExample(`canopy:${id}`);
   }
   function loadExampleDraft() {
     void loadCanopyDemo("base").catch(() => showSessionNotice(locale === "en" ? "Canopy could not be opened. Please try again." : "Не удалось открыть Canopy. Попробуйте ещё раз."));
@@ -2235,7 +2211,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode, privateOrigin: privatePlayOrigin })}
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       /></Suspense>}
-      {view === "studio" && !studioRecovery && <><div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} prepareTaxWrite={studioTaxWriteBaseline.current.prepare} onDocumentRecovery={(reason, rawText, filename) => { setSessionNotice(""); setStudioRecovery({scope: currentStudioScopeRef.current, reason, rawText, filename, canExport: false}); }} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} /></div></>}
+      {view === "studio" && !studioRecovery && <>{visibleExampleLaunch && <ExampleLaunchStatus launch={visibleExampleLaunch} locale={locale} cancel={cancelCategoryDemo} retry={() => void openRegisteredExample(visibleExampleLaunch.id)}/>}<div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} prepareTaxWrite={studioTaxWriteBaseline.current.prepare} onDocumentRecovery={(reason, rawText, filename) => { setSessionNotice(""); setStudioRecovery({scope: currentStudioScopeRef.current, reason, rawText, filename, canExport: false}); }} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} /></div></>}
       {view === "studio" && studioRecovery && recoveryVisible && <StudioRecoveryView recovery={studioRecovery} locale={locale} onReturn={() => setStudioRecovery(null)} />}
       {view === "studio" && studioRecovery && !recoveryVisible && <section className="studio-entry"><p role="status">{locale === "en" ? "Verify account access before opening the retained document." : "Подтвердите доступ аккаунта перед открытием сохранённого документа."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a></section>}
       {((view === "studio" && studioConcealed) || (view === "play" && privatePlayConcealed)) && <section className="studio-entry"><h2>{locale === "en" ? "Verify access to this workspace" : "Подтвердите доступ к workspace"}</h2><p id="studio-access-status" role="status">{studioSession.signOutPending ? pendingSignOutMessage(locale) : locale === "en" ? "Private content is concealed. Sign in, then refresh access. Unsaved input stays in this tab while access is unconfirmed." : "Приватное содержимое скрыто. Войдите и обновите доступ. Пока доступ не подтверждён, несохранённый ввод остаётся в памяти этой вкладки."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a><button type="button" disabled={studioSession.signOutPending} aria-describedby="studio-access-status" onClick={() => void studioSessionAuthority.refresh(true, activeProtectedCaseId)}>{locale === "en" ? "Refresh access" : "Обновить доступ"}</button></section>}

@@ -1,0 +1,306 @@
+[
+  {
+    "id": "converted:be_commercial_failed_erp_001",
+    "locale": "en",
+    "caseId": "be_commercial_failed_erp_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-09da6cad7fc249c6ab4b08a9eb0bb74fda4c7278393fa4ca837e17b46d06edd9",
+    "workingSourceFingerprint": "sha256-57f8622ba3f8fa565cf1e26e5c9721d02e8ca1b50238b05f11090bbb9a03a1cb"
+  },
+  {
+    "id": "converted:be_commercial_logistics_001",
+    "locale": "en",
+    "caseId": "be_commercial_logistics_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-70a2499f5882191855a02a7c928a569eb7049679dc66aec600cfcccf6e292e89",
+    "workingSourceFingerprint": "sha256-081197ad7e96f0e8f55fa872c5ed6b1f2cd824fb2dc361f2d09b400ef927a85e"
+  },
+  {
+    "id": "converted:greenfire_first_72_hours",
+    "locale": "en",
+    "caseId": "greenfire_first_72_hours",
+    "version": "2.2.0",
+    "fingerprint": "sha256-f57d91157b1cfa97c89715f00c3ee5c0dab11bd1268d911c946413c74ecf0365",
+    "workingSourceFingerprint": "sha256-97fc4628f885e5c97c01990b3bb6a8898eda49d5a558da8fcdba5997aada257e"
+  },
+  {
+    "id": "converted:nl_food_safety_goldenshell_001",
+    "locale": "en",
+    "caseId": "nl_food_safety_goldenshell_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-56eb9481a22bc0d99fdb27d6ae6d01a071072fbae26481f0305be8fea52d5fb6",
+    "workingSourceFingerprint": "sha256-deadcaa6c5a440cf57d16a8cc2e558bb64cf98fb4d7becc8da91a23d06a7cf80"
+  },
+  {
+    "id": "converted:us_environmental_desert_water_001",
+    "locale": "en",
+    "caseId": "us_environmental_desert_water_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-20c4091bcf5a1afa11c2feb5b2de7d1c8f8cff97e16b2e0d23bf827d271cb587",
+    "workingSourceFingerprint": "sha256-931eb9b8490d37f32000c98c950e08bfaab351764c58c44458a24817452f9593"
+  },
+  {
+    "id": "category:general_advisory",
+    "locale": "en",
+    "caseId": "demo_general_advisory",
+    "version": "1.1.0",
+    "fingerprint": "sha256-ea8fbb99e1964ecb640a60cb476f6175193cd9f05bdac4e582b541e98411aa04",
+    "workingSourceFingerprint": "sha256-ea8fbb99e1964ecb640a60cb476f6175193cd9f05bdac4e582b541e98411aa04"
+  },
+  {
+    "id": "category:litigation_strategy",
+    "locale": "en",
+    "caseId": "demo_litigation_strategy",
+    "version": "1.1.0",
+    "fingerprint": "sha256-a84d632d31a27ef95ed64751851303cda54f3d1323fee1d18bf1b3472af4a98b",
+    "workingSourceFingerprint": "sha256-a84d632d31a27ef95ed64751851303cda54f3d1323fee1d18bf1b3472af4a98b"
+  },
+  {
+    "id": "category:contract_review",
+    "locale": "en",
+    "caseId": "demo_contract_review",
+    "version": "1.1.0",
+    "fingerprint": "sha256-4d07c244523bc949a4435dd96d955427a3ce8240e83eb35f5fa21552c9374069",
+    "workingSourceFingerprint": "sha256-4d07c244523bc949a4435dd96d955427a3ce8240e83eb35f5fa21552c9374069"
+  },
+  {
+    "id": "category:tax_planning",
+    "locale": "en",
+    "caseId": "demo_tax_planning",
+    "version": "1.1.0",
+    "fingerprint": "sha256-de9cbd3f3f507244752a3af99cf4bb04f8c1471bc6c0979bf78f8ef431ac7def",
+    "workingSourceFingerprint": "sha256-de9cbd3f3f507244752a3af99cf4bb04f8c1471bc6c0979bf78f8ef431ac7def"
+  },
+  {
+    "id": "category:compliance",
+    "locale": "en",
+    "caseId": "demo_compliance",
+    "version": "1.1.0",
+    "fingerprint": "sha256-6893c9af057c0ec5b6e2bf5f5ab8d871436560236e97339b80da6f56b85d5310",
+    "workingSourceFingerprint": "sha256-6893c9af057c0ec5b6e2bf5f5ab8d871436560236e97339b80da6f56b85d5310"
+  },
+  {
+    "id": "category:tax_compliance",
+    "locale": "en",
+    "caseId": "demo_tax_compliance",
+    "version": "1.1.0",
+    "fingerprint": "sha256-e2a889c8efd3313de2512df830da31fe6448d3e13ae4bbc1a23f19189fd434d5",
+    "workingSourceFingerprint": "sha256-e2a889c8efd3313de2512df830da31fe6448d3e13ae4bbc1a23f19189fd434d5"
+  },
+  {
+    "id": "category:erp_incident",
+    "locale": "en",
+    "caseId": "demo_erp_incident",
+    "version": "1.1.0",
+    "fingerprint": "sha256-a487659380011890ed7266e5fa1a802b9eb77410c7b84bf605cd3f071cafaefd",
+    "workingSourceFingerprint": "sha256-a487659380011890ed7266e5fa1a802b9eb77410c7b84bf605cd3f071cafaefd"
+  },
+  {
+    "id": "category:investigation",
+    "locale": "en",
+    "caseId": "demo_investigation",
+    "version": "1.1.0",
+    "fingerprint": "sha256-0754814e2d13bdd3a91ddcc10941d3810a3e6e5733e57c9afc0a1e104e56ce22",
+    "workingSourceFingerprint": "sha256-0754814e2d13bdd3a91ddcc10941d3810a3e6e5733e57c9afc0a1e104e56ce22"
+  },
+  {
+    "id": "category:training_simulation",
+    "locale": "en",
+    "caseId": "demo_training_simulation",
+    "version": "1.1.0",
+    "fingerprint": "sha256-c50f1c44f1125270b5f93bfd1bc4895ddf74777725a8bc746dfb99fe90aa9a4b",
+    "workingSourceFingerprint": "sha256-c50f1c44f1125270b5f93bfd1bc4895ddf74777725a8bc746dfb99fe90aa9a4b"
+  },
+  {
+    "id": "canopy:base",
+    "locale": "en",
+    "caseId": "project_canopy_managed_site_expansion",
+    "version": "2.0.0",
+    "fingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702",
+    "workingSourceFingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702"
+  },
+  {
+    "id": "canopy:upside",
+    "locale": "en",
+    "caseId": "project_canopy_managed_site_expansion_upside",
+    "version": "2.5.0",
+    "fingerprint": "sha256-ccf50ea39dc9a9f1565100c5fd3ee3e6accefb327547d418ded96bd20bf68a9c",
+    "workingSourceFingerprint": "sha256-ccf50ea39dc9a9f1565100c5fd3ee3e6accefb327547d418ded96bd20bf68a9c"
+  },
+  {
+    "id": "canopy:hard_stop",
+    "locale": "en",
+    "caseId": "project_canopy_managed_site_expansion_hard_stop",
+    "version": "2.6.0",
+    "fingerprint": "sha256-45cd82b379929e740c0318e2658bc30d908a048e6750620d0563b1f3e8418387",
+    "workingSourceFingerprint": "sha256-45cd82b379929e740c0318e2658bc30d908a048e6750620d0563b1f3e8418387"
+  },
+  {
+    "id": "canopy:downside",
+    "locale": "en",
+    "caseId": "project_canopy_managed_site_expansion_downside",
+    "version": "2.4.0",
+    "fingerprint": "sha256-e4a58657e7e214a789c20e4f1f3f02e8ab6a3b51944416a3f533124c3d6c6047",
+    "workingSourceFingerprint": "sha256-e4a58657e7e214a789c20e4f1f3f02e8ab6a3b51944416a3f533124c3d6c6047"
+  },
+  {
+    "id": "canopy:hard_stop_unavailable",
+    "locale": "en",
+    "caseId": "project_canopy_managed_site_expansion_hard_stop_unavailable",
+    "version": "2.7.0",
+    "fingerprint": "sha256-2f016c316b1a400857df057c17ec892e3b3852db0890a40b5ebcec64fe439786",
+    "workingSourceFingerprint": "sha256-2f016c316b1a400857df057c17ec892e3b3852db0890a40b5ebcec64fe439786"
+  },
+  {
+    "id": "converted:be_commercial_failed_erp_001",
+    "locale": "ru",
+    "caseId": "be_commercial_failed_erp_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-1aa3fbbdd8aaf76ac639c9c0543ae7cafa98764846a36354deaaf0df6e12f606",
+    "workingSourceFingerprint": "sha256-62b38ca5f749668e241e5e7d4774b03e641f06ac0aabae61e91f5c0d3c78f0fc"
+  },
+  {
+    "id": "converted:be_commercial_logistics_001",
+    "locale": "ru",
+    "caseId": "be_commercial_logistics_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-7a2fbff946c458f6fff9fffc5781ca55fbab9024477508b11c6f2a2ab5f7f918",
+    "workingSourceFingerprint": "sha256-f2e9690c790e05a7f901198e30f543979f6ddd6ebddd45fd91081f30f4602e7a"
+  },
+  {
+    "id": "converted:greenfire_first_72_hours",
+    "locale": "ru",
+    "caseId": "greenfire_first_72_hours",
+    "version": "2.2.0",
+    "fingerprint": "sha256-44397950bde6b1efded8bbe9fff13b04c875cccafb0b82253b57b95d33600186",
+    "workingSourceFingerprint": "sha256-7049d47052da9bcccb3e2e97a3e88348e94f6f3e76644869e54fe996bb622ab4"
+  },
+  {
+    "id": "converted:nl_food_safety_goldenshell_001",
+    "locale": "ru",
+    "caseId": "nl_food_safety_goldenshell_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-6cbd9a4d9f505cf974646a35474f2c38b054ef32d1a3444cb1201e9bc5aad788",
+    "workingSourceFingerprint": "sha256-4d86ec9144ebade2789f9dde82d615c1bff62bab9b5ee500fbb9351a5ac1f244"
+  },
+  {
+    "id": "converted:us_environmental_desert_water_001",
+    "locale": "ru",
+    "caseId": "us_environmental_desert_water_001",
+    "version": "2.2.0",
+    "fingerprint": "sha256-9a3f2d6373306bd75a193958be25f4e0da23b12c608469f18829fdf412c557a6",
+    "workingSourceFingerprint": "sha256-81bcf52a33aa9f1ed9a7908069b30e4219e3b6ac895b2f854dce015b67f6a15a"
+  },
+  {
+    "id": "category:general_advisory",
+    "locale": "ru",
+    "caseId": "demo_general_advisory",
+    "version": "1.1.0",
+    "fingerprint": "sha256-aa858ccd355460f57e397d12e04f59666772dd6957e9c07d8d497ddedb839923",
+    "workingSourceFingerprint": "sha256-aa858ccd355460f57e397d12e04f59666772dd6957e9c07d8d497ddedb839923"
+  },
+  {
+    "id": "category:litigation_strategy",
+    "locale": "ru",
+    "caseId": "demo_litigation_strategy",
+    "version": "1.1.0",
+    "fingerprint": "sha256-d7f68d2cf4155271f64c042178ad0f802c3f5e4cd4d272e8644df9a8fa7be362",
+    "workingSourceFingerprint": "sha256-d7f68d2cf4155271f64c042178ad0f802c3f5e4cd4d272e8644df9a8fa7be362"
+  },
+  {
+    "id": "category:contract_review",
+    "locale": "ru",
+    "caseId": "demo_contract_review",
+    "version": "1.1.0",
+    "fingerprint": "sha256-f567ade0bdc63dcc4799d0da99ea0f399abcc7ed82fc747b2261434d9036ad3f",
+    "workingSourceFingerprint": "sha256-f567ade0bdc63dcc4799d0da99ea0f399abcc7ed82fc747b2261434d9036ad3f"
+  },
+  {
+    "id": "category:tax_planning",
+    "locale": "ru",
+    "caseId": "demo_tax_planning",
+    "version": "1.1.0",
+    "fingerprint": "sha256-8bf33812b59a85bd5644ab48760de451529bea042a842d610f608a541c82bfd4",
+    "workingSourceFingerprint": "sha256-8bf33812b59a85bd5644ab48760de451529bea042a842d610f608a541c82bfd4"
+  },
+  {
+    "id": "category:compliance",
+    "locale": "ru",
+    "caseId": "demo_compliance",
+    "version": "1.1.0",
+    "fingerprint": "sha256-9fb4bf8aa7371652378dc5aaea10ba9dcf0a6609ed01d0bcaeb7a0c9afbe96b1",
+    "workingSourceFingerprint": "sha256-9fb4bf8aa7371652378dc5aaea10ba9dcf0a6609ed01d0bcaeb7a0c9afbe96b1"
+  },
+  {
+    "id": "category:tax_compliance",
+    "locale": "ru",
+    "caseId": "demo_tax_compliance",
+    "version": "1.1.0",
+    "fingerprint": "sha256-bede8accee49c921e21d934eebc0f8a6ab4909c1de255a095bd142035f76f876",
+    "workingSourceFingerprint": "sha256-bede8accee49c921e21d934eebc0f8a6ab4909c1de255a095bd142035f76f876"
+  },
+  {
+    "id": "category:erp_incident",
+    "locale": "ru",
+    "caseId": "demo_erp_incident",
+    "version": "1.1.0",
+    "fingerprint": "sha256-e69635373a2e72c5536f3ad7bac38397d63cf705da80ec25065d13c4983fc79d",
+    "workingSourceFingerprint": "sha256-e69635373a2e72c5536f3ad7bac38397d63cf705da80ec25065d13c4983fc79d"
+  },
+  {
+    "id": "category:investigation",
+    "locale": "ru",
+    "caseId": "demo_investigation",
+    "version": "1.1.0",
+    "fingerprint": "sha256-33c17f218c86c4ea64fba39cc89241ea5d447fff20785dc00dc7c11281e8388d",
+    "workingSourceFingerprint": "sha256-33c17f218c86c4ea64fba39cc89241ea5d447fff20785dc00dc7c11281e8388d"
+  },
+  {
+    "id": "category:training_simulation",
+    "locale": "ru",
+    "caseId": "demo_training_simulation",
+    "version": "1.1.0",
+    "fingerprint": "sha256-0bb4b7b79c72302fdb6b21fcf8eccfdefc0ce0cc8c5ffff76279214c5ccc66cf",
+    "workingSourceFingerprint": "sha256-0bb4b7b79c72302fdb6b21fcf8eccfdefc0ce0cc8c5ffff76279214c5ccc66cf"
+  },
+  {
+    "id": "canopy:base",
+    "locale": "ru",
+    "caseId": "project_canopy_managed_site_expansion",
+    "version": "2.0.0",
+    "fingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702",
+    "workingSourceFingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702"
+  },
+  {
+    "id": "canopy:upside",
+    "locale": "ru",
+    "caseId": "project_canopy_managed_site_expansion_upside",
+    "version": "2.5.0",
+    "fingerprint": "sha256-ccf50ea39dc9a9f1565100c5fd3ee3e6accefb327547d418ded96bd20bf68a9c",
+    "workingSourceFingerprint": "sha256-ccf50ea39dc9a9f1565100c5fd3ee3e6accefb327547d418ded96bd20bf68a9c"
+  },
+  {
+    "id": "canopy:hard_stop",
+    "locale": "ru",
+    "caseId": "project_canopy_managed_site_expansion_hard_stop",
+    "version": "2.6.0",
+    "fingerprint": "sha256-45cd82b379929e740c0318e2658bc30d908a048e6750620d0563b1f3e8418387",
+    "workingSourceFingerprint": "sha256-45cd82b379929e740c0318e2658bc30d908a048e6750620d0563b1f3e8418387"
+  },
+  {
+    "id": "canopy:downside",
+    "locale": "ru",
+    "caseId": "project_canopy_managed_site_expansion_downside",
+    "version": "2.4.0",
+    "fingerprint": "sha256-e4a58657e7e214a789c20e4f1f3f02e8ab6a3b51944416a3f533124c3d6c6047",
+    "workingSourceFingerprint": "sha256-e4a58657e7e214a789c20e4f1f3f02e8ab6a3b51944416a3f533124c3d6c6047"
+  },
+  {
+    "id": "canopy:hard_stop_unavailable",
+    "locale": "ru",
+    "caseId": "project_canopy_managed_site_expansion_hard_stop_unavailable",
+    "version": "2.7.0",
+    "fingerprint": "sha256-2f016c316b1a400857df057c17ec892e3b3852db0890a40b5ebcec64fe439786",
+    "workingSourceFingerprint": "sha256-2f016c316b1a400857df057c17ec892e3b3852db0890a40b5ebcec64fe439786"
+  }
+]
