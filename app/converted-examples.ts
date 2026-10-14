@@ -188,3 +188,6 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     classification: { practiceArea: "", difficulty: "Intermediate", tags: [...spec.topics, "fictional", "converted-example"], taxTopics: [], complianceOnly: true },
   }, spec.category);
 }
+
+// Read-only projection audit reuses the exact deployed conversion policy.
+export { gameOnly as isConvertedGameplayId, conditionText as convertedConditionText, consequence as convertedEffectText };

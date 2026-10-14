@@ -1,6 +1,6 @@
 # CaseVant development backlog and continuation instructions
 
-Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The next substantial product step is an auditable provenance/projection register, followed by an opt-in comparison and upgrade workflow.
+Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The next substantial product step is the opt-in comparison and upgrade workflow, with review-required projection entries as explicit input.
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
@@ -21,7 +21,7 @@ The current layout amendment moves Canopy, converted cases and category cards in
 | Order | Priority | Deliverable | Primary owner role |
 | --- | --- | --- | --- |
 | Completed implementation | P1 | Shared typed example descriptor and launcher registry | Application and case-data |
-| 2 | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
+| Completed implementation | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
 | 3 | P1 | Opt-in semantic version comparison and upgrade copies | Application and persistence |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
 | 4 | P2 | Inspectable converted-case source packets | Content and case-data |
@@ -40,7 +40,11 @@ Acceptance: all eighteen packages retain exact source IDs, versions and unchange
 
 ### Provenance and projection register
 
-Record what came from the authored source, what was converted into a task or hypothetical scenario, what was excluded as gameplay, and which statements remain assumptions or need review. Make exclusions inspectable by stable source IDs and explicit reasons. Keep synthetic source material separate from uploaded evidence and accepted anchors.
+Delivered implementation: Sources & evidence now offers a read-only, exact-version provenance register and a separately authorized JSON audit export. It exposes source values/hashes, original-to-graph mappings, nested conditions/effects, explicit gameplay exclusions and changed/missing/additional working records. It leaves older saved payloads and template content untouched; unrecognized versions receive no substitute. See [provenance review](../testing/provenance-register-review-2026-10-14.md).
+
+Follow-up: ERP has ten and GreenFire six source entries needing projection review in the audited examples. Assign content/domain review before a future versioned template amendment; do not silently upgrade existing saved copies. Other packages have their own visible register counts. Structural audit coverage is separate from semantic/domain approval.
+
+For future additions, record what came from the authored source, what was converted into a task or hypothetical scenario, what was excluded as gameplay, and which statements remain assumptions or need review. Make exclusions inspectable by stable source IDs and explicit reasons. Keep synthetic source material separate from uploaded evidence and accepted anchors.
 
 Acceptance: reviewers can trace retained evidence and branches to their source; unexplained exclusions fail validation; substantive constraint actions cannot be mistaken for training strain mechanics. Existing saved payloads and original simulation bytes remain unchanged. A status register must not manufacture professional approval from structural completeness or editorial review.
 

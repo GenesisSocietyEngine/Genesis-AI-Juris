@@ -41,6 +41,11 @@
 .footer button { flex-shrink: 0; }
 .preserve { white-space: pre-wrap; }
 .workspace code { overflow-wrap: anywhere; }
+.auditFilters { display: flex; flex-wrap: wrap; gap: 12px; }
+.auditFilters label { display: grid; gap: 6px; min-width: 0; flex: 1 1 220px; }
+.auditFilters input, .auditFilters select { width: 100%; min-width: 0; min-height: 42px; border: 1px solid var(--rule); border-radius: 6px; padding: 8px; color: var(--copy); background: var(--panel); }
+.auditOriginal { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+.auditFilters input:focus-visible, .auditFilters select:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
 @media (max-width: 680px) {
   .workspace { width: calc(100% - 32px); margin: 18px auto; }
   .header { flex-direction: column; gap: 0; margin-bottom: 14px; }

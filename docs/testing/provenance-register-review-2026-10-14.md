@@ -1,0 +1,25 @@
+# Provenance and projection register review
+
+Baseline: deployed Sites v126, clean isolated checkout and canonical main all identify `3cb968e2e3657cdd1b54463afd96e1eb790f2a50`. Verified through Sites version provenance, supported source opening and remote main before editing. Root Cargo.toml, CURRENT_PROGRESS.md and TAX_ECONOMICS_V2_INTEGRATION_PLAN.md changes belong to another writer and are excluded.
+
+Outcome: reviewers can inspect a version-bound source/projection register in Sources & evidence, trace retained source IDs to graph records, distinguish tasks and hypothetical scenarios from factual evidence, and inspect gameplay exclusions by source path, original operands and explicit reason. Unknown semantics and unprojected substantive records require review. Structural coverage cannot imply editorial or professional approval.
+
+Preservation: additive read-only sidecar, no new Studio carrier fields or SQL migration. All 38 existing bilingual source/copy-source fingerprint locks must remain unchanged. Historical templates, saved payloads, original simulation bundle, tax attachments and approval/report contracts remain untouched. Fabricated source lineage and unsupported historic template versions cannot claim a verified projection.
+
+Acceptance: complete source-record/effect/nested-condition inventory; unexplained exclusion and missing retained targets fail validation; monetary/domain conditions are not excluded as gameplay scores; constraint action IDs remain substantive; edited/missing working nodes differ visibly from the exact source projection; stale async preparation/download cannot expose a previous case after context/authority changes. Inspect desktop/narrow/bilingual UI and a real audit export, then exact merged build, canonical CI and Sites rollout.
+
+## Implementation review
+
+The read-only sidecar resolves an exact registry ID/version and normalized source fingerprint before attributing a working copy. It never falls back to title, a later template or a historical saved version. The declared reference is explicitly not proof of authorship or professional approval. Original case carriers and all eighteen public template factories remain unchanged; the hidden Canopy alternative is included.
+
+Converted inventories cover each source record, nested branch/effect/condition and action-reference list, with original values and value hashes. Coverage is independent of disposition policy. Exclusions use explicit reviewed training IDs/metrics; an unfamiliar ID-pattern exclusion, unknown effect or non-score monetary comparison requires review. Nested values under an explicitly training-only inactivity branch are excluded with their parent, not because they are adverse or monetary. Original source IDs and operands remain inspectable.
+
+Canopy sections retain exact immutable version paths, including uncited D05 and non-selected history as reference-only. Category fixtures expose bilingual authored synthetic originals separately from generated template records. Current working records are compared independently: changed, missing and added nodes, context and relationship changes require reassessment rather than rewriting the source. Record x/y layout does not falsely mark its substantive text changed; the complete working fingerprint still detects changed model content/layout.
+
+Review corrections: audit originals are serialized consistently so JSON exports and reloads agree despite optional undefined runtime fields. Missing working nodes no longer pass through a repair/normalization step. Tests preserve legitimate monetary effects and explicitly identify the two zero-value monetary resets inside the excluded ERP inactivity branch. UI comparisons and statement qualifiers are bilingual, new local records have no template attribution, and form focus/long original values are accessible.
+
+306 focused checks passed, including all 38 bilingual source locks, legacy launch/recovery/persistence and source-packet cohorts. Strict TypeScript and scoped lint passed with zero errors. The current ERP audit has 1,477 entries, 358 gameplay exclusions and ten review-required entries; GreenFire has 330 entries and six review-required entries, with zero structural coverage issues. These outstanding projections are visible review findings, not professional approval or evidence acceptance. No source/template fingerprint lock was updated.
+
+Supported browser, canonical CI and publication evidence will be finalized in the slice delivery receipt. Another writer's root paths remain excluded. No native, dependency, SQL or report renderer changes are included.
+
+A strengthened validator additionally binds original case/version/scenario identity. Converted legacy raw simulation fingerprints do not survive normalization as a supported parent fingerprint; the new audit validates the immutable bundle directly rather than rewriting old relationships. Its 44-check provenance cohort passed after this correction. Chrome preview initialization timed out at both default and extended deadlines; do not claim browser acceptance until supported control recovers.
