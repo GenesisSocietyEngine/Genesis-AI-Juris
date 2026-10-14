@@ -148,15 +148,17 @@ Before rollout, identify the previous known-good saved version and verify schema
 
 ## 9. Prioritized next development slices
 
+Use [CaseVant development backlog and continuation instructions](CASEVANT_DEVELOPMENT_BACKLOG_REPORT.md) for the current execution order, code entry points and handoff procedure. The table below distinguishes remaining migrations from the completed 14 October export and visual-coverage work.
+
 These are proposed follow-on work, not part of the audit's authorization to implement unrelated features. Assign roles rather than inventing individual owners or delivery dates.
 
 | Priority / owner role | Slice and concrete acceptance |
 | --- | --- |
-| P1 / QA + application | Close authenticated browser coverage with a repeatable isolated synthetic account, two-copy save/reopen, changed scenario, conflict and real PDF download at desktop/narrow widths. Preserve/remove only explicitly disposable test data. |
-| P1 / reporting + QA | Extend the locked visual corpus with explicit Base and Medium fixtures. The existing 47-PDF corpus exercises Full analysis; it did not catch the old Base/Medium branding. Keep separate source/report/layout identities and inspect both language variants and long titles before adding baselines. |
+| P1 / QA + application | Extend the completed representative authenticated Canopy acceptance to repeatable all-package browser coverage, including narrow authenticated flows. Two-copy save/reopen, hypothetical changes, conflict and actual PDF download have been exercised in Chrome; retain distinct browser/handler evidence and preserve test data unless disposal is authorized. |
+| Completed / reporting + QA | Explicit Base/Medium visual cohort delivered: eight bilingual PDFs, 33 pages, assumptions and long case/graph titles, with a separate all-page lock and canonical CI gate. Maintain it alongside the unchanged 47-PDF Full-analysis corpus; review future design changes before updating baselines. |
 | P1 / case-data + QA | Create a shared typed example descriptor/launcher registry for converted, Canopy and category sources. Preserve IDs, versions, exact Canopy sources and factory semantics; prove all eighteen packages share identity/navigation guards. Avoid a big-bang rewrite. |
 | P1 / content + domain reviewer | Add an explicit case-level provenance/status register and an auditable projection/exclusion manifest. Review unknown effects and jurisdictional assumptions; do not label converted templates approved before review. |
-| P1 / reporting + case-data | Add an explicit complete source-packet export/appendix, distinct from the cited-source report register. Include all nine Canopy identities and selected immutable versions, preserve their synthetic status, and verify currently uncited D05. Keep the existing cited-source export contract unchanged. |
+| Completed / reporting + case-data | Complete Canopy reference packets delivered as Markdown/JSON: all nine selected identities including D05, fifteen retained versions and exact text hashes. Maintain the cited analytical register separately. A complete-packet PDF appendix remains an optional future report-format decision. |
 | P1 / application + data | Add an opt-in version comparison/upgrade flow that previews semantic changes and creates a new copy/version. Prior saved bytes remain readable and untouched; cancellation makes no write. |
 | P2 / content + application | Define real inspectable source packets for converted cases only where originals or clearly labelled authored synthetic excerpts exist. Retain exact version/section links and visibly missing evidence; no invented external documents. |
 | P2 / UX + reporting | Design useful concise category reports and searchable/progressively disclosed large chronologies while retaining full evidence/analysis export. Benchmark the ERP package; do not increase graph bounds or hide assumptions. |
