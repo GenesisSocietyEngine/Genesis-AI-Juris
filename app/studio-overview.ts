@@ -64,6 +64,7 @@ export function studioOverview(draft: StudioDraft, locale: Locale) {
     sourcePacket: family ? CANOPY_SOURCES : [],
     documentCount: family ? new Set(CANOPY_SOURCES.map(source => source.id)).size : null,
     exactScenario: exact?.declaration.id as CanopyScenarioId | undefined,
+    referenceScenario: sourceCandidate?.declaration.id ?? exact?.declaration.id,
     publicationContextReviewed: draft.premisePublication === "author-reviewed",
     humanEvidenceReview: "not_recorded_in_studio" as const,
   };

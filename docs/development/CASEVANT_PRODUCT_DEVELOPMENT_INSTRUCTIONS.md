@@ -2,6 +2,8 @@
 
 Prepared 13 October 2026 following the elevated case-library audit. This is the implementation and acceptance playbook for subsequent work; proposed backlog items below are not claims of delivered features. Follow the current repository AGENTS.md and record each slice's review in docs/testing/.
 
+Execution update, 14 October 2026: the immediate remaining audit work now includes an implemented complete Canopy reference-packet download (Markdown/JSON, nine selected document versions plus all retained history and exact UTF-8 SHA-256 hashes), a separate eight-PDF/33-page Base/Medium visual cohort, and actual signed-in production browser acceptance with independent synthetic copies, hypothetical amendments, stale-save rejection and real PDF download. See `docs/testing/case-library-remaining-work-audit-2026-10-14.md` for measured coverage and the delivery receipt for final release/CI identity. These changes do not complete the broader proposed development backlog below.
+
 ## 1. Product outcome and vocabulary
 
 Build a professional decision workspace in which a user can identify the mandate, inspect source-level support, separate facts from assumptions, compare options, test hypothetical changes, save a durable case and export an appropriately qualified decision package. Training is a deliberate ninth category, not the default professional experience.
@@ -91,7 +93,7 @@ For economic changes, pin amounts, currency, period, units and input assumptions
 
 Reports must preserve statement status, case/category identity, source IDs and hypothetical qualifiers in JSON, Markdown and PDF. Active Studio Base, Medium and Full analysis covers/headers use CaseVant by Falcon-Merlin Group after this audit's corrections; user prepared-by attribution remains separate. The separate governed-output renderer still has historical branding and requires its own versioned review. Analytical previews are unapproved. Governed release/approval must remain tied to the exact saved snapshot and independent permissions, not the report button, library badge or template review status.
 
-Current analytical PDFs export sources from the selected report content, not the entire Canopy reference packet. Graph-only citations can be absent when the optional graph is excluded. D05 is retained and inspectable in Studio but is not a cited graph source in the audited Canopy model. Keep those distinctions explicit; a complete packet/export appendix is separate follow-on work. Never describe current PDF acceptance as verification of all nine document bodies in the export.
+Current analytical PDFs export sources from the selected report content, not the entire Canopy reference packet. Graph-only citations can be absent when the optional graph is excluded. D05 is retained and inspectable in Studio but is not a cited graph source in the audited Canopy model. Sources & evidence now offers a separate complete reference-packet export in Markdown and JSON. It contains all nine selected immutable document versions, all fifteen retained versions, source-scenario and working-case identity, synthetic/no-approval qualifiers and exact document text hashes. The selected versions follow validated source provenance rather than invented current inputs; amended copies retain that reference selection and require reassessment. Fabricated provenance cannot enable the export. The existing export-authority and committed-context guards prevent a late digest from exporting after access/context changes. Do not describe this reference packet as uploaded or accepted dossier evidence, a re-importable Studio case or a complete-packet analytical PDF appendix.
 
 Regenerate exports affected by content or layout changes. Inspect actual PDFs and selected pages with long conditions, high node counts, Unicode/Russian text and source passages. Verify source IDs and qualifiers through extraction as well as visual rendering. Do not claim every interior page was inspected unless it was. The exhaustive ERP appendix can be long; shorter category outputs require an explicit product decision and preserved access to full evidence.
 
@@ -106,6 +108,8 @@ node node_modules/typescript/bin/tsc --noEmit --incremental false
 node --experimental-sqlite --import tsx --test tests/category-demo-launch.test.ts tests/category-demos.test.ts tests/converted-examples.test.ts tests/example-migration-persistence.test.ts tests/studio-overview.test.ts tests/studio-departure.test.ts tests/saved-case-navigation-restore.test.ts tests/play-sessions.test.ts tests/demo-catalogue.test.ts tests/report-statement-status.test.ts tests/report-model.test.ts
 node --experimental-sqlite --import tsx --test tests/tax-preservation-routes.test.ts
 node --experimental-sqlite --import tsx --test tests/studio-continuity.test.ts
+node --experimental-sqlite --import tsx --test tests/studio-source-packet.test.ts
+node --import tsx scripts/verify-decision-report-pdfs.ts
 ```
 
 Run focused lint for changed application/tests and relevant build/export checks. Canonical CI is additional evidence, not an excuse to skip local failures. These commands are not substitutes for browser acceptance or domain review.
@@ -125,7 +129,9 @@ When a harness extracts actual handlers into a VM, include their real new depend
 | Presentation | Desktop and narrow widths, long labels, keyboard focus, accessible names, pending/error states and reduced motion |
 | Production | Exact merged build/provenance; saved version/deployment success; live changed flow; bounded error-log query |
 
-Exercise fresh authenticated browser save/reopen/download with an authorized synthetic test account and isolated data. Until that is done, record it as unverified even when authenticated handler tests pass. Similarly, a guest browser success, SSR markup, a mocked adapter and actual hosted behavior are distinct evidence categories. Counts of overlapping cohorts must not be added into an inflated total.
+Exercise fresh authenticated browser save/reopen/download with an authorized test session and isolated synthetic data. The 14 October audit closes this previously missing browser evidence for representative Canopy copies; all eighteen packages additionally have real authenticated production-handler acceptance with platform adapters. Do not expand representative browser coverage into an all-package browser claim. A guest browser success, SSR markup, a mocked adapter and actual hosted behavior are distinct evidence categories. Counts of overlapping cohorts must not be added into an inflated total. Preserve the synthetic production cases until their disposition is explicitly authorized; never delete existing cases during acceptance.
+
+Base/Medium PDF visual acceptance is now a separate all-page lock in `parity/decision-report-pdf-visual-baseline.v1.json`. It covers both formats, both languages, assumed statements and long case/node titles, with source/report/presentation fingerprints and pinned Poppler 25.07.0, 96 DPI, platform/architecture and font identities. Review intentional changes before using `REPORT_DECISION_PDF_UPDATE_BASELINE=1`, then rerun normally with that variable absent and prove the baseline byte-identical. Canonical `pdf-visual` CI runs this cohort as well as the unchanged Full-analysis and tax cohorts.
 
 ## 8. Release procedure and rollback
 
