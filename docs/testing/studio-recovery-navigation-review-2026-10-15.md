@@ -1,5 +1,7 @@
 # Studio recovery navigation review — 15 October 2026
 
+Follow-up review: replacement confirmations, archive-full recovery errors and template guidance now name the new My cases → Saved Studio drafts → Earlier device drafts path in EN/RU. Moving the entry without updating those instructions would make recovery harder to find. The additional 30 continuity/upgrade checks passed; retention and replacement contracts are unchanged. This copy follow-up is versioned separately and included in the final combined release receipt.
+
 User outcome: the regular case work area starts with the case heading and actions, without the Earlier device drafts button or the old-domain migration banner shown in the supplied screenshot. The current example format remains 2.4.0; existing historical versions and explicit reviewed new-copy upgrades are preserved. No case payload is rewritten as part of this layout amendment. A broader format request was presented for clarification rather than inventing a new schema or automatically replacing saved work.
 
 Verified starting source: canonical main, isolated checkout and deployed Sites v132 all identify dd5668eeaa55a56fbb97329686f9165c0005c356. The isolated checkout was clean; another writer's root checkout was not edited. Existing public audience and hosting bindings are retained.
