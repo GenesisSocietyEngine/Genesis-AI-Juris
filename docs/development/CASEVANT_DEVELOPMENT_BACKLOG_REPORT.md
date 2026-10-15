@@ -1,6 +1,6 @@
 # CaseVant development backlog and continuation instructions
 
-Updated 15 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The projection-gap amendment and opt-in comparison/new-copy workflow are implemented in the next reviewed slice; see projection-upgrade-review-2026-10-14.md. The next substantial product work is inspectable source packets and concise reports/chronologies, alongside all-package authenticated browser acceptance.
+Updated after the 15 October post-format audit. The registry, projection corrections, source packets, progressive navigation, Base pagination and professional format **2.5.0** are delivered. Do not repeat them as new work. Continue with release acceptance, remaining authenticated browser coverage, moderated retrieval research and additional source bodies. The current-source/receipt checks below take precedence over earlier dated checkpoint notes in this document.
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
@@ -12,20 +12,25 @@ Every ordinary example opens an independent working copy through the shared Over
 
 Complete Canopy reference packets now download as Markdown or JSON with selected immutable versions, retained history and exact UTF-8 text hashes, including uncited D05. These packets are separate from analytical PDFs and accepted dossier evidence. Base, Medium and Full analytical formats use current CaseVant branding. The separate governed-output renderer still needs a versioned review.
 
-Release 124 is the verified starting baseline for this layout amendment. Its canonical web run passed 1,269 tests with zero failures and three skips. PDF CI verified 47 Full-analysis PDFs, eight Base/Medium PDFs covering 33 pages, and 22 tax PDFs. Actual authorized Chrome checks verified two independent Canopy saves, reopening, an explicitly hypothetical amendment, reassessment, stale-save refusal and a real PDF download. All eighteen packages have additional real authenticated handler coverage; this is distinct from all-package browser coverage.
+The post-format audit started from deployed **v134**, canonical `076cee7c2816b8f03278190b4030a5def7f9c4e1`, after matching local HEAD, remote main and native Sites source. Its canonical web run passed 1,540 tests, zero failures and three skips. PDF gates covered 47 Full PDFs/760 pages, 14 Base/Medium PDFs/51 pages and 22 tax PDFs. This is a dated starting baseline; re-query the native Sites version and canonical main before future edits.
 
-The current layout amendment moves Canopy, converted cases and category cards into one shared results grid. Two Advisory decision results occupy the same desktop row and stack on narrow screens. Optional expanded Canopy guidance may use the full row. Card ordering, accessible launch controls, filtering and saved-work behavior remain unchanged. Use the accompanying [layout review](../testing/case-library-grid-review-2026-10-14.md) and final delivery receipt for this amendment's actual release evidence.
+The shared results grid is already delivered: two Advisory decision results share a desktop row and stack narrowly. The shared Overview now presents brief/category/output/version, explicit professional questions, next actions and grouped progressive records. Five converted templates use 2.5.0; exact 2.2/2.3/2.4 factories remain frozen, and the audit adds a frozen bilingual 2.5 baseline. Canopy/category source versions are unchanged. See the [format review](../testing/professional-case-format-review-2026-10-15.md) and [post-format audit](../testing/post-format-release-audit-2026-10-15.md).
+
+Authenticated Chrome evidence already exists for ERP 2.5 copies **18/20** and GreenFire 2.5 copies **19/21**, with A copies reopened/amended, actual three-page Base downloads and stale-tab refusal. Historical 2.2 cases 16/17, 2.3 cases 10/11 and 2.4 cases 12–15 coexist. Preserve every existing and synthetic case. Current-audit Chrome control timed out after recovery attempts; do not relabel the prior checks as fresh browser acceptance or claim all-package coverage. Real-handler checks remain separate.
+
+The first v134 deployment returned native success while required JS chunks returned 404. Rollback restored v133; a supported repackage/redeploy of identical saved v134 content restored asset delivery. The provider-side cause is unconfirmed. This audit independently verified all **115 current-manifest JS/CSS/WASM assets** by HTTP status, MIME, byte length and SHA-256. Static delivery does not prove active server source, hydration or account workflows. Native source receipts and authorized browser checks remain separate gates.
 
 ## Remaining work and execution order
 
 | Order | Priority | Deliverable | Primary owner role |
 | --- | --- | --- | --- |
+| Implemented in post-format audit | P1 | Exact-build static deployment verifier and failed-deployment evidence; run it after every publication | Application/release and QA |
 | Completed implementation | P1 | Shared typed example descriptor and launcher registry | Application and case-data |
 | Completed implementation | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
 | Completed implementation | P1 | Versioned projection corrections and opt-in semantic comparison/new copies | Application and case-data |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
 | Implemented reference slice | P2 | Exact original fictional-message packets and explicit document-body gaps | Content and case-data |
-| Navigation delivered / reporting follow-up | P2 | Progressive record search; correct orphan Base-report disclaimer under a versioned layout | Reporting and UX |
+| Delivered; research remains | P2 | Grouped progressive navigation and three-page new-format ERP/GreenFire Base; measure human retrieval before broader renderer changes | Reporting and UX |
 | Separate | P2 | Versioned governed-output branding | Governed reporting and QA |
 | Separate | P2 | Localized topic display mappings and small asset maintenance | Localization and application |
 | Separate | P2 | Native CI diagnosis and parity evidence | Platform and QA |
@@ -61,6 +66,14 @@ Acceptance: cancellation writes nothing; old versions remain readable byte-for-b
 Use an authorized session and isolated, clearly labelled synthetic cases. Extend representative Canopy coverage to converted and category packages. Exercise two-copy save/reopen, hypothetical changes, repeat edits, conflicts and actual downloads at desktop and narrow widths. Include EN/RU filters, empty results, sparse result counts, long labels, keyboard focus and expanded guidance.
 
 Acceptance: capture actual URLs/state, downloaded bytes and rendered layouts; distinguish browser results from authenticated handler/platform-adapter tests. Keep test artifacts outside Git and remove only data explicitly authorized for disposal. Existing user cases, tabs and original downloads must remain untouched.
+
+Next browser slice: Logistics, GoldenShell and Desert Water converted 2.5 packages, then remaining category/Canopy variants. For each, save two new clearly labelled copies, reopen/amend A, preserve B, inspect the exact source packet, exercise a hypothetical change and download/render the actual appropriate report. Verify saved identities remain distinct and cancel/stale writes cannot replace originals. Extend narrow EN/RU controls and actual account/source races only when the authorized session can be used safely. Do not sign out or disturb existing work to manufacture a test. Current connection failure is a tooling limit, not authorization to replace browser checks with direct account API calls.
+
+### Static deployment acceptance
+
+Run `node --import tsx scripts/verify-deployment-assets.ts --url https://casevant.pro --expected-commit FULL_MERGED_SHA --output .artifacts/deployment-assets-RELEASE.json` from the exact built checkout. It verifies local build/input/hosting identity first, then checks every unique JS/CSS/WASM manifest asset, including lazy chunks. Missing, redirected, HTML, incorrect, truncated, oversized or timed-out responses fail and produce a receipt with a nonzero exit status. No cookies, account APIs, case data or remote writes are used.
+
+Acceptance requires native Sites source/version/deployment evidence **plus** static bytes **plus** applicable authorized browser behavior. The verifier deliberately reports `deployedSourceVerified`, `browserHydrationVerified` and `authenticatedWorkflowsVerified` as false; do not infer them from a static pass, since old assets may be retained. Save failed receipts before rollback; recover through the existing compatible Sites version and confirm its user flow. Avoid speculative application/configuration changes to mask provider delivery failures. Verify a retry's exact bytes and source; do not assume a different filename repaired the provider.
 
 ### Source packets for converted cases
 
