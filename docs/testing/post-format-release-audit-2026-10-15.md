@@ -31,6 +31,20 @@ Local checkpoint: **73 focused tests passed**, covering current production inven
 
 ## Amended next-stage execution
 
+### Pre-publication preservation finding and follow-up
+
+While auditing the merged but unpublished first candidate, measured the portable build against v134's live-verified manifest: **70/115 prior URLs remained; 45 were absent**. This risks a late lazy import in an already-open previous-release tab. Held the candidate and prepared a separate reviewed follow-up before publication. Current production remained v134; no saved case was changed.
+
+The follow-up moves the static verifier helper under `build/` and adds `build/retained-client-assets.ts` plus a CLI preparation step. Construction logic is therefore captured by the existing release-input policy. The new build digest changes because governed build inputs changed; app/worker/public/data/schema/rendering logic remains unchanged.
+
+The preparation step reads an explicitly identified previous **live** archive, verifies exact source/hosting/Site metadata, inventories its current manifest and detaches/validates all bytes before copying. Immutable URL collisions, symlinks, foreign Site identity or wrong source abort. It preserves only that manifest's static JS/CSS/WASM files; current files, fixed-name runtime metadata, worker and current manifest are unchanged. It does not carry older retention chains forward. A versioned receipt is packaged under dist/.openai; tampered, unknown or stale receipts fail. An explicit expected-predecessor argument makes post-deployment acceptance fail if retention is missing or references the wrong release.
+
+The prior raw v134 archive hash matches its recorded receipt. Its extracted 115 assets match the initial live audit's exact hashes. Tests cover real lazy-file retention, idempotence, unchanged current/fixed/worker bytes, excluded older generations, pre-write collision refusal, foreign Site metadata, wrong source and tampered/future receipts. A Node/Worker byte-decoding type mismatch was corrected before release. Build helpers require explicit `eslint --no-ignore` because the repository generally ignores build directories.
+
+Follow-up local checkpoint: six targeted HTTP/retention tests passed; strict types and explicit build-helper lint passed. The initial audit candidate's canonical web/PDF run also passed, but that candidate remains unpublished because the newly identified preservation defect requires this follow-up. Rebuild and rerun canonical gates for the final integrated source before publication.
+
+This preserves the immediately preceding release's immutable assets; it does not claim indefinite multi-release tab support or fresh browser acceptance. Final exact-source, combined-static and native deployment evidence is recorded in the release receipt. PR #115's initial candidate must not be reported as independently published.
+
 1. Run static acceptance after every supported Sites deployment and retain failed receipts beside rollback/recovery identities. Reconfirm native source independently. Keep authorized browser acceptance required for changed application flows.
 2. When Chrome control is functioning, extend two-copy/source-packet/reopen/amend/hypothetical/conflict/cancel/download/narrow EN/RU acceptance to Logistics, GoldenShell and Desert Water, then remaining category/Canopy variants. Preserve all cases and record exact saved IDs and actual files.
 3. Measure the four ERP retrieval tasks with representative humans before broad renderer work; ≤30 seconds per correct source/status answer is a proposed target, not a measured result. Preserve the complete historic Full export.

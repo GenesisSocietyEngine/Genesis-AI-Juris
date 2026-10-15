@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { deploymentBuild, deploymentOrigin, inventoryDeploymentAssets, verifyDeploymentAssets, type DeploymentAsset } from "../scripts/tests/deployment-assets";
+import { deploymentBuild, deploymentOrigin, inventoryDeploymentAssets, verifyDeploymentAssets, type DeploymentAsset } from "../build/deployment-assets";
 
 const asset = (name: string, text = "expected"): DeploymentAsset => ({ path: "/_next/static/" + name, bytes: Buffer.byteLength(text), sha256: createHash("sha256").update(text).digest("hex"), mime: "text/javascript" });
 test("actual production manifest is inventoried against the exact build; a wrong source commit fails before HTTP", () => {
@@ -16,6 +16,7 @@ test("actual production manifest is inventoried against the exact build; a wrong
   assert.ok(inventory.assets.some(row => row.mime === "application/wasm"));
   assert.throws(() => deploymentBuild(process.cwd(), "0".repeat(40)), /identities differ/);
   assert.throws(() => deploymentBuild(process.cwd(), "unknown"), /exact lowercase source commit/);
+  assert.throws(() => deploymentBuild(process.cwd(), built.sourceCommit, "a".repeat(40)), /previous-release retention/);
 });
 test("real static HTTP rejects missing chunks, login HTML, redirects, wrong/truncated/oversized bytes and timeouts", async () => {
   const requests: string[] = [];
