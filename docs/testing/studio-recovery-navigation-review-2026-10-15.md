@@ -1,0 +1,11 @@
+# Studio recovery navigation review — 15 October 2026
+
+User outcome: the regular case work area starts with the case heading and actions, without the Earlier device drafts button or the old-domain migration banner shown in the supplied screenshot. The current example format remains 2.4.0; existing historical versions and explicit reviewed new-copy upgrades are preserved. No case payload is rewritten as part of this layout amendment. A broader format request was presented for clarification rather than inventing a new schema or automatically replacing saved work.
+
+Verified starting source: canonical main, isolated checkout and deployed Sites v132 all identify dd5668eeaa55a56fbb97329686f9165c0005c356. The isolated checkout was clean; another writer's root checkout was not edited. Existing public audience and hosting bindings are retained.
+
+Device archive access moves to the existing My cases → Saved Studio drafts screen (community view). The same verified-account scope, archive key/context, export/restore controls, retention limits and guarded restore handler remain unchanged. The old-domain guide moves to Help & training → Help & guides; its same-account instructions and original-tab preservation remain available on CaseVant. The two requested controls no longer render above the Studio editor, library or other work screens.
+
+Local Chrome verified the English and Russian case editor has neither banner and begins with the case heading; the rendered desktop layout was visually inspected. Existing domain-guide and upgrade tests passed (six checks), as did 57 continuity/navigation checks, including real restore/replacement guards, cross-account retention and cancellation. Strict TypeScript passed. Focused lint has zero errors and eight pre-existing unused-symbol warnings in JurisApp.tsx; unrelated cleanup is excluded. No additional implementation-mirroring test was added for two view predicates.
+
+Before completion, require exact merged-source build, canonical web/PDF acceptance, native Sites receipt, authenticated production verification of both absence in Studio and continued archive/Help access, plus preservation of a saved example and its declared version. This review is a development checkpoint; publication evidence is recorded in the delivery receipt.
