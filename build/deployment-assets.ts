@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
-import { buildReleaseIdentity } from "../../build/release-identity";
+import { buildReleaseIdentity } from "./release-identity";
 
 export type DeploymentAsset = { path: string; bytes: number; sha256: string; mime: string };
 const mimeTypes: Record<string, string[]> = { ".js": ["text/javascript", "application/javascript"], ".css": ["text/css"], ".wasm": ["application/wasm"] };
@@ -40,13 +40,43 @@ export function inventoryDeploymentAssets(clientRoot: string, manifest: unknown)
     return { path: "/" + path, bytes: content.length, sha256: createHash("sha256").update(content).digest("hex"), mime: mime[0] };
   });
 }
-export function deploymentBuild(root: string, expectedCommit: string) {
+export function deploymentBuild(root: string, expectedCommit: string, expectedPreviousCommit?: string) {
   if (!/^[a-f0-9]{40}$/.test(expectedCommit)) throw new Error("Expected exact lowercase source commit");
   const built = JSON.parse(readFileSync(resolve(root, "dist/.openai/release-provenance.json"), "utf8"));
   const current = buildReleaseIdentity(root);
   if (built.schema !== current.schema || built.inputPolicy !== current.inputPolicy || built.sourceCommit !== expectedCommit || current.sourceCommit !== expectedCommit || built.applicationInputsSha256 !== current.applicationInputsSha256 || built.hostingConfigSha256 !== current.hostingConfigSha256) throw new Error("Build, checkout and expected release identities differ; rebuild exact source");
   const manifest = JSON.parse(readFileSync(resolve(root, "dist/client/.vite/manifest.json"), "utf8"));
-  return { sourceCommit: expectedCommit, applicationInputsSha256: built.applicationInputsSha256 as string, hostingConfigSha256: built.hostingConfigSha256 as string, assets: inventoryDeploymentAssets(resolve(root, "dist/client"), manifest) };
+  const currentAssets = inventoryDeploymentAssets(resolve(root, "dist/client"), manifest);
+  const priorAssets = retainedDeploymentAssets(resolve(root, "dist"), expectedCommit);
+  const retainedReceipt = resolve(root, "dist/.openai/retained-client-assets.json");
+  const previousSourceCommit: string | null = existsSync(retainedReceipt) ? JSON.parse(readFileSync(retainedReceipt, "utf8")).previousSourceCommit : null;
+  if (expectedPreviousCommit !== undefined && (!/^[a-f0-9]{40}$/.test(expectedPreviousCommit) || previousSourceCommit !== expectedPreviousCommit)) throw new Error("Required previous-release retention is missing or differs");
+  const assets = new Map(currentAssets.map(asset => [asset.path, asset]));
+  for (const asset of priorAssets) {
+    const current = assets.get(asset.path);
+    if (current && current.sha256 !== asset.sha256) throw new Error("Current/previous immutable URL collision");
+    assets.set(asset.path, asset);
+  }
+  return { sourceCommit: expectedCommit, previousSourceCommit, applicationInputsSha256: built.applicationInputsSha256 as string, hostingConfigSha256: built.hostingConfigSha256 as string, currentAssetCount: currentAssets.length, retainedPreviousAssetCount: assets.size - currentAssets.length, assets: [...assets.values()].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0) };
+}
+/** Only the immediately previous release's current manifest is carried forward. */
+export function retainedDeploymentAssets(dist: string, expectedCommit: string): DeploymentAsset[] {
+  const filename = resolve(dist, ".openai/retained-client-assets.json");
+  if (!existsSync(filename)) return [];
+  if (lstatSync(filename).isSymbolicLink()) throw new Error("Retention receipt cannot be a symlink");
+  const receipt = JSON.parse(readFileSync(filename, "utf8"));
+  if (receipt.format !== "casevant-retained-client-assets" || receipt.version !== 1 || receipt.policy !== "immediately-previous-current-manifest-only" || receipt.currentSourceCommit !== expectedCommit || !/^[a-f0-9]{40}$/.test(receipt.previousSourceCommit) || !/^[a-f0-9]{64}$/.test(receipt.previousApplicationInputsSha256) || !/^[a-f0-9]{64}$/.test(receipt.previousHostingConfigSha256) || !Array.isArray(receipt.assets) || !receipt.assets.length) throw new Error("Invalid or stale previous-client retention receipt");
+  const paths = new Set<string>();
+  for (const asset of receipt.assets) {
+    if (typeof asset.path !== "string" || !asset.path.startsWith("/_next/static/")) throw new Error("Invalid retained asset path");
+    assetPath(asset.path.slice(1)); if (paths.has(asset.path)) throw new Error("Duplicate retained asset path"); paths.add(asset.path);
+  }
+  const inventory = inventoryDeploymentAssets(resolve(dist, "client"), Object.fromEntries([...paths].map(path => [path, { file: path.slice(1) }])));
+  for (const asset of inventory) {
+    const declared = receipt.assets.find((row: DeploymentAsset) => row.path === asset.path);
+    if (declared.bytes !== asset.bytes || declared.sha256 !== asset.sha256 || declared.mime !== asset.mime) throw new Error("Retained asset bytes differ from the previous release");
+  }
+  return inventory;
 }
 export type AssetResult = DeploymentAsset & { status: number | null; verified: boolean; reason: string; receivedBytes: number; receivedSha256?: string };
 /** Static HTTP acceptance only: no cookies, application APIs, browser or writes. */
