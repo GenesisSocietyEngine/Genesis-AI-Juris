@@ -1,3 +1,5 @@
+import { convertedGameplayId as gameOnly } from "./converted-training-policy";
+import { convertedMessageCitation } from "./converted-source-material";
 import canonicalBundle from "./canonical-case-bundle.json";
 import { applyCaseType } from "./case-type-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
@@ -23,8 +25,6 @@ type SourceCase = {
   };
 };
 const sources = canonicalBundle.cases as unknown as SourceCase[];
-const trainingOnlyTerminationIds = new Set(["client_terminated_engagement", "client_engagement_terminated"]);
-const gameOnly = (id: string) => trainingOnlyTerminationIds.has(id) || /^(rest|rest_completed|rest_recovery_applied)$/.test(id) || /(?:^|_)(?:inactivity|client_warning|fatigue|stamina|strain)(?:_|$)/.test(id);
 const human = (id = "") => id.replace(/[_-]/g, " ");
 const judgments: Record<string, string> = { won: 'favorable judgment', lost: 'adverse judgment', partially_won: 'partial relief', dismissed: 'dismissal', none: 'no judgment' };
 function conditionText(c?: Condition): string {
@@ -91,7 +91,7 @@ function consequences(effects: Effect[]): string[] {
  * Evidence descriptions are the retained source register, not fabricated document contents.
  */
 export function buildConvertedExample(caseId: string, locale: "en" | "ru", updatedAt = new Date().toISOString(), version = CONVERTED_EXAMPLE_VERSION): StudioDraft {
-  if (!["2.2.0", CONVERTED_EXAMPLE_VERSION].includes(version)) throw new Error("Unsupported converted example version");
+  if (!["2.2.0", "2.3.0", CONVERTED_EXAMPLE_VERSION].includes(version)) throw new Error("Unsupported converted example version");
   const spec = CONVERTED_EXAMPLES[caseId], source = sources.find(c => c.case_id === caseId);
   if (!spec || !source) throw new Error("Unknown converted example");
   const s = source.scenario, nodes: StudioDraft["nodes"] = [], links: StudioLink[] = [];
@@ -145,7 +145,7 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     const deadline = nodes.find(node => node.id === "deadline-" + window.response_deadline_id);
     if (deadline) deadline.detail += "\nHypothetical response window: " + window.id + "\nSource actor: " + window.source_actor_id + "\nActivation scenario: " + window.activation_event_id + "\nCandidate responses: " + window.response_action_ids.join(", ") + "\nMissed-response scenario: " + window.countermove_event_id + " (legacy scenario context; no notice, response or deadline status is recorded).";
   }
-  for (const item of s.inbox_items.filter(item => !gameOnly(item.id))) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner);
+  for (const item of s.inbox_items.filter(item => !gameOnly(item.id))) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner + (version === "2.4.0" ? "\nOriginal fictional message: " + convertedMessageCitation(caseId, item.id) : ""));
   for (const outcome of s.outcomes.filter(item => !gameOnly(item.id))) add("outcome-" + outcome.id, "outcome", "Hypothetical: " + translated("outcomes", outcome, "title", outcome.title ?? outcome.id), translated("outcomes", outcome, "summary", outcome.summary ?? "") + "\nCanonical outcome: " + outcome.id + "\nAssumptions: " + conditionText(outcome.condition) + "\nThis is an optional hypothetical scenario, not a judgment, notification, finding or event that has occurred.");
   // Keep branch records and their authored semantic consequences; omit numeric roll / score mechanics.
   for (const decision of (s.deterministic_decisions ?? []).filter(item => !gameOnly(item.id))) for (const branch of decision.branches ?? []) {

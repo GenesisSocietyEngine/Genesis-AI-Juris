@@ -1,6 +1,6 @@
 # CaseVant development backlog and continuation instructions
 
-Updated 14 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The projection-gap amendment and opt-in comparison/new-copy workflow are implemented in the next reviewed slice; see projection-upgrade-review-2026-10-14.md. The next substantial product work is inspectable source packets and concise reports/chronologies, alongside all-package authenticated browser acceptance.
+Updated 15 October 2026 for the product owner and the next application, case-data and reporting contributors. Continue from the current live source and deliver one reviewed migration at a time. The shared typed example registry is implemented in the 14 October continuation slice; see its review and release receipt for measured acceptance. The auditable provenance/projection register is implemented in the next 14 October continuation slice; use its review and release receipt for measured acceptance. The projection-gap amendment and opt-in comparison/new-copy workflow are implemented in the next reviewed slice; see projection-upgrade-review-2026-10-14.md. The next substantial product work is inspectable source packets and concise reports/chronologies, alongside all-package authenticated browser acceptance.
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
@@ -24,8 +24,8 @@ The current layout amendment moves Canopy, converted cases and category cards in
 | Completed implementation | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
 | Completed implementation | P1 | Versioned projection corrections and opt-in semantic comparison/new copies | Application and case-data |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
-| 4 | P2 | Inspectable converted-case source packets | Content and case-data |
-| 5 | P2 | Concise reports and usable large chronologies | Reporting and UX |
+| Implemented reference slice | P2 | Exact original fictional-message packets and explicit document-body gaps | Content and case-data |
+| Navigation delivered / reporting follow-up | P2 | Progressive record search; correct orphan Base-report disclaimer under a versioned layout | Reporting and UX |
 | Separate | P2 | Versioned governed-output branding | Governed reporting and QA |
 | Separate | P2 | Localized topic display mappings and small asset maintenance | Localization and application |
 | Separate | P2 | Native CI diagnosis and parity evidence | Platform and QA |
@@ -121,3 +121,13 @@ Record each future slice's owner role, acceptance, dependency, source commit, ch
 4. Application/data: if users need to carry amendments forward, design three-way comparison against the exact historical template, explicit per-conflict choices, complete tax/evidence/approval carrier handling and a new saved identity. A fresh template copy is the delivered behavior, not an automatic user-edit merge.
 
 Maintain tests/example-registry-baseline.json unchanged; new current templates need new versioned acceptance rather than replacing historical hashes. Unknown/future versions remain recoverable without source substitution. Review each slice under docs/testing and deploy only exact merged source with a native Sites receipt.
+
+## Execution update — 15 October 2026
+
+PR 108 delivered separate actual/minimum graph counts and progressive case-record search through Sites v129. The canonical merged web/PDF run passed on retry after a Chrome startup-port failure; no code or configuration was changed to obtain the retry result. ERP filter diagnostic p95 was 0.3131 ms for 193 records; Chrome verified exact-node navigation, narrow/Russian controls and empty results. The preserved synthetic ERP/GreenFire baselines are workspace cases 10 and 11. Reopened ERP was amended and a stale-tab save was refused. Actual saved-version Base PDF delivery was verified on disk (four pages), separately from the account receipt.
+
+The next reviewed data slice implements converted template 2.4.0 reference packets: 58 exact original fictional message bodies, per-body UTF-8 SHA-256, stable message/section IDs, exact jumps, missing-body/premise mapping and guarded Markdown/JSON export. All 43 original evidence-document bodies remain explicitly absent; no external documents were reconstructed. Opening vs hypothetical/unreceived status remains distinct. Existing 2.2.0 and 2.3.0 factories/hashes remain frozen, and older/unknown references receive no substitute packet. See converted-source-packet-review-2026-10-15.md and its separate Sites receipt for release identity.
+
+A four-page ERP Base export exposed an orphan disclaimer on an almost empty page before a forced Evidence/Method page break. Address this as a separate versioned decision-renderer amendment with intentional Base/Medium baseline review. Preserve all text, explicit missing-source and approval qualifiers, and unchanged Full-analysis/tax locks. Proposed acceptance: no disclaimer-only page in the ERP fixture; target at most three Base pages for that fixture, not a universal page quota. Measure and inspect both languages and long titles before publication.
+
+Reference packets are not accepted evidence or complete uploaded-document packets. Further content work requires authentic document bodies or explicitly labelled authored synthetic excerpts with new versions; retain missing passages until then. Carrying user amendments forward remains conditional future work requiring three-way conflicts and complete carriers; the delivered flow opens independent copies and never merges edits implicitly. Historical 2.2.0 Chrome file import remains unverified; no extension permission was changed. Preserve all synthetic production cases unless disposal is explicitly authorized.
