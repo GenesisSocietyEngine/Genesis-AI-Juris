@@ -5,7 +5,7 @@ import { caseReportReceiptBinding, type CaseReportOptions } from '../app/case-re
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from '../app/case-integrity';
 import { isReportReceiptStale, type CurrentReportReceiptBinding, type ReportReceiptV2 } from '../app/report-model';
 
-test('actual older receipts retain Base/Medium freshness and retire Full renderer2 and3', () => {
+test('actual older receipts preserve analysis/layout while corrected Base/Medium and Full presentations retire them', () => {
  const draft=normalizeStudioDraft(JSON.parse(readFileSync('docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json','utf8')));
  for (const revision of ['', 'disclosures/']) {
  const folder='docs/testing/inv01-2026-09-28/fiveflats-pdfs/'+revision;
@@ -18,7 +18,9 @@ test('actual older receipts retain Base/Medium freshness and retire Full rendere
   const binding=caseReportReceiptBinding(draft,options);
   assert.equal(binding.reportFingerprint,receipt.reportFingerprint,'canonical analysis unchanged');
   assert.equal(binding.layoutFingerprint,receipt.layoutFingerprint,'graph layout unchanged');
-  assert.equal(isReportReceiptStale(receipt,draft,options.profileId,binding),Boolean(revision)||index>=2,files[index]);
+  assert.equal(isReportReceiptStale(receipt,draft,options.profileId,binding),true,files[index]);
+  // Check the current presentation independently without rewriting retained receipts.
+  assert.equal(isReportReceiptStale({...receipt,...binding},draft,options.profileId,binding),false,files[index]);
  }
  }
 });

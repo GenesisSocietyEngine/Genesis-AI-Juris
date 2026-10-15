@@ -1,5 +1,7 @@
 # Base-report pagination review — 15 October 2026
 
+Final gate amendment: canonical run 38659180302 passed the complete PDF job but exposed one stale test expectation in fiveflats-disclosure-receipts.test.ts. The retained Base/Medium receipts must now be stale because their presentation renderer changed. The follow-up checks old receipts are stale, current presentation bindings are fresh, and canonical analysis/graph identities are unchanged; no historical receipt file is modified. Sites v131 was saved but not deployed after that failed gate. Publish only the follow-up exact merged source after canonical acceptance, with its own native receipt.
+
 ## Outcome and acceptance
 
 An actual authenticated ERP 2.3.0 Base PDF contained four A4 pages; page three held only the proposed-role disclaimer. The deliberately selected 254-page Full-analysis artifact remains a complete optional record. Target for this historical ERP Base fixture: at most three pages, no disclaimer-only page, and complete qualifications, evidence gaps and proposed actions. This is not a universal page limit or permission to truncate user text.
