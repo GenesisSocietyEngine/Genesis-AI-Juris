@@ -470,7 +470,7 @@ function caseReportPresentationFingerprint(
     format: "genesis-juris-case-report-presentation-binding",
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
-    decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
+    decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.3.0" : effectiveOptions.presentationMode === "decision" ? "1.2.0" : "1.1.0",
     // Full preserves over-page assumptions containing every supported hard break.
     // Keep Base/Medium receipts stable; pre-correction Full output is stale.
     ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 5 } : {}),

@@ -25,10 +25,10 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
   const box = (title: string, detail: string, warning = false): Content => ({ table: { widths: ["*"], body: [[{ stack: [
     { text: title, bold: true, color: warning ? red : teal, fontSize: 13, margin: [0, 0, 0, 7] }, p(detail),
   ], fillColor: warning ? "#fff1ed" : "#edf6f5", margin: [12, 10, 12, 3] }]] }, layout: "noBorders", margin: [0, 8, 0, 14] });
-  const table = (headers: string[], rows: TableCell[][], widths: Array<string | number>): ContentTable => ({
+  const table = (headers: string[], rows: TableCell[][], widths: Array<string | number>, bottomMargin = 13): ContentTable => ({
     table: { headerRows: 1, keepWithHeaderRows: 1, dontBreakRows: true, widths, body: [headers.map(text => ({ text, bold: true, color: "#ffffff", fillColor: ink, fontSize: 9 })), ...rows] },
     layout: { hLineWidth: () => .5, vLineWidth: () => 0, hLineColor: () => line, paddingTop: () => 8, paddingBottom: () => 8, paddingLeft: () => 8, paddingRight: () => 8,
-      fillColor: row => row > 0 && row % 2 === 0 ? "#f5f8fa" : null }, margin: [0, 6, 0, 13], fontSize: 9.3,
+      fillColor: row => row > 0 && row % 2 === 0 ? "#f5f8fa" : null }, margin: [0, 6, 0, bottomMargin], fontSize: 9.3,
   });
   const m = options.includeEconomics && !taxReport ? draft.dealEconomics : undefined;
   const a = m ? decisionEconomics(m) : null;
@@ -148,11 +148,12 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     ...(m ? [[t("Finance adviser", "Финансовый консультант"), t("Validate income and expenses, obtain the lender schedule and conditions, and complete base/downside/full-cost calculations.", "Проверить доход и расходы, получить график и условия кредитора, завершить базовый и стрессовый расчёт полных затрат.")]] : []),
     [t("Relevant specialists", "Профильные специалисты"), t("Provide current, source-supported legal/tax conclusions for the available routes; identify prerequisites and unresolved risks.", "Подготовить актуальные правовые и налоговые выводы с источниками; определить условия и оставшиеся риски.")],
     [t("Independent reviewer", "Независимый проверяющий"), t("Challenge the recommendation and record the actual decision, conditions and approval in the case workflow.", "Проверить рекомендацию и зафиксировать решение, условия и утверждение в рабочем процессе дела.")],
-  ], ["28%", "72%"]));
-  content.push({ text: t("Roles are proposed responsibilities, not assigned tasks or completed approvals.", "Роли — предлагаемая ответственность, не назначенные задачи и не полученные утверждения."), style: "small" });
-
+  ], ["28%", "72%"], 0));
   const evidenceStart = content.length;
   content.push(...page(t("Evidence and method", "Основания и метод"), t("What this assessment rests on", "На чём основана оценка")));
+  // Keep the role qualification with the method section rather than allowing
+  // it to overflow onto a page immediately followed by a forced section break.
+  content.push({ text: t("Roles are proposed responsibilities, not assigned tasks or completed approvals.", "Роли — предлагаемая ответственность, не назначенные задачи и не полученные утверждения."), style: "small", margin: [0, 0, 0, 10] });
   content.push(p(t("The calculations use the recorded case assumptions; their inclusion does not verify them. Findings are rule-based interpretations of those calculations and visible case records. No independent expert approval, completed scenario run or AI prediction is inferred.", "Расчёты используют допущения дела; включение в отчёт не подтверждает их. Выводы — интерпретация расчётов и открытых записей по явным правилам. Независимое экспертное утверждение, завершённый сценарий и AI-прогноз не подразумеваются.")));
   if (options.includeEconomics && m) {
     content.push(p(t("No probabilities are estimated. Currency effects, exit costs, tax and unpriced costs are outside these calculations.", "Вероятности не оцениваются. Валютные эффекты, расходы выхода, налоги и неоценённые затраты исключены из расчётов.")));

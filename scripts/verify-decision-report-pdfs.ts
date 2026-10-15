@@ -8,6 +8,7 @@ import { buildCaseReportArtifacts, type CaseReportOptions } from "../app/case-re
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
 import { primaryCaseOutput } from "../app/case-type-playbooks";
 import { reportPdfFixtures } from "./tests/report-pdf-fixtures";
+import { buildConvertedExample } from "../app/converted-examples";
 import { assertA4Portrait, assertExtractedText, discoverPoppler, extractPdfText, inspectPdf, renderAndInspectPdf } from "./tests/report-pdf-qa";
 
 const root = resolve(import.meta.dirname, "..");
@@ -21,8 +22,14 @@ for (const version of Object.values(tools.versions)) assert.ok(version.includes(
 const fixtureIds = ["golden-general_advisory-en-internal", "golden-general_advisory-ru-internal", "stress-long-title-en", "stress-long-title-ru"];
 const fixtures = reportPdfFixtures().filter(fixture => fixtureIds.includes(fixture.id));
 assert.equal(fixtures.length, 4);
+// Retain the historical ERP version that exposed the production orphan page.
+for (const language of ["en", "ru"] as const) fixtures.push({
+  id: `erp-historic-${language}`, family: "converted-erp", tags: ["orphan-page-regression"], language, audience: "internal",
+  draft: buildConvertedExample("be_commercial_failed_erp_001", language, "2026-10-14T08:00:00.000Z", "2.3.0"),
+});
 const entries = [];
 for (const fixture of fixtures) for (const mode of ["decision", "medium"] as const) {
+  if (fixture.family === "converted-erp" && mode === "medium") continue;
   const id = `${fixture.id}-${mode}`;
   const draft = structuredClone(fixture.draft);
   if (fixture.id.startsWith("stress-long-title")) draft.title = fixture.language === "en"
@@ -50,6 +57,14 @@ for (const fixture of fixtures) for (const mode of ["decision", "medium"] as con
   writeFileSync(pdfPath, pdf);
   const info = inspectPdf(tools, pdfPath); assertA4Portrait(info, pdfPath);
   const text = extractPdfText(tools, pdfPath, textPath);
+  if (fixture.family === "converted-erp") {
+    assert.ok(info.pages <= 3, `${id}: ERP Base target is at most three pages`);
+    const qualification = fixture.language === "en" ? "Roles are proposed responsibilities" : "Роли — предлагаемая ответственность";
+    const qualificationPage = text.split("\f").find(page => page.includes(qualification));
+    assert.ok(qualificationPage, `${id}: proposed-role qualification retained`);
+    assertExtractedText(qualificationPage, fixture.language === "en" ? "What this assessment rests on" : "На чём основана оценка", id, fixture.language);
+    assertExtractedText(text, fixture.language === "en" ? "No independent expert approval" : "Независимое экспертное утверждение", id, fixture.language);
+  }
   assertExtractedText(text, "CaseVant", id, fixture.language);
   assertExtractedText(text, draft.title, id, fixture.language);
   assert.ok(!text.includes("GENESIS: JURIS"), `${id} retains obsolete branding`);
@@ -66,7 +81,7 @@ const current = { format: "casevant-decision-report-pdf-visual-baseline", versio
   runtime: { platform: process.platform, architecture: process.arch,
     pdfmake: JSON.parse(readFileSync(resolve(root, "node_modules/pdfmake/package.json"), "utf8")).version as string,
     fontVfsSha256: createHash("sha256").update(readFileSync(resolve(root, "node_modules/pdfmake/build/vfs_fonts.js"))).digest("hex") },
-  popplerVersion: "25.07.0", dpi: 96, selection: "All pages of Base and Medium, EN/RU ordinary and long-title fixtures", entries };
+  popplerVersion: "25.07.0", dpi: 96, selection: "All pages of Base and Medium EN/RU ordinary and long-title fixtures, plus historic ERP Base EN/RU", entries };
 writeFileSync(resolve(output, "current-baseline.json"), JSON.stringify(current, null, 2) + "\n");
 if (updateValue === "1") writeFileSync(baselinePath, JSON.stringify(current, null, 2) + "\n");
 else assert.deepEqual(current, JSON.parse(readFileSync(baselinePath, "utf8")), "Base/Medium visual baseline differs; inspect changes before an explicit update");
