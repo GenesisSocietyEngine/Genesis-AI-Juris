@@ -5,8 +5,8 @@ import { reportStatementStatus } from "./report-statement-status";
 import type { StudioDraft } from "./types";
 import styles from "./studio-overview.module.css";
 
-export default function StudioRecordNavigator({ draft, locale, onNode }: { draft: StudioDraft; locale: "en" | "ru"; onNode: (id: string) => void }) {
-  const [query, setQuery] = useState(""), [scope, setScope] = useState<RecordScope>("all"), [limit, setLimit] = useState(10);
+export default function StudioRecordNavigator({ draft, locale, onNode, initialScope = "all" }: { draft: StudioDraft; locale: "en" | "ru"; onNode: (id: string) => void; initialScope?: RecordScope }) {
+  const [query, setQuery] = useState(""), [scope, setScope] = useState<RecordScope>(initialScope), [limit, setLimit] = useState(10);
   const matches = useMemo(() => searchStudioRecords(draft, query, scope), [draft, query, scope]);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const labels: Record<RecordScope | "context", string> = { all: t("All case records", "Все записи дела"), planning: t("Tasks and phases", "Задачи и этапы"), evidence: t("Evidence and assumptions", "Материалы и допущения"), options: t("Options to consider", "Возможные действия"), scenarios: t("Outcomes and scenarios", "Исходы и сценарии"), context: t("Authored context", "Авторский контекст") };

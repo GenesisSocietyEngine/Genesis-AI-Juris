@@ -6,6 +6,7 @@ import { reportStatementStatus } from "./report-statement-status";
 import { decisionEconomics } from "./report-decision-analysis";
 import type { TaxReportModel } from "./tax-report-model";
 import { buildTaxReportPdfSection } from "./tax-report-pdf";
+import { caseReviewQuestions, hasProfessionalCaseBrief } from "./case-review-questions";
 
 const ink = "#173345", teal = "#197a80", muted = "#536774", line = "#dae3e8";
 const red = "#a63e35";
@@ -138,9 +139,10 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
       [t("Pause or renegotiate", "Приостановить или пересогласовать"), t("Preserve the option to stop while material financing, source or legal conditions remain unresolved.", "Сохраните возможность отказаться, пока существенные финансовые, доказательственные и правовые вопросы не решены.")],
     ], ["30%", "70%"]));
   } else {
-    const decisions = draft.nodes.filter(n => n.type === "decision").slice(0, 3);
+    const decisions = hasProfessionalCaseBrief(draft) ? caseReviewQuestions(draft) : draft.nodes.filter(n => n.type === "decision").slice(0, 3);
     content.push(p(t("These are recorded review questions, not automatically selected decisions. Read the complete conditions in the case before acting.", "Это записанные вопросы проверки, а не автоматически выбранные решения. До действий прочтите полные условия в деле.")));
     for (const n of decisions) content.push(h(n.title), p(n.detail));
+    if (hasProfessionalCaseBrief(draft) && !decisions.length) content.push(p(t("No professional review questions are recorded. Add or review them in the case; no question or decision has been inferred.", "Профессиональные вопросы проверки не записаны. Добавьте или проверьте их в деле; вопросы и решения не выводятся автоматически.")));
   }
   content.push(h(t("Priority actions before commitment", "Приоритетные действия до обязательств")));
   content.push(table([t("Proposed owner", "Предлагаемая роль"), t("Deliverable / completion condition", "Результат / условие завершения")], [

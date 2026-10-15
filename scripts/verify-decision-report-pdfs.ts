@@ -28,8 +28,13 @@ for (const language of ["en", "ru"] as const) fixtures.push({
   draft: buildConvertedExample("be_commercial_failed_erp_001", language, "2026-10-14T08:00:00.000Z", "2.3.0"),
 });
 const entries = [];
+// New-format cohort is version-pinned; historical fixtures above remain byte-bound.
+for (const language of ["en", "ru"] as const) for (const [label, caseId] of [["erp", "be_commercial_failed_erp_001"], ["greenfire", "greenfire_first_72_hours"]] as const) fixtures.push({
+  id: `${label}-professional-25-${language}`, family: "professional-25", tags: ["professional-brief-regression"], language, audience: "internal",
+  draft: buildConvertedExample(caseId, language, "2026-10-14T08:00:00.000Z", "2.5.0"),
+});
 for (const fixture of fixtures) for (const mode of ["decision", "medium"] as const) {
-  if (fixture.family === "converted-erp" && mode === "medium") continue;
+  if (["converted-erp", "professional-25"].includes(fixture.family) && mode === "medium") continue;
   const id = `${fixture.id}-${mode}`;
   const draft = structuredClone(fixture.draft);
   if (fixture.id.startsWith("stress-long-title")) draft.title = fixture.language === "en"
@@ -57,6 +62,12 @@ for (const fixture of fixtures) for (const mode of ["decision", "medium"] as con
   writeFileSync(pdfPath, pdf);
   const info = inspectPdf(tools, pdfPath); assertA4Portrait(info, pdfPath);
   const text = extractPdfText(tools, pdfPath, textPath);
+  if (fixture.family === "professional-25") {
+    assert.ok(info.pages <= 3, `${id}: new-format Base target is at most three pages`);
+    for (const question of draft.nodes.filter(node => node.id.startsWith("review-question-"))) assertExtractedText(text, question.title, id, fixture.language);
+    assertExtractedText(text, fixture.language === "en" ? "Fictional review scaffold" : "Вымышленная структура проверки", id, fixture.language);
+    assertExtractedText(text, fixture.language === "en" ? "No independent expert approval" : "Независимое экспертное утверждение", id, fixture.language);
+  }
   if (fixture.family === "converted-erp") {
     assert.ok(info.pages <= 3, `${id}: ERP Base target is at most three pages`);
     const qualification = fixture.language === "en" ? "Roles are proposed responsibilities" : "Роли — предлагаемая ответственность";
@@ -81,7 +92,7 @@ const current = { format: "casevant-decision-report-pdf-visual-baseline", versio
   runtime: { platform: process.platform, architecture: process.arch,
     pdfmake: JSON.parse(readFileSync(resolve(root, "node_modules/pdfmake/package.json"), "utf8")).version as string,
     fontVfsSha256: createHash("sha256").update(readFileSync(resolve(root, "node_modules/pdfmake/build/vfs_fonts.js"))).digest("hex") },
-  popplerVersion: "25.07.0", dpi: 96, selection: "All pages of Base and Medium EN/RU ordinary and long-title fixtures, plus historic ERP Base EN/RU", entries };
+  popplerVersion: "25.07.0", dpi: 96, selection: "All pages of Base and Medium EN/RU ordinary and long-title fixtures, historic ERP Base EN/RU and professional 2.5 ERP/GreenFire Base EN/RU", entries };
 writeFileSync(resolve(output, "current-baseline.json"), JSON.stringify(current, null, 2) + "\n");
 if (updateValue === "1") writeFileSync(baselinePath, JSON.stringify(current, null, 2) + "\n");
 else assert.deepEqual(current, JSON.parse(readFileSync(baselinePath, "utf8")), "Base/Medium visual baseline differs; inspect changes before an explicit update");

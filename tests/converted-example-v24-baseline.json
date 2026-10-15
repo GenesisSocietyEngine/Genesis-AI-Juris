@@ -1,0 +1,72 @@
+[
+  {
+    "id": "be_commercial_failed_erp_001",
+    "language": "en",
+    "version": "2.4.0",
+    "fingerprint": "sha256-09dec11388c0845fad562e29521ed59ce9849bf72a1164fb6375b900903c491a",
+    "workingSourceFingerprint": "sha256-d8d7d63b6ac76977bca8b9cb6a9e9b3414cb62a0131411598412cd5dde6f69a2"
+  },
+  {
+    "id": "be_commercial_failed_erp_001",
+    "language": "ru",
+    "version": "2.4.0",
+    "fingerprint": "sha256-8d040b1f766c057c3dd1a14a588b2bfc2d7f2399ac3352108f4bcb9e239ac8dd",
+    "workingSourceFingerprint": "sha256-7bafcf24d67d578c24bfa5adaeb8bf946bb55a3962d20e5273040dad4f34ab32"
+  },
+  {
+    "id": "be_commercial_logistics_001",
+    "language": "en",
+    "version": "2.4.0",
+    "fingerprint": "sha256-70a2499f5882191855a02a7c928a569eb7049679dc66aec600cfcccf6e292e89",
+    "workingSourceFingerprint": "sha256-081197ad7e96f0e8f55fa872c5ed6b1f2cd824fb2dc361f2d09b400ef927a85e"
+  },
+  {
+    "id": "be_commercial_logistics_001",
+    "language": "ru",
+    "version": "2.4.0",
+    "fingerprint": "sha256-7a2fbff946c458f6fff9fffc5781ca55fbab9024477508b11c6f2a2ab5f7f918",
+    "workingSourceFingerprint": "sha256-f2e9690c790e05a7f901198e30f543979f6ddd6ebddd45fd91081f30f4602e7a"
+  },
+  {
+    "id": "greenfire_first_72_hours",
+    "language": "en",
+    "version": "2.4.0",
+    "fingerprint": "sha256-2fe4265c8872c375208b72d8ec0362d822b0ad51ac7ef59732cfe5545ca82d05",
+    "workingSourceFingerprint": "sha256-c2c629f0499796e154a25e2f620f5ce9b0588c15027d6c35c53fdf5964f55ba7"
+  },
+  {
+    "id": "greenfire_first_72_hours",
+    "language": "ru",
+    "version": "2.4.0",
+    "fingerprint": "sha256-df4995739bc3819b999a0455fe9a597610a3c69e9bea462394b301906b3ca26f",
+    "workingSourceFingerprint": "sha256-3c0c8197d2583217d1a7a498200d26036132281c380e4068a11d88510b5428dc"
+  },
+  {
+    "id": "nl_food_safety_goldenshell_001",
+    "language": "en",
+    "version": "2.4.0",
+    "fingerprint": "sha256-02035f6932e4af8cc690e647fe09b325bd535aee23d36a53bd3818197dfb51c1",
+    "workingSourceFingerprint": "sha256-6d778cc0c704e1c0aed54b591d8cdc02c55c9104c4d1d7cbd234c7b29e046073"
+  },
+  {
+    "id": "nl_food_safety_goldenshell_001",
+    "language": "ru",
+    "version": "2.4.0",
+    "fingerprint": "sha256-ce1b92d44eebf88a603d468be20c3b823206b8a66062e8a8052b66069a7f7d7a",
+    "workingSourceFingerprint": "sha256-8ad48f08c800ac23a18798496fc94d63dabf8f816deef9a69dd0d2e36680b1c9"
+  },
+  {
+    "id": "us_environmental_desert_water_001",
+    "language": "en",
+    "version": "2.4.0",
+    "fingerprint": "sha256-b71841ad48f6969cc33a0e26aa8e5b44baa78b5093124882b69d6ba4695e1c3b",
+    "workingSourceFingerprint": "sha256-ae0c284fb4b0edda18579e84019bf4741e313c16d8e3cb196baaeb41723c3e9d"
+  },
+  {
+    "id": "us_environmental_desert_water_001",
+    "language": "ru",
+    "version": "2.4.0",
+    "fingerprint": "sha256-4e468f3bd0497dcec19b0fa459f6dbb1268e37279688db2a67bb81c95a798010",
+    "workingSourceFingerprint": "sha256-e97e8fff94b0cd97bdcf229274501205778bb2cb8e955e084102395f65d02663"
+  }
+]

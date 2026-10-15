@@ -5,7 +5,7 @@ import type { StudioDraft } from "./types";
 /** Exact declared template only. Older/unknown sources receive no substitute packet. */
 export async function buildConvertedSourcePacket(draft: StudioDraft) {
   const reference = await buildExampleProvenance(draft);
-  if (!reference || reference.status.integrityIssues.length || !reference.source.packageId.startsWith("converted:") || reference.source.version !== "2.4.0") return null;
+  if (!reference || reference.status.integrityIssues.length || !reference.source.packageId.startsWith("converted:") || !["2.4.0", "2.5.0"].includes(reference.source.version)) return null;
   const material = convertedSourceMaterial(reference.source.caseId);
   const records = new Map(draft.nodes.map(node => [node.id, node]));
   return {
