@@ -9,7 +9,7 @@
   },
   "popplerVersion": "25.07.0",
   "dpi": 96,
-  "selection": "All pages of Base and Medium, EN/RU ordinary and long-title fixtures",
+  "selection": "All pages of Base and Medium EN/RU ordinary and long-title fixtures, plus historic ERP Base EN/RU",
   "entries": [
     {
       "id": "golden-general_advisory-en-internal-decision",
@@ -17,7 +17,7 @@
       "presentationMode": "decision",
       "caseFingerprint": "sha256-e2f3ed55805b5bbe2c29183137913c9e49f22392d7cf89e2cb36b029515494ae",
       "reportFingerprint": "sha256-96a6a233bb1318688618470d826c23bde9281c1cbf09ffe9479fdf3e3e881928",
-      "presentationFingerprint": "sha256-158dfdd2d0dedd8493aa20bc55dac2a8805c31b477424260b14f081cd516969c",
+      "presentationFingerprint": "sha256-ef9db137f707746be699af3e5fc1b3a43250e5b757268c027fa4ec9f61033d53",
       "fixtureSha256": "c434ceb6f5a57d29e9ed6e1bbdce1abe017a63ac26840ccdee531e3315c48074",
       "pages": [
         {
@@ -30,13 +30,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "a24ca83f5fde36869fb13edba70babb7e3e371ddfb8a1f29737a4ed3b17c4540"
+          "pngSha256": "e4f6c8cc19392eb28b3982fdba82b460d2349f99a48ad1715ee3dbed801e5093"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "2e8ae252eeadd9d4d4690b0308c96363bc11d3cd3e6a9f7bf8b2b8d167e3c607"
+          "pngSha256": "64f22500a5f42c666f759287b1fb435e0035b647451a2a2419843a193429bd36"
         }
       ]
     },
@@ -46,7 +46,7 @@
       "presentationMode": "medium",
       "caseFingerprint": "sha256-e2f3ed55805b5bbe2c29183137913c9e49f22392d7cf89e2cb36b029515494ae",
       "reportFingerprint": "sha256-96a6a233bb1318688618470d826c23bde9281c1cbf09ffe9479fdf3e3e881928",
-      "presentationFingerprint": "sha256-6794557a767c3345dd60ff4341d68e5293e2070a9810a20c33469a9304ee7a81",
+      "presentationFingerprint": "sha256-999e74f51b9f659f59b12fbc2232e3e2623b2d741cc258489a1c9b4b5b8bb734",
       "fixtureSha256": "c434ceb6f5a57d29e9ed6e1bbdce1abe017a63ac26840ccdee531e3315c48074",
       "pages": [
         {
@@ -59,13 +59,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "3cda5f639bd17bcf5343cd77b071cd3eae7ea6e3f53974c034df8eae956c1d1a"
+          "pngSha256": "4c1017c07e94b8f1a289e4d814a151065a82c9135c0fcc202b3bbe94707daf4f"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "85a528a528fd17e2ce000621b0214f606357044edc0fda98023d7aeff8dfd99f"
+          "pngSha256": "c7e406ae5b51b19191792038ebbef12af0075140e49b9b384024ab4a3972ee23"
         },
         {
           "page": 4,
@@ -81,7 +81,7 @@
       "presentationMode": "decision",
       "caseFingerprint": "sha256-aa8d35629d6e25909975a31e3ce09d27a6590e9423f1f3af153ac75d135ff36f",
       "reportFingerprint": "sha256-2d4bfc8209f48765379577074d230d7938918c2ee6b05c0f69a326761241965f",
-      "presentationFingerprint": "sha256-b723ce70c15523832e6a12baadabe788d863a80c59119463b3e7384be3c35d2b",
+      "presentationFingerprint": "sha256-52abafec58886b6e5ceab10d0b8137a4965250196ff5bffc3638fa55470ee3b1",
       "fixtureSha256": "5bd2a2b02c10e711a04cbeb56e40100a12802cbb1074be4a08f32684cd9bf48f",
       "pages": [
         {
@@ -94,13 +94,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "77519c2b27286aeccf9dc2c0ea6b8415d6372fd5dcfcdcef484a5e86c7a69fd5"
+          "pngSha256": "4b115b409ab33680b597045c54fa4a1b8d70a5a4898c9bb18f80ef13a8be6427"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "c310942a975a12d978b26d927e76fcccdfc71d3c8366f1ebf3822ef74760be2c"
+          "pngSha256": "a8eb1ae8e19b7ab9a46bb91a6fdc6cecb44eab2d943aca08a8b2b433988480a2"
         }
       ]
     },
@@ -110,7 +110,7 @@
       "presentationMode": "medium",
       "caseFingerprint": "sha256-aa8d35629d6e25909975a31e3ce09d27a6590e9423f1f3af153ac75d135ff36f",
       "reportFingerprint": "sha256-2d4bfc8209f48765379577074d230d7938918c2ee6b05c0f69a326761241965f",
-      "presentationFingerprint": "sha256-cd3ce4e861a00b36fe22624b347087f399be23d31c85396faba37adace22d28b",
+      "presentationFingerprint": "sha256-77a2172a1cb7b255dfba2eb18e8b3d1fff2127ed6e77dc615499bbb38a9ee336",
       "fixtureSha256": "5bd2a2b02c10e711a04cbeb56e40100a12802cbb1074be4a08f32684cd9bf48f",
       "pages": [
         {
@@ -123,13 +123,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "10a73bba42ad9a86420ae1a1b4eabeece195c48454f3499838d44f2f62b6f7de"
+          "pngSha256": "414619cb337018251c6895c0bf2ddf15f3e55c535d02fd9a2bc8e9295ab13b36"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "0c3b36dc07e93f0bd83d154fff5acdafa3a421ba397d2b963f354e4a93863e49"
+          "pngSha256": "9e03dae42edbc917eabf8617822ee5a8e26e5c71b991d4862fb52f843a6a354c"
         },
         {
           "page": 4,
@@ -145,7 +145,7 @@
       "presentationMode": "decision",
       "caseFingerprint": "sha256-10fd8b0712ab78bd5f2973ae16e08abeeb904660a6c6c0fe20dbbda4a1cc3fc0",
       "reportFingerprint": "sha256-df418d488705592c565ce7b0b9c5baa6f0dd0d450411381c57b0ce4908555d23",
-      "presentationFingerprint": "sha256-865f623c8db724f233666c562b9eb7a4ab94cd47dfb9c2344bb2d422508a3529",
+      "presentationFingerprint": "sha256-0857e39ba5226af4c48c4e90b90b4ea13a7b89578e638d34431e1ccd0e0d0a4f",
       "fixtureSha256": "e00d609d0d22992468debb085f32cc4ddcd036fe5cb92eed062afa160478fc7b",
       "pages": [
         {
@@ -158,13 +158,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "9709976e9cee80e8abe954c0451a1d7123a95e09db9aec43a6347e7e672b855d"
+          "pngSha256": "f87a26db9ef97936a01cb9603057746fbb0bf50dcaed1a5b215c38dfffac6c9a"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "7a222e95d78a4f839db75086214062ed3e9e2c1200b532ff6febb911cf6e02d6"
+          "pngSha256": "0ec957f8afad48ab5a0cb9eb527c369e2e3d43f9bb3ebcb5c5f8286948429e01"
         }
       ]
     },
@@ -174,7 +174,7 @@
       "presentationMode": "medium",
       "caseFingerprint": "sha256-10fd8b0712ab78bd5f2973ae16e08abeeb904660a6c6c0fe20dbbda4a1cc3fc0",
       "reportFingerprint": "sha256-df418d488705592c565ce7b0b9c5baa6f0dd0d450411381c57b0ce4908555d23",
-      "presentationFingerprint": "sha256-6c4260baba547fb308698b64e4f79d3314ec6f253b380b6a9c24972a932ce050",
+      "presentationFingerprint": "sha256-be636d378937e9765be7ade437bcdc4a432e9461bbbab490b2b9d6f8974d77d1",
       "fixtureSha256": "e00d609d0d22992468debb085f32cc4ddcd036fe5cb92eed062afa160478fc7b",
       "pages": [
         {
@@ -187,13 +187,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "afedcc7db1992c8f82d8f239e6bfd601ffd9ec7cbf4059575ae4f03fc0d8df9a"
+          "pngSha256": "5cd19118cf1f238c140ffa0d04ad7bf1c3f0d96da6848ff087e24f9c189f1740"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "14f0026a0aacfbe73a6faebc22ee81bafd0a391cc92b0db82d38e1a75b2cca22"
+          "pngSha256": "6b944a3293ed53c7fc54e1a69446d1a8736eb477ae0e070b97327f3432ea2e4e"
         },
         {
           "page": 4,
@@ -221,7 +221,7 @@
       "presentationMode": "decision",
       "caseFingerprint": "sha256-84342b6db1c1d4e8c9ffb11d1a86c883892919ba19944d988e6d987dc77580dd",
       "reportFingerprint": "sha256-1dfa5f1d25fab65f1acb8e840befd4c5ecd50782bf201e916b88eee9264a3637",
-      "presentationFingerprint": "sha256-cb61f09e83d1d7f9d7d80d704d724fdf45a35645bac36f6a269b7b0b26505c39",
+      "presentationFingerprint": "sha256-3a95bff6444c8ca9d03a4def3c0d8da9940ad8ce444fdb754c9d0ccd22042618",
       "fixtureSha256": "5187dd6cd30423870202811de9dc5f02f33bc9d0d7bb95d18a8edef4d6d16143",
       "pages": [
         {
@@ -234,13 +234,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "68446280aae2d2f951e25256aacefe3a53ff80ce4ce4aa8018fc98740a2844da"
+          "pngSha256": "d7d67ee09938d52818ab7e248737555b0ff322769e1c91bb92a207d4e3043704"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "f91a498d3046c9f74a93b784feb62512a3f4f4d4f38b3507f4938045b4774675"
+          "pngSha256": "f7c2fc5edc5599072a8fd5fc604cf16b26faab317fe769a8abf76c0307dfb2d6"
         }
       ]
     },
@@ -250,7 +250,7 @@
       "presentationMode": "medium",
       "caseFingerprint": "sha256-84342b6db1c1d4e8c9ffb11d1a86c883892919ba19944d988e6d987dc77580dd",
       "reportFingerprint": "sha256-1dfa5f1d25fab65f1acb8e840befd4c5ecd50782bf201e916b88eee9264a3637",
-      "presentationFingerprint": "sha256-df3c5aa0f296b848d5763c135826a19b4c728a1eadf128810d77d385eda99021",
+      "presentationFingerprint": "sha256-8551000cfe12c41b3b19ada62478cf88d5c36438e50cb31c84dcf38960e95b18",
       "fixtureSha256": "5187dd6cd30423870202811de9dc5f02f33bc9d0d7bb95d18a8edef4d6d16143",
       "pages": [
         {
@@ -263,13 +263,13 @@
           "page": 2,
           "width": 794,
           "height": 1123,
-          "pngSha256": "4a3f993770fa8dcfb80d15004424aba6897ae44ea6661eee4fe1b8ca8bb20150"
+          "pngSha256": "9c75b32f0214ceb729dc8a8e41c0dc04cccf2071ddd8a5236bc0629e01c45e09"
         },
         {
           "page": 3,
           "width": 794,
           "height": 1123,
-          "pngSha256": "1234bbaef752a2357b5ffd7fe4de5982c6c4ed57c35c3f0a7eee0c69941e86a6"
+          "pngSha256": "6717abb92653e6517e0ed37a69f12a94d6444fdb2bccdcd1c99f0406e2feadd1"
         },
         {
           "page": 4,
@@ -294,6 +294,64 @@
           "width": 794,
           "height": 1123,
           "pngSha256": "080dbdfbfad46127a6a68fb46d724cbb0b894b178fba74bf3f791cc92488fdb3"
+        }
+      ]
+    },
+    {
+      "id": "erp-historic-en-decision",
+      "language": "en",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-649a22155d2ccfc3a5a32ba13eeb1689afdf9b5a8b8d3c8c8a352967303818bc",
+      "reportFingerprint": "sha256-7f4fc1cb4550ceae4aac30e8cab6a72485d00973b089eca810bf80dbd98cbb95",
+      "presentationFingerprint": "sha256-640c17a36e7982ab9a0452e230a61e5dcc6887d769f83d2b79ab7d70fb53f38e",
+      "fixtureSha256": "50b9241026507a0a356eb91b6a6e5949d511cf29044935906860a6d0142ab3ff",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "b67ffc552c81633b81d4793d3f5fc416fbd9bb97d317d390a95d33e736b513bb"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "cacc7b2ef92ce0445f569d42b48ec762be387ea4506f1b175439880c21c6c088"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "9052bc081a6749d57a0c927c3fcc6f56a6922a0e8a45162a7ace57e147d58c45"
+        }
+      ]
+    },
+    {
+      "id": "erp-historic-ru-decision",
+      "language": "ru",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-ff266577fa2cb6cebd6042736f709ec6f9ff38b1ed3782300b3816d744fac88e",
+      "reportFingerprint": "sha256-214a3880eafc7ad85fb2ce450689fc0601ae3b1c4e2e05e6c6203c3877f571f4",
+      "presentationFingerprint": "sha256-4ffc14a609788bec5a2afdf113bb9c7fb110023710c2a18af20026369a66a39f",
+      "fixtureSha256": "709e8266f5c17a575e5ac9846289f3b30f00f21344205cbbd06906b0cb92cec1",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "b7e3f52ab0558cb7452f6e91b990a360fcee84bfe171e5b59d548411dad52a2c"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "59cc6348d169e1bddfda981439f348b84a807b109a08c251f2c57b7439bdcb5f"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "656dd9ccd7b22f6fe71841adb96322e0b1b191e6607f7fa43bfb7e9c0dc92afb"
         }
       ]
     }

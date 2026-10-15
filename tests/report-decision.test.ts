@@ -97,7 +97,7 @@ test("decision-tree appendix respects redactions and Russian report language", (
   assert.match(s, /Полная текстовая альтернатива графа/);
 });
 
-test("Full brief describes the selected graph appendix and supersedes only earlier Full receipts", () => {
+test("Full brief describes the selected graph appendix; flowing Base/Medium supersede their earlier receipts", () => {
   const canopy = buildCanopyPackage("base").draft;
   const profile = primaryCaseOutput(canopy.caseType);
   const common: CaseReportOptions = {
@@ -122,8 +122,8 @@ test("Full brief describes the selected graph appendix and supersedes only earli
     fullOn: "sha256-8b12b12aa7ef8f90b2f14b69bd9afd5fea56934e15b965167ffae9fcf7044f8b",
     fullOff: "sha256-79b75051cba3abe4f75c5283f5567e469f6f7eb4c260ef2bc884218fa10484a9",
   };
-  assert.equal(caseReportReceiptBinding(canopy, { ...common, presentationMode: "decision", includeDecisionTree: false }).presentationFingerprint, prior.decision);
-  assert.equal(caseReportReceiptBinding(canopy, { ...common, presentationMode: "medium", includeDecisionTree: true }).presentationFingerprint, prior.medium);
+  assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "decision", includeDecisionTree: false }).presentationFingerprint, prior.decision);
+  assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "medium", includeDecisionTree: true }).presentationFingerprint, prior.medium);
   assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "full", includeDecisionTree: true }).presentationFingerprint, prior.fullOn);
   assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "full", includeDecisionTree: false }).presentationFingerprint, prior.fullOff);
 });
