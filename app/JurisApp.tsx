@@ -917,7 +917,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         setArchiveVersion(value => value + 1);
       }
     } catch {
-      showSessionNotice(locale === "en" ? "Replacement stopped: earlier drafts could not be retained. Your open case is unchanged. Open Earlier device drafts, export recovery data and explicitly delete an unwanted entry if the archive is full; otherwise recover browser storage, then retry." : "Замена остановлена: не удалось сохранить предыдущие черновики. Открытый кейс не изменён. Откройте предыдущие черновики, экспортируйте данные и явно удалите ненужную запись, если архив заполнен; иначе восстановите хранилище и повторите попытку.");
+      showSessionNotice(locale === "en" ? "Replacement stopped: earlier drafts could not be retained. Your open case is unchanged. Open My cases → Saved Studio drafts → Earlier device drafts, export recovery data and explicitly delete an unwanted entry if the archive is full; otherwise recover browser storage, then retry." : "Замена остановлена: не удалось сохранить предыдущие черновики. Открытый кейс не изменён. Откройте «Мои кейсы → Черновики Studio → Предыдущие черновики устройства», экспортируйте данные и явно удалите ненужную запись, если архив заполнен; иначе восстановите хранилище и повторите попытку.");
       return false;
     }
     clearStudioEvidenceBuffers();
