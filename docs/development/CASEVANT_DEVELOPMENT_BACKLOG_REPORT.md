@@ -24,6 +24,8 @@ The deeper pre-publication audit found the portable rebuild omitted 45 of those 
 
 ## Remaining work and execution order
 
+Category/context continuation, 15 October: the [follow-up review](../testing/category-context-layout-review-2026-10-15.md) supersedes the earlier unresolved category investigation. An actual-handler deferred mutation and large deferred Brief reflow were reproduced and corrected. Category changes are synchronous, explicitly disclosed, and targeted metadata editing is isolated from deferred Sources content; selecting Sources restores it. Fresh measured 390-pixel EN/RU and cancellation evidence now exists. Final integrated-source CI, native Sites receipt and post-publication account/save checks accompany delivery; no earlier receipt establishes this correction's rollout.
+
 | Order | Priority | Deliverable | Primary owner role |
 | --- | --- | --- | --- |
 | Implemented in post-format audit | P1 | Exact-build static deployment verifier and failed-deployment evidence; run it after every publication | Application/release and QA |
@@ -31,7 +33,7 @@ The deeper pre-publication audit found the portable rebuild omitted 45 of those 
 | Completed implementation | P1 | Provenance/status register and auditable projection manifest | Case-data and domain review |
 | Completed implementation | P1 | Versioned projection corrections and opt-in semantic comparison/new copies | Application and case-data |
 | Parallel | P1 | Repeatable authenticated browser acceptance across all packages | QA |
-| Next bounded investigation | P1 | Reproduce category transition during rapid Desert Brief/title/save flow; assert source category at every settled stage before any code fix | Application and QA |
+| Implemented correction; final receipt governs rollout | P1 | Synchronous category events, explicit category disclosure and stable targeted Brief; verify category through save/reopen and preserve adverse tests | Application and QA |
 | Separate bounded maintenance | P2 | Diagnose first-save feedback and remove training-only player wording from professional inspector without losing cost/time carriers | Application and UX |
 | Implemented reference slice | P2 | Exact original fictional-message packets and explicit document-body gaps | Content and case-data |
 | Delivered; research remains | P2 | Grouped progressive navigation and three-page new-format ERP/GreenFire Base; measure human retrieval before broader renderer changes | Reporting and UX |

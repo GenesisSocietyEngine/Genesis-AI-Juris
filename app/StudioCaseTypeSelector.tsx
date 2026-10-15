@@ -1,6 +1,6 @@
 "use client";
 
-import { CASE_TYPE_REGISTRY, caseTypeDefinition } from "./case-type-registry";
+import { CASE_TYPE_REGISTRY, caseTypeDefinition, applyCaseType } from "./case-type-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import { caseTypePresentation } from "./case-type-presentation";
 import { caseTypeReference } from "./case-type-reference";
@@ -10,7 +10,7 @@ export default function StudioCaseTypeSelector({ locale, value, disabled, onChan
   locale: "en" | "ru";
   value?: CaseTypeReference;
   disabled: boolean;
-  onChange: (id: CaseTypeId) => void;
+  onChange: (id: CaseTypeId, apply: typeof applyCaseType) => void;
 }) {
   const selected = caseTypeDefinition(value);
   return <section className="case-type-picker page-width" aria-labelledby="case-type-title">
@@ -22,7 +22,7 @@ export default function StudioCaseTypeSelector({ locale, value, disabled, onChan
         const active = definition.id === selected.id;
         const text = caseTypePlaybook(caseTypeReference(definition.id));
         const presentation = caseTypePresentation(text, locale);
-        return <button key={definition.id} type="button" role="radio" aria-checked={active} className={active ? "active" : ""} disabled={disabled} onClick={() => onChange(definition.id)}>
+        return <button key={definition.id} type="button" role="radio" aria-checked={active} className={active ? "active" : ""} disabled={disabled} onClick={() => onChange(definition.id, applyCaseType)}>
           <span>{presentation.label}</span>
           <small>{presentation.summary}</small>
           <b>{text.primaryOutcome[locale]}</b>
