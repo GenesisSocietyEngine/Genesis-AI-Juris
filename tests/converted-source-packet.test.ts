@@ -26,7 +26,9 @@ for(const [id,[messageCount,gapCount]] of Object.entries(counts)) for(const loca
   assert.ok(packet.missingDocuments.every(document=>document.originalBodySupplied===false));
   if(id==="be_commercial_failed_erp_001")assert.deepEqual(packet.excludedTrainingMessageIds,["client_inactivity_warning","client_final_inactivity_warning","client_terminated_engagement"]);
   const json=await prepareConvertedSourcePacketDownload(draft,"json",()=>true);assert.ok(json);assert.deepEqual(JSON.parse(json.content),packet);
-  assert.notEqual(readStudioAggregate(json.content,{kind:"draft"}).status,"supported","reference packets cannot be normalized into editable Studio cases");
+  const imported=readStudioAggregate(json.content,{kind:"draft"});
+  assert.ok(imported.status==="unsupported"||imported.status==="corrupt","reference packets cannot be normalized into editable Studio cases");
+  assert.equal(imported.rawText,json.content,"recovery must retain the original reference artifact bytes");
   const markdown=await prepareConvertedSourcePacketDownload(draft,"md",()=>true);assert.ok(markdown);
   for(const message of packet.messages){assert.ok(markdown.content.includes(message.text));assert.ok(markdown.content.includes(message.contentSha256));}
   assert.deepEqual(await buildConvertedSourcePacket(JSON.parse(before)),packet);
