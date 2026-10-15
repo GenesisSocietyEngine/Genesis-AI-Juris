@@ -12,7 +12,7 @@ for(const [id,[messageCount,gapCount]] of Object.entries(counts)) for(const loca
   const original=JSON.stringify(bundle), draft=createExampleWorkingCopy(buildConvertedExample(id,locale)), before=JSON.stringify(draft);
   const packet=await buildConvertedSourcePacket(draft);assert.ok(packet);
   assert.equal(packet.messages.length,messageCount);assert.equal(packet.missingDocuments.length,gapCount);
-  assert.equal(packet.professionalReview,"not_recorded");assert.equal(packet.template.version,"2.4.0");
+  assert.equal(packet.professionalReview,"not_recorded");assert.equal(packet.template.version,"2.5.0");
   const source=bundle.cases.find(item=>item.case_id===id)!;
   assert.equal(packet.originalSource.scenarioFingerprint,source.scenario_fingerprint);
   const fragments=new Set<string>();

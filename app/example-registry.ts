@@ -92,7 +92,7 @@ export async function prepareExample(id: ExampleId, locale: "en" | "ru"): Promis
 export async function prepareExampleVersion(id: ExampleId, locale: "en" | "ru", version: string): Promise<PreparedExample> {
   const descriptor = exampleDescriptor(id);
   if (version === descriptor.source.version) return prepareExample(id, locale);
-  if (descriptor.family === "converted" && ["2.2.0", "2.3.0"].includes(version)) {
+  if (descriptor.family === "converted" && ["2.2.0", "2.3.0", "2.4.0"].includes(version)) {
     const { buildConvertedExample } = await import("./converted-examples");
     const draft = buildConvertedExample(descriptor.source.caseId, locale, undefined, version);
     return { draft, prompt: draft.premise };

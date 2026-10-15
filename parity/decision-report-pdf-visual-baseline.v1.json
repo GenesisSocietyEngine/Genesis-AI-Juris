@@ -9,7 +9,7 @@
   },
   "popplerVersion": "25.07.0",
   "dpi": 96,
-  "selection": "All pages of Base and Medium EN/RU ordinary and long-title fixtures, plus historic ERP Base EN/RU",
+  "selection": "All pages of Base and Medium EN/RU ordinary and long-title fixtures, historic ERP Base EN/RU and professional 2.5 ERP/GreenFire Base EN/RU",
   "entries": [
     {
       "id": "golden-general_advisory-en-internal-decision",
@@ -352,6 +352,122 @@
           "width": 794,
           "height": 1123,
           "pngSha256": "656dd9ccd7b22f6fe71841adb96322e0b1b191e6607f7fa43bfb7e9c0dc92afb"
+        }
+      ]
+    },
+    {
+      "id": "erp-professional-25-en-decision",
+      "language": "en",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-d8d4b73bbe5ea551508866ead94212b8b103ed09d93af682fa0676b3a558f035",
+      "reportFingerprint": "sha256-3a6eaa5e925cbbf38244e010f51457aa64cabe5ea32a4af5e6082ad78341225f",
+      "presentationFingerprint": "sha256-4cca87a579ce279007f68692bea569b908f91287290754fa25bd10c254be9419",
+      "fixtureSha256": "8e46e8237a05335700a02e6e82b78ced59f06d641ea43ce93d2f900b1f341d72",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "da9ff6a99b49f8d219e543017f3cf3600dc03d85d05946dbb92ad2ffd3c96502"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "e7033fbe2535f9ce701614662d15b285fd97774e4fee5af42d88e55bf2b659c3"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "8819cd353c19f2f2484acc58dad0deb09f6bcc6f6762f569d0fb3d9bb2efa220"
+        }
+      ]
+    },
+    {
+      "id": "greenfire-professional-25-en-decision",
+      "language": "en",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-c5e171adcc03e318f8d39e9b8593ba225c318613b3e347dc823212508dbbb80b",
+      "reportFingerprint": "sha256-efc4c66f95b5fb5dbbf832ed0ef68a9a2ba7984fabeb7f09f7f63a5b6d55d646",
+      "presentationFingerprint": "sha256-481df27c4cdd4d8c9f8b35f12195be31d626289f4990698287e0ead74e9e44af",
+      "fixtureSha256": "9ba8b510d7fe2e7656df76cab48f52230354afa15a6853432aff2058a04fff4f",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "6b8fb08ceeb83673070f60ad7e9e050f1e7a46d8d94a86ee36e0375d4dda2769"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "3e610f8f71ab1c53815b4f3950ae7bd5c930e3894b5c72c51eb01900c8f6fc7e"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "40937c1b3c9ccf1e7b4b1fe3c4dd2e94fa708d5dd05b06ceb77ae273faefbf78"
+        }
+      ]
+    },
+    {
+      "id": "erp-professional-25-ru-decision",
+      "language": "ru",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-455898b70b781b1d005da7b39b8ab7b2a406ce54807ea63501cac02c2bdc18d4",
+      "reportFingerprint": "sha256-005fe4b06fcf8d9eb59b029ff0fc18ac6f8361fa3efd7bd3bb04e26e09178df7",
+      "presentationFingerprint": "sha256-bdda891f177de699f186082cdc0abb8057ed20dcd689d16b280e34ae6db1ac53",
+      "fixtureSha256": "129402a97da2e28c10a9aa8dff885427bd4c350837deff239b91efa0af0dc144",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "0e2eec1bf2dd6085096bedc42d594524f6697ab02136fa35c52b6302b8b163d2"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "cb2e66aacce7a083345673e72f824ea0f6f1bb2f06a28ac7d9ba96f9d7f6301d"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "cd1e418f02d085b71034507b13d5d4d2b36183aaca09e2185efcee7adb4c8a71"
+        }
+      ]
+    },
+    {
+      "id": "greenfire-professional-25-ru-decision",
+      "language": "ru",
+      "presentationMode": "decision",
+      "caseFingerprint": "sha256-5f7864c2af485243df61a7da573b454ce2e54bb9baf36253623b8e709749e615",
+      "reportFingerprint": "sha256-57ca701166727b54c342b51ead065bf4d35a062449247281c5330d5279146190",
+      "presentationFingerprint": "sha256-1f273ca74cd004d0771f9a9f736cf98e9cd29e80a90a7101e0a72255072b3f3a",
+      "fixtureSha256": "4c5d9a61fc4d2b64335bb1c11dc6815d55f58eaee4df2e530d71b6e2e265ef59",
+      "pages": [
+        {
+          "page": 1,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "d6ef0d7584d844e150e736ff0d32f1ad881d0719d164f8378ed4953546218acd"
+        },
+        {
+          "page": 2,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "cd70f4fbdd315b0d3f425cdede8afb449b0c95c2515190591de9f81cc25d9523"
+        },
+        {
+          "page": 3,
+          "width": 794,
+          "height": 1123,
+          "pngSha256": "9f7a3d3b888c90f890b1852b7b7c2d032227a99e924a1c949d2bc1c3dec85810"
         }
       ]
     }

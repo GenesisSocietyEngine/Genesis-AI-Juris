@@ -4,7 +4,9 @@ import type { StudioDraft } from "./types";
 import type { StudioActionTarget } from "./StudioActionPanel";
 import type { StudioWorkflowStep } from "./studio-workflow";
 import { studioOverview, studioOverviewAction } from "./studio-overview";
-import StudioRecordNavigator from "./StudioRecordNavigator";
+import StudioWorkspaceRecords from "./StudioWorkspaceRecords";
+import { caseReviewQuestions } from "./case-review-questions";
+import { caseTypePlaybook } from "./case-type-playbooks";
 import styles from "./studio-overview.module.css";
 
 export type StudioOverviewProps = {
@@ -16,10 +18,13 @@ export type StudioOverviewProps = {
 
 export default function StudioOverview({ draft, locale, onStep, onNode, onAction }: StudioOverviewProps) {
   const model = studioOverview(draft, locale);
+  const questions = caseReviewQuestions(draft);
+  const playbook = caseTypePlaybook(draft.caseType);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const open = (target: StudioActionTarget) => onAction ? onAction(target) : onStep(target.step);
   return <section className={styles.workspace} aria-labelledby="studio-overview-title">
     <header className={styles.header}><div><p className={styles.eyebrow}>{t("CASE OVERVIEW", "ОБЗОР ДЕЛА")}</p><h2 id="studio-overview-title">{t("What needs to be decided", "Какое решение требуется")}</h2></div><span className={styles.status}>{t("Working draft", "Рабочий черновик")}</span></header>
+    <div className={styles.briefBar}><div><strong>{draft.title || t("Untitled case", "Дело без названия")}</strong><p className={styles.muted}>{[playbook.label[locale], draft.jurisdiction, draft.exampleSource?.version ? t(`Source version ${draft.exampleSource.version}`, `Версия источника ${draft.exampleSource.version}`) : null].filter(Boolean).join(" · ")}</p><p className={styles.muted}>{t("Work towards: ", "Результат работы: ")}{playbook.primaryOutcome[locale]}</p></div><button type="button" onClick={() => open({ step: 3, id: "studio-publishable-context" })}>{t("Open case brief", "Открыть описание дела")}</button></div>
     {model.question ? <><p className={styles.question}>{model.question.length > 650 ? `${model.question.slice(0, 650)}…` : model.question}</p>{model.question.length > 650 && <details><summary>{t("Read the full recorded context", "Прочитать весь контекст")}</summary><p className={styles.preserve}>{model.question}</p></details>}</> : <div className={styles.notice}><p>{t("Describe the decision or question to start this case.", "Опишите вопрос или требуемое решение.")}</p><button type="button" onClick={() => open({ step: 1, id: "studio-case-brief" })}>{t("Add the case question", "Добавить вопрос")}</button></div>}
     <section className={styles.recommendation} aria-labelledby="studio-recommendation-title">
       <h3 id="studio-recommendation-title">{model.recommendation.state === "prepared" ? t("Prepared scenario recommendation", "Рекомендация подготовленного сценария") : model.recommendation.state === "reassessment" ? t("Requires reassessment", "Требует пересмотра") : t("Recommendation not prepared", "Рекомендация не подготовлена")}</h3>
@@ -27,15 +32,12 @@ export default function StudioOverview({ draft, locale, onStep, onNode, onAction
       <button type="button" onClick={() => onStep(3)}>{t("Inspect sources and evidence", "Проверить источники и материалы")}</button>
     </section>
     {model.recommendation.conditions && <section className={styles.block}><h3>{t("Basis and unresolved conditions", "Основания и нерешённые условия")}</h3><p lang="en">{model.recommendation.conditions}</p></section>}
-    {draft.nodes.length > 0 && <section className={`${styles.block} ${styles.planning}`} aria-labelledby="studio-planning-title">
-      <h3 id="studio-planning-title">{t("Chronology and follow-up planning", "Хронология и план дальнейших действий")}</h3>
-      <p>{t("These are authored planning records, not events that have occurred. Their order is not an execution route. Confirm owners, actual dates and completion against the sources before relying on them.", "Это авторские записи планирования, а не произошедшие события. Порядок записей не задаёт маршрут выполнения. Сверьте ответственных, фактические даты и выполнение с источниками перед использованием.")}</p>
-      <StudioRecordNavigator key={draft.caseId} draft={draft} locale={locale} onNode={onNode}/>
-    </section>}
+    {questions.length > 0 && <section className={styles.block} aria-labelledby="studio-review-questions-title"><h3 id="studio-review-questions-title">{t("Questions for this review", "Вопросы для проверки")}</h3><p className={styles.muted}>{t("Authored fictional review scaffold. Check the mandate and supporting sources before recording findings or instructions.", "Авторская вымышленная структура проверки. Сверьте поручение и источники до фиксации выводов или указаний.")}</p><div className={styles.questionGrid}>{questions.map(node => <article key={node.id} className={styles.questionCard}><h4><button type="button" onClick={() => onNode(node.id)}>{node.title}</button></h4><p>{node.detail}</p></article>)}</div></section>}
     <div className={styles.columns}>
       <section className={styles.block}><h3>{t("Next actions", "Следующие действия")}</h3>{model.blockers.length ? <ul className={styles.actions}>{model.blockers.map((check, index) => <li key={check.id ?? index}><p>{check.text}</p><button type="button" onClick={() => open(studioOverviewAction(draft, check))}>{t("Open the relevant control", "Открыть нужное поле")}</button></li>)}</ul> : <p>{t("Structure checks are complete. Review the underlying evidence and reasoning; completeness does not establish professional approval.", "Проверки структуры пройдены. Проверьте материалы и обоснование: полнота не означает профессионального утверждения.")}</p>}</section>
       <section className={styles.block}><h3>{t("Possible outcomes", "Возможные исходы")}</h3>{model.outcomes.length ? <details><summary>{t(`Review ${model.outcomes.length} outcome and scenario records`, `Просмотреть записи исходов и сценариев: ${model.outcomes.length}`)}</summary><ul className={styles.outcomes}>{model.outcomes.map(node => <li key={node.id}><button type="button" onClick={() => onNode(node.id)}>{node.title}</button><p>{node.detail}</p></li>)}</ul></details> : <><p>{t("No outcome is recorded yet.", "Исходы пока не записаны.")}</p><button type="button" onClick={() => onStep(4)}>{t("Open decision map", "Открыть карту решений")}</button></>}</section>
     </div>
+    {draft.nodes.length > 0 && <StudioWorkspaceRecords key={draft.caseId} draft={draft} locale={locale} onNode={onNode}/>}
     <footer className={styles.footer}><p>{t("Studio context review and structural completeness are separate from human evidence review, a completed run and approval in the case workflow.", "Проверка контекста и полноты Studio не заменяет человеческую проверку доказательств, завершённое прохождение и утверждение в деле.")}</p><button type="button" disabled={!draft.nodes.length} onClick={() => onStep(6)}>{t("Review report options", "Перейти к отчёту")}</button></footer>
   </section>;
 }

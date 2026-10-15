@@ -14,6 +14,7 @@ import { buildTaxReportModel, type TaxReportModel } from "./tax-report-model";
 import { buildTaxReportPdfSection } from "./tax-report-pdf";
 import type { TaxRuntime } from "./tax-runtime/runtime";
 import { buildDecisionReport } from "./report-decision-pdf";
+import { hasProfessionalCaseBrief } from "./case-review-questions";
 import { caseReportBriefRows } from "./case-report-brief";
 import { reportStatementDetail } from "./report-statement-status";
 import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
@@ -471,6 +472,7 @@ function caseReportPresentationFingerprint(
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
     decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.3.0" : effectiveOptions.presentationMode === "decision" ? "1.2.0" : "1.1.0",
+    ...((effectiveOptions.presentationMode === "decision" || effectiveOptions.presentationMode === "medium") && hasProfessionalCaseBrief(draft) ? { professionalBriefRendererVersion: 1 } : {}),
     // Full preserves over-page assumptions containing every supported hard break.
     // Keep Base/Medium receipts stable; pre-correction Full output is stale.
     ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 5 } : {}),

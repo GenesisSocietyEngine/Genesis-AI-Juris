@@ -1,5 +1,6 @@
 import { convertedGameplayId as gameOnly } from "./converted-training-policy";
 import { convertedMessageCitation } from "./converted-source-material";
+import { convertedProfessionalBrief } from "./converted-professional-brief";
 import canonicalBundle from "./canonical-case-bundle.json";
 import { applyCaseType } from "./case-type-registry";
 import { caseTypePlaybook } from "./case-type-playbooks";
@@ -91,7 +92,7 @@ function consequences(effects: Effect[]): string[] {
  * Evidence descriptions are the retained source register, not fabricated document contents.
  */
 export function buildConvertedExample(caseId: string, locale: "en" | "ru", updatedAt = new Date().toISOString(), version = CONVERTED_EXAMPLE_VERSION): StudioDraft {
-  if (!["2.2.0", "2.3.0", CONVERTED_EXAMPLE_VERSION].includes(version)) throw new Error("Unsupported converted example version");
+  if (!["2.2.0", "2.3.0", "2.4.0", CONVERTED_EXAMPLE_VERSION].includes(version)) throw new Error("Unsupported converted example version");
   const spec = CONVERTED_EXAMPLES[caseId], source = sources.find(c => c.case_id === caseId);
   if (!spec || !source) throw new Error("Unknown converted example");
   const s = source.scenario, nodes: StudioDraft["nodes"] = [], links: StudioLink[] = [];
@@ -145,7 +146,7 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     const deadline = nodes.find(node => node.id === "deadline-" + window.response_deadline_id);
     if (deadline) deadline.detail += "\nHypothetical response window: " + window.id + "\nSource actor: " + window.source_actor_id + "\nActivation scenario: " + window.activation_event_id + "\nCandidate responses: " + window.response_action_ids.join(", ") + "\nMissed-response scenario: " + window.countermove_event_id + " (legacy scenario context; no notice, response or deadline status is recorded).";
   }
-  for (const item of s.inbox_items.filter(item => !gameOnly(item.id))) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner + (version === "2.4.0" ? "\nOriginal fictional message: " + convertedMessageCitation(caseId, item.id) : ""));
+  for (const item of s.inbox_items.filter(item => !gameOnly(item.id))) add("inbox-" + item.id, item.initially_visible ? "evidence" : "outcome", item.subject ?? item.id, "Correspondence ID: " + item.id + "\nSender: " + (item.sender ?? "not specified") + "\n" + (item.initially_visible ? "Fictional opening correspondence, not independently verified." : "Hypothetical later correspondence; not received.") + "\n" + (item.body ?? "") + "\nOwner: " + owner + (["2.4.0", "2.5.0"].includes(version) ? "\nOriginal fictional message: " + convertedMessageCitation(caseId, item.id) : ""));
   for (const outcome of s.outcomes.filter(item => !gameOnly(item.id))) add("outcome-" + outcome.id, "outcome", "Hypothetical: " + translated("outcomes", outcome, "title", outcome.title ?? outcome.id), translated("outcomes", outcome, "summary", outcome.summary ?? "") + "\nCanonical outcome: " + outcome.id + "\nAssumptions: " + conditionText(outcome.condition) + "\nThis is an optional hypothetical scenario, not a judgment, notification, finding or event that has occurred.");
   // Keep branch records and their authored semantic consequences; omit numeric roll / score mechanics.
   for (const decision of (s.deterministic_decisions ?? []).filter(item => !gameOnly(item.id))) for (const branch of decision.branches ?? []) {
@@ -188,10 +189,21 @@ export function buildConvertedExample(caseId: string, locale: "en" | "ru", updat
     groupTail.set(node.type, node.id);
   }
   if (groupTail.get("decision")) edge(groupTail.get("decision")!, "report-outline", "Compare hypothetical scenarios and prepare report");
+  if (version === "2.5.0") {
+    for (const question of convertedProfessionalBrief(caseId, locale)) {
+      add(question.id, "decision", question.title, question.detail);
+      edge("brief", question.id, "Authored review question, not an instruction or finding");
+    }
+    edge("review-assumptions", "review-question-evidence", "Missing evidence and assumptions to review");
+    edge("review-question-authority", "report-outline", "Proposed deliverable; approval remains unrecorded");
+    for (const evidence of s.evidence) edge("evidence-" + evidence.id, "review-question-evidence", "Source-register entry; original body and support require review");
+  }
   return applyCaseType({
     caseId, version, parent: { caseId, version: s.metadata.content_version, fingerprint: source.scenario_fingerprint },
     title: spec.title, jurisdiction: source.jurisdiction, role: local.player_client_role ?? "Responsible counsel",
-    premise: spec.description + "\nDecision owner: " + owner + "\n" + (local.synopsis ?? "") + "\nFictional example. Branch-generated results are hypothetical. Legacy source IDs and original simulation fingerprint are retained in lineage.\nExpected output: " + output,
+    premise: version === "2.5.0"
+      ? (local.synopsis ?? spec.description) + "\n\n" + (locale === "en" ? "Decision owner: " : "Лицо, принимающее решение: ") + owner + "\n" + (locale === "en" ? "Expected output: " : "Ожидаемый результат: ") + output + "\n\n" + (locale === "en" ? "Fictional case. Outcomes are hypothetical. Verify original sources and unresolved evidence gaps before relying on any statement." : "Вымышленное дело. Исходы гипотетические. Перед использованием утверждений проверьте оригинальные источники и нерешённые пробелы материалов.")
+      : spec.description + "\nDecision owner: " + owner + "\n" + (local.synopsis ?? "") + "\nFictional example. Branch-generated results are hypothetical. Legacy source IDs and original simulation fingerprint are retained in lineage.\nExpected output: " + output,
     premisePublication: "author-reviewed", nodes, links, editHistory: [], updatedAt,
     classification: { practiceArea: "", difficulty: "Intermediate", tags: [...spec.topics, "fictional", "converted-example"], taxTopics: [], complianceOnly: true },
   }, spec.category);

@@ -22,7 +22,7 @@ export async function buildExampleProvenance(draft: StudioDraft): Promise<Exampl
   const reference = draft.exampleSource;
   if (reference && reference.format !== "casevant-example-source-v1") return null;
   const sourceId = reference?.caseId ?? draft.caseId, version = reference?.version ?? draft.version;
-  const candidates = EXAMPLE_REGISTRY.filter(item => item.source.caseId === sourceId && (item.source.version === version || item.family === "converted" && ["2.2.0", "2.3.0"].includes(version)));
+  const candidates = EXAMPLE_REGISTRY.filter(item => item.source.caseId === sourceId && (item.source.version === version || item.family === "converted" && ["2.2.0", "2.3.0", "2.4.0"].includes(version)));
   for (const descriptor of candidates) for (const language of ["en", "ru"] as const) {
     const prepared = await prepareExampleVersion(descriptor.id, language, version);
     const template = normalizeStudioDraft(structuredClone(prepared.draft));

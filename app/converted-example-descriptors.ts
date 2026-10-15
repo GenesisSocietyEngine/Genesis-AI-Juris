@@ -7,6 +7,6 @@ export const CONVERTED_EXAMPLES: Record<string, { category: CaseTypeId; jurisdic
   nl_food_safety_goldenshell_001: { category: "compliance", jurisdiction: "NL · Food safety", title: "GoldenShell — Recall at Dawn", description: "Assess GoldenShell's food-safety response. Trace affected products, review containment and recall options, and build a remediation plan with owners, evidence requirements and release conditions.", topics: ["Food safety", "Product recall", "Regulatory response"] },
   us_environmental_desert_water_001: { category: "litigation_strategy", jurisdiction: "US · Environmental", title: "Desert Water", description: "Assess a potential groundwater contamination claim. Separate suspected exposure from proven causation, identify sampling and expert-evidence gaps, and compare investigation, negotiated resolution and litigation routes.", topics: ["Environmental claims", "Investigation", "Groundwater"] },
 };
-export const CONVERTED_EXAMPLE_VERSION = "2.4.0";
+export const CONVERTED_EXAMPLE_VERSION = "2.5.0";
 export const CONVERTED_EXAMPLE_LEGACY_VERSION = "2.2.0";
 

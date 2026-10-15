@@ -148,6 +148,8 @@ Before rollout, identify the previous known-good saved version and verify schema
 
 ## 9. Prioritized next development slices
 
+**15 October format amendment:** use `professional-case-format-review-2026-10-15.md` under docs/testing and its release follow-up when continuing. Converted current templates are 2.5.0; exact 2.2.0, 2.3.0 and 2.4.0 factories/hashes remain historical contracts. Preserve the three authored fictional review-question records and their qualifications, existing source packets and full original graph. Do not repopulate deleted questions or describe independent new copies as user-edit merging. Shared Overview grouping is presentation, not new case storage or evidence acceptance. The Base/Medium visual cohort now contains 14 PDFs/51 pages: ten unchanged historical entries plus bilingual 2.5 ERP/GreenFire Base reports. Version-pin future cohorts, inspect additions and rerun without baseline-update mode. Full and tax locks remain separate gates.
+
 Use [CaseVant development backlog and continuation instructions](CASEVANT_DEVELOPMENT_BACKLOG_REPORT.md) for the current execution order, code entry points and handoff procedure. The table below distinguishes remaining migrations from the completed 14 October export and visual-coverage work.
 
 These are proposed follow-on work, not part of the audit's authorization to implement unrelated features. Assign roles rather than inventing individual owners or delivery dates.
