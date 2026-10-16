@@ -54,6 +54,10 @@
 .fileCard > span { line-height: 1.5; }
 .fileCount { font-size: 1.5rem; font-weight: 700; }
 .fileAction { margin-top: auto; color: var(--green); font-weight: 700; }
+.sourceCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(235px, 100%), 1fr)); gap: 12px; margin: 12px 0; }
+.sourceCards .fileCount { font-size: 1.1rem; }
+.sourceTarget { scroll-margin-top: 24px; }
+.sourceTarget:focus { outline: 3px solid var(--cyan); outline-offset: 5px; }
 .recordBrowser { border: 1px solid var(--rule); border-radius: 8px; padding: 0 18px; scroll-margin-top: 90px; }
 .recordBrowser > summary { min-height: 48px; padding: 14px 0; cursor: pointer; line-height: 1.5; }
 .recordBrowser[open] { padding-bottom: 18px; }
