@@ -13,6 +13,23 @@ import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-exam
 
 const base = buildCanopyPackage("base").draft;
 
+test("source action cards expose four named destinations and keep technical audits out of the initial view", async () => {
+  const { StudioSourcesPanel } = await components;
+  for (const locale of ["en", "ru"] as const) {
+    const draft = structuredClone(base);
+    const before = JSON.stringify(draft);
+    const html = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft, locale, onStep() {}, onNode() {} }));
+    for (const id of ["studio-source-documents", "studio-source-records", "studio-source-requirement", "studio-governed-evidence-title"]) {
+      assert.match(html, new RegExp(`<button[^>]*type="button"[^>]*aria-label="[^"]+"[^>]*aria-controls="${id}"`));
+      assert.match(html, new RegExp(`<h3[^>]*id="${id}"[^>]*tabindex="-1"`));
+    }
+    assert.match(html, locale === "en" ? /Source history and technical details/ : /История источников и технические сведения/);
+    assert.doesNotMatch(html, /Provenance and projection register|Declared template reference|Check for template updates/);
+    assert.doesNotMatch(html, /<details[^>]* open=/);
+    assert.equal(JSON.stringify(draft), before, "source navigation renders without changing the working copy");
+  }
+});
+
 test("source counts separate actual graph records, structural minimum and human review below, at and above threshold", async () => {
   const { StudioSourcesPanel } = await components;
   for (const locale of ["en", "ru"] as const) for (const count of [0, 3, 15]) {
@@ -22,8 +39,8 @@ test("source counts separate actual graph records, structural minimum and human 
     const model = studioOverview(draft, locale);
     assert.equal(model.recordedCount, count); assert.equal(model.requiredRecordCount, 3);
     const html = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft, locale, onStep() {}, onNode() {} }));
-    assert.match(html, new RegExp(`<dd>${count}</dd>`));
-    assert.match(html, locale === "en" ? /Minimum graph records required<\/dt><dd>3<\/dd>/ : /Минимальное число записей графа<\/dt><dd>3<\/dd>/);
+    assert.match(html, new RegExp(`<strong[^>]*>${count}</strong>`));
+    assert.match(html, locale === "en" ? /aria-label="Minimum graph records required"[^>]*><span>Minimum graph records required<\/span><strong[^>]*>3<\/strong>/ : /aria-label="Минимальное число записей графа"[^>]*><span>Минимальное число записей графа<\/span><strong[^>]*>3<\/strong>/);
     assert.ok(!html.includes(`${count} / 3`));
     assert.match(html, locale === "en" ? /Not recorded in Studio/ : /Не фиксируются в Studio/);
   }
