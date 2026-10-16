@@ -20,6 +20,8 @@ test("source action cards expose four named destinations and keep technical audi
     const before = JSON.stringify(draft);
     const html = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft, locale, onStep() {}, onNode() {} }));
     for (const id of ["studio-source-documents", "studio-source-records", "studio-source-requirement", "studio-governed-evidence-title"]) {
+      assert.match(html, new RegExp(`aria-describedby="${id}-count"`));
+      assert.match(html, new RegExp(`<strong id="${id}-count"`));
       assert.match(html, new RegExp(`<button[^>]*type="button"[^>]*aria-label="[^"]+"[^>]*aria-controls="${id}"`));
       assert.match(html, new RegExp(`<h3[^>]*id="${id}"[^>]*tabindex="-1"`));
     }
