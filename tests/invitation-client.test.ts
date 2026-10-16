@@ -7,8 +7,11 @@ test("invitation and separate proof survive only a bounded well-formed continuat
   const token = "a".repeat(43), proof = "b".repeat(43);
   const value = invitationFromFragment(`#invite=${token}&proof=${proof}`);
   assert.ok(value); assert.equal(value.token, token); assert.equal(value.proof, proof);
-  assert.equal(parseInvitationContinuation({ ...value, expiresAt: Date.now() - 1 }), null);
-  assert.equal(parseInvitationContinuation({ ...value, expiresAt: Date.now() + 86_400_001 }), null);
+  const now = 1_790_000_000_000;
+  assert.equal(parseInvitationContinuation({ ...value, expiresAt: now - 1 }, now), null);
+  assert.equal(parseInvitationContinuation({ ...value, expiresAt: now }, now), null);
+  assert.equal(parseInvitationContinuation({ ...value, expiresAt: now + 86_400_001 }, now), null);
+  assert.equal(parseInvitationContinuation({ ...value, expiresAt: now + 86_400_000 }, now)?.expiresAt, now + 86_400_000);
   assert.equal(invitationFromFragment(`#invite=${token}&invite=${proof}`), null);
   assert.equal(invitationFromFragment(`#invite=${token}&proof=bad`), null);
   assert.equal(safeWorkspaceReturn("/invitations?lang=ru"), "/invitations?lang=ru");

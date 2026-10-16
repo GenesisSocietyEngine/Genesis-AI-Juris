@@ -25,6 +25,8 @@ The user steered continuation work to making the four Sources summary boxes inte
 
 Local browser evidence is distinct from hosted authenticated acceptance. Final exact-source build, native Sites receipt, asset bytes and production checks accompany delivery; source implementation alone is not rollout.
 
+Canonical gate follow-up: the PR run passed, but its duplicate push run exposed an existing invitation-continuation test that constructed a value one millisecond beyond a 24-hour limit using one wall-clock read, then validated against a later read. The parser already accepts an explicit `now`; the test now pins it and also asserts exact expiry and exact maximum-duration boundaries. No invitation implementation, expiry policy or permission changed. This test-only follow-up requires fresh canonical gates; the earlier failed result remains recorded.
+
 ## Continuation
 
 The prior v136 acceptance preserves synthetic cases 10–29 and all earlier work. Cross-profile isolation and ERP Value sign-out/re-authentication have browser evidence; different-account transition in one tab remains unexercised. The user's Sources amendment takes priority in this slice. First-save feedback and professional inspector terminology remain independently bounded follow-on items; this navigation amendment does not claim to resolve them. Keep the moderated ERP retrieval benchmark, authentic/synthetic document-body inventory and conditional three-way user-edit migration in the canonical backlog. Preserve all immutable factories/hashes and complete exports.
