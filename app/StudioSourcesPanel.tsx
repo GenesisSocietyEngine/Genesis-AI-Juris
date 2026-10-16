@@ -47,7 +47,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
         ["studio-source-records", t("Fact / evidence records in graph", "Записи фактов / материалов на схеме"), model.recordedCount, t("Browse records", "Открыть записи")],
         ["studio-source-requirement", t("Minimum graph records required", "Минимальное число записей графа"), model.requiredRecordCount ?? t("Not specified", "Не указано"), t("Check requirement", "Проверить требование")],
         ["studio-governed-evidence-title", t("Human-reviewed grounds", "Основания, проверенные человеком"), t("Not recorded in Studio", "Не фиксируются в Studio"), t("Open review workflow", "Открыть процесс проверки")],
-      ] as const).map(([id, label, value, action]) => <button key={id} type="button" className={styles.fileCard} aria-label={label} aria-controls={id} onClick={() => openArea(id)}><span>{label}</span><strong className={styles.fileCount}>{value}</strong><span className={styles.fileAction}>{action} →</span></button>)}
+      ] as const).map(([id, label, value, action]) => <button key={id} type="button" className={styles.fileCard} aria-label={label} aria-describedby={`${id}-count`} aria-controls={id} onClick={() => openArea(id)}><span>{label}</span><strong id={`${id}-count`} className={styles.fileCount}>{value}</strong><span className={styles.fileAction}>{action} →</span></button>)}
     </div>
     <p className={styles.muted}>{t("Reference material and case records still need independent review.", "Источники и записи дела требуют независимой проверки.")}</p>
     {notice && <p role="alert" className={styles.notice}>{notice}</p>}
