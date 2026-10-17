@@ -60,3 +60,16 @@ test("diagnostic downloads allowlist operational data and retain freshness limit
   assert.equal(invalid.generatedAt, null);
   assert.equal(invalid.release, null);
 });
+
+
+test("first-case pending labels distinguish checking, saving, restoring and check failure in both languages", () => {
+  const labels = {
+    en: {checking:"Checking current changes…",saving:"Saving…",restoring:"Preparing workspace…",check_failed:"Check needs retry"},
+    ru: {checking:"Проверка текущих изменений…",saving:"Сохранение…",restoring:"Подготовка рабочего пространства…",check_failed:"Повторите проверку"},
+  };
+  for(const locale of ["en","ru"] as const) for(const busyReason of ["checking","saving","restoring","check_failed"] as const) {
+    const html=renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,locale,busy:true,busyReason}));
+    assert.ok(html.includes(labels[locale][busyReason]));assert.match(html,/disabled=""/);
+    assert.doesNotMatch(html,/This version has a confirmed workspace save|Сохранение этой версии в рабочем пространстве подтверждено/);
+  }
+});

@@ -4,6 +4,16 @@ Prepared 13 October 2026 following the elevated case-library audit. This is the 
 
 Execution update, 14 October 2026: the immediate remaining audit work now includes an implemented complete Canopy reference-packet download (Markdown/JSON, nine selected document versions plus all retained history and exact UTF-8 SHA-256 hashes), a separate eight-PDF/33-page Base/Medium visual cohort, and actual signed-in production browser acceptance with independent synthetic copies, hypothetical amendments, stale-save rejection and real PDF download. See `docs/testing/case-library-remaining-work-audit-2026-10-14.md` for measured coverage and the delivery receipt for final release/CI identity. These changes do not complete the broader proposed development backlog below.
 
+## Current continuation amendment — 17 October 2026
+
+Use [the current status and ordered backlog](CASEVANT_STATUS_REPORT_2026-10-17.md) and [save feedback review](../testing/save-feedback-review-2026-10-17.md) with these invariants. The status report supersedes historical pending-release prose only where it supplies a completed receipt. Before each new slice reverify actual live source and canonical main; a dated receipt is not a current-source check.
+
+Save workflow: distinguish restoration, edit checking, failed checking, saving and confirmed persistence in both languages and both Studio views. Make check recovery visible in normal view. Repeated save activation must not clear pending state, repeat tax preparation or enqueue a second write; release the local guard after every failed/stale exit so explicit retry is possible. Retain immutable snapshot, server concurrency, exact receipt, account/version context and tax-carrier verification. Checking or opening a case performs no save; do not implement automatic retry after ambiguous network completion. Verify delayed preparation, repeated activation, changed authority, failed checking, explicit retry and later unsaved edits independently.
+
+Next implement the separate professional-inspector terminology slice, then extend the browser matrix. Keep authored sources and stable runtime IDs unchanged; professional labels must be training-aware. Maintain the existing historical source locks, not newly generated substitutes. Research retrieval targets and further source bodies are separate deliverables with the acceptance in the status report. No future user-edit merging is implied.
+
+Delivery for every slice: problem/acceptance, intended files and preservation contract; meaningful actual-handler tests; rendered desktop/narrow EN/RU review; inspect full diff; versioned canonical PR; required gates; exact merged build and fresh Sites source receipt; previous-live asset retention; native and public byte verification; authenticated changed flow; final status report. Preserve every existing/synthetic case and record new IDs. A pending gate remains pending in the report.
+
 ## 1. Product outcome and vocabulary
 
 Build a professional decision workspace in which a user can identify the mandate, inspect source-level support, separate facts from assumptions, compare options, test hypothetical changes, save a durable case and export an appropriately qualified decision package. Training is a deliberate ninth category, not the default professional experience.
