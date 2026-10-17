@@ -29,3 +29,9 @@ Tax preparation, complete carriers, same-origin/server authorization, restore/ac
 ## Verification checkpoints
 
 25 targeted tests pass. The first handwritten history fixture was rejected by the exact-payload assertion because it omitted required history metadata; the corrected regression uses the real appendStudioHistory authoring helper and verifies the complete payload, rather than weakening normalization. Compiler/lint, local browser and final canonical/live receipts follow separately.
+
+
+Pre-publication receipt review: the inherited workspace dirty comparison used studioAIBaseFingerprint. Its redacted context omits retained tax content and premisePublication; it is not an authoritative persistence proof. Bind initial saved state to serverPublicationFingerprint, checked current state to casePublicationFingerprint calculated in the existing idle derivation, and confirmed state to the exact returned publication receipt. Keep AI fingerprints for AI only. A regression changes exact tax-document bytes and context-review state with the same timestamp/AI context and must invalidate Saved in both cases. No case/server fingerprint algorithm or historical receipt bytes change. The exact-input fast path still confirms only the immutable input adopted after a verified receipt.
+
+
+Keep the existing editor-context checksum alongside the full publication receipt. The released publication fingerprint intentionally excludes audit timestamps; replacing the old check outright would lose that dirty-state coverage. The combined local key requires both, with current visibility. A timestamp-only regression also remains unsaved. This local comparison key changes no server/hash algorithm or persisted format and sends no retained tax document to AI.

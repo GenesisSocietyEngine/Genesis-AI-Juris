@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { studioAIBaseFingerprint } from '../app/studio-ai-plan';
 import test from 'node:test';
 import { buildCanopyPackage } from '../app/canopy-fixture';
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from '../app/case-integrity';
@@ -69,4 +71,32 @@ test('confirmed save status survives pending analysis without confirming later i
   assert.equal(currentStudioSaveMatches({...base,isPrivate:true}),false);
   assert.equal(currentStudioSaveMatches({...base,savedFingerprint:null}),false);
   assert.equal(currentStudioSaveMatches({...base,draft:{...saved},checked:true,fingerprint:base.savedFingerprint}),true);
+});
+
+
+test('saved-state comparison binds complete retained tax bytes and context-review state, not redacted AI context', () => {
+  const corpus=JSON.parse(readFileSync('tests/fixtures/tax-runtime/web-corpus.json','utf8'));
+  const source=JSON.parse(readFileSync('tests/fixtures/tax-runtime/web-source.json','utf8')).descriptor;
+  const request=JSON.parse(corpus.cases.find((entry:{name:string})=>entry.name==='prepare').response).request;
+  const fields='baseline_annual_tax_cost optimized_annual_tax_cost implementation_cost annual_maintenance_cost terminal_tax_or_unwind_cost annual_tax_base_override baseline_tax_rate_bps optimized_tax_rate_bps analysis_horizon_months annual_discount_rate_bps benefit_realization_bps'.split(' ');
+  const saved={...draft,taxAnalysis:{format:'genesis-juris-tax-attachment' as const,carrierVersion:1 as const,document:JSON.stringify({schema:'web-tax-authoring-artifact-v1',source,request,edit:Object.fromEntries(fields.map(key=>[key,'12.'])),bindings:[],benefits:[],required_component_ids:[],rates_confirmed:false,legacy_documents:[' {"large":18446744073709551617} '],previous_source_documents:[]})}};
+  const taxEdit={...saved,taxAnalysis:{...saved.taxAnalysis,document:saved.taxAnalysis.document+' '}};
+  const reviewEdit={...saved,premisePublication:'author-reviewed' as const};
+  const savedFingerprint=casePublicationFingerprint(saved)+':'+studioAIBaseFingerprint(saved)+'\u0000restricted';
+  for(const edited of [taxEdit,reviewEdit]) {
+    assert.equal(studioAIBaseFingerprint(edited),studioAIBaseFingerprint(saved),'redacted AI context is deliberately not complete persistence proof');
+    const fingerprint=casePublicationFingerprint(edited)+':'+studioAIBaseFingerprint(edited)+'\u0000restricted';
+    assert.notEqual(fingerprint,savedFingerprint);
+    assert.equal(currentStudioSaveMatches({draft:edited,savedDraft:saved,checked:true,fingerprint,savedFingerprint,isPrivate:false}),false);
+  }
+  const laterStamp={...saved,updatedAt:'2026-10-17T10:01:00.000Z'};
+  assert.equal(casePublicationFingerprint(laterStamp),casePublicationFingerprint(saved),'the released semantic fingerprint intentionally excludes audit timestamps');
+  const stampFingerprint=casePublicationFingerprint(laterStamp)+':'+studioAIBaseFingerprint(laterStamp)+'\u0000restricted';
+  assert.notEqual(stampFingerprint,savedFingerprint,'retain existing editor/audit metadata coverage in addition to full publication proof');
+  assert.equal(currentStudioSaveMatches({draft:laterStamp,savedDraft:saved,checked:true,fingerprint:stampFingerprint,savedFingerprint,isPrivate:false}),false);
+  const app=readFileSync('app/JurisApp.tsx','utf8');
+  assert.match(app,/publicationFingerprint: casePublicationFingerprint\(source\)/);
+  assert.match(app,/const workspaceFingerprint = `\$\{studioDerivations\.publicationFingerprint\}/);
+  assert.match(app,/setWorkspaceSavedFingerprint\(`\$\{saved\.publicationFingerprint\}/);
+  assert.doesNotMatch(app,/setWorkspaceSavedFingerprint\(`\$\{studioAIBaseFingerprint/);
 });
