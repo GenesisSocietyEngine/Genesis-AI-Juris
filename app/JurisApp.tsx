@@ -2418,7 +2418,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const [destinationNodeQuery, setDestinationNodeQuery] = useState("");
   const [destinationNodePage, setDestinationNodePage] = useState(0);
   const [graphZoom, setGraphZoom] = useState(1);
-  const [graphPresentation, setGraphPresentation] = useState<"overview" | "detail" | "list">("overview");
+  const [graphPresentation, setGraphPresentation] = useState<"overview" | "detail" | "list">("detail");
   const expandedGraphContext = JSON.stringify([reportAuthority.epoch, reportReceiptStorageScope, customCaseId, draft.caseId, draft.version]);
   const [expandedGraphOpening, setExpandedGraphOpening] = useState<string | null>(null);
   const expandedGraphOpen = reportAuthority.visible && expandedGraphOpening === expandedGraphContext;
@@ -2574,6 +2574,14 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       document.removeEventListener("keydown", closeMoreActionsOnEscape);
     };
   }, []);
+  const readGraph = useCallback(() => {
+    const viewport = graphViewportRef.current;
+    const width = graphBoundsRef.current.width;
+    setGraphPresentation("detail"); setGraphZoom(1);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({
+      left: Math.max(0, (width - viewport.clientWidth) / 2), top: 0, behavior: "auto",
+    })));
+  }, []);
   const fitGraph = useCallback(() => {
     const viewport = graphViewportRef.current;
     const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
@@ -2702,15 +2710,16 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   useEffect(() => {
     // Opening a source adjusts the viewport only. Node positions belong to the
     // signed draft; changing them requires the explicit, recorded layout action.
-    let fitFrame: number | null = null;
+    if (displayMode !== "developer" && visibleStep !== 4) return;
+    let readingFrame: number | null = null;
     const layoutFrame = window.requestAnimationFrame(() => {
-      fitFrame = window.requestAnimationFrame(fitGraph);
+      readingFrame = window.requestAnimationFrame(readGraph);
     });
     return () => {
       window.cancelAnimationFrame(layoutFrame);
-      if (fitFrame !== null) window.cancelAnimationFrame(fitFrame);
+      if (readingFrame !== null) window.cancelAnimationFrame(readingFrame);
     };
-  }, [fitGraph, graphViewportKey]);
+  }, [readGraph, graphViewportKey, displayMode, visibleStep]);
 
   useEffect(() => {
     if (visibleStep !== 4 || graphPresentation !== "overview") return;
@@ -2918,7 +2927,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   }
 
   async function autoLayoutGraph(orientation: GraphOrientation = graphOrientation) {
-    if (!canDuplicate || !layoutEngine || draft.nodes.length < 2) { fitGraph(); return; }
+    if (!canDuplicate || !layoutEngine || draft.nodes.length < 2) { readGraph(); return; }
     const before = draft;
     const nodes = layoutEngine.layoutStudioNodes(before.nodes, before.links, orientation);
     setGraphReferenceNodes(nodes);
@@ -2927,7 +2936,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       setDraft({ ...before, nodes });
       recordVisualEdit("node_moved", locale === "en" ? `Visual edit: applied ${orientation} auto-layout.` : `Визуальная правка: авто-раскладка ${orientation === "vertical" ? "сверху вниз" : "слева направо"}.`, before);
     }
-    setGraphZoom(1);
+    setGraphPresentation("detail"); setGraphZoom(1);
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => graphViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
     if (changed) setRelationStatus(locale === "en" ? `${orientation === "vertical" ? "Vertical" : "Horizontal"} layout applied.` : `Применена ${orientation === "vertical" ? "вертикальная" : "горизонтальная"} раскладка.`);
   }
@@ -3601,10 +3610,10 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       </details>
 {expandedGraphOpen && <Suspense fallback={<p role="status">{locale === "en" ? "Opening expanded map…" : "Открывается карта…"}</p>}><StudioExpandedGraph nodes={graphNodes} links={draft.links} locale={locale} onClose={() => setExpandedGraphOpening(null)} onNode={focusGraphNode}/></Suspense>}
       <section className="graph-deck" ref={graphDeckRef}>
-        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" aria-pressed={graphPresentation === "detail"} onClick={() => { setGraphPresentation("detail"); setGraphZoom(1); }}>{locale === "en" ? "Detail · 100%" : "Подробно · 100%"}</button><button type="button" aria-pressed={graphPresentation === "list"} onClick={() => setGraphPresentation("list")}>{locale === "en" ? "List" : "Список"}</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button><button type="button" disabled={!graphNodes.length} onClick={() => { if (reportAuthority.visible) setExpandedGraphOpening(expandedGraphContext); }}>{locale === "en" ? "Expand map" : "Развернуть карту"}</button></div></div></div>
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" aria-pressed={graphPresentation === "detail"} onClick={readGraph}>{locale === "en" ? "Detail · 100%" : "Подробно · 100%"}</button><button type="button" aria-pressed={graphPresentation === "list"} onClick={() => setGraphPresentation("list")}>{locale === "en" ? "List" : "Список"}</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button><button type="button" disabled={!graphNodes.length} onClick={() => { if (reportAuthority.visible) setExpandedGraphOpening(expandedGraphContext); }}>{locale === "en" ? "Expand map" : "Развернуть карту"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (displayMode === "user" ? (locale === "en" ? "Select a step to read its evidence and reasoning. Scroll down to follow the route." : "Выберите этап, чтобы изучить доказательства и обоснования. Прокрутите вниз по маршруту.") : (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления."))}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
         <details className="graph-milestone-disclosure" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Timeline & milestones" : "Временная шкала и этапы"}</summary><Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense></details>
-        {graphPresentation === "list" && <StudioDecisionList draft={draft} locale={locale} onNode={focusGraphNode}/>}<div hidden={graphPresentation === "list"} className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
+        {graphPresentation === "list" && <StudioDecisionList draft={draft} locale={locale} onNode={focusGraphNode}/>}<div hidden={graphPresentation === "list"} className="graph-viewport" role="region" tabIndex={0} ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
           {!layoutEngine && draft.nodes.length > 0 && <div className="graph-empty-state" role="status"><p>{layoutError ? (locale === "en" ? "The decision map could not be opened." : "Не удалось открыть карту решений.") : (locale === "en" ? "Opening decision map…" : "Открывается карта решений…")}</p>{layoutError && <button type="button" onClick={() => { setLayoutError(false); setLayoutAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Try again" : "Повторить"}</button>}</div>}

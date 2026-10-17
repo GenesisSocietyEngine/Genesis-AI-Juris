@@ -84,12 +84,12 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.match(source, /destinationNodeMenu\.nodes\.map/);
 });
 
-test("opening a saved or imported graph fits the viewport without changing its signed source", () => {
+test("opening a saved or imported graph stays readable without changing its signed source", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  const viewportEffect = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[fitGraph, graphViewportKey\]\);/)?.[0];
+  const viewportEffect = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[readGraph, graphViewportKey, displayMode, visibleStep\]\);/)?.[0];
   assert.ok(viewportEffect, "saved and imported graphs have a viewport-only opening effect");
-  assert.match(viewportEffect, /requestAnimationFrame\(fitGraph\)/);
-  assert.match(viewportEffect, /cancelAnimationFrame\(fitFrame\)/, "case switches cancel a pending fit");
+  assert.match(viewportEffect, /requestAnimationFrame\(readGraph\)/);
+  assert.match(viewportEffect, /cancelAnimationFrame\(readingFrame\)/, "case switches cancel a pending reading-view setup");
   assert.doesNotMatch(viewportEffect, /setDraft|layoutStudioNodes|canDuplicate/, "opening a source must not edit it, even for its owner");
   assert.equal(source.match(/layoutStudioNodes\(current\.nodes/g)?.length ?? 0, 0, "automatic opening must not silently rearrange canonical nodes");
   const explicitLayout = source.slice(source.indexOf("async function autoLayoutGraph("), source.indexOf("async function autoLayoutGraph(") + 1600);
