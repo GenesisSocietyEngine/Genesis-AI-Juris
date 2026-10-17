@@ -1,0 +1,17 @@
+# GreenFire map reading and vertical scroll review — 17 October 2026
+
+## Baseline and reviewed amendment
+
+Before editing, native Sites is public v141/runtime1193665808ff1fa208eee777599499c5e7544e7b. Canonical main and clean isolated checkout693d364f8c4556a86a8b91bd4ace6ef31151e3a1 differ only in five Markdown files. Application/hosting hashes match v141, and the Sites source helper opened693d364 before edits. Root tax/native work is excluded.
+
+Fresh GreenFire2.5.0 opens65 nodes into bounds1285×13802. Automatic whole-map Fit chooses zoom0.0305028: the entire canvas becomes39.19×421 in a610×449 window, leaving no useful vertical reading scroll. Selecting Detail100% restores scrollHeight13802, so this is the default height-fit presentation, not a truncated case or a maximum persisted node count. Keep the window's bounded height; its contents must scroll. No case source, positions, layout, graph carriers or saved data should change on opening.
+
+Reviewed solution: open graphs in100% reading mode, centered horizontally at the top with the full vertical range. Keep explicit Fit as the complete both-axis overview, plus List and Expand map. Keep deliberate Auto-layout as a recorded action and return it to reading mode rather than allowing an overview effect to shrink it again. Make the scroll region keyboard-focusable so End/PageDown can reach the tail without moving selected nodes. Do not remove content, compact/rewrite canonical positions, alter graph/report locks, or turn opening into a saved edit.
+
+Acceptance: the actual opening-controller regression must fail against baseline, then retain scale1 for GreenFire-sized/tall/wide and narrow viewports without mutating bounds/model. Preserve whole-map Fit tests. Browser-check GreenFire first/deepest nodes, keyboard End and full scroll range at desktop/narrow EN/RU; explicit Fit→Detail, List→map and node inspection; compare ERP/Canopy. Save only clearly labelled independent synthetic cases when persistence acceptance is needed; preserve every prior case. Run focused graph/layout/performance/authority and save checks, strict types, required canonical gates, exact merged build, actual v141 predecessor retention and separate native/static/authenticated release receipts before closure.
+
+## Local review checkpoint
+
+Opening-controller tests fail on baseline and pass with the correction. Focused graph/layout/performance/expanded-authority/list/save-receipt cohort39/39 passed; strict types passed and changed-file lint has0 errors/7 inherited warnings. Review amended the opening effect to run when the actual graph is visible (including entering Decision from Overview), preserving source-only dependencies and cancellation. Explicit Auto-layout sets reading mode so an old overview effect cannot immediately shrink it again. Region focus accepts navigation keys independently of node movement.
+
+Corrected local GreenFire65 nodes: zoom1, scrollHeight13802; desktop End reaches scrollTop13298.4/clientHeight504, deepest card fully within the scroll window. Explicit Fit still produces a complete overview; Detail restores1; List remains available. Narrow RU351×759/document336 retains13802 height and reaches scrollTop13249.6/clientHeight552 after native keyboard scrolling settles. An immediate measurement during the browser's keyboard animation was incomplete and excluded; the settled bounds confirm the tail. Local guest checks are not authenticated save/reopen acceptance. Full final-source gates and production receipts remain required.

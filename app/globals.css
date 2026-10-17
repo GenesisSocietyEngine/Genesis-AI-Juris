@@ -1266,5 +1266,6 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .studio-decision-list button{border:1px solid var(--rule);border-radius:6px;padding:9px 12px;min-height:44px;text-align:left;color:var(--cyan);background:var(--panel)}
 .studio-decision-list li>p{white-space:pre-wrap}
 .graph-viewport[hidden]{display:none}
+.graph-viewport:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
 .studio-save-status{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .studio-guest-save-hint{display:block;margin-top:4px}
