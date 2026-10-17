@@ -26,3 +26,6 @@ All production saved cases, including synthetic 8 and 10–29, remain protected 
 ## Release and verification ledger
 
 Implementation checkpoint: 87 focused/preservation tests passed; strict TypeScript passed; ESLint has zero errors and seven existing unused-variable warnings in JurisApp. Local Chrome observed checking feedback and return to readiness. Ordinary PR gates, exact merged build, predecessor asset retention, Sites native/static verification and authenticated changed live flow remain pending at this checkpoint; final receipts below supersede it only when completed.
+
+
+The terminating pre-fix regression harness reproduced both new defects against exact a3aa4a4 source; the candidate passes. Local EN/RU narrow checks measured 390 × 844 with document width 375, translated disabled checking controls and return to readiness. No browser-injected derivation/network fault is claimed. The completed release ledger is written after native publication to `.artifacts/save-feedback-20261017/rollout-status.md` in the primary workspace; use that receipt with native source/version responses, rather than interpreting this pre-release checkpoint as failure or completion.
