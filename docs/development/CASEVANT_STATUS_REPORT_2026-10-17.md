@@ -29,3 +29,8 @@ Implementation checkpoint: 87 focused/preservation tests passed; strict TypeScri
 
 
 The terminating pre-fix regression harness reproduced both new defects against exact a3aa4a4 source; the candidate passes. Local EN/RU narrow checks measured 390 × 844 with document width 375, translated disabled checking controls and return to readiness. No browser-injected derivation/network fault is claimed. The completed release ledger is written after native publication to `.artifacts/save-feedback-20261017/rollout-status.md` in the primary workspace; use that receipt with native source/version responses, rather than interpreting this pre-release checkpoint as failure or completion.
+
+
+## Live acceptance follow-up — first click
+
+v138 shipped from ddc939c with successful main gates/native/public161-asset checks. Fresh authenticated title-edit → Save reproduced an unconfirmed first click; a second click preserved the synthetic case as30. This provided a concrete blur/history/derivation-disable path. See save-on-blur-review-2026-10-17.md. Decouple explicit exact working-draft saves from analysis readiness, retain all authority/tax/CAS/receipt guards, and prove one-click save/reopen in both languages. Preserve case30 and all older cases. The final release ledger supersedes v138 as the completion receipt only after its own successful checks and live acceptance.

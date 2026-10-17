@@ -30,3 +30,13 @@ export function savedStudioPath(id: number, step = 'run_compare', locale = 'en',
   if (panel === 'overview') params.set('studio_panel', panel);
   return '/studio?' + params.toString();
 }
+
+
+/** Confirmed persistence is independent of analysis readiness, but never of the current input/visibility. */
+export function currentStudioSaveMatches(input: {
+  draft: StudioDraft; savedDraft: StudioDraft | null; checked: boolean;
+  fingerprint: string; savedFingerprint: string | null; isPrivate: boolean;
+}) {
+  if (!input.savedFingerprint?.endsWith(`\u0000${input.isPrivate ? "private" : "restricted"}`)) return false;
+  return input.draft === input.savedDraft || (input.checked && input.fingerprint === input.savedFingerprint);
+}

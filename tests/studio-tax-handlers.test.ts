@@ -10,6 +10,7 @@ import { StudioTaxWriteBaseline } from "../app/studio-tax-write-baseline";
 import { buildStudioCustomCaseExport } from "../app/studio-tax-export";
 import { taxAttachmentDigest, type TaxAttachmentV1 } from "../app/tax-authoring";
 import type { StudioDraft } from "../app/types";
+import { appendStudioHistory } from "../app/studio-editing";
 
 // Execute the real UI handlers with real carrier/fingerprint/receipt validation.
 // React, file selection and transport are observed boundaries, not browser QA.
@@ -34,11 +35,12 @@ export function save(context) {
  const isPrivate=false,canDuplicate=true,derivationsSettled=context.derivationsSettled??true,restorePending=context.restorePending??false,workspaceState=context.workspaceState??'idle',aiEntitlement='not_configured',locale='en';
  const saveInFlightRef={current:false},saveOperationRef={current:0},saveMountedRef={current:true},pendingAuthActionRef={current:'save'},saveContextRef={current:{caseId:draft.caseId,version:draft.version,scope:'account'}};
  const setWorkspaceState=value=>state.workspace=value,setWorkspaceError=value=>state.error=value;
+ const setWorkspaceSavedDraft=value=>state.savedDraft=value;
  const setCustomCaseId=()=>{},setPrivate=()=>{},setCanManagePrivacy=()=>{},setServerFingerprint=()=>{},setServerPublicationFingerprint=()=>{},setCopyProtectionLocked=()=>{},setWorkspaceSavedFingerprint=()=>{},setWorkspaceSavedAt=()=>{};
  const setDraft=fn=>state.draft=fn(state.draft),openWorkspaceAuthorization=()=>{throw Error('unexpected auth');};
  const window={location:{search:''},history:{state:null,replaceState(){}}};
  ${handlers.get("shareDraft")}
- return {state,run:()=>shareDraft('save'),saveContextRef};
+ return {state,run:(action='save')=>shareDraft(action),saveContextRef};
 }
 export function importer(context) {
  const state={draft:context.draft,recovery:null,notices:[],fetches:0,loaded:0};
@@ -159,11 +161,32 @@ test("actual save coalesces overlapping calls before React renders without repor
   await h.run();assert.equal(writes,2,"A completed failure must release the lock for an explicit retry");
 });
 
-test("actual save waits without writes or false errors while restoring or checking", async () => {
-  for(const guards of [{restorePending:true},{derivationsSettled:false},{workspaceState:"saving"}]) {
+test("actual save waits without writes or false errors while restoring or already pending", async () => {
+  for(const guards of [{restorePending:true},{workspaceState:"saving"}]) {
     let preparations=0,writes=0;
     const h=actual.save({draft:draft(),serverFingerprint:null,serverPublicationFingerprint:null,...guards,
       prepareTaxWrite:async()=>{preparations++;throw Error("must not prepare");},fetch:async()=>{writes++;throw Error("must not send");}});
     await h.run();assert.equal(preparations,0);assert.equal(writes,0);assert.equal(h.state.error,"");assert.equal(h.state.workspace,"idle");
   }
+});
+
+
+test("actual save persists the exact blur-committed draft while analysis is pending; submit still waits", async () => {
+  const input=appendStudioHistory({...draft(),title:"Just typed"},{role:"studio",source:"visual",action:"case_updated",message:"Visual edit: changed case Title."},"2026-10-17T10:00:00Z");
+  let prepared=0,written=0;
+  const h=actual.save({draft:input,derivationsSettled:false,serverFingerprint:null,serverPublicationFingerprint:null,
+    prepareTaxWrite:async()=>{prepared++;return {current:()=>true,mutation:undefined};},fetch:async(_path:string,init:RequestInit)=>{
+      written++;const sent=JSON.parse(String(init.body));assert.deepEqual(sent.draft,JSON.parse(JSON.stringify(input)));
+      const fp=caseFingerprint(sent.draft),pub=casePublicationFingerprint(sent.draft);
+      return Response.json({customCase:{id:77,caseId:sent.draft.caseId,currentVersion:sent.draft.version,fingerprint:fp,publicationFingerprint:pub,isPrivate:false,protection},submission:{id:99,customCaseId:77,caseId:sent.draft.caseId,version:sent.draft.version,fingerprint:fp,publicationFingerprint:pub,status:"draft",updatedAt:"2026-10-17T10:00:00Z"}});
+    }});
+  await h.run("submit");assert.equal(prepared,0);assert.equal(written,0);
+  await h.run();assert.equal(prepared,1);assert.equal(written,1);assert.equal(h.state.workspace,"saved",h.state.error);assert.equal(h.state.savedDraft.title,input.title);assert.deepEqual(h.state.savedDraft.taxAnalysis,input.taxAnalysis);
+});
+
+test("pending analysis cannot bypass the direct frozen save envelope limit", async () => {
+  let calls=0;
+  const h=actual.save({draft:{...draft(),premise:"x".repeat(950000)},derivationsSettled:false,serverFingerprint:null,serverPublicationFingerprint:null,
+    prepareTaxWrite:async()=>{calls++;throw Error("must not prepare");},fetch:async()=>{calls++;throw Error("must not send");}});
+  await h.run();assert.equal(calls,0);assert.equal(h.state.workspace,"error");assert.match(h.state.error,/900 KB/);
 });

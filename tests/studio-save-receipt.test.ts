@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildCanopyPackage } from '../app/canopy-fixture';
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from '../app/case-integrity';
-import { readStudioSaveResponse, savedStudioPath, verifiedStudioSaveReceipt } from '../app/studio-save-receipt';
+import { currentStudioSaveMatches, readStudioSaveResponse, savedStudioPath, verifiedStudioSaveReceipt } from '../app/studio-save-receipt';
 import { createStudioAuthContinuation, readStudioAuthContinuation } from '../app/studio-auth-continuation';
 import { studioEntry } from '../app/studio-entry';
 
@@ -57,4 +57,16 @@ test('opening a saved case selects Studio even when the mounted entry was Commun
   assert.equal(params.custom_case, '3');
   assert.equal(params.studio_step, 'case_map');
   assert.equal(params.lang, 'en');
+});
+
+
+test('confirmed save status survives pending analysis without confirming later input or changed visibility', () => {
+  const saved={...draft},later={...saved,title:'Later unsaved edits'};
+  const base={draft:saved,savedDraft:saved,checked:false,fingerprint:'stale\u0000restricted',savedFingerprint:'confirmed\u0000restricted',isPrivate:false};
+  assert.equal(currentStudioSaveMatches(base),true);
+  assert.equal(currentStudioSaveMatches({...base,draft:later}),false);
+  assert.equal(currentStudioSaveMatches({...base,draft:{...saved}}),false,'a matching case ID is not proof of the current snapshot');
+  assert.equal(currentStudioSaveMatches({...base,isPrivate:true}),false);
+  assert.equal(currentStudioSaveMatches({...base,savedFingerprint:null}),false);
+  assert.equal(currentStudioSaveMatches({...base,draft:{...saved},checked:true,fingerprint:base.savedFingerprint}),true);
 });
