@@ -2397,7 +2397,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const trainingWorkflow = draft.caseType?.id === "training_simulation";
   const showOverview = displayMode === "user" && overviewSelected && !trainingWorkflow;
   const visibleStep = showOverview ? null : guidedStep;
-  const [workspaceSavedFingerprint, setWorkspaceSavedFingerprint] = useState<string | null>(() => customCaseId && serverFingerprint && serverPublicationFingerprint ? `${serverPublicationFingerprint}\u0000${isPrivate ? "private" : "restricted"}` : null);
+  const [workspaceSavedFingerprint, setWorkspaceSavedFingerprint] = useState<string | null>(() => customCaseId && serverFingerprint && serverPublicationFingerprint ? `${serverPublicationFingerprint}:${studioAIBaseFingerprint(draft)}\u0000${isPrivate ? "private" : "restricted"}` : null);
   const [studioDerivations, setStudioDerivations] = useState<StudioDerivations>({
     source: null,
     bytes: 0,
@@ -2482,7 +2482,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   // Save checks the frozen payload size directly; stale analysis must not swallow a blur-to-save click.
   const saveWithinEnvelope = !derivationsSettled || draftWithinEnvelope;
   const aiBaseFingerprint = studioDerivations.aiBaseFingerprint;
-  const workspaceFingerprint = `${studioDerivations.publicationFingerprint}\u0000${isPrivate ? "private" : "restricted"}`;
+  const workspaceFingerprint = `${studioDerivations.publicationFingerprint}:${aiBaseFingerprint}\u0000${isPrivate ? "private" : "restricted"}`;
   const visibleWorkspaceState = (workspaceState === "saved" || workspaceState === "submitted") && !currentStudioSaveMatches({ draft, savedDraft: workspaceSavedDraft, checked: derivationsSettled, fingerprint: workspaceFingerprint, savedFingerprint: workspaceSavedFingerprint, isPrivate }) ? "idle" : workspaceState;
   const aiInputKey = `${aiBaseFingerprint}\u0000${locale}\u0000${selectedNodeId ?? ""}\u0000${prompt.trim()}`;
   const aiInputKeyRef = useRef(aiInputKey);
@@ -3103,7 +3103,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
           setDraft(current => current === draftAtStart ? confirmedDraft : current);
           setCopyProtectionLocked(saved.protection.copyProtected === true);
         }
-        setWorkspaceSavedFingerprint(`${saved.publicationFingerprint}\u0000${saved.isPrivate ? "private" : "restricted"}`);
+        setWorkspaceSavedFingerprint(`${saved.publicationFingerprint}:${studioAIBaseFingerprint(targetDraft)}\u0000${saved.isPrivate ? "private" : "restricted"}`);
         setWorkspaceSavedAt(saved.savedAt);
         setWorkspaceState(action === "submit" ? "submitted" : "saved");
         const currentParams = new URLSearchParams(window.location.search);

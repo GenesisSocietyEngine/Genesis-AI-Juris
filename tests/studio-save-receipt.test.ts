@@ -82,13 +82,18 @@ test('saved-state comparison binds complete retained tax bytes and context-revie
   const saved={...draft,taxAnalysis:{format:'genesis-juris-tax-attachment' as const,carrierVersion:1 as const,document:JSON.stringify({schema:'web-tax-authoring-artifact-v1',source,request,edit:Object.fromEntries(fields.map(key=>[key,'12.'])),bindings:[],benefits:[],required_component_ids:[],rates_confirmed:false,legacy_documents:[' {"large":18446744073709551617} '],previous_source_documents:[]})}};
   const taxEdit={...saved,taxAnalysis:{...saved.taxAnalysis,document:saved.taxAnalysis.document+' '}};
   const reviewEdit={...saved,premisePublication:'author-reviewed' as const};
-  const savedFingerprint=casePublicationFingerprint(saved)+'\u0000restricted';
+  const savedFingerprint=casePublicationFingerprint(saved)+':'+studioAIBaseFingerprint(saved)+'\u0000restricted';
   for(const edited of [taxEdit,reviewEdit]) {
     assert.equal(studioAIBaseFingerprint(edited),studioAIBaseFingerprint(saved),'redacted AI context is deliberately not complete persistence proof');
-    const fingerprint=casePublicationFingerprint(edited)+'\u0000restricted';
+    const fingerprint=casePublicationFingerprint(edited)+':'+studioAIBaseFingerprint(edited)+'\u0000restricted';
     assert.notEqual(fingerprint,savedFingerprint);
     assert.equal(currentStudioSaveMatches({draft:edited,savedDraft:saved,checked:true,fingerprint,savedFingerprint,isPrivate:false}),false);
   }
+  const laterStamp={...saved,updatedAt:'2026-10-17T10:01:00.000Z'};
+  assert.equal(casePublicationFingerprint(laterStamp),casePublicationFingerprint(saved),'the released semantic fingerprint intentionally excludes audit timestamps');
+  const stampFingerprint=casePublicationFingerprint(laterStamp)+':'+studioAIBaseFingerprint(laterStamp)+'\u0000restricted';
+  assert.notEqual(stampFingerprint,savedFingerprint,'retain existing editor/audit metadata coverage in addition to full publication proof');
+  assert.equal(currentStudioSaveMatches({draft:laterStamp,savedDraft:saved,checked:true,fingerprint:stampFingerprint,savedFingerprint,isPrivate:false}),false);
   const app=readFileSync('app/JurisApp.tsx','utf8');
   assert.match(app,/publicationFingerprint: casePublicationFingerprint\(source\)/);
   assert.match(app,/const workspaceFingerprint = `\$\{studioDerivations\.publicationFingerprint\}/);
