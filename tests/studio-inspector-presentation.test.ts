@@ -125,3 +125,29 @@ test("actual deferred loader ignores a departed editor and cannot replace a newe
     () => assert.fail(), () => assert.fail("late failure cannot affect the current editor"));
   assert.equal(hasLocalChunkRecovery(), false);
 });
+
+test("editing the first availability condition preserves every later condition; Always available deliberately clears all", () => {
+  const guards = [{ metric: "trust" as const, comparison: "gte" as const, value: 65 }, { metric: "exposure" as const, comparison: "lte" as const, value: 40 }];
+  const multi = { ...link, rule: { ...link.rule, guards } };
+  const before = JSON.stringify(multi);
+  const changes: Array<NonNullable<StudioLink["rule"]>> = [];
+  const tree = RelationRuleEditor({ ...props("en", "general_advisory"), link: multi, developerMode: true,
+    setRule: change => changes.push(change), applyRule: change => changes.push(change) });
+  const fields = elements(tree);
+  const metric = fields.find(e => e.type === "select" && e.props.value === "trust")!;
+  const comparison = fields.find(e => e.type === "select" && e.props.value === "gte")!;
+  const threshold = fields.find(e => e.type === "input" && e.props.value === 65)!;
+  const change = (field: ReactElement<Record<string, unknown>>, value: string) => (field.props.onChange as (event: { target: { value: string } }) => void)({ target: { value } });
+  change(metric, "position"); change(comparison, "eq"); change(threshold, "70");
+  for (const result of changes) assert.deepEqual(result.guards?.slice(1), guards.slice(1), "unmodified conditions must survive each actual control callback");
+  assert.deepEqual(changes.map(result => result.guards?.[0]), [
+    { ...guards[0], metric: "position" }, { ...guards[0], comparison: "eq" }, { ...guards[0], value: 70 },
+  ]);
+  change(metric, "none"); assert.deepEqual(changes.at(-1), { guards: undefined });
+  assert.equal(JSON.stringify(multi), before);
+  for (const locale of ["en", "ru"] as const) {
+    const html = renderToStaticMarkup(createElement(RelationRuleEditor, { ...props(locale, "general_advisory"), link: multi, developerMode: true }));
+    assert.match(html, locale === "en" ? /Editing condition 1 of 2/ : /Изменяется условие 1 из 2/);
+    assert.match(html, locale === "en" ? /removes all availability conditions/ : /удаляет все условия доступности/);
+  }
+});

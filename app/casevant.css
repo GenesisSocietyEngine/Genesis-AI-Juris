@@ -229,3 +229,9 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
   font: 400 14px/1.6 var(--workspace-font);
   color: var(--workspace-muted);
 }
+.relation-conditions-note {
+  grid-column: 1 / -1;
+  font: 400 13px/1.5 var(--workspace-font);
+  color: var(--workspace-muted);
+  margin: 0;
+}
