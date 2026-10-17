@@ -3,6 +3,8 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import StudioFirstCaseGuide from "../app/StudioFirstCaseGuide";
+import StudioActionPanel from "../app/StudioActionPanel";
+import { buildCanopyPackage } from "../app/canopy-fixture";
 import { createOperationsDiagnostic } from "../app/operations-diagnostic";
 
 const noop = () => {};
@@ -72,4 +74,12 @@ test("first-case pending labels distinguish checking, saving, restoring and chec
     assert.ok(html.includes(labels[locale][busyReason]));assert.match(html,/disabled=""/);
     assert.doesNotMatch(html,/This version has a confirmed workspace save|Сохранение этой версии в рабочем пространстве подтверждено/);
   }
+});
+
+
+test("review working-save remains available during analysis but respects restore, permission, size and pending writes", () => {
+  const base={draft:buildCanopyPackage("base").draft,checks:[],locale:"en" as const,checking:true,canEdit:true,onOpen:noop,onReport:noop,onSave:noop,saved:false,saving:false,withinEnvelope:true};
+  const saveButton=(changes={})=>[...renderToStaticMarkup(createElement(StudioActionPanel,{...base,...changes})).matchAll(/<button\b[\s\S]*?<\/button>/g)].find(match=>match[0].includes("Save working case"))?.[0]??"missing";
+  assert.match(saveButton(),/Save working case/);assert.doesNotMatch(saveButton(),/disabled=/);
+  for(const change of [{restoring:true},{canEdit:false},{withinEnvelope:false},{saving:true}]) assert.match(saveButton(change),/disabled=""/);
 });

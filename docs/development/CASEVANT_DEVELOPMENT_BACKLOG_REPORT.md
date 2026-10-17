@@ -6,7 +6,7 @@ This report complements the binding [product development instructions](CASEVANT_
 
 ## Latest audit — 17 October 2026
 
-Continue from [the current status report](CASEVANT_STATUS_REPORT_2026-10-17.md) and the current amendment in the detailed product instructions. v137/source a3aa4a4 and its successful main CI were reverified before this slice. Save feedback/guards are the current bounded implementation; professional inspector wording is next, with all-package browser coverage, moderated retrieval and source-body acquisition still separate. This update does not declare the backlog complete or an implementation checkpoint deployed.
+Continue from [the current status report](CASEVANT_STATUS_REPORT_2026-10-17.md) and the current amendment in the detailed product instructions. v137/source a3aa4a4 and its successful main CI were reverified before this slice. v138 save feedback/guards are released; fresh acceptance reproduced the field-blur first-click race. Continue with save-on-blur-review-2026-10-17.md and independent working-draft persistence; professional inspector wording is next, with all-package browser coverage, moderated retrieval and source-body acquisition still separate. This update does not declare the backlog complete or an implementation checkpoint deployed.
 
 ## Current product state
 

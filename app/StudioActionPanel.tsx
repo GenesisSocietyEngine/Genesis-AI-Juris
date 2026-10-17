@@ -9,9 +9,9 @@ import type { StudioEvidenceInput } from "./studio-evidence-buffer";
 
 export type StudioActionTarget = { step: StudioWorkflowStep; id: string; nodeType?: StudioNodeType; nodeId?: string; developer?: boolean };
 
-export default function StudioActionPanel({ draft, checks, locale, checking, canEdit, onOpen, onReport, onSave, saved, saving, withinEnvelope }: {
+export default function StudioActionPanel({ draft, checks, locale, checking, canEdit, onOpen, onReport, onSave, saved, saving, restoring = false, withinEnvelope }: {
   draft: StudioDraft; checks: StudioCheck[]; locale: "en" | "ru"; checking: boolean; canEdit: boolean;
-  onOpen: (target: StudioActionTarget) => void; onReport: () => void; onSave: () => void; saved: boolean; saving: boolean; withinEnvelope: boolean;
+  onOpen: (target: StudioActionTarget) => void; onReport: () => void; onSave: () => void; saved: boolean; saving: boolean; restoring?: boolean; withinEnvelope: boolean;
 }) {
   const en = locale === "en";
   const warnings = checks.filter(check => check.level === "warn");
@@ -38,7 +38,7 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
       {!checking && warnings.filter(check => !check.id).map((check, index) => <p key={index} role="alert">{check.text} {en ? "Return to the previous step and retry validation." : "Вернитесь на предыдущий шаг и повторите проверку."}</p>)}
       {!checking && warnings.length === 0 && <p className="action-complete" role="status">{en ? "Completeness checks passed. Evidence quality and independent approval still require review." : "Проверки полноты пройдены. Надёжность доказательств и независимое утверждение проверяются отдельно."}</p>}
       <ActionTile title={en ? "Generate report" : "Создайте отчёт"} detail={en ? "Preview the active case as a preliminary A4 decision package." : "Просмотрите предварительный пакет решений по текущему кейсу в A4."} status={en ? "Preliminary draft" : "Предварительный черновик"} next={en ? "Open report" : "Открыть отчёт"} disabled={!canEdit || !draft.nodes.length} onClick={onReport}/>
-      <ActionTile title={en ? "Save working case" : "Сохраните рабочий кейс"} detail={!withinEnvelope ? (en ? "Shorten node or relation details to fit the 900 KB limit before saving." : "Сократите описания узлов или связей до лимита 900 КБ.") : en ? "Keep this exact working version in your workspace. Sign in if requested." : "Сохраните текущую версию в рабочем пространстве. При необходимости войдите."} status={saving ? (en ? "Saving…" : "Сохранение…") : saved ? (en ? "Saved" : "Сохранено") : (en ? "Not saved to workspace" : "Не сохранено")} next={en ? "Save" : "Сохранить"} disabled={!canEdit || checking || saving || !withinEnvelope} onClick={onSave}/>
+      <ActionTile title={en ? "Save working case" : "Сохраните рабочий кейс"} detail={!withinEnvelope ? (en ? "Shorten node or relation details to fit the 900 KB limit before saving." : "Сократите описания узлов или связей до лимита 900 КБ.") : en ? "Keep this exact working version in your workspace. Sign in if requested." : "Сохраните текущую версию в рабочем пространстве. При необходимости войдите."} status={saving ? (en ? "Saving…" : "Сохранение…") : saved ? (en ? "Saved" : "Сохранено") : (en ? "Not saved to workspace" : "Не сохранено")} next={en ? "Save" : "Сохранить"} disabled={!canEdit || restoring || saving || !withinEnvelope} onClick={onSave}/>
     </div>
   </section>;
 }
