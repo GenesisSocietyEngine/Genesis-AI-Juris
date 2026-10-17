@@ -1,36 +1,78 @@
-# CaseVant development status — 17 October 2026
+# CaseVant audit and rollout status — 17 October 2026
 
-## Audit outcome
+## Release decision
 
-The deployed v137 and canonical main were verified identical before development. v137's Sources amendment is released: four keyboard-operable actions, visible documents/records and optional closed technical history. Its main web/PDF CI is successful (38856839832). Existing synthetic case 8 retained identical pre/post source-packet bytes (SHA-256 `119e852d90f31eff91541fe5ceec0d54a1c3fc5a220519cba795587d1e60aa2f`). Production evidence and source/asset receipts are retained under `.artifacts/source-actions-20261016` and the isolated checkout's `.artifacts` directory.
+**Sites version 139 is live at https://casevant.pro.** The audit repaired the reproduced first-click Save failure and strengthened saved-state confirmation. The deployed runtime source is `6c4e23856e6b53e1dee02a8d3dfa2cda0739d3ef`, integrated through canonical main. The release ledger below records the original rollout; the self-audit section records the later documentation-only correction. Required canonical gates, both production asset audits and fresh authenticated save/reopen/export acceptance passed. Exact receipts and broader backlog limits follow below.
 
-The next bounded amendment improves save readiness and prevents overlapping UI save operations. See [review and acceptance](../testing/save-feedback-review-2026-10-17.md). Implementation is a client workflow change; confirmed persistence still requires the exact server receipt. Release verification is recorded below as it completes.
+## Findings and implemented amendments
 
-## Product backlog and execution order
-
-| Order / role | Deliverable | Completion evidence |
+| Finding | Resolution | Evidence |
 | --- | --- | --- |
-| 1 / application + QA | Save readiness, visible check recovery and duplicate-operation guard (this slice) | Exact-handler adverse tests, bilingual UI, authenticated synthetic save/reopen, canonical gates and exact-source Sites receipt |
-| 2 / UX + application | Professional inspector language | Training-aware display mapping: decision-maker/option/consequences for professional cases; deliberate Training keeps player vocabulary. Preserve runtime IDs, source prose, cost/time carriers and historical factories. Bilingual inspector and report lock review |
-| 3 / QA | Extend eighteen-package browser matrix | Remaining category packages and historic 2.2.0 import; two copies, reopen/amend/isolation, actual PDF files. Preserve all existing/synthetic cases. Different-account A→B in the same tab needs the two already authorized identities actually available in that context; cross-profile and same-account re-authentication do not substitute |
-| 4 / UX research + reporting | ERP retrieval benchmark | Time finding authorization, missing source, owner and next action in current Overview/Base/Full. Propose median ≤30 s per item and ≥90% correct identification; target Base ≤4 pages for pinned ERP EN/RU fixtures, without deleting qualifications. These are proposed targets, not measured human results. Compare at least five representative users before broad renderer change |
-| 5 / content + domain reviewer | More inspectable document bodies | Inventory originals first; otherwise retain missing-body disclosure or author explicitly synthetic excerpts. Exact stable document/version/section IDs and UTF-8 hashes; premise-to-passage links, no acceptance/approval inferred. Preserve 43 missing-body disclosures until a genuine versioned replacement exists |
-| Conditional / data + application | Governed user-edit migration | Only after a separately accepted conflict design: exact original/working/amended comparison, individual choices, complete tax/evidence/approval carriers, new saved identity, no writes on cancel and stale concurrent writes fail. New-copy upgrades are not this capability |
+| Overlapping UI save preparation and confusing readiness | Synchronous per-editor in-flight guard; honest progress and recovery; normal checking has no red warning row or header shift | PR 120/121, real-handler adverse tests and local EN/RU narrow review |
+| Focused title → enabled Save could require a second click | Blur commits history and invalidates analysis; explicit working-draft Save now freezes and validates the exact current input independently of analysis readiness | v138 authenticated reproduction retained as case 30; regression fails against exact v138 and passes candidate; PR 122 |
+| AI-context checksum omitted retained tax bytes and premise review | Saved comparison now binds full server publication fingerprint plus prior editor-context coverage and visibility; immutable confirmed-input fast path cannot transfer to a later object | PR 123; retained-tax/context-review and timestamp-only dirty-state regressions |
+| Sources cards and technical clutter | Existing v137 amendment re-audited: all four actions focus their destinations, documents/records remain visible, optional technical history stays closed | Read-only production case 8 browser checks; original packet bytes unchanged |
+| Sparse library results | Two Advisory results share a desktop row | Fresh desktop geometry: two 590 px cards share y320.3, at x353/963. The narrow form check below does not establish a fresh narrow library-grid check |
 
-## Boundaries and remaining risks
+Saving still enforces exact 900 KB payload bounds, restoration/actor/context authority, complete tax preservation, database CAS and exact server receipts. Submit, reports and AI retain analysis prerequisites. No schema, template factory, server fingerprint algorithm, approval or renderer change was introduced. No automatic save retry or user-edit merge was added.
 
-Current converted templates remain 2.5.0, with frozen historical 2.2.0/2.3.0/2.4.0 factories and hashes. Canopy remains Advisory decision with nine document IDs, fifteen retained versions and four scenarios. ERP's deliberate 254-page Full-analysis export remains available; Base is the concise path. No domain approval follows from zero projection gaps or sufficient structural counts.
+## Source, validation and preservation
 
-All production saved cases, including synthetic 8 and 10–29, remain protected from cleanup. Add any new acceptance identities to this list. Root-workspace tax/native changes belong to other work and remain untouched. Web acceptance makes no native iOS parity claim.
+- Before editing, live v137, canonical main and isolated checkout matched `a3aa4a4914f0728fbe63eb25c3c764c02f942ad7`. Before the corrective slice, live v138 and canonical main matched `ddc939c60d4a33268ea3f61b72171bd63ddb2e7b`.
+- Ordinary canonical PRs 120–123 were integrated without force push or bypass. Final reviewed PR 123 tree matches merged main: `6ff90435e2bd66f61966648029909f9c675425d0`.
+- Final PR web/PDF runs 39024414053 and 39024410798 passed: 1,577 tests, 1,574 passed, 0 failed, 3 skipped. Focused final regressions: 27 passed; preservation cohort: 91 passed. These overlapping cohorts are not added together.
+- Strict TypeScript passed. Lint has zero errors and seven inherited unused-variable warnings. Historical conversion/fingerprint and report visual locks remain unchanged. Final main gate 39025074394 is recorded in the completion ledger.
+- Exact merged portable build passed. Application-input SHA-256: `c4d36e18a57c17a671e215f6b8f6cb829dd11679dcbbdd27b46daaf278689428`; hosting SHA-256: `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe`.
+- Actual v138 predecessor assets were retained: 115 current plus 45 previous-only immutable assets, 160 locally verified. Retention is one previous manifest, not all historical tabs.
+- Archive: `C:/PROJECTS/Genesis-AI-Juris/.artifacts/casevant-save-complete-6c4e238-20261017.tar`; raw SHA-256 `de97f5f5507594af0160e61798f95ab44f60a3eee8b00406d81f9b624238e976`. Native normalized archive SHA-256 `1bc773038e10b94f9f8e9119145c9464c6ae3b6dc91b7584b7b5f434f5b5327e`, 49,162,240 bytes, 529 files.
 
-## Release and verification ledger
+No case deletion or bulk rewrite was performed in this release. Preservation guards and regression tests passed; selected browser cases were checked. This is not an exhaustive before/after byte audit of every production record. Preserve all existing and synthetic cases, including 8, 10–31. Case 30 is the interim v138 reproduction, not proof of the final fix. Case 8 was inspected without saving; its packet hash remained `119e852d90f31eff91541fe5ceec0d54a1c3fc5a220519cba795587d1e60aa2f`. No disposal is authorized.
 
-Implementation checkpoint: 87 focused/preservation tests passed; strict TypeScript passed; ESLint has zero errors and seven existing unused-variable warnings in JurisApp. Local Chrome observed checking feedback and return to readiness. Ordinary PR gates, exact merged build, predecessor asset retention, Sites native/static verification and authenticated changed live flow remain pending at this checkpoint; final receipts below supersede it only when completed.
+## Remaining development and acceptance limits
 
+The next bounded product slice is professional inspector terminology using training-aware display mappings over stable IDs, followed by remaining eighteen-package browser coverage. See the [detailed product instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md) and [ordered backlog](CASEVANT_DEVELOPMENT_BACKLOG_REPORT.md).
 
-The terminating pre-fix regression harness reproduced both new defects against exact a3aa4a4 source; the candidate passes. Local EN/RU narrow checks measured 390 × 844 with document width 375, translated disabled checking controls and return to readiness. No browser-injected derivation/network fault is claimed. The completed release ledger is written after native publication to `.artifacts/save-feedback-20261017/rollout-status.md` in the primary workspace; use that receipt with native source/version responses, rather than interpreting this pre-release checkpoint as failure or completion.
+Fresh Edge testing could not proceed: the exposed Edge connection provided only a standalone GameAssist tab and did not allow new tabs. That unrelated tab was left untouched. No fresh second-account A→B same-tab check is claimed. Guest cancellation, real-handler stale/account tests, prior cross-profile tests and actual authenticated Chrome acceptance are separate evidence.
 
+Historic 2.2.0 browser import and all-package browser acceptance remain partial. Moderated ERP retrieval has not been measured; proposed median ≤30 s/item and ≥90% correct across five users remain targets. Preserve the concise pinned three-page Base and complete opt-in 254-page Full-analysis artifact. Forty-three missing document bodies remain disclosed; inspect originals before authoring clearly synthetic excerpts. Zero projection gaps and structural thresholds imply no evidence acceptance or professional approval.
 
-## Live acceptance follow-up — first click
+Governed user-edit migration remains conditional on exact three-way conflict preview, explicit choices, full carriers, immutable history, a new saved identity, zero writes on cancel and stale-write refusal. Independent new-copy upgrades are not that capability. Native iOS parity, governed-output branding and localized topic mappings remain separate work.
 
-v138 shipped from ddc939c with successful main gates/native/public161-asset checks. Fresh authenticated title-edit → Save reproduced an unconfirmed first click; a second click preserved the synthetic case as30. This provided a concrete blur/history/derivation-disable path. See save-on-blur-review-2026-10-17.md. Decouple explicit exact working-draft saves from analysis readiness, retain all authority/tax/CAS/receipt guards, and prove one-click save/reopen in both languages. Preserve case30 and all older cases. The final release ledger supersedes v138 as the completion receipt only after its own successful checks and live acceptance.
+Root-workspace changes from other work are outside this release and untouched: `Cargo.toml`, `docs/development/CURRENT_PROGRESS.md` and `docs/development/TAX_ECONOMICS_V2_INTEGRATION_PLAN.md`. The isolated application checkout is clean. Owned preview was stopped; temporary viewport reset is confirmed at final handoff.
+
+## Completion ledger
+
+**Released:** Sites **v139**, successful publication at **2026-10-17T10:39:45.991178Z**, public URL https://casevant.pro. The final canonical main web/PDF gate **39025074394** passed before deployment; web 9m30s and PDF 5m47s, including packaged Rust/Worker and tax-history checks. Both dependency audits passed.
+
+| Receipt | Exact value |
+| --- | --- |
+| Site | `appgprj_6a88a26d2f808191aa076b9fcd8dbce6` |
+| Source | `6c4e23856e6b53e1dee02a8d3dfa2cda0739d3ef` |
+| Saved version | `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b0cf5d7247f88191b3cedadb902e23f3` |
+| Deployment | `appgdep_6ad350592dc081919fd4706d65db0d7c` |
+| Status / environment | `succeeded` / revision 42; public audience and existing DB/R2 bindings preserved |
+| Native origin | https://genesis-juris-web.maxim-hayan.chatgpt.site |
+| Static delivery | **160/160** passed at each origin: 115 current and 45 retained previous-only JS/CSS/WASM URLs; status, MIME, length and SHA match |
+
+Fresh signed-in Chrome acceptance on v139:
+
+1. Opened a fresh Canopy copy through the standard library flow. With `studio-title` still focused and Save enabled, **one click** transitioned to Saving and confirmed a new saved identity **31**. No separate blur or second click was used.
+2. A separate tab independently reopened case 31 and verified its title and saved status. In Russian at actual **390×844**, document width 373, edited the focused jurisdiction field and clicked Save once. It confirmed in Russian.
+3. Another independent reopen retained `Fictional Gulf market · QA v139 RU amendment`, category `general_advisory`, Canopy source 2.0.0 and exact source fingerprint. Actual JSON export contains both title and jurisdiction blur-history entries. Preserve case 31 alongside every older case.
+4. Downloaded actual Base/A4 decision memorandum: **3 pages, 35,145 bytes**, synthetic title, preliminary/conditional qualifications and no implied selected outcome/approval. SHA-256 `e540439601517714a8a8869ce99522f1331682189e8c57e2fa39aa58656fa256`. Reopened-case JSON 23,901 bytes, SHA-256 `0da19e3595e88326f7aad0aac0711fb572ba7462c1a0e7684c837d010a97f9f7`. File bytes and extracted text were inspected separately from the client download-start/account receipt.
+5. The still-open **v138 case 30** tab loaded its Decision view after the cutover with no dynamic-import failure; no save was performed there. This checks the one-previous-version compatibility path, not arbitrary older tabs.
+6. Bounded 10-minute error query returned six info-level `/favicon.ico` 404 invocations with outcome `ok`, and no Worker exceptions in that sample. Record favicon routing as low-impact asset maintenance; do not describe this as zero HTTP errors or comprehensive monitoring.
+
+The final screenshot `production-v139-save-reopen.png` shows case 31 independently reopened and Saved. Temporary viewport reset; owned preview stopped. Final isolated checkout clean, canonical remote main reconfirmed at the deployed SHA; unrelated root changes listed above remain untouched.
+
+Local evidence is retained under `C:/PROJECTS/Genesis-AI-Juris/.artifacts/save-feedback-20261017/`: `sites-v139-saved-version.json`, `sites-v139-deployment.json`, `case31-reopened.json`, `case31-base-en.pdf`, `case31-base-en.txt`, screenshot and `CONTINUATION_INSTRUCTIONS_2026-10-17.md`. Static receipts are `.artifacts/save-complete-v139-native-assets.json` and `.artifacts/save-complete-v139-production-assets.json` under the isolated checkout. These paths are local QA artifacts, not files committed beside this document. The [canonical self-audit review](../testing/self-audit-handoff-review-2026-10-17.md) records the follow-up.
+
+## Self-audit correction — 17 October 2026
+
+The earlier handoff left the canonical status report at a pre-release checkpoint and kept the final receipt only in local artifacts. This correction brings the completed release facts into the canonical documentation. It also narrows the preservation and responsive-layout claims above to the actual evidence. Remaining account-switch, all-package, historic-import and research checks are not closed by v139 acceptance.
+
+Independently rechecked native saved-version source/deployment association, public audience, remote canonical main and successful main CI. The unchanged archive's raw SHA-256 still matches the release ledger. The existing save-receipt/tax-handler suite passed 18/18 in this follow-up. Its first sandbox attempt failed in the tsx loader's OS-user lookup before tests ran; the unchanged suite then passed outside that sandbox. This is separate from the earlier 27-test and full-suite cohorts.
+
+The actual downloaded three-page PDF was rendered and all three page PNGs inspected in this follow-up: no clipped text, overlapping elements, missing glyphs or broken table rows observed. Render evidence is retained under `self-audit-pdf/`; the earlier release checked file metadata and extracted text, not all-page visual layout.
+
+No application, schema, source template, server data or production deployment was changed by this documentation/evidence correction. Production remains v139 from 6c4e238. A later documentation-only canonical commit must not be described as deployed source; compare application/hosting input hashes as well as the exact native runtime commit. See the canonical self-audit review for versioned corrections and the PR receipt.

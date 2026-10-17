@@ -6,7 +6,7 @@ This report complements the binding [product development instructions](CASEVANT_
 
 ## Latest audit — 17 October 2026
 
-Continue from [the current status report](CASEVANT_STATUS_REPORT_2026-10-17.md) and the current amendment in the detailed product instructions. v137/source a3aa4a4 and its successful main CI were reverified before this slice. v138 save feedback/guards are released; fresh acceptance reproduced the field-blur first-click race. Continue with save-on-blur-review-2026-10-17.md and independent working-draft persistence; professional inspector wording is next, with all-package browser coverage, moderated retrieval and source-body acquisition still separate. This update does not declare the backlog complete or an implementation checkpoint deployed.
+Continue from [the completed v139 status report](CASEVANT_STATUS_REPORT_2026-10-17.md), [self-audit review](../testing/self-audit-handoff-review-2026-10-17.md) and current detailed instructions. The field-blur first-click save correction and full publication-receipt binding are released as v139 from `6c4e23856e6b53e1dee02a8d3dfa2cda0739d3ef`. Canonical web/PDF gates and both 160-asset checks passed; synthetic case 31 has representative EN/RU focused-field one-click save, independent reopen and an actual three-page report. Preserve case 31 and all prior cases. Professional inspector wording is next; all-package/historic-import browser coverage, actual same-tab second-account switching, moderated retrieval and source-body acquisition remain separate open work. This documentation correction is not a runtime deployment or completion of the broader backlog.
 
 ## Current product state
 
