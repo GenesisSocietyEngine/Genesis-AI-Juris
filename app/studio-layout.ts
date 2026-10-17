@@ -20,8 +20,10 @@ export type StudioGraphBounds = { width: number; height: number };
  * Later deliberate moves retain their offsets from the opening source. */
 export function projectStudioNodes(nodes: StudioNode[], links: StudioLink[], orientation: StudioLayoutOrientation, referenceNodes: StudioNode[]) {
   const reference = new Map(referenceNodes.map((node) => [node.id, node]));
-  return layoutStudioNodes(nodes, links, orientation).map((position, index) => {
-    const source = nodes[index];
+  const automatic = new Map(layoutStudioNodes(nodes.filter(node => !node.mapPosition), links, orientation).map(node => [node.id, node]));
+  return nodes.map(source => {
+    if (source.mapPosition) return { ...source, ...source.mapPosition };
+    const position = automatic.get(source.id) ?? source;
     const original = reference.get(source.id) ?? source;
     return { ...source, x: position.x + source.x - original.x, y: position.y + source.y - original.y };
   });

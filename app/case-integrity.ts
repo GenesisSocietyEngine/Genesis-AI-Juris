@@ -241,6 +241,8 @@ function normalizeNode(value: unknown): StudioNode {
   if (typeof value.x !== "number" || !Number.isFinite(value.x) || value.x < 0 || value.x > 5_000) throw new Error("Invalid node coordinate");
   if (typeof value.y !== "number" || !Number.isFinite(value.y) || value.y < 0 || value.y > 5_000) throw new Error("Invalid node coordinate");
   if (value.factStatus !== undefined && (value.type !== "fact" || (value.factStatus !== "asserted" && value.factStatus !== "assumed"))) throw new Error("Invalid authored fact status");
+  if (value.mapPosition !== undefined && (!isRecord(value.mapPosition) ||
+    ![value.mapPosition.x, value.mapPosition.y].every(coordinate => typeof coordinate === "number" && Number.isFinite(coordinate) && coordinate >= 0 && coordinate <= 100_000))) throw new Error("Invalid manual map position");
   return {
     id: value.id,
     type: value.type as StudioNodeType,
@@ -249,6 +251,7 @@ function normalizeNode(value: unknown): StudioNode {
     detail: safeString(value.detail, "", 4_000),
     x: value.x,
     y: value.y,
+    ...(isRecord(value.mapPosition) ? { mapPosition: { x: value.mapPosition.x as number, y: value.mapPosition.y as number } } : {}),
     runtime: normalizeNodeRuntime(value.runtime, value.type as StudioNodeType),
   };
 }
