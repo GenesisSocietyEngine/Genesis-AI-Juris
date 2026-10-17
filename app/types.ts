@@ -208,6 +208,8 @@ export type StudioNode = {
   factStatus?: "asserted" | "assumed";
   x: number;
   y: number;
+  /** Explicit user placement in map space; absent legacy nodes keep their automatic projection. */
+  mapPosition?: { x: number; y: number };
   runtime?: {
     day?: number;
     time?: string;

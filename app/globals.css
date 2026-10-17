@@ -1267,5 +1267,12 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .studio-decision-list li>p{white-space:pre-wrap}
 .graph-viewport[hidden]{display:none}
 .graph-viewport:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.graph-scale-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--panel)}
+.graph-scale-bar button{min-width:58px;min-height:44px;padding:6px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--text);font:inherit;cursor:pointer}
+.graph-scale-bar button:disabled{opacity:.45;cursor:default}
+.graph-scale-bar button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.graph-scale-bar output{min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
+.node-palette button[draggable="true"]{cursor:grab}
+.node-palette button[draggable="true"]:active{cursor:grabbing}
 .studio-save-status{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .studio-guest-save-hint{display:block;margin-top:4px}

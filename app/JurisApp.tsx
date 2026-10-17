@@ -1974,12 +1974,15 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (!selectedNodeId) return;
     updateStudioDraft((current) => ({ ...current, nodes: current.nodes.map((node) => node.id === selectedNodeId ? { ...node, ...change } : node) }));
   }
-  function addNode(type: StudioNodeType, preferredPosition?: { x: number; y: number }) {
+  function addNode(type: StudioNodeType, preferredPosition?: { x: number; y: number }, exactPosition = false) {
     const createdAt = new Date().toISOString();
     if (draftRef.current.nodes.length >= 200) return;
     const id = nextStudioNodeId(draftRef.current.nodes, type);
     commitStudioDraft((current) => {
-      const position = nextStudioNodePosition(current.nodes, current.nodes.find((node) => node.id === selectedNodeId), preferredPosition);
+      const position = exactPosition && preferredPosition
+        ? { x: Math.max(20, Math.min(5_000, Math.round(preferredPosition.x))), y: Math.max(20, Math.min(5_000, Math.round(preferredPosition.y))),
+          mapPosition: { x: Math.max(20, Math.min(100_000, Math.round(preferredPosition.x))), y: Math.max(20, Math.min(100_000, Math.round(preferredPosition.y))) } }
+        : nextStudioNodePosition(current.nodes, current.nodes.find((node) => node.id === selectedNodeId), preferredPosition);
       return appendStudioHistory({ ...current, nodes: [...current.nodes, { id, type, title: text.nodeTypes[type], detail: "", ...position }] }, { role: "studio", source: "visual", action: "node_added", message: locale === "en" ? `Visual edit: added ${text.nodeTypes[type]} node “${text.nodeTypes[type]}”.` : `Визуальная правка: добавлен узел «${text.nodeTypes[type]}».` }, createdAt);
     }, locale === "en" ? `Added ${text.nodeTypes[type]} node` : `Добавлен узел «${text.nodeTypes[type]}»`, "visual", createdAt);
     setSelectedNodeId(id);
@@ -2065,7 +2068,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     else if (event.type === "pointermove" && dragging?.id === node.id) {
       const x = Math.max(12, Math.min(canvasWidth - 178, pointerX - dragging.dx));
       const y = Math.max(12, Math.min(canvasHeight - 92, pointerY - dragging.dy));
-      updateStudioDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x: item.x + x - node.x, y: item.y + y - node.y } : item) }));
+      updateStudioDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, ...(item.mapPosition ? { mapPosition: { x, y } } : { x: item.x + x - node.x, y: item.y + y - node.y }) } : item) }));
       setDragging((current) => current?.id === node.id ? { ...current, lastX: x, lastY: y } : current);
     } else if (event.type === "pointerup" || event.type === "pointercancel") {
       const completed = dragging;
@@ -2334,7 +2337,7 @@ type StudioViewProps = {
   exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File, loaded?: (draft: StudioDraft) => void) => void;
   openUpdatedExample: (expectedFingerprint: string, next: StudioDraft) => boolean;
   createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
-  recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType, preferredPosition?: { x: number; y: number }) => void;
+  recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType, preferredPosition?: { x: number; y: number }, exactPosition?: boolean) => void;
   addLink: (from: string, to: string) => void; relinkLink: (previous: StudioLink, next: StudioLink) => void;
   deleteLink: (link: StudioLink) => void; deleteNode: () => void;
   moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode, graphScale?: number) => void; resetDraft: () => boolean | void;
@@ -2435,7 +2438,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const [layoutError, setLayoutError] = useState(false);
   const [layoutAttempt, setLayoutAttempt] = useState(0);
   const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
-  const graphViewportKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}\u0000${layoutEngine ? "ready" : "loading"}`;
+  const graphViewportKey = `${graphDraftIdentity}\u0000${layoutEngine ? "ready" : "loading"}`;
   const guidedWorkflowKey = studioWorkflowStorageKey(draft.caseId);
   const guidedDraftIsEmpty = !draft.title.trim() && draft.nodes.length === 0 && draft.links.length === 0;
   const graphDraftIdentityRef = useRef(graphDraftIdentity);
@@ -2448,6 +2451,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const aiAbortRef = useRef<AbortController | null>(null);
   const graphDeckRef = useRef<HTMLElement | null>(null);
   const graphViewportRef = useRef<HTMLDivElement | null>(null);
+  const paletteDragRef = useRef<{ type: StudioNodeType; draft: StudioDraft; scope: string | null } | null>(null);
   const moreActionsRef = useRef<HTMLDetailsElement | null>(null);
   const pendingAuthActionRef = useRef<"save" | "submit">(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("resume_action") === "submit" ? "submit" : "save");
   const saveOperationRef = useRef(0);
@@ -2594,6 +2598,20 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     // the newly arranged first row clipped above the viewport.
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
   }, []);
+  const changeGraphZoom = useCallback((direction: -1 | 1) => {
+    const viewport = graphViewportRef.current;
+    if (!viewport) return;
+    const next = Math.min(2, Math.max(0.1, Math.round((graphZoom + direction * 0.1) * 100) / 100));
+    if ((direction < 0 && graphZoom <= 0.1) || next === graphZoom) return;
+    const centerX = (viewport.scrollLeft + viewport.clientWidth / 2) / graphZoom;
+    const centerY = (viewport.scrollTop + viewport.clientHeight / 2) / graphZoom;
+    setGraphPresentation("detail"); setGraphZoom(next);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      if (graphViewportRef.current !== viewport) return;
+      viewport.scrollTo({ left: Math.max(0, centerX * next - viewport.clientWidth / 2),
+        top: Math.max(0, centerY * next - viewport.clientHeight / 2), behavior: "auto" });
+    }));
+  }, [graphZoom]);
   const relationPageSize = 20;
   const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
   const safeRelationPage = Math.min(relationPage, relationPageCount - 1);
@@ -2926,12 +2944,44 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     };
   }
 
+  function startPaletteDrag(event: React.DragEvent<HTMLButtonElement>, type: StudioNodeType) {
+    paletteDragRef.current = null;
+    if (!canDuplicate || draft.nodes.length >= 200 || !paletteNodeTypes.includes(type)) { event.preventDefault(); return; }
+    paletteDragRef.current = { type, draft: draft, scope: reportReceiptStorageScope };
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/x-casevant-node", type);
+  }
+
+  function validPaletteDrag() {
+    const drag = paletteDragRef.current;
+    return drag && canDuplicate && drag.draft === draft && drag.scope === reportReceiptStorageScope
+      && draft.nodes.length < 200 && paletteNodeTypes.includes(drag.type) ? drag : null;
+  }
+
+  function dropPaletteNode(event: React.DragEvent<HTMLDivElement>) {
+    const drag = validPaletteDrag();
+    paletteDragRef.current = null;
+    if (!drag || event.dataTransfer.getData("application/x-casevant-node") !== drag.type) return;
+    event.preventDefault();
+    const viewport = event.currentTarget;
+    const rect = viewport.getBoundingClientRect();
+    const scale = Number.isFinite(graphZoom) && graphZoom > 0 ? graphZoom : 1;
+    const x = (event.clientX - rect.left - viewport.clientLeft + viewport.scrollLeft) / scale - 82.5;
+    const y = (event.clientY - rect.top - viewport.clientTop + viewport.scrollTop) / scale - 48;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    addNode(drag.type, { x, y }, true);
+    setRelationStatus(locale === "en" ? "Node added where dropped." : "Узел добавлен в месте переноса.");
+  }
+
   async function autoLayoutGraph(orientation: GraphOrientation = graphOrientation) {
     if (!canDuplicate || !layoutEngine || draft.nodes.length < 2) { readGraph(); return; }
     const before = draft;
-    const nodes = layoutEngine.layoutStudioNodes(before.nodes, before.links, orientation);
+    const nodes = layoutEngine.layoutStudioNodes(before.nodes, before.links, orientation).map(node => ({ ...node,
+      x: Math.min(5_000, node.x), y: Math.min(5_000, node.y), mapPosition: { x: node.x, y: node.y },
+    }));
     setGraphReferenceNodes(nodes);
-    const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y);
+    const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y
+      || node.mapPosition.x !== before.nodes[index]?.mapPosition?.x || node.mapPosition.y !== before.nodes[index]?.mapPosition?.y);
     if (changed) {
       setDraft({ ...before, nodes });
       recordVisualEdit("node_moved", locale === "en" ? `Visual edit: applied ${orientation} auto-layout.` : `Визуальная правка: авто-раскладка ${orientation === "vertical" ? "сверху вниз" : "слева направо"}.`, before);
@@ -3349,7 +3399,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     const step = event.shiftKey ? 20 : 5;
     selectGraphNode(node.id);
     const before = draft;
-    setDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x: Math.max(0, Math.min(5_000, item.x + direction[0] * step)), y: Math.max(0, Math.min(5_000, item.y + direction[1] * step)) } : item) }));
+    setDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, ...(item.mapPosition ? { mapPosition: { x: Math.max(0, Math.min(100_000, item.mapPosition.x + direction[0] * step)), y: Math.max(0, Math.min(100_000, item.mapPosition.y + direction[1] * step)) } } : { x: Math.max(0, Math.min(5_000, item.x + direction[0] * step)), y: Math.max(0, Math.min(5_000, item.y + direction[1] * step)) }) } : item) }));
     recordVisualEdit("node_moved", locale === "en" ? `Visual edit: nudged “${node.title}” ${event.key.replace("Arrow", "").toLowerCase()} by ${step}px.` : `Визуальная правка: узел «${node.title}» сдвинут на ${step}px.`, before);
   }
 
@@ -3606,14 +3656,19 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     {(displayMode === "developer" || visibleStep === 4) && <details className="studio-map-context page-width" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Explore evidence, issues & options" : "Доказательства, вопросы и варианты"}</summary><Suspense fallback={null}><StudioCaseViews locale={locale} draft={draft} developerView={displayMode === "developer"} onFocusNode={(nodeId) => { focusGraphNode(nodeId); document.querySelector(".studio-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}/></Suspense></details>}
     {(displayMode === "developer" || visibleStep === 4) && <section className="studio-workspace">
       <details className="graph-add-controls" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Add to decision map" : "Добавить на карту решений"}</summary>
-      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
+      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} draggable={canDuplicate && draft.nodes.length < 200} onDragStart={(event) => startPaletteDrag(event, type)} onDragEnd={() => { paletteDragRef.current = null; }} onClick={() => { addNode(type, visibleGraphCenter(), true); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Drag a node onto the map, or click to add it in the visible centre. Changes can be undone." : "Перетащите узел на карту или нажмите, чтобы добавить его по центру. Изменения можно отменить."}</p></aside>
       </details>
 {expandedGraphOpen && <Suspense fallback={<p role="status">{locale === "en" ? "Opening expanded map…" : "Открывается карта…"}</p>}><StudioExpandedGraph nodes={graphNodes} links={draft.links} locale={locale} onClose={() => setExpandedGraphOpening(null)} onNode={focusGraphNode}/></Suspense>}
       <section className="graph-deck" ref={graphDeckRef}>
-        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" aria-pressed={graphPresentation === "detail"} onClick={readGraph}>{locale === "en" ? "Detail · 100%" : "Подробно · 100%"}</button><button type="button" aria-pressed={graphPresentation === "list"} onClick={() => setGraphPresentation("list")}>{locale === "en" ? "List" : "Список"}</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button><button type="button" disabled={!graphNodes.length} onClick={() => { if (reportAuthority.visible) setExpandedGraphOpening(expandedGraphContext); }}>{locale === "en" ? "Expand map" : "Развернуть карту"}</button></div></div></div>
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" aria-pressed={graphPresentation === "detail" && graphZoom === 1} onClick={readGraph}>{locale === "en" ? "Detail · 100%" : "Подробно · 100%"}</button><button type="button" aria-pressed={graphPresentation === "list"} onClick={() => setGraphPresentation("list")}>{locale === "en" ? "List" : "Список"}</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button><button type="button" disabled={!graphNodes.length} onClick={() => { if (reportAuthority.visible) setExpandedGraphOpening(expandedGraphContext); }}>{locale === "en" ? "Expand map" : "Развернуть карту"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (displayMode === "user" ? (locale === "en" ? "Select a step to read its evidence and reasoning. Scroll down to follow the route." : "Выберите этап, чтобы изучить доказательства и обоснования. Прокрутите вниз по маршруту.") : (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления."))}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
         <details className="graph-milestone-disclosure" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Timeline & milestones" : "Временная шкала и этапы"}</summary><Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense></details>
-        {graphPresentation === "list" && <StudioDecisionList draft={draft} locale={locale} onNode={focusGraphNode}/>}<div hidden={graphPresentation === "list"} className="graph-viewport" role="region" tabIndex={0} ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
+        {graphPresentation !== "list" && <div className="graph-scale-bar" role="group" aria-label={locale === "en" ? "Map zoom" : "Масштаб карты"}>
+          <button type="button" onClick={() => changeGraphZoom(-1)} disabled={graphZoom <= 0.1} aria-label={locale === "en" ? "Zoom out by 10%" : "Уменьшить масштаб на 10%"}>−10%</button>
+          <output aria-live="polite" aria-label={locale === "en" ? "Current zoom" : "Текущий масштаб"}>{Math.round(graphZoom * 100)}%</output>
+          <button type="button" onClick={() => changeGraphZoom(1)} disabled={graphZoom >= 2} aria-label={locale === "en" ? "Zoom in by 10%" : "Увеличить масштаб на 10%"}>+10%</button>
+        </div>}
+        {graphPresentation === "list" && <StudioDecisionList draft={draft} locale={locale} onNode={focusGraphNode}/>}<div hidden={graphPresentation === "list"} className="graph-viewport" role="region" tabIndex={0} ref={graphViewportRef} onDragOver={(event) => { if (validPaletteDrag()) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }} onDrop={dropPaletteNode} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
           {!layoutEngine && draft.nodes.length > 0 && <div className="graph-empty-state" role="status"><p>{layoutError ? (locale === "en" ? "The decision map could not be opened." : "Не удалось открыть карту решений.") : (locale === "en" ? "Opening decision map…" : "Открывается карта решений…")}</p>{layoutError && <button type="button" onClick={() => { setLayoutError(false); setLayoutAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Try again" : "Повторить"}</button>}</div>}
