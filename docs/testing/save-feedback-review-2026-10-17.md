@@ -38,3 +38,6 @@ Final release receipt and completed status are retained outside Git at `.artifac
 
 
 Canonical gate correction: final-head runs 39019690017/39019687452 passed PDF visual checks but failed one of 1572 web tests. The existing performance source assertion pins the parenthesized `setDerivationAttempt((attempt) => attempt + 1)` form; moving the retry had removed those parentheses. Restore the existing callback form without weakening the assertion or changing behavior, run the performance and targeted save checks, then require fresh full gates. Retain the failed receipt; it is not a published release.
+
+
+Final UX review: restorePending also includes account/device readiness, not just reopening a saved identity. Use “Preparing workspace…” (with RU equivalent) rather than implying a saved case exists during a new user's account check. Keep the same restore guard and no persistence implication. Updated bilingual label checks and retained the existing retry callback source contract. Fresh live v137 audit also verified Advisory's two results share one desktop row (both width 590 px, same y coordinate at 1692 px viewport) and all four Sources actions focus their proper headings without opening technical history.

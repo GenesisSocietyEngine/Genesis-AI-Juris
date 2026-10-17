@@ -64,8 +64,8 @@ test("diagnostic downloads allowlist operational data and retain freshness limit
 
 test("first-case pending labels distinguish checking, saving, restoring and check failure in both languages", () => {
   const labels = {
-    en: {checking:"Checking current changes…",saving:"Saving…",restoring:"Opening saved case…",check_failed:"Check needs retry"},
-    ru: {checking:"Проверка текущих изменений…",saving:"Сохранение…",restoring:"Открытие сохранённого кейса…",check_failed:"Повторите проверку"},
+    en: {checking:"Checking current changes…",saving:"Saving…",restoring:"Preparing workspace…",check_failed:"Check needs retry"},
+    ru: {checking:"Проверка текущих изменений…",saving:"Сохранение…",restoring:"Подготовка рабочего пространства…",check_failed:"Повторите проверку"},
   };
   for(const locale of ["en","ru"] as const) for(const busyReason of ["checking","saving","restoring","check_failed"] as const) {
     const html=renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,locale,busy:true,busyReason}));
