@@ -1,5 +1,11 @@
 # Map zoom controls — 17 October 2026
 
+## Production acceptance correction after v143
+
+v143 deployed exact7344d1c79b4cfcc0e634d31fba4065fbfbc31c7e, with1615 tests/1612 passed/0 failed/3 existing skips, unchanged PDF gates,324970-byte initial entry and189/189 assets on both origins. Fresh authenticated synthetic38 (independent example_work_1a432fed659b451c8019908970ccfd2c) successfully accepted a native Actor drag at110%: pointer800,700; card centre799.546875,700.046875; manual268,53. Undo65/redo66 retained the position and zoom. Save and independent reopen retained manual268,53 and reopened at default100%.
+
+Actual export comparison then caught an inherited carrier bug: snapshotStudioDraft omitted exampleSource, so undo/redo discarded the original source reference. All65 original nodes and117 links were unchanged; category and working ID remain intact. Do not claim full source preservation for the v143 undo path. A bounded correction snapshots the complete draft except separately managed protection/history/time, retains the live reference when a legacy snapshot omits it, and never invents a reference for an unreferenced case. Regression tests cover exact source identity and mapPosition through undo/redo. Correct only synthetic38 from its retained exact baseline through ordinary authorized import/save; do not reconstruct other users' references from current templates. Baseline actual export SHA2564f0379c0b821561759d39501d9bfadc5fb8d6de9f6635731ccd1fe4f8d351631 is retained locally. Final corrected rollout and recovery receipts remain required.
+
 ## Baseline and acceptance
 
 Sites reports public v142. Canonical main and the supported source-opening helper both identify 1e334573375f1f55e1fc67751d33d69fae914460, whose only difference from deployed runtime32fec88 is the prior five-file Markdown closure. Exact application input digest d2fde9d8a308f7d115481dd5b635dcbd89f8624e4124773470b6c1cd39ad244d was verified at the preceding handoff. Work occurs in the clean isolated clone on codex/graph-zoom-ten-percent; root tax/native changes remain separate.
