@@ -116,6 +116,7 @@ async function loadRegisteredExample(id: ExampleId, locale: Locale) {
 
 const LibraryView = lazy(() => import("./CaseExampleLibrary"));
 const HelpCenter = lazy(() => import("./HelpCenter"));
+const StudioMapZoom = lazy(() => import("./StudioMapZoom"));
 const StudioDraftArchive = lazy(() => import("./StudioDraftArchive"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
 const PlayView = lazy(() => import("./PlayWorkspace"));
@@ -2598,20 +2599,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     // the newly arranged first row clipped above the viewport.
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
   }, []);
-  const changeGraphZoom = useCallback((direction: -1 | 1) => {
-    const viewport = graphViewportRef.current;
-    if (!viewport) return;
-    const next = Math.min(2, Math.max(0.1, Math.round((graphZoom + direction * 0.1) * 100) / 100));
-    if ((direction < 0 && graphZoom <= 0.1) || next === graphZoom) return;
-    const centerX = (viewport.scrollLeft + viewport.clientWidth / 2) / graphZoom;
-    const centerY = (viewport.scrollTop + viewport.clientHeight / 2) / graphZoom;
-    setGraphPresentation("detail"); setGraphZoom(next);
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      if (graphViewportRef.current !== viewport) return;
-      viewport.scrollTo({ left: Math.max(0, centerX * next - viewport.clientWidth / 2),
-        top: Math.max(0, centerY * next - viewport.clientHeight / 2), behavior: "auto" });
-    }));
-  }, [graphZoom]);
   const relationPageSize = 20;
   const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
   const safeRelationPage = Math.min(relationPage, relationPageCount - 1);
@@ -3663,11 +3650,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" aria-pressed={graphPresentation === "detail" && graphZoom === 1} onClick={readGraph}>{locale === "en" ? "Detail · 100%" : "Подробно · 100%"}</button><button type="button" aria-pressed={graphPresentation === "list"} onClick={() => setGraphPresentation("list")}>{locale === "en" ? "List" : "Список"}</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button><button type="button" disabled={!graphNodes.length} onClick={() => { if (reportAuthority.visible) setExpandedGraphOpening(expandedGraphContext); }}>{locale === "en" ? "Expand map" : "Развернуть карту"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (displayMode === "user" ? (locale === "en" ? "Select a step to read its evidence and reasoning. Scroll down to follow the route." : "Выберите этап, чтобы изучить доказательства и обоснования. Прокрутите вниз по маршруту.") : (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления."))}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
         <details className="graph-milestone-disclosure" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Timeline & milestones" : "Временная шкала и этапы"}</summary><Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense></details>
-        {graphPresentation !== "list" && <div className="graph-scale-bar" role="group" aria-label={locale === "en" ? "Map zoom" : "Масштаб карты"}>
-          <button type="button" onClick={() => changeGraphZoom(-1)} disabled={graphZoom <= 0.1} aria-label={locale === "en" ? "Zoom out by 10%" : "Уменьшить масштаб на 10%"}>−10%</button>
-          <output aria-live="polite" aria-label={locale === "en" ? "Current zoom" : "Текущий масштаб"}>{Math.round(graphZoom * 100)}%</output>
-          <button type="button" onClick={() => changeGraphZoom(1)} disabled={graphZoom >= 2} aria-label={locale === "en" ? "Zoom in by 10%" : "Увеличить масштаб на 10%"}>+10%</button>
-        </div>}
+        {graphPresentation !== "list" && <Suspense fallback={null}><StudioMapZoom locale={locale} graphZoom={graphZoom} graphViewportRef={graphViewportRef} onZoom={(next) => { setGraphPresentation("detail"); setGraphZoom(next); }}/></Suspense>}
         {graphPresentation === "list" && <StudioDecisionList draft={draft} locale={locale} onNode={focusGraphNode}/>}<div hidden={graphPresentation === "list"} className="graph-viewport" role="region" tabIndex={0} ref={graphViewportRef} onDragOver={(event) => { if (validPaletteDrag()) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }} onDrop={dropPaletteNode} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
