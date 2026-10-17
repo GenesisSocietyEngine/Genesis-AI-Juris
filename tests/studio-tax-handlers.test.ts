@@ -31,8 +31,8 @@ import {mayChooseImportedPrivacy} from './studio-import-privacy';
 export function save(context) {
  const {draft,serverFingerprint,serverPublicationFingerprint,prepareTaxWrite,fetch,onWorkspaceSaved}=context;
  const state={workspace:'idle',error:'',draft};
- const isPrivate=false,canDuplicate=true,derivationsSettled=true,workspaceState='idle',aiEntitlement='not_configured',locale='en';
- const saveOperationRef={current:0},saveMountedRef={current:true},pendingAuthActionRef={current:'save'},saveContextRef={current:{caseId:draft.caseId,version:draft.version,scope:'account'}};
+ const isPrivate=false,canDuplicate=true,derivationsSettled=context.derivationsSettled??true,restorePending=context.restorePending??false,workspaceState=context.workspaceState??'idle',aiEntitlement='not_configured',locale='en';
+ const saveInFlightRef={current:false},saveOperationRef={current:0},saveMountedRef={current:true},pendingAuthActionRef={current:'save'},saveContextRef={current:{caseId:draft.caseId,version:draft.version,scope:'account'}};
  const setWorkspaceState=value=>state.workspace=value,setWorkspaceError=value=>state.error=value;
  const setCustomCaseId=()=>{},setPrivate=()=>{},setCanManagePrivacy=()=>{},setServerFingerprint=()=>{},setServerPublicationFingerprint=()=>{},setCopyProtectionLocked=()=>{},setWorkspaceSavedFingerprint=()=>{},setWorkspaceSavedAt=()=>{};
  const setDraft=fn=>state.draft=fn(state.draft),openWorkspaceAuthorization=()=>{throw Error('unexpected auth');};
@@ -142,4 +142,28 @@ test("actual canonical refusal finishes local verification before recovery unmou
   assert.equal(h.state.recovery.rawText,raw);assert.equal(h.state.recovery.pending,false);assert.equal(h.state.ai,"idle");assert.equal(h.state.flushes,1);
   const departed=actual.canonical(raw),pending=departed.run();departed.leave();await pending;
   assert.equal(departed.state.recovery,null);
+});
+
+
+test("actual save coalesces overlapping calls before React renders without reporting an error", async () => {
+  let release!: () => void, preparations=0, writes=0;
+  const wait=new Promise<void>(resolve=>{release=resolve;});
+  const input=draft();
+  const h=actual.save({draft:input,serverFingerprint:null,serverPublicationFingerprint:null,
+    prepareTaxWrite:async()=>{preparations++;await wait;return {current:()=>true,mutation:undefined};},
+    fetch:async()=>{writes++;return Response.json({error:"Synthetic failure"},{status:503});}});
+  const first=h.run(), second=h.run();
+  try { assert.equal(h.state.workspace,"saving");assert.equal(preparations,1);assert.equal(writes,0); }
+  finally { release();await Promise.all([first,second]); }
+  assert.equal(writes,1);assert.equal(h.state.workspace,"error");
+  await h.run();assert.equal(writes,2,"A completed failure must release the lock for an explicit retry");
+});
+
+test("actual save waits without writes or false errors while restoring or checking", async () => {
+  for(const guards of [{restorePending:true},{derivationsSettled:false},{workspaceState:"saving"}]) {
+    let preparations=0,writes=0;
+    const h=actual.save({draft:draft(),serverFingerprint:null,serverPublicationFingerprint:null,...guards,
+      prepareTaxWrite:async()=>{preparations++;throw Error("must not prepare");},fetch:async()=>{writes++;throw Error("must not send");}});
+    await h.run();assert.equal(preparations,0);assert.equal(writes,0);assert.equal(h.state.error,"");assert.equal(h.state.workspace,"idle");
+  }
 });

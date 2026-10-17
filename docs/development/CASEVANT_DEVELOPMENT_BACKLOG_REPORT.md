@@ -4,6 +4,10 @@ Updated after the 15 October post-format audit. The registry, projection correct
 
 This report complements the binding [product development instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md). Use the instructions for detailed invariants and the acceptance matrix; use this report to select the next deliverable and its completion criteria. Repository `AGENTS.md` requires a review after every implementation step.
 
+## Latest audit — 17 October 2026
+
+Continue from [the current status report](CASEVANT_STATUS_REPORT_2026-10-17.md) and the current amendment in the detailed product instructions. v137/source a3aa4a4 and its successful main CI were reverified before this slice. Save feedback/guards are the current bounded implementation; professional inspector wording is next, with all-package browser coverage, moderated retrieval and source-body acquisition still separate. This update does not declare the backlog complete or an implementation checkpoint deployed.
+
 ## Current product state
 
 The library uses nine categories, separate topic and jurisdiction filters, fifteen cards and eighteen launch packages. Canopy is Advisory decision, with four visible scenario variants, nine document identities and fifteen retained immutable source versions. Five former simulations open as professional Studio case packages; deliberate Training simulation and legacy saved-play recovery remain available separately.
