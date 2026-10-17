@@ -1,6 +1,14 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Release decision
+## Current release — v140
+
+**Sites v140 is live at https://casevant.pro**, runtime `d9b8452abba30630c1b993ec4d28658153cb34f8`, deployment `appgdep_6ad3bac607a08191afdc9c4cb9da8067`, environment42. Professional option/estimate terminology, readable inspector fields, deferred editor recovery and retained multi-condition edits are delivered through PR125. Final PR and merged-main web/PDF gates passed; each origin verified161/161 assets. Authenticated synthetic32 A/34 B retain independent values, and imported33 C retains both conditions after edit/save/reopen/export. Actual Base PDF has three visually inspected A4 pages.
+
+Use [the complete production receipt](../testing/professional-inspector-production-2026-10-17.md) and [amended next-stage instructions](CASEVANT_NEXT_STAGE_2026-10-17.md). Two unconfirmed header activations require a bounded fresh focus/scroll/handler investigation; contextual Save succeeded and exports contain the intended values. This round does not prove first-click reliability or close the broader backlog. Preserve all cases including31–34. Later documentation commits are distinct from this runtime release and do not require another Sites deployment.
+
+## Historical v139 release decision
+
+The following ledger records the previous release, superseded by v140 above.
 
 **Sites version 139 is live at https://casevant.pro.** The audit repaired the reproduced first-click Save failure and strengthened saved-state confirmation. The deployed runtime source is `6c4e23856e6b53e1dee02a8d3dfa2cda0739d3ef`, integrated through canonical main. The release ledger below records the original rollout; the self-audit section records the later documentation-only correction. Required canonical gates, both production asset audits and fresh authenticated save/reopen/export acceptance passed. Exact receipts and broader backlog limits follow below.
 
