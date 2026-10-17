@@ -1,6 +1,10 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Current release — v140
+## Current release — v141 header Save correction
+
+**Sites v141 is live**, runtime1193665808ff1fa208eee777599499c5e7544e7b, deployment appgdep_6ad3dad86a848191850fa4157fb7aa04, environment42. The unconfirmed header Save investigation is closed for the reproduced smooth-scroll moving-target path. Studio automatic scrolling is immediate; Save handlers and preservation contracts are unchanged. Full runtime gates passed; both origins verified162/162 assets. Fresh authenticated synthetic36 saved on the first desktop/narrow EN/RU activations, Tab and keyboard Enter; independent reopens and final actual export confirm115 minutes, source/category and retained history. Preserve35/36 and every prior case. See [the complete closure receipt](../testing/header-save-scroll-review-2026-10-17.md#closure--sites-v141). Broader package/account/source/native work remains open. Later documentation-only commits are distinct from this runtime release.
+
+## Historical release — v140
 
 **Sites v140 is live at https://casevant.pro**, runtime `d9b8452abba30630c1b993ec4d28658153cb34f8`, deployment `appgdep_6ad3bac607a08191afdc9c4cb9da8067`, environment42. Professional option/estimate terminology, readable inspector fields, deferred editor recovery and retained multi-condition edits are delivered through PR125. Final PR and merged-main web/PDF gates passed; each origin verified161/161 assets. Authenticated synthetic32 A/34 B retain independent values, and imported33 C retains both conditions after edit/save/reopen/export. Actual Base PDF has three visually inspected A4 pages.
 

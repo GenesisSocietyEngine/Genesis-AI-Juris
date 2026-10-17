@@ -4,6 +4,8 @@ Prepared, reviewed and amended 17 October 2026. This plan supplements the [canon
 
 ## Delivery and reviewed next action
 
+**Header Save investigation closed in v141**, runtime1193665808ff1fa208eee777599499c5e7544e7b. See [the completed reproduction, correction and production receipt](../testing/header-save-scroll-review-2026-10-17.md#closure--sites-v141). Studio-only immediate automatic scrolling fixes the reproduced moving-target miss. Desktop/narrow EN/RU first activations, Tab and keyboard Enter saved and independently reopened exact synthetic values; case36 export confirms final115 minutes. All runtime web/PDF gates and162/162 assets per origin passed. Preserve cases35/36. The investigation steps below are historical acceptance instructions; next execute the remaining package QA beginning with item3. Do not reintroduce smooth root scrolling or pointer-down saves as a workaround.
+
 Slice1 is implemented and published as **v140**, runtime `d9b8452abba30630c1b993ec4d28658153cb34f8`. Use the [production acceptance receipt](../testing/professional-inspector-production-2026-10-17.md) for actual gates, deployment, saved cases32/33/34 and limits. The starting-state and implementation sequence below are historical design/acceptance records, not pending implementation. Professional inspector, readable estimates, local deferred-load recovery and multi-condition preservation are delivered; no source format was upgraded in this slice.
 
 Next execute Slice2 as an independently versioned QA/refinement slice:
