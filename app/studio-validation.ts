@@ -1,3 +1,4 @@
+import { studioInspectorPresentation } from "./studio-inspector-presentation";
 import { studioStructuralIssues } from "./case-integrity";
 import { caseTypePlaybook, evaluateCaseTypeDraft } from "./case-type-playbooks";
 import { caseTypeReference } from "./case-type-reference";
@@ -42,7 +43,7 @@ export function validateStudioDraft(draft: StudioDraft, locale: Locale): {
     ? { level: "ok", text: playbook.test.requiresPlayableRoute ? label("Every playable branch is connected and terminates", "Каждая игровая ветвь связана и завершается") : label("The professional case model is connected", "Профессиональная модель кейса связана") }
     : { level: "warn", text: playbook.test.requiresPlayableRoute ? label("Reconnect every playable branch and outcome", "Перепривяжите каждую игровую ветвь и исход") : label("Reconnect the case model so its record and decisions are reviewable", "Перепривяжите модель кейса, чтобы материалы и решения можно было проверить") });
   addCheck("participants", draft.jurisdiction && draft.role
-    ? { level: "ok", text: label("Jurisdiction and player role are explicit", "Юрисдикция и роль игрока определены") }
+    ? { level: "ok", text: studioInspectorPresentation(draft.caseType, locale).participantsReady }
     : { level: "warn", text: label("Set jurisdiction and responsible role", "Укажите юрисдикцию и ответственную роль") });
   checks.push(...evaluateCaseTypeDraft(draft, locale));
   return { checks, requiresPlayableRoute: playbook.test.requiresPlayableRoute };

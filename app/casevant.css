@@ -204,3 +204,24 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 @media (prefers-reduced-motion: reduce) {
   .app-shell, .primary-cta, .secondary-cta, .action-tile { transition: none; }
 }
+
+/* Professional planning fields use reading text; Training/technical rules keep their existing style. */
+.studio-user-view .relation-rule-editor[data-workflow="professional"] > p,
+.studio-user-view .node-runtime-fields[data-workflow="professional"] > p {
+  font: 400 14px/1.6 var(--workspace-font);
+  color: var(--workspace-muted);
+}
+.studio-user-view .relation-rule-editor[data-workflow="professional"] .relation-rule-grid label > span,
+.studio-user-view .node-runtime-fields[data-workflow="professional"] label > span {
+  font: 600 14px/1.4 var(--workspace-font);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.studio-user-view .relation-rule-editor[data-workflow="professional"] > header span {
+  font: 600 12px/1.4 var(--workspace-font);
+  letter-spacing: .02em;
+}
+.studio-user-view .relation-rule-editor[data-workflow="professional"] .relation-rule-grid label {
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
