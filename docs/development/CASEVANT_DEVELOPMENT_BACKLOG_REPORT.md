@@ -1,5 +1,9 @@
 # CaseVant development backlog and continuation instructions
 
+## Latest closure — v141 header Save
+
+The two unconfirmed header activations were investigated and a moving-scroll miss reproduced. Studio-only immediate automatic scrolling is released in v141 from1193665; [production receipt](../testing/header-save-scroll-review-2026-10-17.md#closure--sites-v141). Desktop/narrow EN/RU first clicks, Tab and keyboard Enter saved exact values with independent reopens; actual synthetic36 export confirms115 minutes and retained source/category/history. Runtime gates and162/162 assets per origin passed. This item is closed for the reproduced path; continue historic2.2/18-package QA, same-tab account transition,43 missing source bodies and moderated ERP retrieval. Preserve all cases including35/36. Earlier v140 investigation wording is historical.
+
 ## Current amendment — v140 delivered
 
 Professional inspector copy/readability, deferred local editor recovery and multi-condition preservation are published from d9b8452. See [production acceptance](../testing/professional-inspector-production-2026-10-17.md) and [ordered amended instructions](CASEVANT_NEXT_STAGE_2026-10-17.md). Final canonical gates and161/161 asset checks per origin passed; synthetic32/34 isolation and33 retained-condition edit/save/reopen exports are recorded. Two unconfirmed header Save activations remain an explicit bounded QA investigation; contextual saves succeeded. Next prioritize that focus/scroll/handler diagnosis, then historic2.2 import and18-package coverage, authorized same-tab account transition,43 source-body gaps and moderated ERP retrieval. Preserve all cases; no governed user-edit merge or native parity is claimed. Earlier v139/implementation checkpoints below are historical.
