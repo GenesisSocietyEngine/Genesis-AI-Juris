@@ -1,5 +1,7 @@
 # Map zoom controls — 17 October 2026
 
+**Closed by Sites v144 on18 October local time.** The [final production report](map-interactions-production-2026-10-18.md) records the corrected native tall-map drag, undo/redo, exact-source/category preservation, independent save/reopen/export, full release gates and both-origin receipts. Preserve38 as negative evidence and39 as the corrected independent acceptance copy. Historical pending/recovery instructions below are superseded by that closure; no historical case was automatically reconstructed.
+
 ## Production acceptance correction after v143
 
 v143 deployed exact7344d1c79b4cfcc0e634d31fba4065fbfbc31c7e, with1615 tests/1612 passed/0 failed/3 existing skips, unchanged PDF gates,324970-byte initial entry and189/189 assets on both origins. Fresh authenticated synthetic38 (independent example_work_1a432fed659b451c8019908970ccfd2c) successfully accepted a native Actor drag at110%: pointer800,700; card centre799.546875,700.046875; manual268,53. Undo65/redo66 retained the position and zoom. Save and independent reopen retained manual268,53 and reopened at default100%.

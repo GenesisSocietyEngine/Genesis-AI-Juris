@@ -1,6 +1,12 @@
 # CaseVant development backlog and continuation instructions
 
-## Latest closure — v142 map reading
+## Latest closure — v144 map editing
+
+Delivered ten-point zoom controls, centre anchoring, draggable palette nodes, persisted manual placements and the inherited source-reference undo/redo correction. The [production audit](../testing/map-interactions-production-2026-10-18.md) records case39's native110% tail drop at366,13373, exact original65-node/117-link/category/source preservation, independent save/reopen/export,1617-test suite and165/165 assets per origin. Preserve user-amended37 and synthetic38/39;38 is retained negative evidence and was not reconstructed. No cases were deleted.
+
+New bounded follow-on: more initial-entry headroom before feature growth; old-client/unknown-field roundtrips for manual positions and full carriers; cross-browser/touch pointer acceptance. Existing18-package, historic imports, account-switch, source packets, chronology retrieval and governed merge backlog remains open. The delivered independent copies and map controls do not constitute user-edit migration.
+
+## Historical closure — v142 map reading
 
 GreenFire's tiny height-fitted strip is corrected: default100% reading with full scroll range, explicit whole-map Fit and keyboard-scrollable window. [Production receipt](../testing/greenfire-map-scroll-review-2026-10-17.md#closure--v142) records saved37,65 nodes/117 links exactly preserved against frozen2.5, independent reopen, narrow EN/RU tail access, passed runtime web/PDF gates and162/162 assets per origin. Preserve all cases including37. Remaining18-package/historic import/account-switch/source-body/retrieval/native work is unchanged. Future releases must verify exact committed bytes before packaging; normalized status alone is insufficient.
 

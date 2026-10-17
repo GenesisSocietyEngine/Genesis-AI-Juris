@@ -1,6 +1,10 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Current release — v142 readable GreenFire map
+## Current release — v144 map interactions and preserved revision identity
+
+**Sites v144 is live**, runtime7515d185d31513b00aa0959e61426596ff6875bd, deployment appgdep_6ad3f20b064481919833e338fdc55dbd, environment42. It includes ten-point zoom controls, native palette drag, saved manual positions and the source-reference undo/redo correction. Independent synthetic39 retains all65 original nodes/117 links/category/source plus its new Actor at366,13373 after undo/redo/save/reopen/export. Full web/PDF gates passed (1617 tests/1614 pass/0 fail/3 existing skips); both origins verified165/165 assets. See the [complete production audit](../testing/map-interactions-production-2026-10-18.md). Preserve38 as negative evidence,39 as corrected acceptance and every prior case; user-amended37 was untouched. Broader backlog remains open. Later Markdown-only commits are distinct from this runtime release.
+
+## Historical release — v142 readable GreenFire map
 
 **Sites v142 is live**, runtime32fec88a8905983067de6231c4142f15028c3a0c, deployment appgdep_6ad3e402e87481918f02d2c2db67bcda, environment42. Maps now open at100% with full vertical scrolling; whole-map Fit remains an explicit overview. Fresh saved GreenFire37 independently reopens and reaches the full13802-pixel tail at desktop/narrow EN/RU. Its actual export preserves all65 nodes/117 links against the frozen2.5 factory. Runtime PR/push/main web/PDF gates and162/162 assets per origin passed. [Complete closure and limits](../testing/greenfire-map-scroll-review-2026-10-17.md#closure--v142). Preserve37 and every prior case; broader backlog remains open. Later documentation source is distinct from deployed runtime32fec88.
 
