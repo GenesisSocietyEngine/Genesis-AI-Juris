@@ -116,6 +116,7 @@ async function loadRegisteredExample(id: ExampleId, locale: Locale) {
 
 const LibraryView = lazy(() => import("./CaseExampleLibrary"));
 const HelpCenter = lazy(() => import("./HelpCenter"));
+const StudioNodePalette = lazy(() => import("./StudioNodePalette"));
 const StudioMapZoom = lazy(() => import("./StudioMapZoom"));
 const StudioDraftArchive = lazy(() => import("./StudioDraftArchive"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
@@ -3643,7 +3644,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     {(displayMode === "developer" || visibleStep === 4) && <details className="studio-map-context page-width" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Explore evidence, issues & options" : "Доказательства, вопросы и варианты"}</summary><Suspense fallback={null}><StudioCaseViews locale={locale} draft={draft} developerView={displayMode === "developer"} onFocusNode={(nodeId) => { focusGraphNode(nodeId); document.querySelector(".studio-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}/></Suspense></details>}
     {(displayMode === "developer" || visibleStep === 4) && <section className="studio-workspace">
       <details className="graph-add-controls" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Add to decision map" : "Добавить на карту решений"}</summary>
-      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} draggable={canDuplicate && draft.nodes.length < 200} onDragStart={(event) => startPaletteDrag(event, type)} onDragEnd={() => { paletteDragRef.current = null; }} onClick={() => { addNode(type, visibleGraphCenter(), true); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Drag a node onto the map, or click to add it in the visible centre. Changes can be undone." : "Перетащите узел на карту или нажмите, чтобы добавить его по центру. Изменения можно отменить."}</p></aside>
+      <Suspense fallback={<aside className="node-palette"/>}><StudioNodePalette locale={locale} types={paletteNodeTypes} labels={text.nodeTypes} colors={typeColors} canAdd={canDuplicate && draft.nodes.length < 200} onDragStart={startPaletteDrag} onDragEnd={() => { paletteDragRef.current = null; }} onAdd={(type) => { addNode(type, visibleGraphCenter(), true); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}/></Suspense>
       </details>
 {expandedGraphOpen && <Suspense fallback={<p role="status">{locale === "en" ? "Opening expanded map…" : "Открывается карта…"}</p>}><StudioExpandedGraph nodes={graphNodes} links={draft.links} locale={locale} onClose={() => setExpandedGraphOpening(null)} onNode={focusGraphNode}/></Suspense>}
       <section className="graph-deck" ref={graphDeckRef}>

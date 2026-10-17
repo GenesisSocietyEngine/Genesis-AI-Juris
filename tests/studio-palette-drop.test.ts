@@ -50,5 +50,5 @@ test('outside, stale, canceled, protected, invalid and over-limit drags write no
     h.dropPaletteNode(h.event); assert.deepEqual(h.added, [], reason);
   }
   assert.match(source, /onDragEnd=\{\(\) => \{ paletteDragRef.current = null; \}\}/);
-  assert.match(source, /onClick=\{\(\) => \{ addNode\(type, visibleGraphCenter\(\), true\)/, 'click and keyboard activation stay available');
+  assert.match(source, /onAdd=\{\(type\) => \{ addNode\(type, visibleGraphCenter\(\), true\)/, 'click and keyboard activation stay available');
 });
