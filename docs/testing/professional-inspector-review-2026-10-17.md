@@ -25,7 +25,9 @@ React checklist after the full-gate amendment: pure presentation/editor plus a s
 
 Local evidence is under `C:/PROJECTS/Genesis-AI-Juris/.artifacts/inspector-stage-20261017/`; automated logs under the isolated checkout's `.artifacts/inspector-*.log`. Local guest tests are not authenticated production persistence evidence.
 
-## Release acceptance still required
+## Release acceptance checkpoint — now completed separately
+
+The implementation and release requirements below were pending when written. Final reviewed PR125 merged as d9b8452 and Sites v140 succeeded. Final canonical web/PDF gates,161/161 assets on each origin, authenticated synthetic cases32/33/34, actual three-page PDF and remaining limitations are recorded in [production acceptance](professional-inspector-production-2026-10-17.md). That receipt supersedes pending-state wording below; it does not erase failed candidates or claim all-package acceptance.
 
 Review complete diff and links; integrate the final reviewed tree through ordinary canonical controls, required web/PDF gates, exact merged build, actual v139 archive retention and Sites publication. Independently verify native and public asset bytes. Fresh signed-in synthetic edit/save/independent-reopen must preserve source/category, all option fields and a separate untouched copy. Record new case IDs, actual changed-flow evidence and native source/version/deployment/environment receipt after rollout. Preserve all real/synthetic cases 8, 10–31 and any new identities. No disposal is authorized.
 
