@@ -1,5 +1,9 @@
 # CaseVant development backlog and continuation instructions
 
+## Latest closure — v142 map reading
+
+GreenFire's tiny height-fitted strip is corrected: default100% reading with full scroll range, explicit whole-map Fit and keyboard-scrollable window. [Production receipt](../testing/greenfire-map-scroll-review-2026-10-17.md#closure--v142) records saved37,65 nodes/117 links exactly preserved against frozen2.5, independent reopen, narrow EN/RU tail access, passed runtime web/PDF gates and162/162 assets per origin. Preserve all cases including37. Remaining18-package/historic import/account-switch/source-body/retrieval/native work is unchanged. Future releases must verify exact committed bytes before packaging; normalized status alone is insufficient.
+
 ## Latest closure — v141 header Save
 
 The two unconfirmed header activations were investigated and a moving-scroll miss reproduced. Studio-only immediate automatic scrolling is released in v141 from1193665; [production receipt](../testing/header-save-scroll-review-2026-10-17.md#closure--sites-v141). Desktop/narrow EN/RU first clicks, Tab and keyboard Enter saved exact values with independent reopens; actual synthetic36 export confirms115 minutes and retained source/category/history. Runtime gates and162/162 assets per origin passed. This item is closed for the reproduced path; continue historic2.2/18-package QA, same-tab account transition,43 missing source bodies and moderated ERP retrieval. Preserve all cases including35/36. Earlier v140 investigation wording is historical.
