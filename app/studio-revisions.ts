@@ -34,28 +34,16 @@ export function emptyStudioTimeline(): StudioTimeline {
 }
 
 export function snapshotStudioDraft(draft: StudioDraft): StudioSnapshot {
-  return structuredClone({
-    caseId: draft.caseId,
-    version: draft.version,
-    caseType: draft.caseType,
-    parent: draft.parent,
-    title: draft.title,
-    jurisdiction: draft.jurisdiction,
-    role: draft.role,
-    premise: draft.premise,
-    premisePublication: draft.premisePublication,
-    classification: draft.classification,
-    taxEconomics: draft.taxEconomics,
-    taxAnalysis: draft.taxAnalysis,
-    dealEconomics: draft.dealEconomics,
-    nodes: draft.nodes,
-    links: draft.links,
-  });
+  const { editHistory, updatedAt, protection, ...snapshot } = draft;
+  // These three carriers are managed separately by the restore contract.
+  void editHistory; void updatedAt; void protection;
+  return structuredClone(snapshot);
 }
 
 export function applyStudioSnapshot(draft: StudioDraft, snapshot: StudioSnapshot, updatedAt: string): StudioDraft {
   return {
     ...structuredClone(snapshot),
+    ...(draft.exampleSource && !Object.hasOwn(snapshot, "exampleSource") ? { exampleSource: structuredClone(draft.exampleSource) } : {}),
     ...(draft.protection ? { protection: structuredClone(draft.protection) } : {}),
     editHistory: draft.editHistory,
     updatedAt,
@@ -103,7 +91,7 @@ export function stepStudioTimeline(timeline: StudioTimeline, direction: "undo" |
 }
 
 export function diffStudioSnapshots(base: StudioSnapshot, target: StudioSnapshot): StudioDiff {
-  const fields = (["caseId", "version", "caseType", "parent", "title", "jurisdiction", "role", "premise", "premisePublication", "classification", "dealEconomics", "taxEconomics", "taxAnalysis"] as const)
+  const fields = (["caseId", "version", "caseType", "exampleSource", "parent", "title", "jurisdiction", "role", "premise", "premisePublication", "classification", "dealEconomics", "taxEconomics", "taxAnalysis"] as const)
     .filter((key) => JSON.stringify(base[key]) !== JSON.stringify(target[key]));
   const baseNodes = new Map(base.nodes.map((node) => [node.id, node]));
   const targetNodes = new Map(target.nodes.map((node) => [node.id, node]));
