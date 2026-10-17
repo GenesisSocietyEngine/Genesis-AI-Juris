@@ -2,7 +2,7 @@ import { metricLabels } from "./JurisViewShared";
 import { studioInspectorPresentation } from "./studio-inspector-presentation";
 import type { MetricKey, StudioDraft, StudioLink } from "./types";
 
-export default function RelationRuleEditor({ locale, caseType, link, developerMode, disabled, beginFieldEdit, setRule, applyRule, commitField }: {
+export type StudioRelationRuleEditorProps = {
   locale: "en" | "ru";
   caseType: StudioDraft["caseType"];
   link: StudioLink;
@@ -12,7 +12,9 @@ export default function RelationRuleEditor({ locale, caseType, link, developerMo
   setRule: (change: NonNullable<StudioLink["rule"]>) => void;
   applyRule: (change: NonNullable<StudioLink["rule"]>, label: string) => void;
   commitField: (label: string, value: string) => void;
-}) {
+};
+
+export default function RelationRuleEditor({ locale, caseType, link, developerMode, disabled, beginFieldEdit, setRule, applyRule, commitField }: StudioRelationRuleEditorProps) {
   const copy = studioInspectorPresentation(caseType, locale);
   const rule = link.rule ?? {};
   const guard = rule.guards?.[0];

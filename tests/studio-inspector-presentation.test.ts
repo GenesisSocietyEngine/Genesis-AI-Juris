@@ -3,6 +3,8 @@ import { createElement, isValidElement, Children, type ReactElement, type ReactN
 import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
 import RelationRuleEditor from "../app/StudioRelationRuleEditor";
+import RelationRuleEditorLoader, { loadStudioOptionEditor } from "../app/StudioRelationRuleEditorLoader";
+import { hasLocalChunkRecovery, recoverFromStaleChunk } from "../app/stale-chunk-recovery";
 import { studioInspectorPresentation } from "../app/studio-inspector-presentation";
 import { caseTypeReference } from "../app/case-type-reference";
 import { buildCanopyPackage } from "../app/canopy-fixture";
@@ -82,4 +84,44 @@ test("authored player prose is preserved verbatim instead of globally replaced",
   const html = renderToStaticMarkup(createElement(RelationRuleEditor, { ...props("en", "general_advisory"), link: { ...link, rule: { ...link.rule, result: authored } } }));
   assert.ok(html.includes(authored));
   assert.match(html, /aria-label="Option settings"/);
+});
+
+test("optional editor starts with a bilingual status and does not load code or mutate the case during server rendering", () => {
+  for (const locale of ["en", "ru"] as const) {
+    const before = JSON.stringify(link);
+    const html = renderToStaticMarkup(createElement(RelationRuleEditorLoader, props(locale, "general_advisory")));
+    assert.match(html, /role="status"/);
+    assert.match(html, locale === "en" ? /Loading option editor/ : /Загрузка редактора варианта/);
+    assert.doesNotMatch(html, /<input|<textarea/);
+    assert.equal(JSON.stringify(link), before);
+  }
+});
+
+test("actual deferred editor loader owns its failure without a global refresh or case adoption", async () => {
+  let reject!: (error: Error) => void;
+  let failures = 0, adoptions = 0, reloads = 0;
+  const pending = loadStudioOptionEditor(() => new Promise((_resolve, fail) => { reject = fail; }), () => true,
+    () => { adoptions++; }, () => { failures++; });
+  assert.equal(hasLocalChunkRecovery(), true);
+  const storage = { getItem: () => assert.fail("no global recovery storage access"), setItem: () => {}, removeItem: () => {} };
+  assert.equal(recoverFromStaleChunk(storage, () => { reloads++; }, "vite:preloadError"), false);
+  reject(new Error("Failed to fetch dynamically imported module"));
+  await pending;
+  assert.equal(failures, 1); assert.equal(adoptions, 0); assert.equal(reloads, 0);
+  assert.equal(hasLocalChunkRecovery(), false);
+});
+
+test("actual deferred loader ignores a departed editor and cannot replace a newer opening", async () => {
+  let activeA = true;
+  let finishA!: (value: string) => void;
+  const adopted: string[] = [];
+  const pendingA = loadStudioOptionEditor(() => new Promise<string>(resolve => { finishA = resolve; }), () => activeA,
+    module => adopted.push(module), () => assert.fail("departed editor cannot publish an error"));
+  activeA = false;
+  await loadStudioOptionEditor(() => Promise.resolve("newer"), () => true, module => adopted.push(module), () => assert.fail());
+  finishA("departed"); await pendingA;
+  assert.deepEqual(adopted, ["newer"]);
+  await loadStudioOptionEditor(() => Promise.reject(new Error("late failure")), () => false,
+    () => assert.fail(), () => assert.fail("late failure cannot affect the current editor"));
+  assert.equal(hasLocalChunkRecovery(), false);
 });

@@ -14,7 +14,7 @@ import { clearStudioEvidenceInput, emptyStudioEvidenceInput, hasStudioEvidenceIn
 import StudioWorkspaceTabs from "./StudioWorkspaceTabs";
 import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
-import RelationRuleEditor from "./StudioRelationRuleEditor";
+import RelationRuleEditor from "./StudioRelationRuleEditorLoader";
 import { studioInspectorPresentation } from "./studio-inspector-presentation";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";

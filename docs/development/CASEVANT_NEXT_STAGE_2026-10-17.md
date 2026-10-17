@@ -20,6 +20,7 @@ Review amendments applied before implementation:
 4. Keep professional relation fields available and read-only restrictions intact. Inspecting labels, switching language or changing display mode must not append history, dirty a case, save, run a simulation or establish review/approval.
 5. Separate actual results from the acceptance below. One representative professional case plus Training and adverse tests does not close the eighteen-package matrix, same-tab second-account transition, historic import or moderated research.
 6. Narrow rendered review exposed inherited technical microtype in the professional option labels/help. Use readable proportional text in professional user-view fields/help, including step estimates. Keep Training and developer styling unchanged. Shorten the comparison qualifier without dropping the distinction from actual work, time, payments or approval. Recheck wrapped RU labels and document overflow after the CSS correction.
+7. The first full canonical gate rejected the initial chunk at 327,713 bytes against the unchanged 325,000-byte limit. Load the option editor only when opened; pin that lazy boundary in the existing built-output test. An import failure must show local translated retry feedback without refreshing the page or losing unsaved work. Late loads after departure must not update UI; live props must still bind the current link/category. Do not increase the limit or remove the performance assertion. Verify a stable-input build before fresh full gates.
 
 ## Slice 1 — implement now: professional inspector
 

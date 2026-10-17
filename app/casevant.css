@@ -225,3 +225,7 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
   display: grid;
   grid-template-rows: 1fr auto;
 }
+.studio-option-load > p {
+  font: 400 14px/1.6 var(--workspace-font);
+  color: var(--workspace-muted);
+}
