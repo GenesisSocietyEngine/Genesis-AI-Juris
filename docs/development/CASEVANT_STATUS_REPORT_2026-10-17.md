@@ -1,6 +1,10 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Current release — v141 header Save correction
+## Current release — v142 readable GreenFire map
+
+**Sites v142 is live**, runtime32fec88a8905983067de6231c4142f15028c3a0c, deployment appgdep_6ad3e402e87481918f02d2c2db67bcda, environment42. Maps now open at100% with full vertical scrolling; whole-map Fit remains an explicit overview. Fresh saved GreenFire37 independently reopens and reaches the full13802-pixel tail at desktop/narrow EN/RU. Its actual export preserves all65 nodes/117 links against the frozen2.5 factory. Runtime PR/push/main web/PDF gates and162/162 assets per origin passed. [Complete closure and limits](../testing/greenfire-map-scroll-review-2026-10-17.md#closure--v142). Preserve37 and every prior case; broader backlog remains open. Later documentation source is distinct from deployed runtime32fec88.
+
+## Historical release — v141 header Save correction
 
 **Sites v141 is live**, runtime1193665808ff1fa208eee777599499c5e7544e7b, deployment appgdep_6ad3dad86a848191850fa4157fb7aa04, environment42. The unconfirmed header Save investigation is closed for the reproduced smooth-scroll moving-target path. Studio automatic scrolling is immediate; Save handlers and preservation contracts are unchanged. Full runtime gates passed; both origins verified162/162 assets. Fresh authenticated synthetic36 saved on the first desktop/narrow EN/RU activations, Tab and keyboard Enter; independent reopens and final actual export confirm115 minutes, source/category and retained history. Preserve35/36 and every prior case. See [the complete closure receipt](../testing/header-save-scroll-review-2026-10-17.md#closure--sites-v141). Broader package/account/source/native work remains open. Later documentation-only commits are distinct from this runtime release.
 

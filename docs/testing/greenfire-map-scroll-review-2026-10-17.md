@@ -1,5 +1,25 @@
 # GreenFire map reading and vertical scroll review — 17 October 2026
 
+## Closure — v142
+
+Published runtime `32fec88a8905983067de6231c4142f15028c3a0c` through ordinary PR129. Reviewed head29c9469c906a97a8fff1d50948d6f758dbff325c and merged main share tree d767a2a43b0c7824c64d36dc0d64da6fe605d111. PR39068407104, push39068386963 and merged-main39068960214 all passed required web/PDF gates:1609 tests,1606 passed,0 failed,3 existing skips. Focused39/39 and final controller8/8 overlap that suite. Strict types passed, lint0 errors/7 inherited warnings; both existing built-output checks passed without raising limits or altering visual locks.
+
+Sites v142 saved version `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b13c3afc60a4819191462372b8d548ca`, deployment `appgdep_6ad3e402e87481918f02d2c2db67bcda`, succeeded at2026-10-17T21:09:47.018275Z. Public audience and environment42/DB/R2 bindings retained. App-input SHA256 d2fde9d8a308f7d115481dd5b635dcbd89f8624e4124773470b6c1cd39ad244d; hosting20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe. Raw local archive SHA256 d261a4437ab5fa53ba131afcf8b7ae9f59a8e89749674f2b6aaff534bc715923; native normalized archive SHA256 cd8a8bac53d379eae9b8426419ac2ee6b42b5113f0783527e1bf93ad0a4b05ad (49182720 bytes/532 files). These are different representations. Both production origins verified162/162 assets:116 current and46 retained from the actual v141 current manifest.
+
+### Authenticated production acceptance
+
+Primary Chrome visibly identified Maxim Hayan. The standard filtered example opener created a new working copy; only its title was changed to a clear synthetic QA label, then normal header Save confirmed case37. Independent saved-map URL opened65 nodes at zoom1, scrollTop0 and full scrollHeight13802. Desktop scroll window610×402 reaches scrollTop13399.68; the deepest card's bottom360.28 is inside the visible window bottom470.19. Saved status remains confirmed after navigation.
+
+Explicit Fit still provides a whole-map overview (measured0.0280394), Detail restores1, and List→Detail works. Measured narrow EN and RU281×607/document269 retain zoom1 and13802 height; settled End reaches13319.04 with clientHeight483 in both locales, while Saved stays confirmed. CSS viewport size differs from the requested physical override because of the browser's existing zoom; actual measurements are reported. Native keyboard scrolling was measured after animation settled, not during intermediate positions. Viewport overrides were reset; owned preview stopped. Local comparison additionally confirms ERP196 nodes at100% with46988 canvas height and Canopy14 nodes at100% with2786 height. No final ERP-tail measurement is claimed from the interrupted local scroll.
+
+Actual downloaded case37 export: `example_work_4d5b7ab26ebe45d08f7ab348993f091f-v2.5.0.juris-case.json`, SHA256 a4f11dc06f0cdac69eecddabfe454d382b91a5594293ae12736866ce9f68de44. All65 nodes and117 links compare exactly, including stored positions and decision rules, with the frozen GreenFire2.5.0 factory after normal JSON serialization. Category remains investigation, source greenfire_first_72_hours v2.5.0, fingerprint sha256-e70a0e7ba866801dd6bc1cab6555e081d59b8e9c04fc14f892487a79c807d0a0. The one history entry is the intentional synthetic-title edit; scrolling, language and view controls added none. This verifies that display projection was not written into saved graph records. No existing or synthetic case was deleted; preserve37 and every prior case.
+
+### Release safeguards and limits
+
+Local GitHub/MCP and Sites-Git DNS interruptions delayed verification; publication waited for confirmed gates and source synchronization. The initial local build compiled but the exact-source guard rejected it: Windows CRLF bytes differed from committed LF even though Git's normalized diff was empty. Only the owned clean TSX file was restored to exact HEAD blob bytes after asserting no substantive edit; the unchanged source guard then verified32fec88. The canonical-byte rebuild, retention and packaging succeeded. No metadata was manually rewritten and no gate was weakened. Future builds must verify buildReleaseIdentity.sourceCommit matches actual HEAD before packaging; Git status alone does not establish byte identity.
+
+An old v141 browser-tab handle expired, so fresh previous-tab lazy-dialog acceptance could not be performed this round; predecessor static bytes did pass. Initial browser activation timeouts were inspected before proceeding and are not counted as first-click library acceptance. No fresh all18-package/account-switch/native acceptance or whole-database byte audit is claimed. Existing broad backlog remains separate. Documentation-only follow-up commits do not require republishing unchanged runtime32fec88.
+
 ## Baseline and reviewed amendment
 
 Before editing, native Sites is public v141/runtime1193665808ff1fa208eee777599499c5e7544e7b. Canonical main and clean isolated checkout693d364f8c4556a86a8b91bd4ace6ef31151e3a1 differ only in five Markdown files. Application/hosting hashes match v141, and the Sites source helper opened693d364 before edits. Root tax/native work is excluded.
