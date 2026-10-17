@@ -6,6 +6,8 @@ This report complements the binding [product development instructions](CASEVANT_
 
 ## Latest audit — 17 October 2026
 
+Next-stage plan prepared, reviewed and amended: [detailed stage instructions](CASEVANT_NEXT_STAGE_2026-10-17.md). Professional inspector terminology/readability is the implemented slice under acceptance; [its review](../testing/professional-inspector-review-2026-10-17.md) distinguishes local checks from pending runtime rollout. Next after its own production receipt: extend the package browser matrix. Preserve all source/history/runtime carriers; inspector presentation is not a case-data upgrade or user-edit merge. The following v139 ledger remains a dated starting point, not the receipt for the new candidate.
+
 Continue from [the completed v139 status report](CASEVANT_STATUS_REPORT_2026-10-17.md), [self-audit review](../testing/self-audit-handoff-review-2026-10-17.md) and current detailed instructions. The field-blur first-click save correction and full publication-receipt binding are released as v139 from `6c4e23856e6b53e1dee02a8d3dfa2cda0739d3ef`. Canonical web/PDF gates and both 160-asset checks passed; synthetic case 31 has representative EN/RU focused-field one-click save, independent reopen and an actual three-page report. Preserve case 31 and all prior cases. Professional inspector wording is next; all-package/historic-import browser coverage, actual same-tab second-account switching, moderated retrieval and source-body acquisition remain separate open work. This documentation correction is not a runtime deployment or completion of the broader backlog.
 
 ## Current product state

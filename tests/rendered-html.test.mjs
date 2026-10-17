@@ -60,6 +60,7 @@ test("production build keeps the canonical scenario runtime out of the initial c
   assert.ok(recovery.dynamicImports.includes('app/legacy-scenarios.ts'));
   assert.ok(entry.dynamicImports.includes("app/canonical-runtime.ts"));
   assert.ok(entry.dynamicImports.includes("app/FeedbackDialog.tsx"));
+  assert.ok(entry.dynamicImports.includes("app/StudioRelationRuleEditor.tsx"), "option fields must load only when opened");
   for (const secondaryView of ["app/CommunityWorkspace.tsx", "app/PlayWorkspace.tsx", "app/HelpCenter.tsx", "app/CaseExampleLibrary.tsx"]) {
     assert.ok(entry.dynamicImports.includes(secondaryView), `${secondaryView} must load only when its view opens`);
     assert.equal(entry.imports.includes(secondaryView), false);
