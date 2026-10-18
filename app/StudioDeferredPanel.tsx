@@ -4,7 +4,7 @@ import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 
 /** Late success/failure belongs only to the mounted request, never a departed case. */
 export async function loadStudioPanel<T>(load: () => Promise<T>, active: () => boolean, loaded: (module: T) => void, failed: () => void) {
-  try { const module = await withLocalChunkRecovery(load); if (active()) loaded(module); }
+  try { const loadedModule = await withLocalChunkRecovery(load); if (active()) loaded(loadedModule); }
   catch { if (active()) failed(); }
 }
 

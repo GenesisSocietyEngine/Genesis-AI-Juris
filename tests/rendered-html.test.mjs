@@ -61,6 +61,9 @@ test("production build keeps the canonical scenario runtime out of the initial c
   assert.ok(entry.dynamicImports.includes("app/canonical-runtime.ts"));
   assert.ok(entry.dynamicImports.includes("app/FeedbackDialog.tsx"));
   assert.ok(entry.dynamicImports.includes("app/StudioRelationRuleEditor.tsx"), "option fields must load only when opened");
+  assert.ok(entry.dynamicImports.includes("app/StudioSimulationPanel.tsx"), "optional route presentation must remain deferred");
+  assert.ok(entry.dynamicImports.includes("app/StudioDecisionList.tsx"), "the complete reading list must remain deferred");
+  assert.ok(entry.dynamicImports.includes("app/StudioRecordNavigator.tsx"), "full-record search must remain deferred");
   for (const secondaryView of ["app/CommunityWorkspace.tsx", "app/PlayWorkspace.tsx", "app/HelpCenter.tsx", "app/CaseExampleLibrary.tsx"]) {
     assert.ok(entry.dynamicImports.includes(secondaryView), `${secondaryView} must load only when its view opens`);
     assert.equal(entry.imports.includes(secondaryView), false);

@@ -117,9 +117,12 @@ test("wrapper retains the existing Matter owner for deep links, exposes normal g
   assert.match(render("/matters?collection=personal",false),/Verify your access/); assert.doesNotMatch(render("/matters?collection=personal",false),/Same title|Synthetic owner/);
 });
 
-test("Studio recent work uses unified My cases and preserves current-draft continuation", () => {
+test("Studio recent work opens Personal drafts, clears governed-case targeting and preserves language/organization", () => {
   const noop=()=>{};
-  const html = renderToStaticMarkup(createElement(components.StudioEntryScreen,{locale:"en",recentTitle:"Local draft",savedCasesHref:"/matters?lang=en&organization=receipt",onCreate:noop,onImport:noop,onBrowseDemos:noop,onContinue:noop}));
-  assert.match(html,/href="\/matters\?lang=en&amp;organization=receipt"/); assert.match(html,/My cases — Personal \/ Team/); assert.match(html,/Local draft/); assert.match(html,/Current working draft/);
+  const html = renderToStaticMarkup(createElement(components.StudioEntryScreen,{locale:"en",recentTitle:"Local draft",savedCasesHref:"/matters?lang=en&organization=receipt&dossier=old&section=evidence&target=source_1",onCreate:noop,onImport:noop,onBrowseDemos:noop,onContinue:noop}));
+  assert.match(html,/href="\/matters\?collection=personal&amp;organization=receipt&amp;lang=en"/); assert.match(html,/Open saved Studio cases/); assert.match(html,/Local draft/); assert.match(html,/Current working draft/);
+  assert.doesNotMatch(html,/dossier=old|target=source_1/);
+  assert.match(html, /Overview<\/li>/); assert.match(html, /Sources &amp; evidence<\/li>/); assert.match(html, /Reports<\/li>/);
+  assert.equal((html.match(/<li>/g) ?? []).length, 5);
   assert.doesNotMatch(html,/href="\/studio\?view=community"/);
 });

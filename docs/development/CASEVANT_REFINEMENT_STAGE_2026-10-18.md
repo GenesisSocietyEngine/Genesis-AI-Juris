@@ -24,6 +24,8 @@ Proposed retrieval acceptance: from an already-open Decision section, a known ph
 
 Entry guidance must match Overview → Sources & evidence → Decision → Review → Reports, with Brief editing available in context. Keep six internal workflow stage IDs/recovery URLs unchanged. Explain fictional examples and independent working copies, sign-in at save, preliminary outputs and separate professional review. FAQ must distinguish professional case preparation from deliberate Training. Do not claim current-law verification, accepted evidence, production-ready confidential-client handling, guaranteed savings or enterprise accreditation.
 
+Review amendment: Continue recent work must explicitly open My cases' Personal saved-Studio collection, not the default governed Team collection. Preserve organization/language navigation hints and all server authorization; Team stays separately available. Verify the actual signed-in destination and a saved synthetic reopen. Do not merge the two data models or change any saved identity.
+
 ## Commercial validation and ordered backlog
 
 | Priority | Deliverable / owner | Evidence required before acceptance |
