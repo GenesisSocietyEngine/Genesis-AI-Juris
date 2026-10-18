@@ -306,7 +306,9 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
     "relation deletion must have a programmatically focusable status destination");
   assert.match(appSource, /focusRelationStatus\(\)/,
     "relation deletion must restore keyboard focus after removing its control");
-  assert.match(appSource, /Fix on decision map/);
+  const simulationPanelSource = readFileSync(new URL("../app/StudioSimulationPanel.tsx", import.meta.url), "utf8");
+  assert.match(simulationPanelSource, /Fix on decision map/);
+  assert.match(appSource, /onFixNode=\{\(nodeId\) => \{ selectGraphNode\(nodeId\); selectGuidedStep\(4\); \}\}/, "deferred fixes retain the existing selection and navigation owner");
   assert.match(appSource, /runtimeForNodeType\(selectedNode\.runtime,type\)/, "node type changes must strip incompatible runtime fields");
   assert.match(appSource, /parent: \{ caseId: current\.caseId, version: current\.version, fingerprint: studioServerFingerprint \}/, "child lineage must use the exact persisted parent fingerprint");
   assert.match(appSource, /Studio case envelope/);
