@@ -1,6 +1,10 @@
 # CaseVant development backlog and continuation instructions
 
-## Latest closure — v145 vertical creation palette
+## Latest closure — v146 product and retrieval refinement
+
+Delivered full-record finder in Decision, explicit Personal Studio continuation, coherent five-section entry/FAQ and resilient deferred optional panels. [Audit/receipt](../testing/product-commercial-ux-review-2026-10-18.md): runtime4b32993283c03f7b02d7c5f1edc27230d19a4d62; CI1619 passed/0 failed/3 inherited skips; entry319289/325000;171 assets per origin. Actual production41 reopen/search/list/EN-RU/export preserves all196 nodes/321 links/source/category/history/protection except two intentional export timestamps. Preserve41 and every previous case. Current ordered backlog and pilot/retrieval acceptance are in [the amended stage](CASEVANT_REFINEMENT_STAGE_2026-10-18.md#delivery-checkpoint-and-next-execution-order). Full package/old-client/account checks, missing sources, commercial demand/pricing, service readiness and moderated usability remain open; no validated market impact is claimed.
+
+## Historical closure — v145 vertical creation palette
 
 Delivered the user-approved sticky left Add node column, keyboard collapse and bounded narrow disclosure. [Production receipt](../testing/sticky-node-palette-review-2026-10-18.md): exact maincc84d0c, required web/PDF gates,165/165 assets per origin; synthetic40 native110% drop/undo/redo/save/reopen/export preserves65 originals/117 links/category/source plus Actor411,115. Narrow EN/RU retains Saved status without overflow. Preserve40 and every existing case. No new case format or data migration. Next: bundle headroom (324763/325000), old-client complete-carrier roundtrips, cross-browser/touch fallback and the existing package/account/source/retrieval plan. Further palette work must test sticky ancestors, actual narrow widths, short-height tool scrolling and inspector placement.
 

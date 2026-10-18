@@ -2,6 +2,16 @@
 
 18 October 2026. Current execution contract, supplementing the canonical product instructions. Read the [review and evidence](../testing/product-commercial-ux-review-2026-10-18.md). Older dated delivery notes are history, not commands to repeat completed work.
 
+## Delivery checkpoint and next execution order
+
+Steps1-3 below are delivered in public Sites v146, exact runtime `4b32993283c03f7b02d7c5f1edc27230d19a4d62`, deployment `appgdep_6ad5213fdf408191a360c7d81a2d8b6b`. [Final audit and exact receipt](../testing/product-commercial-ux-review-2026-10-18.md#delivered-v146-final-review-and-release-receipt). Entry319289/325000 meets the320000 target; exact-main CI1619 passed/0 failed/3 inherited skips; both origins171/171 assets. Authenticated case41 reopened unchanged in content, source/category/history/protection; actual exports differ only by the two established export timestamps. Preserve41 and all earlier cases. Do not repeat completed feature work or redeploy for Markdown closure.
+
+Next bounded implementation: inventory all18 package/version carriers and old-client supported/unknown-field roundtrips first; define fixtures and gaps before altering code. Test placements, source/tax/evidence/protection carriers, unknown-version recovery, cancellation and stale CAS through existing aggregate contracts. Add a fresh authorized browser identity only when writes are needed, retain it, and distinguish handler from real-browser coverage. Next execute real same-tab account transition with existing authorized identities and explicit no-write cancellation/stale-response evidence. Separate-profile acceptance alone is insufficient.
+
+In parallel planning, prepare a service-readiness evidence packet from actual controls and operator-qualified review. Do not broaden permitted data or change policies implicitly. The commercial pilot hypothesis is that a de-identified traceable decision package reduces retrieval friction and supports repeat use. Recruit5-8 consenting users across2-3 organizations, distinguish buyer from daily user, and record alternatives, willingness to pay, support effort and repeated save/reopen/report use. Before recruitment, define consent, synthetic/de-identified boundaries, support owner and stop criteria. Stop or revise on confidentiality ambiguity, inability to retrieve qualified grounds, recurring save/reopen failures or absent repeat-value signals. No price, revenue forecast or demand claim is accepted without evidence.
+
+For moderated retrieval, establish the existing-flow baseline first with at least5 evaluators on authorization, evidence gap, actor and next action; then compare the delivered finder. Proposed median30sec/80% qualification targets remain hypotheses. The380ms warm scripted production search is not human performance validation. Preserve the254-page deliberately complete Full export and existing Base/PDF locks until a separately measured renderer proposal is reviewed.
+
 ## Product decision
 
 Prioritize reliable retrieval and a coherent first-use journey before expanding authoring controls or sales claims. Target evaluation users handling de-identified advisory/investigation/dispute cases. The value to validate is a traceable decision package that another professional can inspect and reopen. A map, AI response or report is not evidence acceptance, execution or approval.
