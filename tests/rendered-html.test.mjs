@@ -63,7 +63,9 @@ test("production build keeps the canonical scenario runtime out of the initial c
   assert.ok(entry.dynamicImports.includes("app/StudioRelationRuleEditor.tsx"), "option fields must load only when opened");
   assert.ok(entry.dynamicImports.includes("app/StudioSimulationPanel.tsx"), "optional route presentation must remain deferred");
   assert.ok(entry.dynamicImports.includes("app/StudioDecisionList.tsx"), "the complete reading list must remain deferred");
-  assert.ok(entry.dynamicImports.includes("app/StudioRecordNavigator.tsx"), "full-record search must remain deferred");
+  const recordNavigatorKey = Object.keys(manifest).find(key => manifest[key].name === "StudioRecordNavigator");
+  assert.ok(recordNavigatorKey && entry.dynamicImports.includes(recordNavigatorKey), "shared full-record search must remain deferred");
+  assert.ok(!entry.imports.includes(recordNavigatorKey), "full-record search must not become an eager entry dependency");
   for (const secondaryView of ["app/CommunityWorkspace.tsx", "app/PlayWorkspace.tsx", "app/HelpCenter.tsx", "app/CaseExampleLibrary.tsx"]) {
     assert.ok(entry.dynamicImports.includes(secondaryView), `${secondaryView} must load only when its view opens`);
     assert.equal(entry.imports.includes(secondaryView), false);
