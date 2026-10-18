@@ -1,6 +1,10 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Current release — v145 vertical node palette
+## Current release — v146 product and retrieval refinement
+
+Sites v146 is live: exact runtime4b32993283c03f7b02d7c5f1edc27230d19a4d62, deploymentappgdep_6ad5213fdf408191a360c7d81a2d8b6b, environment42, native success2026-10-18T19:43:22.317394Z. Decision has qualified full-record find/focus; entry/FAQ match the professional journey; saved-work continuation opens Personal Studio drafts. Optional panels defer safely and entry decreases324763→319289 bytes under unchanged325000 cap. Exact-main web/PDF gates:1622 total/1619 passed/0 failed/3 inherited skips. Both origins171/171 assets. Production synthetic41 reopens with unchanged196 nodes/321 links/category/source/history/protection; actual exports differ only in two existing exporter timestamps. [Detailed review, limitations and receipt](../testing/product-commercial-ux-review-2026-10-18.md); [amended next instructions](CASEVANT_REFINEMENT_STAGE_2026-10-18.md). Preserve every case. Commercial and moderated usability validation remain planned. Later docs-only commits do not change runtime source.
+
+## Historical release — v145 vertical node palette
 
 **Sites v145 is live**, runtimecc84d0c7c664cafb91703b8f02202b74cd238065, deploymentappgdep_6ad4b8862cf48191a96f4709cdbe46a9, environment42. Add node now sits in a reserved sticky left column with native collapse and bounded narrow disclosure. Exact-main web/PDF gates passed:1617 tests/1614 pass/0 fail/3 inherited skips. Both origins verified165/165 assets. Authenticated synthetic40's native110% Actor drop survives undo/redo/save/independent reopen/export with original65 nodes/117 links/category/source unchanged; narrow EN/RU wraps without overflow and stays Saved. [Complete audit, measurements and receipt](../testing/sticky-node-palette-review-2026-10-18.md). Preserve every case including40 and user-amended37/39. Broader backlog remains open. Later Markdown-only closure commits are distinct from runtime source.
 
