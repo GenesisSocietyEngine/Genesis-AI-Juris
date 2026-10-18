@@ -4,6 +4,8 @@ Prepared, reviewed and amended 17 October 2026. This plan supplements the [canon
 
 ## Delivery and reviewed next action
 
+18 October bounded palette amendment: implement the user-approved vertical sticky Add node column using native disclosure and CSS layout, with a collapsible rail and narrow disclosure. Follow [its acceptance and release record](../testing/sticky-node-palette-review-2026-10-18.md). Keep the existing drag/zoom/persistence contracts and preserve all synthetic cases. This slice does not close the broader package/account/import backlog; after rollout resume the maintenance priorities below.
+
 **Map zoom and draggable nodes are delivered in v144**, runtime7515d185d31513b00aa0959e61426596ff6875bd. Read the [final audit and receipt](../testing/map-interactions-production-2026-10-18.md). A native110% drop at map366,13373 survives undo/redo, save and independent reopen with the exact original source reference, category,65 original nodes and117 links. Preserve39, negative regression38 and user-amended37; do not reset them to template content.
 
 Before another substantial interaction slice, review these bounded maintenance priorities:
