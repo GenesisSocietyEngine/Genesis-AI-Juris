@@ -14,7 +14,7 @@ test("deferred panels adopt only active requests and retain local recovery on fa
   const values: string[] = [];
   const pending = loadStudioPanel(() => new Promise<string>(done => { resolve = done; }), () => active, value => values.push(value), () => assert.fail());
   active = false; resolve("old case"); await pending;
-  assert.deepEqual(values, []);
+  assert.equal(values.length, 0);
   await loadStudioPanel(() => Promise.resolve("current case"), () => true, value => values.push(value), () => assert.fail());
   let failures = 0;
   await loadStudioPanel(() => Promise.reject(new Error("offline")), () => true, () => assert.fail(), () => { failures++; });
