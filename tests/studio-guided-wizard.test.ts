@@ -75,7 +75,9 @@ test("guided stages progressively disclose the existing canonical editor", () =>
   assert.match(appSource, /visibleStep === 2\) && activeAIResult/);
   assert.match(appSource, /visibleStep === 3\) && <><details id="studio-case-settings"/);
   assert.match(appSource, /visibleStep === 4\) && <section className="studio-workspace"/);
-  assert.match(appSource, /visibleStep === 5 && packageRequiresPlayableRoute\)\) && <details className="studio-simulation-tools/);
+  assert.match(appSource, /visibleStep === 5 && packageRequiresPlayableRoute\)\) && <StudioSimulationPanelLoader/);
+  const simulationSource = readFileSync(new URL("../app/StudioSimulationPanel.tsx", import.meta.url), "utf8");
+  assert.match(simulationSource, /<details className="studio-simulation-tools page-width" open=\{trainingWorkflow \|\| displayMode === "developer" \? true : undefined\}/, "the deferred view retains deliberate Training/developer disclosure");
   assert.match(appSource, /visibleStep === 6 && <section className="studio-finish/);
   assert.match(appSource, /displayMode === "developer" \|\| visibleStep/);
   assert.match(appSource, /User view/);
