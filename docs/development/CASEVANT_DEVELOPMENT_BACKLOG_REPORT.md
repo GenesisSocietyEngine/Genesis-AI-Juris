@@ -1,6 +1,10 @@
 # CaseVant development backlog and continuation instructions
 
-## Latest closure — v144 map editing
+## Latest closure — v145 vertical creation palette
+
+Delivered the user-approved sticky left Add node column, keyboard collapse and bounded narrow disclosure. [Production receipt](../testing/sticky-node-palette-review-2026-10-18.md): exact maincc84d0c, required web/PDF gates,165/165 assets per origin; synthetic40 native110% drop/undo/redo/save/reopen/export preserves65 originals/117 links/category/source plus Actor411,115. Narrow EN/RU retains Saved status without overflow. Preserve40 and every existing case. No new case format or data migration. Next: bundle headroom (324763/325000), old-client complete-carrier roundtrips, cross-browser/touch fallback and the existing package/account/source/retrieval plan. Further palette work must test sticky ancestors, actual narrow widths, short-height tool scrolling and inspector placement.
+
+## Historical closure — v144 map editing
 
 Delivered ten-point zoom controls, centre anchoring, draggable palette nodes, persisted manual placements and the inherited source-reference undo/redo correction. The [production audit](../testing/map-interactions-production-2026-10-18.md) records case39's native110% tail drop at366,13373, exact original65-node/117-link/category/source preservation, independent save/reopen/export,1617-test suite and165/165 assets per origin. Preserve user-amended37 and synthetic38/39;38 is retained negative evidence and was not reconstructed. No cases were deleted.
 

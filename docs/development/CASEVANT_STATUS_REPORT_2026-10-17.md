@@ -1,6 +1,10 @@
 # CaseVant audit and rollout status — 17 October 2026
 
-## Current release — v144 map interactions and preserved revision identity
+## Current release — v145 vertical node palette
+
+**Sites v145 is live**, runtimecc84d0c7c664cafb91703b8f02202b74cd238065, deploymentappgdep_6ad4b8862cf48191a96f4709cdbe46a9, environment42. Add node now sits in a reserved sticky left column with native collapse and bounded narrow disclosure. Exact-main web/PDF gates passed:1617 tests/1614 pass/0 fail/3 inherited skips. Both origins verified165/165 assets. Authenticated synthetic40's native110% Actor drop survives undo/redo/save/independent reopen/export with original65 nodes/117 links/category/source unchanged; narrow EN/RU wraps without overflow and stays Saved. [Complete audit, measurements and receipt](../testing/sticky-node-palette-review-2026-10-18.md). Preserve every case including40 and user-amended37/39. Broader backlog remains open. Later Markdown-only closure commits are distinct from runtime source.
+
+## Historical release — v144 map interactions and preserved revision identity
 
 **Sites v144 is live**, runtime7515d185d31513b00aa0959e61426596ff6875bd, deployment appgdep_6ad3f20b064481919833e338fdc55dbd, environment42. It includes ten-point zoom controls, native palette drag, saved manual positions and the source-reference undo/redo correction. Independent synthetic39 retains all65 original nodes/117 links/category/source plus its new Actor at366,13373 after undo/redo/save/reopen/export. Full web/PDF gates passed (1617 tests/1614 pass/0 fail/3 existing skips); both origins verified165/165 assets. See the [complete production audit](../testing/map-interactions-production-2026-10-18.md). Preserve38 as negative evidence,39 as corrected acceptance and every prior case; user-amended37 was untouched. Broader backlog remains open. Later Markdown-only commits are distinct from this runtime release.
 
