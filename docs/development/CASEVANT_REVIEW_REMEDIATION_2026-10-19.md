@@ -4,6 +4,8 @@
 
 ## Current source and release boundary
 
+Final functional candidate: `5b5a545065f7955abf2688e2b7a7711417d2717d`, tree `7d927dfc18e0d4181ab655a86d842b18dbf8d02d`, published in PR 140. [Exact-candidate web/PDF CI](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/39249811904) passed: 1,627 tests passed, zero failed, three inherited skips; PDF visual, packaged browser/Worker checks and both dependency audits passed (zero vulnerabilities). Rust, Flutter and Android passed; two iOS workflows remained running at the final check. The local and remote trees were confirmed equal and the checkout clean. This supersedes the earlier failing-head result below, not the production boundary: PR 140 remains a draft, main is unchanged, browser acceptance and supported Sites rollout remain open. Later Markdown-only receipt updates are distinct from this tested functional commit.
+
 - Production was rechecked as public Sites v146 at https://casevant.pro. Its recorded runtime is `4b32993283c03f7b02d7c5f1edc27230d19a4d62`; canonical main is `f03890445cd985b1535cc4f267b05888ba506ed3`.
 - [PR 140](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/140) contains the review/connection correction. The audit began at `ee9da238f3c936baa12aefb846f3283848020802`. Subsequent corrections need their own exact-head CI result. None of this candidate is claimed deployed.
 - That head's full web run built successfully and reported 1,623 passed, one failed, three skipped. The failure was an obsolete assertion for the removed inline destination selector. PDF visual verification passed, including the 47-PDF cohort, bilingual Base/Medium and tax-v2. Later packaging/security jobs were skipped after the test failure; they are not passed evidence.
