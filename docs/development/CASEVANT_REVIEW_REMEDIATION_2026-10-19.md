@@ -2,14 +2,13 @@
 
 19 October 2026. This plan takes priority over the next-slice order in the 18 October refinement plan. Historical delivery receipts remain valid for their exact sources; they are not acceptance of this candidate. Follow repository AGENTS.md and the [audit record](../testing/review-connections-2026-10-19.md).
 
-## Current source and release boundary
+## Current delivered state and next execution order
 
-Final functional candidate: `5b5a545065f7955abf2688e2b7a7711417d2717d`, tree `7d927dfc18e0d4181ab655a86d842b18dbf8d02d`, published in PR 140. [Exact-candidate web/PDF CI](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/39249811904) passed: 1,627 tests passed, zero failed, three inherited skips; PDF visual, packaged browser/Worker checks and both dependency audits passed (zero vulnerabilities). Rust, Flutter and Android passed; two iOS workflows remained running at the final check. The local and remote trees were confirmed equal and the checkout clean. This supersedes the earlier failing-head result below, not the production boundary: PR 140 remains a draft, main is unchanged, browser acceptance and supported Sites rollout remain open. Later Markdown-only receipt updates are distinct from this tested functional commit.
+Public Sites v147 is delivered from merged main `25c2aa4831265bb99e8df8fad38f3cd53707c0a9`; [final audit and release receipt](../testing/review-connections-2026-10-19.md#delivered--public-sites-v147) supersedes earlier pending approval/rollout notes. All six exact-main workflows passed, including 1,627 web tests/zero failures/three inherited skips and PDF visual gates. Both origins passed 174/174 asset checks. Actual production case 43 saved and independently reopened the added connection; local desktop/narrow EN/RU and production review/attention/focus flows were exercised. Preserve 43, user 42 and all prior cases/unsaved work. This Markdown closure does not create a new runtime version.
 
-- Production was rechecked as public Sites v146 at https://casevant.pro. Its recorded runtime is `4b32993283c03f7b02d7c5f1edc27230d19a4d62`; canonical main is `f03890445cd985b1535cc4f267b05888ba506ed3`.
-- [PR 140](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/140) contains the review/connection correction. The audit began at `ee9da238f3c936baa12aefb846f3283848020802`. Subsequent corrections need their own exact-head CI result. None of this candidate is claimed deployed.
-- That head's full web run built successfully and reported 1,623 passed, one failed, three skipped. The failure was an obsolete assertion for the removed inline destination selector. PDF visual verification passed, including the 47-PDF cohort, bilingual Base/Medium and tax-v2. Later packaging/security jobs were skipped after the test failure; they are not passed evidence.
-- The supported Sites helper's hidden-stdin credential handoff was rejected again by automatic approval policy (`sandbox_approval` disabled). No source-open receipt, package or deployment resulted. Do not try another credential transport or manually bypass the helper. Source correction/checkpoint delivery can continue separately.
+The bounded correction and release steps 1–3 below are now a maintenance/acceptance checklist. Resume step 4's package/old-client matrix, then account-transition checks and service-readiness/retrieval work. Separately review professional-model connectivity semantics; do not change current client/server submission rules through presentation fixes. Current entry 319962/325000 leaves little headroom: extract before growth. Keep representative browser evidence distinct from all-package coverage.
+
+For future releases prefer the exact prior published archive. If it is unavailable, do not substitute a same-source CI build without byte comparison: v146 CI paths differed from production. This release recovered the actual publicly served manifest/files and verified all 123 current assets on both origins, with native/source provenance, before retention. Record such a reconstruction explicitly and preserve every receipt; never describe it as original-archive recovery.
 
 ## Step 1 — finish the bounded correction (application + UX)
 
@@ -47,16 +46,16 @@ Record exact commands, source SHA, pass/fail/skip counts and artifacts under doc
 
 ## Step 3 — ordinary integration and rollout (release owner)
 
-1. Re-read canonical main, PR head, required checks and current Sites version/source. Preserve concurrent work. Review only intended source/docs; no credentials, user records, generated databases or local artifacts. Push the reviewed checkpoint and update PR 140 with the final scope and evidence.
+1. Re-read canonical main, PR head, required checks and current Sites version/source. Preserve concurrent work. Review only intended source/docs; no credentials, user records, generated databases or local artifacts. Push the reviewed checkpoint and update the slice’s PR with the final scope and evidence.
 2. Resolve failing checks and material findings. Use ordinary PR/main controls, without force-push, rule bypass or changing historical visual/source locks to obtain a pass. A pending deployment gate is not proof of a failed source checkpoint.
-3. Once the supported execution environment permits it, get a fresh source credential for existing project `appgprj_6a88a26d2f808191aa076b9fcd8dbce6` and open through `site-workflow.mjs` using hidden stdin. Keep the complete successful opening result. Preserve public audience and D1/R2 bindings.
+3. Get a fresh source credential for existing project `appgprj_6a88a26d2f808191aa076b9fcd8dbce6` and open through `site-workflow.mjs` using hidden stdin. Keep the complete successful opening result. Preserve public audience and D1/R2 bindings.
 4. Build exact merged main with a clean checkout and verified raw release-input hashes/sourceCommit. Do not release a PR build as if it were the merged source. If canonical main moves, reconcile before packaging.
-5. Obtain the actual current live predecessor's saved archive, verify its recorded hash and extract into an owned artifact directory. After the build, run `scripts/retain-client-assets.ts` with `--previous-dist`, `--expected-previous-commit` and `--expected-current-commit`. Never hard-code v145 or use an unpublished candidate as predecessor; v146 is only the last confirmed live state.
+5. Obtain the actual current live predecessor's saved archive, verify its recorded hash and extract into an owned artifact directory. After the build, run `scripts/retain-client-assets.ts` with `--previous-dist`, `--expected-previous-commit` and `--expected-current-commit`. Never hard-code v145 or use an unpublished candidate as predecessor; v147 is the confirmed live state at this closure, not a permanent predecessor.
 6. Package with the supported helper, passing the successful opening result, ordered remaining checks/build commands and absolute archive path. Save that exact verified commit/archive with Sites, then deploy the returned saved version to the existing audience. Retain the compatible predecessor for rollback.
 7. Confirm terminal native deployment status. Run `scripts/verify-deployment-assets.ts` against both casevant.pro and the native origin with exact current and predecessor commits. Require bytes/MIME for current and retained assets, then inspect the changed live flow and authenticated synthetic save/reopen/export. Static success alone is not hydration or account-workflow evidence.
 8. If deployment or changed-flow verification fails, retain receipts, diagnose the specific failure and use the compatible saved-version rollback procedure if needed. Do not edit user data as part of rollback. Close this plan only with exact main/source/version/deployment identity, measured checks and explicit remaining limits.
 
-## Ordered work after this release
+## Step 4 — ordered work after this release
 
 | Priority / owner | Concrete next action | Completion evidence |
 | --- | --- | --- |

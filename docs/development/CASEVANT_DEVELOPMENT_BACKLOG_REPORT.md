@@ -2,7 +2,7 @@
 
 ## Current priority — 19 October review and connection remediation
 
-Follow the [detailed execution plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and [audit evidence](../testing/review-connections-2026-10-19.md). PR 140 makes review status actionable, separates existing edges from explicit connection creation and flags exact node findings. The rerun corrects paging/search, hidden-node focus, dangling-link counts, blocker priority and an obsolete CI assertion. Source checkpoint delivery and production acceptance remain separate: the supported Sites credential handoff is policy-blocked and v146 remains live. Preserve user case 42, all earlier cases and unsaved tabs. Complete this correction's final CI/browser/release gates before resuming the 18-package/old-client matrix, account transitions and service-readiness work; do not repeat delivered v146 features.
+Delivered public Sites v147 from merged main `25c2aa4831265bb99e8df8fad38f3cd53707c0a9`. Review needed opens correction actions, connection creation preserves its chosen destination and shows existing edges, and exact node findings have red frames plus readable explanations. All six exact-main workflows passed; both origins 174/174 assets; production synthetic 43 saved and independently reopened 9 nodes/9 connections. Preserve 43, user 42 and every earlier case/unsaved tab. Follow the [detailed continuation plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and [final receipt](../testing/review-connections-2026-10-19.md#delivered--public-sites-v147). Resume the 18-package/old-client matrix, account transitions and service-readiness/retrieval work. Do not repeat delivered v146/v147 features or redeploy merely for this Markdown closure.
 
 ## Latest closure — v146 product and retrieval refinement
 

@@ -1,5 +1,42 @@
 # Review and connection remediation — 19 October 2026
 
+## Delivered — public Sites v147
+
+This closure supersedes the earlier draft, approval-blocked and unverified-browser checkpoints below. [PR 140](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/140) merged normally into canonical main as `25c2aa4831265bb99e8df8fad38f3cd53707c0a9`. All six workflows passed on that exact merged commit. [Web/PDF run 39256507106](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/39256507106) recorded 1,630 tests: 1,627 passed, zero failed, three inherited skips. Strict types, lint, migrations, mobile lock, packaged browser/Worker Rust, packaged tax-report history, Full/Base/Medium/tax PDF locks and both dependency audits passed; audits reported zero vulnerabilities. The cohorts overlap earlier runs and must not be summed.
+
+### Release identity and preservation
+
+- Runtime source: `25c2aa4831265bb99e8df8fad38f3cd53707c0a9`; later Markdown-only closure is not a new runtime release.
+- Site `appgprj_6a88a26d2f808191aa076b9fcd8dbce6`; saved version 147 `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_60f65129de0c8191a6ce6b558b7c4895`.
+- Deployment `appgdep_6ad619fb63388191827e0339a61a97b0` succeeded at 2026-10-19T13:24:36.688171Z; public, environment 42, existing DB and DOSSIER_DOCUMENTS retained.
+- URLs: https://casevant.pro and https://genesis-juris-web.maxim-hayan.chatgpt.site. Both passed 174/174 status, MIME, length and SHA-256 asset checks: 124 current and 50 retained previous assets.
+- Application inputs `d6a90c1b3f00c5289ab23778587c6178a96127d68f2a50500e3ec23f3f6a45db`; hosting `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe`. Current JurisApp chunk 319962 bytes, below 320000 target and 325000 cap, with little remaining headroom.
+- Supported helper completed source opening, synchronization and packaging with the exact merged SHA. Local Node 22.23.2 production build passed. Credential transport remained hidden stdin; Windows required carriage-return termination. The npm launcher was pinned locally and Git Bash's failing tar was replaced only in the session PATH by the installed Windows tar; no tracked helper, dependency or application workaround.
+- Archive raw SHA-256 `87eeb25a4c37d8f4562f01e9e80173b7b53895032d3ba792c7c0e2c368b0a0b3`; native normalized tar `f1e40d109e8e9228a88c0eaa1335036c1033b56c2ca4ec41a19993d857044972`, 49,254,400 bytes/552 files. Raw and normalized archive forms differ.
+- Previous compatible rollback is v146, source `4b32993283c03f7b02d7c5f1edc27230d19a4d62`. Its original archive was unavailable locally. The matching GitHub CI artifact had different hashed output paths (76/123 matched live) and was rejected as an asset-retention source. Instead the actual live manifest and 123 listed immutable files were captured, then verified byte-for-byte against both live origins before deployment. Source/hosting provenance matched native v146 and its recorded application-input digest. This is a documented live-byte capture, not recovery of the original archive. The retention helper retained 50 otherwise absent files; worker modules, fixed URLs and old retention chains were not imported.
+
+### Actual browser acceptance
+
+- Local full Worker preview became available after the permission change. Keyboard Enter on Review needed opened Your next actions and focused the first actionable correction. Reports also shows Open review actions and concrete instructions.
+- Local and signed-in production: selected Owner & reviewer shows 1 incoming/1 outgoing before addition. Selecting Assumption / unresolved issue leaves 8 edges; Add connection creates exactly one, keeps the selected option labelled Already connected and disables duplicates. Existing edges remain. Production undo returns 8, redo returns 9.
+- A new independent production case 43, `QA synthetic — review and connections — 2026-10-19`, was saved at 13:26:46Z and independently reopened through the actual saved-version link. The reopened UI showed Saved to workspace, 9 nodes/9 connections and Owner & reviewer with 1 incoming/2 outgoing, including the added destination. Selection is transient UI state; the edge is durable.
+- Local and production temporary orphan Fact nodes showed a red frame, non-colour Needs attention label and exact inspector explanations. The label was below the output connection handle. On production, starting from List then activating the orphan's Review action restored Detail 100% and focused `studio-node-fact-3` (N10). The temporary production node was undone; case 43 remains the saved 9-node/9-edge version.
+- Local narrow 390x844 measured innerWidth 390/documentWidth 375, no horizontal overflow. Russian destination labels, explanatory text and Add connection fit; authored English node text remained unchanged. The temporary viewport override was reset. This is local narrow acceptance, not a claim of exhaustive narrow production coverage.
+- User case 42, its unsaved open tab and every earlier case were untouched. Preserve synthetic 43 as well. No bulk rewrite, deletion, source migration, privacy change, expert submission or automatic approval was performed.
+
+Limits: representative changed-flow acceptance is complete; this does not establish all 18 packages, historical/unknown-field roundtrips, actual same-tab account transitions or moderated usability. An optional JSON export/download attempt timed out in browser control and is not counted as verified. No new PDF export was exercised through this browser slice; exact-main PDF CI is separate evidence. Saved-case UI reopen is not a database-wide byte audit. Red markers clear only when corresponding validation findings clear; case-level review is not a reason to mark otherwise-valid nodes red.
+
+### Next development steps
+
+1. Do not reimplement v147. Before each slice, verify live version/source, canonical main, dirty ownership and preservation contracts; review after each change.
+2. QA/application: inventory all 18 package/version carriers, then old-client supported/unknown-field roundtrips. Cover placements, full source/evidence/tax/protection aggregates, unknown-version recovery, cancellation and stale CAS. Record handler versus browser evidence separately.
+3. QA/auth: exercise same-tab account changes using authorized identities, with no-write cancellation and stale-response rejection. Separate-profile checks are insufficient.
+4. Product/domain/application: separately decide whether non-playable professional models should use a different connectivity contract from directed Trigger reachability. Align client and server with explicit versioned tests; do not auto-connect user nodes or quietly relax submission rules.
+5. Platform/operator: assemble service-readiness evidence and permitted-data boundaries. Product/research: consented retrieval and repeat-use study before pricing/demand claims. Keep 43 missing original bodies explicit until actual sources are obtained. Outreach, analytics or security/policy changes require their own scope.
+6. Preserve the 325000-byte cap; extract deferred code before meaningful entry growth. Keep release-source identity distinct from docs-only closure. For the next rollout, dynamically resolve the actual preceding live version, retain its verified current assets and require native/static/changed-flow evidence.
+
+## Historical implementation and audit checkpoints
+
 Base: canonical main `f03890445cd985b1535cc4f267b05888ba506ed3`; live Sites v146 source `4b32993283c03f7b02d7c5f1edc27230d19a4d62`. Isolated clean checkout, branch `codex/review-and-connections-20261019`, owned by this task. Existing older checkout is untouched.
 
 Acceptance before implementation:
