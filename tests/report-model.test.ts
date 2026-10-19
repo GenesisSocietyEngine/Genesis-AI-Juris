@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
 import { caseTypeReference } from "../app/case-type-reference";
-import { CASE_TYPE_PLAYBOOK_REGISTRY, primaryCaseOutput } from "../app/case-type-playbooks";
+import { CASE_TYPE_PLAYBOOK_REGISTRY, evaluateCaseTypeDraft, primaryCaseOutput } from "../app/case-type-playbooks";
 import {
   REPORT_PROFILE_REGISTRY,
   buildCanonicalReportModel,
@@ -17,6 +17,31 @@ import {
   REPORT_GRAPH_LAYOUT_SCHEMA_VERSION,
 } from "../app/report-graph-contract";
 import type { CaseTypeId, StudioDraft } from "../app/types";
+
+test("interactive source corrections do not rewrite report-v1 qualifications or relax source gates", () => {
+  for (const sourceUrls of [[], ["www.nbb.be"], ["https://user:secret@nbb.be/"]]) {
+    const draft = governedDraft("litigation_strategy");
+    draft.classification!.sourceUrls = sourceUrls;
+    const before = JSON.stringify(draft);
+    for (const locale of ["en", "ru"] as const) {
+      const interactive = evaluateCaseTypeDraft(draft, locale).find(check => check.id === "https-sources")!;
+      assert.equal(interactive.level, "warn");
+      assert.match(interactive.text, /https/i);
+      assert.notEqual(interactive.text, "Attach at least one authoritative HTTPS source");
+    }
+    const common = { profileId: primaryCaseOutput(draft.caseType!).id, preparedBy: "Reviewer", preparedFor: "Synthetic QA", reviewerName: "Reviewer", reviewerApproved: true,
+      currentFingerprint: caseFingerprint(draft), workspaceFingerprint: caseFingerprint(draft), currentPublicationFingerprint: casePublicationFingerprint(draft), workspacePublicationFingerprint: casePublicationFingerprint(draft) };
+    const preliminary = validateReportReadiness(draft, { ...common, status: "draft", audience: "internal" });
+    assert.ok(preliminary.warnings.includes("Attach at least one authoritative HTTPS source"));
+    const external = validateReportReadiness(draft, { ...common, status: "final", audience: "client" });
+    assert.equal(external.ready, false);
+    assert.ok(external.blockers.includes("Attach at least one authoritative HTTPS source"));
+    assert.equal(JSON.stringify(draft), before);
+  }
+  const valid = governedDraft("litigation_strategy");
+  assert.equal(evaluateCaseTypeDraft(valid, "en").find(check => check.id === "https-sources")?.level, "ok");
+  assert.match(evaluateCaseTypeDraft(valid, "en").find(check => check.id === "https-sources")!.text, /authority and relevance still require review/);
+});
 
 function governedDraft(id: CaseTypeId): StudioDraft {
   const output = primaryCaseOutput(caseTypeReference(id));

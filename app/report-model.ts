@@ -95,7 +95,11 @@ export type ReportReadiness = { ready: boolean; blockers: string[]; warnings: st
 export function validateReportReadiness(draft: StudioDraft, input: ReportReadinessInput): ReportReadiness {
   const caseType = draft.caseType?.id ?? DEFAULT_CASE_TYPE.id;
   reportProfile(input.profileId, caseType);
-  const packageWarnings = evaluateCaseTypeDraft(draft, "en").filter((check) => check.level === "warn").map((check) => check.text);
+  const packageWarnings = evaluateCaseTypeDraft(draft, "en").filter((check) => check.level === "warn").map((check) =>
+    // Report v1 fingerprints bind this established qualification. Interactive
+    // correction copy may change without silently changing historical receipts.
+    // A future report wording change needs its own versioned/visual review.
+    check.id === "https-sources" ? "Attach at least one authoritative HTTPS source" : check.text);
   const finalExternal = input.status === "final" || input.audience === "client";
   const sourceUrls = sanitizeReportSourceUrls(draft.classification?.sourceUrls);
   const blockers: string[] = [];
