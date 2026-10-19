@@ -1,14 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { parseStudioSources, studioSourceFeedback, suggestStudioHttps } from "./studio-source-input";
 
 export default function StudioSourceField({ sources, locale, onFocus, onChange, onBlur, onCorrect }: {
   sources: string[]; locale: "en" | "ru"; onFocus: (value: string) => void;
   onChange: (sources: string[]) => void; onBlur: (value: string) => void; onCorrect: (sources: string[]) => void;
 }) {
-  const [text, setText] = useState(sources.join("\n"));
   const serialized = sources.join("\n");
-  useEffect(() => { setText(current => parseStudioSources(current).join("\n") === serialized ? current : serialized); }, [serialized]);
+  const [input, setInput] = useState({ serialized, text: serialized });
+  // Preserve harmless editing whitespace, but reconcile real external changes
+  // (undo, restoration) before rendering instead of cascading through an effect.
+  if (input.serialized !== serialized) setInput({ serialized, text: parseStudioSources(input.text).join("\n") === serialized ? input.text : serialized });
+  const text = input.text;
+  const setText = (text: string) => setInput({ serialized, text });
   const en = locale === "en";
   const feedback = studioSourceFeedback(sources, locale);
   const corrections = sources.map(source => suggestStudioHttps(source) ?? source);
