@@ -1,6 +1,12 @@
 # CaseVant development backlog and continuation instructions
 
-## Current closure and priority — v149
+## Current closure and priority — v150
+
+My cases usability is shipped from exact runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; [the final native receipt and acceptance](../testing/my-cases-list-review-2026-10-19.md#delivered--public-sites-v150) supersede the temporary upload blocker. Full-width rows, larger search, loaded-only sorting, readable UTC dates, copy IDs and Studio actions preserve all identities/access. Exact-main gates pass (1,714 / 0 / 3); both origins176/176. Read-only 25-row production comparison and search/sort/pagination/reopen passed. No cases were saved or deleted for this slice.
+
+Next: finish **full-application production narrow EN/RU visual/capture QA** in a working viewport session; actual-390px synthetic component evidence is separate. Then resume the ordered compatibility/transition backlog below. Do not reimplement or republish this delivered UI merely for Markdown closure. No inline case mutation, global server search, permission change or migration is implied.
+
+## Historical closure and priority — v149
 
 The [re-audit and native receipt](../testing/re-audit-release-contract-2026-10-19.md#delivered--public-sites-v149) supersede earlier status. Runtime bcd50f3 is live, exact-main web/PDF gates passed (1,712 / 0 / 3), both origins 190/190, entry 319,350 bytes. Fixed report-copy/fingerprint coupling and non-tax unknown-field/legacy-slot loss; retained narrow RU recovery and the historical simulation-parent contract without changing source/PDF locks. Current-code 68-combination carrier coverage is delivered. Production case 44 export is preserved and its Base PDF inspected; independent Canopy 45 saved/reopened/exported correctly. Preserve all production evidence, including 45.
 
