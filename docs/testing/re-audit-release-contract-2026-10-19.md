@@ -1,0 +1,31 @@
+# Re-audit: latest corrections and preservation continuation
+
+19 October 2026. Starting canonical main `ecac3243300d6fd070636b92ed23aae0ac4284d5`; clean isolated checkout. Root Cargo.toml, CURRENT_PROGRESS.md and TAX_ECONOMICS_V2_INTEGRATION_PLAN.md belong to another writer and remain excluded. Preserve every production case, including user42 and synthetic41/43/44, and all unsaved browser tabs.
+
+## Reverified baseline and material finding
+
+Native Sites remains public v148, saved version `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_d67ccf825e80819183c293617ee390d2`, runtime `6e2910758a6f13b4bf1a65167bbc070c4a950792`, deployment `appgdep_6ad63caa76208191b0a34333f85feb7e`. Current main differs only in three Markdown files. Application hash `0024c29c5e8aeab43a543df5658061222d4c0f0a420a33081686329b3bcd0b4b` and hosting hash `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe` match the published receipt. Supported source opening succeeded after a sandbox-network retry, returning ecac324. No credential was persisted.
+
+Exact-runtime run39278903721: web-and-pdf succeeded, but pdf-visual failed in the unchanged bilingual Base/Medium lock. The Full47-PDF check passed; tax-v2 visual verification was skipped. Rust, Flutter, Android Native and iOS Native passed; iOS Tax was cancelled, not passed. These terminal results supersede prior pending-CI notes. Publication preceded completion of this gate: do not describe v148 as all-green.
+
+The actual diff contains report/presentation fingerprint changes for five ERP/GreenFire fixtures, with unchanged fixture, case and page-image hashes. Root cause: interactive HTTPS feedback entered report-v1 readiness warning text through the shared playbook evaluator. This is a semantic receipt regression even though pages match. Do not replace or weaken the historical lock.
+
+## Revised acceptance and execution
+
+1. Isolate report-v1's established source qualification from changing interactive correction copy. Preserve strict HTTPS validation, preliminary/final gates, source authority caveats, actual source input, all source versions and case fingerprints. Test missing/bare/credentialled/valid sources; rerun unchanged Full/Base/Medium/tax visual checks and exact merged CI before release.
+2. Inventory all current packages and historical versions before preservation implementation. Test exact source/category, independent working identities, graph/evidence/manual placements, device/JSON/snapshot carriers and unsupported raw recovery. A handler/in-memory database test is not authenticated-browser or old-binary acceptance. Record gaps before altering normalization or storage.
+3. Restore entry headroom before UI growth (v148 measured320912, target320000, hard325000 unchanged). Continue actual same-tab account cancellation/stale checks, then service-readiness and moderated/commercial research. No outreach, pricing, analytics or policy changes are implied.
+
+Each bounded slice gets a review, normal PR/main integration and exact-source Sites receipt when runtime changes. Documentation/test-only evidence does not require an unchanged runtime deployment. Keep previous source/body/PDF locks and the complete Full export intact; unknown content must remain recoverable without current-template substitution.
+
+## Work and verification
+
+Report correction: readiness retains the established report-v1 HTTPS warning while interactive EN/RU controls keep actionable messages and the source-authority caveat. No baseline, renderer, source case, validation level or approval rule changed. New tests cover missing/bare/credentialled/valid sources and preliminary/final gates. Pinned Node22.23.2 source/report cohort:8/8. The unchanged Base/Medium visual lock passes14 PDFs/51 pages with baselineUpdated=false.
+
+Package inventory:18 public packages across15 cards, plus the retained Canopy compatibility alternative. Current packages and converted2.2/2.3/2.4 factories yield68 language/version combinations. The new codec/device/revision/export matrix verifies independent identities, exact normalized source references/category/graph/evidence and manual placement. Frozen source/copy hashes are untouched. The118-test matrix/registry/tax-preservation cohort passes. A deliberately shaped test seal grants no authority; these are codec tests, not browser saves or an old executable.
+
+Test corrections: the initial matrix incorrectly compared raw-factory fingerprints with normalized-reference lineage fingerprints, causing40 failures. Fixed that assertion to the established normalized-reference contract without altering factories/hashes. Strict typing caught two unreachable assertion branches accessing reason after status narrowing; corrected test messages. Initial failed runs are not represented as passes.
+
+A separate diagnostic exposed actual non-tax data loss: a future node field was dropped while the reader returned editable. The tax-only policy did not cover ordinary cases. Readers now reject discarded supplied fields/containers for every draft and declared envelope; legacy string normalization remains permitted. Tax values retain their stronger exact-value guard. Unsupported input retains original raw text under existing access/scope rules, without template substitution. Device/sign-in/export writes classify before normalization. Cleanup stops when the active device slot requires recovery, retaining both new and legacy originals. The new cleanup test first exposed deletion of the older editable slot; fixed the implementation rather than weakening the zero-write assertion. Final recovery/continuity cohort43/43 passes. Supported-carrier/tax-export/continuity cohort114/114 passes; overlapping counts are not additive.
+
+Actual handler, final type/lint/build, exact-main CI and production acceptance remain pending at this checkpoint. No production case was edited, migrated or removed. Fresh authorized Chrome reopened preserved44 on v148 showing Saved, one independent legal-date action, and no route/source action. Broader browser/account/old-binary coverage remains open.
