@@ -12,8 +12,6 @@ export function validateStudioDraft(draft: StudioDraft, locale: Locale): {
   checks: StudioCheck[];
   requiresPlayableRoute: boolean;
 } {
-  const outgoing = new Set(draft.links.map((link) => link.from));
-  const incoming = new Set(draft.links.map((link) => link.to));
   const checks: StudioCheck[] = [];
   const addCheck = (id: string, check: StudioCheck) => checks.push({ ...check, id });
   const label = (en: string, ru: string) => locale === "en" ? en : ru;
@@ -33,7 +31,7 @@ export function validateStudioDraft(draft: StudioDraft, locale: Locale): {
   addCheck("context", draft.premisePublication === "author-reviewed"
     ? { level: "ok", text: label("Publishable case context was deliberately reviewed", "Публикуемый контекст кейса проверен автором") }
     : { level: "warn", text: label("Review and edit the publishable case context before submission", "Проверьте и отредактируйте публикуемый контекст кейса перед отправкой") });
-  const orphaned = draft.nodes.filter((node) => node.type !== "trigger" && !incoming.has(node.id) && !outgoing.has(node.id));
+  const orphaned = attention.orphanIds;
   addCheck("orphan", orphaned.length === 0
     ? { level: "ok", text: label("No orphaned nodes", "Изолированных узлов нет") }
     : { level: "warn", nodeIds: attention.orphanIds, text: label(`${orphaned.length} orphaned node(s) need a relationship`, `Изолированных узлов: ${orphaned.length}`) });

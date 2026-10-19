@@ -34,7 +34,7 @@ export default function StudioNodeConnections({ nodes, links, sourceId, locale, 
     })}</ul>}
     <h4>{en ? "Add a connection" : "Добавить связь"}</h4>
     <p>{en ? "Choose a destination, then add it. Existing connections stay in place. Save to workspace to keep draft changes." : "Выберите назначение и добавьте связь. Текущие связи сохраняются. Сохраните изменения черновика в рабочем пространстве."}</p>
-    {candidates.length > STUDIO_NODE_MENU_PAGE_SIZE && <label><span>{en ? "Find destination" : "Найти назначение"}</span><input type="search" value={query} placeholder={en ? "Title, type or ID" : "Название, тип или ID"} onChange={event => { setQuery(event.target.value); setPage(0); }}/></label>}
+    {(query !== "" || candidates.length > STUDIO_NODE_MENU_PAGE_SIZE) && <label><span>{en ? "Find destination" : "Найти назначение"}</span><input type="search" value={query} placeholder={en ? "Title, type or ID" : "Название, тип или ID"} onChange={event => { setQuery(event.target.value); setPage(0); }}/></label>}
     <label><span>{en ? "New destination" : "Новое назначение"}</span><select id="studio-connect-node" disabled={disabled} value={target ? targetId : ""} onChange={event => { setTargetId(event.target.value); setMessage(""); }}>
       <option value="">{en ? "Choose destination…" : "Выберите узел…"}</option>
       {options.map(node => <option key={node.id} value={node.id}>{labels[node.type]} · {node.title}{connected.has(node.id) ? (en ? " — Already connected" : " — Уже связан") : ""}</option>)}

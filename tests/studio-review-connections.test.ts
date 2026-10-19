@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { buildCanopyPackage } from "../app/canopy-fixture";
@@ -8,6 +9,7 @@ import { validateStudioDraft } from "../app/studio-validation";
 import { studioGraphAttention } from "../app/studio-graph-attention";
 import { addStudioLink } from "../app/studio-editing";
 import { normalizeStudioDraft } from "../app/case-integrity";
+import { STUDIO_NODE_MENU_PAGE_SIZE } from "../app/studio-node-menu";
 import type { StudioNode } from "../app/types";
 
 const require = createRequire(import.meta.url);
@@ -17,6 +19,23 @@ function fixture() {
   const { draft } = buildCanopyPackage("base");
   return { ...draft, nodes: [node("start", "trigger"), node("a"), node("b"), node("c")], links: [{ id: "one", from: "start", to: "a" }, { id: "two", from: "b", to: "c" }] };
 }
+
+test("opening an affected node leaves list or overview mode before focusing its real map control", () => {
+  const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const handler = source.slice(source.indexOf("  function openStudioAction("), source.indexOf("  function returnToActions("));
+  assert.ok(handler.includes("function openStudioAction"));
+  const calls: unknown[] = [];
+  const open = new Function("changeDisplayMode", "setGraphPresentation", "setGraphZoom", "selectNode", "selectGuidedStep", "setActionNotice", "setActionTarget",
+    handler.replace("target: StudioActionTarget", "target") + "; return openStudioAction;")(
+      ...["mode", "presentation", "zoom", "node", "step", "notice", "focus"].map(name => (value: unknown) => calls.push([name, value])),
+    );
+  const target = { step: 4, id: "studio-node-b", nodeId: "b" };
+  open(target);
+  assert.deepEqual(calls, [["presentation", "detail"], ["zoom", 1], ["node", "b"], ["step", 4], ["notice", ""], ["focus", target]]);
+  calls.length = 0;
+  open({ step: 3, id: "studio-publishable-context" });
+  assert.ok(!calls.some(call => ["presentation", "zoom", "node"].includes((call as string[])[0])), "case-level review leaves the map untouched");
+});
 test("connected but unreachable nodes are identified exactly; case-level context does not flag nodes", () => {
   const draft = fixture(), before = JSON.stringify(draft);
   assert.deepEqual(studioGraphAttention(draft, false), { orphanIds: [], routeIds: ["b", "c"], missingStart: false });
@@ -45,6 +64,57 @@ test("orphan and invalid-endpoint findings retain exact existing node identities
   const result = studioGraphAttention(draft, false);
   assert.deepEqual(result.orphanIds, ["orphan"]);
   assert.deepEqual(new Set(result.routeIds), new Set(["a", "b", "c", "orphan"]));
+  draft.links.push({ id: "invalid-only", from: "orphan", to: "missing" });
+  const orphanCheck = validateStudioDraft(draft, "en").checks.find(check => check.id === "orphan")!;
+  assert.equal(orphanCheck.level, "warn", "a dangling edge is not a valid connection");
+  assert.deepEqual(orphanCheck.nodeIds, ["orphan"]);
+});
+
+test("connection search remains clearable after adding the last match at the paging threshold", async () => {
+  for (const locale of ["en", "ru"] as const) {
+    const render = await connectionHarness();
+    const nodes = [node("source"), ...Array.from({ length: 13 }, (_, i) => node(`target-${i}`))];
+    const links: { id: string; from: string; to: string }[] = [];
+    const props = { nodes, links, sourceId: "source", locale, labels: { fact: "Fact" }, disabled: false, onNode() {}, onConnect(to: string) { links.push({ id: "added", from: "source", to }); return ""; } };
+    let tree = render(props);
+    (tree.find(el => el.props.type === "search")!.props.onChange as (e: unknown) => void)({ target: { value: "target-12" } });
+    tree = render(props);
+    (tree.find(el => el.type === "select")!.props.onChange as (e: unknown) => void)({ target: { value: "target-12" } });
+    tree = render(props);
+    (tree.find(el => el.props.className === "secondary-cta")!.props.onClick as () => void)();
+    tree = render(props);
+    assert.equal(tree.find(el => el.type === "select")!.props.value, "target-12");
+    assert.equal(tree.find(el => el.props.className === "secondary-cta")!.props.disabled, true);
+    const search = tree.find(el => el.props.type === "search");
+    assert.ok(search, "the active filter must remain visible even with only twelve remaining destinations");
+    (search.props.onChange as (e: unknown) => void)({ target: { value: "" } });
+    tree = render(props);
+    assert.equal(tree.filter(el => el.type === "option" && el.props.value !== "").length, 13, "all twelve candidates plus the selected connected target are available");
+  }
+});
+
+test("actual destination control bounds options and reaches every candidate at the 200-node limit", async () => {
+  const render = await connectionHarness();
+  const nodes = Array.from({ length: 200 }, (_, i) => node(`node-${i}`));
+  let calls = 0;
+  const props = { nodes, links: [{ id: "existing", from: "node-0", to: "node-1" }], sourceId: "node-0", locale: "en", labels: { fact: "Fact" }, disabled: false, onNode() {}, onConnect() { calls++; return ""; } };
+  const seen = new Set<string>();
+  let tree = render(props);
+  (tree.find(el => el.type === "select")!.props.onChange as (e: unknown) => void)({ target: { value: "node-199" } });
+  for (let page = 0; page < 17; page++) {
+    tree = render(props);
+    const options = tree.filter(el => el.type === "option" && el.props.value !== "");
+    assert.ok(options.length <= STUDIO_NODE_MENU_PAGE_SIZE + 1);
+    options.forEach(el => seen.add(String(el.props.value)));
+    assert.equal(tree.find(el => el.type === "select")!.props.value, "node-199");
+    const next = tree.find(el => el.props["aria-label"] === "Next destinations");
+    if (next?.props.disabled) break;
+    (next!.props.onClick as () => void)();
+  }
+  assert.equal(seen.size, 198);
+  assert.equal(seen.has("node-0"), false);
+  assert.equal(seen.has("node-1"), false);
+  assert.equal(calls, 0, "search and paging never write");
 });
 
 test("review actions open context, missing-start composer and the exact disconnected record", async () => {

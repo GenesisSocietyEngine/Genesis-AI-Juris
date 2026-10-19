@@ -3382,6 +3382,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
 
   const visibleChecks = displayMode === "developer" ? checks : checks.filter((check) => check.level === "warn");
   const firstSubmissionWarning = checks.find((check) => check.level === "warn")?.text ?? "";
+  const visibilityBlocksSubmission = canDuplicate && derivationsSettled && draftWithinEnvelope && isPrivate;
   const submitBlocker = !canDuplicate
     ? (locale === "en" ? "This protected case is available for inspection only." : "Этот защищённый кейс доступен только для просмотра.")
     : !derivationsSettled
@@ -3423,7 +3424,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   }
   function openStudioAction(target: StudioActionTarget) {
     if (target.developer) changeDisplayMode("developer");
-    if (target.nodeId) selectNode(target.nodeId);
+    if (target.nodeId) { setGraphPresentation("detail"); setGraphZoom(1); selectNode(target.nodeId); }
     selectGuidedStep(target.step);
     setActionNotice("");
     setActionTarget(target);
@@ -3715,7 +3716,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
         <article><Icon name="download"/><span>02</span><h3>{locale === "en" ? "Create an analytical report" : "Сформировать аналитический отчёт"}</h3><p>{locale === "en" ? "Preview a preliminary PDF from this draft. Independent approval is a separate step in your case." : "Просмотрите предварительный PDF из этого черновика. Независимое утверждение — отдельный шаг в деле."}</p><button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} aria-describedby={reportUnavailable ? "studio-report-card-requirements" : undefined}>{locale === "en" ? "Open PDF options" : "Открыть параметры PDF"}</button>{reportUnavailable && <div id="studio-report-card-requirements">{reportRequirements}</div>}</article>
         <article><Icon name="check"/><span>03</span><h3>{locale === "en" ? "Request expert review" : "Запросить экспертную рецензию"}</h3><p>{locale === "en" ? "Submit only when validation is green and the visibility setting is correct." : "Отправляйте только после зелёной проверки и подтверждения режима видимости."}</p><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={restorePending || Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined}>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button></article>
       </div>
-      {submitBlocker && <div className="studio-finish-note"><Icon name="alert"/><div><p>{submitBlocker}</p><button type="button" onClick={() => isPrivate && derivationsSettled && canDuplicate ? openStudioAction({ step: 3, id: "studio-privacy" }) : returnToActions()}>{isPrivate && derivationsSettled && canDuplicate ? (locale === "en" ? "Review visibility settings" : "Проверить настройки видимости") : (locale === "en" ? "Open review actions" : "Открыть действия проверки")}</button><p>{locale === "en" ? "Choose an action to open the exact field or node, make the correction, then return to Review." : "Выберите действие, исправьте указанное поле или узел и вернитесь в раздел проверки."}</p></div></div>}
+      {submitBlocker && <div className="studio-finish-note"><Icon name="alert"/><div><p>{submitBlocker}</p><button type="button" onClick={() => visibilityBlocksSubmission ? openStudioAction({ step: 3, id: "studio-privacy" }) : returnToActions()}>{visibilityBlocksSubmission ? (locale === "en" ? "Review visibility settings" : "Проверить настройки видимости") : (locale === "en" ? "Open review actions" : "Открыть действия проверки")}</button><p>{locale === "en" ? "Choose an action to open the exact field or node, make the correction, then return to Review." : "Выберите действие, исправьте указанное поле или узел и вернитесь в раздел проверки."}</p></div></div>}
     </section>}
     {caseReportOpen && <ReportErrorBoundary locale={locale} onClose={() => setCaseReportOpen(false)}><Suspense fallback={<div className="case-report-backdrop"><section className="case-report-dialog" role="status">{locale === "en" ? "Opening report options…" : "Открываются параметры отчёта…"}</section></div>}><CaseReportDialog
       locale={locale}

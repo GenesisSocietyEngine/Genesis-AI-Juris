@@ -81,7 +81,7 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.doesNotMatch(source, /useMemo\(\(\) => compileStudioDraft/);
   assert.doesNotMatch(source, /<code>\{caseFingerprint\(draft\)\}<\/code>/);
   assert.match(source, /studioNodeMenuOptions\(relationNodeMenu\.nodes,nodeById,link\.to\)/);
-  assert.match(source, /destinationNodeMenu\.nodes\.map/);
+  assert.match(source, /import StudioNodeConnections from "\.\/StudioNodeConnectionsLoader"/);
 });
 
 test("opening a saved or imported graph stays readable without changing its signed source", () => {
