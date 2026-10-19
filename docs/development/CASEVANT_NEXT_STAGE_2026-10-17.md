@@ -1,5 +1,7 @@
 # CaseVant next development and refinement stage
 
+**Current continuation — 19 October:** v149 is delivered. Use [the revised ordered compatibility and transition instructions](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md#next-bounded-stage-compatibility-and-verified-transitions) and [final re-audit](../testing/re-audit-release-contract-2026-10-19.md#delivered--public-sites-v149). Preserve synthetic 45 and every prior case. The dated completed/pending instructions below are historical; do not repeat implemented work or redeploy unchanged documentation.
+
 Prepared, reviewed and amended 17 October 2026. This plan supplements the [canonical detailed instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md), [backlog](CASEVANT_DEVELOPMENT_BACKLOG_REPORT.md), [v139 status](CASEVANT_STATUS_REPORT_2026-10-17.md) and [self-audit correction](../testing/self-audit-handoff-review-2026-10-17.md). Planned acceptance is not evidence of completion. Runtime changes in this stage require their own exact-source Sites receipt.
 
 ## Delivery and reviewed next action

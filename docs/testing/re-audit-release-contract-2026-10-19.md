@@ -37,3 +37,47 @@ Local Worker preview returned200. The Node-only production adapter first rejecte
 Candidate CI39310657198: PDF visual passed unchanged Full/Base/Medium/tax locks; web had1714 tests/1706 pass/5 failures/3 inherited skips. All five failures exposed overly strict treatment of raw historical simulation parent hints: frozen factories use exactly caseId/version/unprefixed64-hex scenario fingerprint, which the established normalizer maps to null rather than saved lineage. The guard now permits only that exact legacy shape; extended/future parent objects still require recovery and tax values retain exact preservation. The unchanged migration tests plus expanded matrix now check raw factories as well as normalized copies:89/89 pass. No historical fixture/hash/assertion was weakened. Final-head CI remains required after this correction.
 
 The original v148 archive was not available locally. Its actual public manifest and all125 current assets were recovered, with MIME/byte/SHA verification on both public and native origins and native version/source provenance. Reconstruction metadata is explicitly labelled; it is not an original archive, independent server reconstruction or substitute same-source CI build. Retain these actual deployed bytes only for immediate-predecessor client compatibility.
+
+## Delivered — public Sites v149
+
+This completed receipt supersedes the earlier pending checkpoints. [PR144](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/144) integrated the three reviewed commits normally. Exact merged runtime is `bcd50f3342413fb5ac8cd55811a519d3c9b5239b`. Canonical main contains the fixes; subsequent Markdown closure commits are distinct from the deployed runtime.
+
+### Release gates and source
+
+Exact-main [run39312600625](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/39312600625) passed both web-and-pdf and pdf-visual. Full web suite: **1,715 tests, 1,712 passed, zero failed, three inherited skips**. Packaged shared Rust browser/Worker execution, tax-report history and complete/production dependency audits passed; both dependency audits reported zero vulnerabilities. Unchanged Full, bilingual Base/Medium and tax-v2 visual locks passed. Rust, Flutter, Android and iOS Native also passed; iOS Tax was still running at the final observation, not claimed passed. These are separate platform workflows, not the web/PDF publication gates.
+
+Supported exact-main local build passed. Measured initial entry **319,350 bytes**, meeting the320,000 aim and unchanged325,000 cap (5,650 bytes hard-cap headroom; v148 was320,912). Recovery is a dynamic import, verified against the actual built manifest. Exact merged artifact/deployment cohort6/6 and release-provenance cohort3/3 passed. TypeScript passed; changed-file lint had zero errors and the seven inherited JurisApp warnings. React review confirmed stable module-level loader, type-only props, current-prop retry rendering, no automatic reload/write and retained access/focus boundaries. No source factory, historical source/copy hash, report baseline, schema, dependency lock or database migration changed.
+
+Packaging initially hit automatic approval review's stale-opening-receipt objection. No rejected stdin was consumed or deployed. The waiting process was cancelled, a fresh supported opening returned exact bcd50f3, and matching-input approval succeeded. Later packaging failed because Git Bash was absent from the task PATH, then GNU tar interpreted the Windows drive letter as a remote host. Task-local Git Bash PATH and TAR_OPTIONS=--force-local corrected those tool issues; neither application nor plugin code was altered. The supported helper then returned the matching pushed commit/archive. Application build and tests used pinned Node22.23.2; the installed Node24.21.0 ran the publication helper, without rebuilding application bytes. Credentials remained on hidden stdin/in memory and were not persisted.
+
+| Receipt | Value |
+| --- | --- |
+| Existing public Site | `appgprj_6a88a26d2f808191aa076b9fcd8dbce6` |
+| Saved version149 | `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_3d8124b1d6288191bbe400b95efd92bd` |
+| Deployment | `appgdep_6ad674bce8088191aafe97597af578ff` — native succeeded, 2026-10-19T19:52:52.360228Z (21:52 Paris) |
+| Environment | Existing public audience, revision42, DB/R2 unchanged |
+| Application inputs SHA256 | `9cbe6fb2e66e04a2d39c25d00f83169eef2c1dbb35c75abd921f461afdc5256a` |
+| Hosting inputs SHA256 | `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe` |
+| Archive | `casevant-recovery-bcd50f3-20261019.tar`; raw gzip30,342,262 bytes |
+| Raw archive SHA256 | `f677057fa72ac542b5a6a40e4c36f61fb01ca179f0d77720c16f3c783f3c1028` |
+| Native normalized archive SHA256 | `0e180db8ab80237447cf325d82c7a8e287eef0b3b0695ab491294b34b0fbffd8`;49,418,240 bytes/570 files |
+| Both origins | https://casevant.pro and https://genesis-juris-web.maxim-hayan.chatgpt.site; **190/190** status/MIME/byte/SHA checks each |
+| Compatibility |126 current assets plus64 retained from the actual v148125-asset current manifest; no older retention chain |
+
+Raw and native normalized archive hashes describe different representations. Static asset receipts explicitly do not establish source, hydration or authenticated workflows; native/source provenance and separate browser evidence below establish their respective scope.
+
+### Production acceptance and preservation
+
+Authorized Chrome independently reopened preserved **case44**, `example_work_96ec0e78d70345d2853e380d7ae596e7`, on v149. The route/source corrections remain clear, while the independent legal-date action remains. Actual before/after JSON exports compare equal across the entire envelope after accounting for outer exportedAt and the two existing embedded export timestamps (draft.updatedAt and core.provenance.updatedAt, each asserted equal to its own exportedAt). All10 nodes/9 connections, classification, source, category, protection, history and saved identity are unchanged. Raw file hashes differ intentionally: before `f3cd08fb6a176aa68283dd48510cadab3565fa93db73d679f0f1b5694023efb7`; after `d40c92eb8fc8ccc58f072662e22ac19da6673c7ecb4aa0820c64b3ff75f1f0bd`. Source remains `demo_compliance@1.1.0`, fingerprint `sha256-6893c9af057c0ec5b6e2bf5f5ab8d871436560236e97339b80da6f56b85d5310`.
+
+Actual production Base report:31,113 bytes,3 A4 pages, SHA256 `3dbdfdc397b2ddb568105f3d2bb69a2b78a4f06aa3a38570030da07387d06c2a`. All three rendered pages were visually inspected: no clipping/overlap, qualifications and proposed roles retained, source URL and missing legal date explicit, omitted tree/full-record explanation present. Base was the selected default, with preliminary status and independent governance qualification. Download follows the ordinary account export-history contract; no existing case draft was amended.
+
+New independent **case45**, `QA synthetic — carrier recovery release — 2026-10-19 F`, caseId `example_work_2876d4c8148c469ea4294ee86081d214`, saved on the first header click from the focused title field at21:57:21 Paris and independently reopened. Its actual export preserves all14 source nodes/13 links and classification,9 reference documents, advisory category `general_advisory@1.0.0`, source `project_canopy_managed_site_expansion@2.0.0`, fingerprint `sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702`, and one deliberate title-history entry. Export SHA256 `8d4e62a6c505e65fdc5ced7813bc79b1fcbf7ac3d06e1964924e87fe8cbe85f6`. Source panel shows9 identities/15 immutable versions with independent-review caveats. Requested390x844 production layout measured CSS488/document469 and scroll469: no horizontal overflow. Viewport was reset. Preserve45 alongside every earlier real/synthetic case, including user42; no deletion or bulk rewrite occurred.
+
+Machine receipts, actual exports, report renders, source inventory and screenshots are under the isolated checkout's `.artifacts/audit-20261019/`. `production-saved45-narrow.png` is production evidence; `recovery-ru-narrow.png` is local preview evidence.
+
+### Explicit remaining limits and next work
+
+The production unsupported-file chooser check is **unconfirmed**. Automation timed out waiting for its chooser and one unhandled wait reset the browser kernel; fresh control was restored. A subsequent caught wait/actual-input press still failed. No confirmed production future-field upload or original-file recovery download is claimed. The local390px EN/RU recovery/return and actual authenticated isolated-handler checks passed. The synthetic future-field file remains intact (4,528 bytes, SHA256 `c8f05fd41dabbd99255016c5f1f776c1b46ae26c523f1410c784c665df66993a`). No extension security setting was changed. Retest the normal production file-input flow before closing that acceptance row; distinguish automation failure from a demonstrated product defect.
+
+Next: complete actual historic imports/old-binary supported and unknown-field roundtrips, all-package independent browser saves/reopens and same-tab account cancellation/stale contexts. Then assemble operator-reviewed permitted-data/service-readiness evidence, acquire original source bodies or retain43 missing-body disclosures, and run moderated retrieval/commercial pilots before market claims. No outreach, pricing, analytics, policy changes or governed three-way user-edit migration were implemented. See the amended execution plan; do not repeat delivered fixes or redeploy unchanged Markdown.

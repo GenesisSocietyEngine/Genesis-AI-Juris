@@ -1,10 +1,17 @@
 # CaseVant development backlog and continuation instructions
 
-## Current priority — 19 October review and connection remediation
+## Current closure and priority — v149
+
+The [re-audit and native receipt](../testing/re-audit-release-contract-2026-10-19.md#delivered--public-sites-v149) supersede earlier status. Runtime bcd50f3 is live, exact-main web/PDF gates passed (1,712 / 0 / 3), both origins 190/190, entry 319,350 bytes. Fixed report-copy/fingerprint coupling and non-tax unknown-field/legacy-slot loss; retained narrow RU recovery and the historical simulation-parent contract without changing source/PDF locks. Current-code 68-combination carrier coverage is delivered. Production case 44 export is preserved and its Base PDF inspected; independent Canopy 45 saved/reopened/exported correctly. Preserve all production evidence, including 45.
+
+Next execute [the ordered compatibility/transition stage](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md#next-bounded-stage-compatibility-and-verified-transitions): confirm the production file picker/recovery row, test old application binaries separately from historical template data, expand authenticated A/B/import checks, then isolate same-tab account contexts. Service readiness, source-body acquisition, moderated retrieval and commercial validation remain planned. The production picker timeout is a browser-acceptance limit, not evidence of a confirmed product defect. No further runtime publication is needed for this documentation closure.
+
+
+## Historical priority — 19 October review and connection remediation
 
 Delivered public Sites v147 from merged main `25c2aa4831265bb99e8df8fad38f3cd53707c0a9`. Review needed opens correction actions, connection creation preserves its chosen destination and shows existing edges, and exact node findings have red frames plus readable explanations. All six exact-main workflows passed; both origins 174/174 assets; production synthetic 43 saved and independently reopened 9 nodes/9 connections. Preserve 43, user 42 and every earlier case/unsaved tab. Follow the [detailed continuation plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and [final receipt](../testing/review-connections-2026-10-19.md#delivered--public-sites-v147). Resume the 18-package/old-client matrix, account transitions and service-readiness/retrieval work. Do not repeat delivered v146/v147 features or redeploy merely for this Markdown closure.
 
-## Latest closure — v146 product and retrieval refinement
+## Historical closure — v146 product and retrieval refinement
 
 Delivered full-record finder in Decision, explicit Personal Studio continuation, coherent five-section entry/FAQ and resilient deferred optional panels. [Audit/receipt](../testing/product-commercial-ux-review-2026-10-18.md): runtime4b32993283c03f7b02d7c5f1edc27230d19a4d62; CI1619 passed/0 failed/3 inherited skips; entry319289/325000;171 assets per origin. Actual production41 reopen/search/list/EN-RU/export preserves all196 nodes/321 links/source/category/history/protection except two intentional export timestamps. Preserve41 and every previous case. Current ordered backlog and pilot/retrieval acceptance are in [the amended stage](CASEVANT_REFINEMENT_STAGE_2026-10-18.md#delivery-checkpoint-and-next-execution-order). Full package/old-client/account checks, missing sources, commercial demand/pricing, service readiness and moderated usability remain open; no validated market impact is claimed.
 

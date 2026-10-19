@@ -1,6 +1,13 @@
-# CaseVant audit and rollout status — 17 October 2026
+# CaseVant audit and rollout status — 19 October 2026
 
-## Current release — v146 product and retrieval refinement
+## Current release — v149 preservation and report-contract corrections
+
+Live runtime bcd50f3342413fb5ac8cd55811a519d3c9b5239b; deployment appgdep_6ad674bce8088191aafe97597af578ff succeeded 19 October at 21:52 Paris, public audience/environment 42 unchanged. Exact-main web/PDF gates: 1,715 tests / 1,712 passed / zero failed / three inherited skips, unchanged PDF locks and zero-vulnerability dependency audits. Rust/Flutter/Android/iOS Native passed; iOS Tax was still running at the final observation. Both origins passed 190/190 asset checks; entry 319,350/325,000 bytes. Corrected canonical report-copy coupling, unsupported ordinary-case recovery and both-slot cleanup, with deferred bilingual recovery. [Detailed audit and receipt](../testing/re-audit-release-contract-2026-10-19.md#delivered--public-sites-v149).
+
+Production preserved case 44's exact content/source/category/history/protection across actual exports, apart from the established export timestamps. Its actual three-page Base PDF was rendered and inspected. New independent Canopy 45 saved on the first header click, independently reopened and exported all 14 original nodes / 13 links / nine documents / exact source and category. No cases were deleted. Production unknown-file chooser acceptance remains unconfirmed despite passed local/handler recovery tests. [Ordered remaining work](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md#next-bounded-stage-compatibility-and-verified-transitions) keeps old-binary/import/account, service-readiness and research coverage distinct. Later Markdown closure commits do not change deployed runtime identity.
+
+
+## Historical release — v146 product and retrieval refinement
 
 Sites v146 is live: exact runtime4b32993283c03f7b02d7c5f1edc27230d19a4d62, deploymentappgdep_6ad5213fdf408191a360c7d81a2d8b6b, environment42, native success2026-10-18T19:43:22.317394Z. Decision has qualified full-record find/focus; entry/FAQ match the professional journey; saved-work continuation opens Personal Studio drafts. Optional panels defer safely and entry decreases324763→319289 bytes under unchanged325000 cap. Exact-main web/PDF gates:1622 total/1619 passed/0 failed/3 inherited skips. Both origins171/171 assets. Production synthetic41 reopens with unchanged196 nodes/321 links/category/source/history/protection; actual exports differ only in two existing exporter timestamps. [Detailed review, limitations and receipt](../testing/product-commercial-ux-review-2026-10-18.md); [amended next instructions](CASEVANT_REFINEMENT_STAGE_2026-10-18.md). Preserve every case. Commercial and moderated usability validation remain planned. Later docs-only commits do not change runtime source.
 
