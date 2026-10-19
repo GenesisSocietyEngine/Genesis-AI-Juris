@@ -41,9 +41,20 @@ function retainsSuppliedValues(before: unknown, after: unknown): boolean {
 /** Legacy values may be normalized, but newer fields/containers must never be
  * discarded merely because a case has no tax attachment. Keep the raw carrier
  * recoverable instead of presenting a lossy model as editable. */
-function retainsSuppliedStructure(before: unknown, after: unknown): boolean {
+function legacySimulationParent(value: unknown): boolean {
+  return isRecord(value) && Object.keys(value).length === 3
+    && typeof value.caseId === "string" && value.caseId.length <= 140 && /^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(value.caseId)
+    && typeof value.version === "string" && /^\d+\.\d+\.\d+$/.test(value.version)
+    && typeof value.fingerprint === "string" && /^[a-f0-9]{64}$/.test(value.fingerprint);
+}
+function retainsSuppliedStructure(before: unknown, after: unknown, draftRoot = false): boolean {
   if (Array.isArray(before)) return Array.isArray(after) && before.length === after.length && before.every((value, index) => retainsSuppliedStructure(value, after[index]));
-  if (isRecord(before)) return isRecord(after) && Object.entries(before).every(([key, value]) => Object.hasOwn(after, key) && retainsSuppliedStructure(value, after[key]));
+  if (isRecord(before)) return isRecord(after) && Object.entries(before).every(([key, value]) =>
+    // Frozen simulation factories used an unprefixed scenario hash as a hint,
+    // not valid saved-case lineage. Keep their established normalization to
+    // null; an extended/future parent object still requires exact raw recovery.
+    draftRoot && key === "parent" && after[key] === null && legacySimulationParent(value)
+      || Object.hasOwn(after, key) && retainsSuppliedStructure(value, after[key]));
   return true;
 }
 
@@ -89,7 +100,7 @@ export function readStudioAggregate(rawText: string, context: {
   if (Object.keys(candidate).some(key => !draftFields.has(key))) return preserve("unsupported", "The Studio draft contains unsupported fields.");
   try {
     const draft = (context.normalizeDraft ?? normalizeStudioDraft)(candidate);
-    if (!retainsSuppliedStructure(candidate, draft)) return preserve("unsupported", "The draft contains fields this application cannot preserve while editing.");
+    if (!retainsSuppliedStructure(candidate, draft, true)) return preserve("unsupported", "The draft contains fields this application cannot preserve while editing.");
     if (attachment.status === "known" && !retainsSuppliedValues(candidate, draft)) return preserve("unsupported", "The tax-bearing draft contains data this application cannot preserve while editing.");
     return { status: "editable", rawText, draft, envelope: value, kind: context.kind };
   } catch { return preserve("corrupt", "The Studio draft failed integrity validation."); }

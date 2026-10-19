@@ -27,6 +27,11 @@ test("carrier inventory includes 18 public packages, retained Canopy alternative
 for (const { descriptor, version, locale } of rows) test(`carrier roundtrip ${descriptor.id}@${version}/${locale}`, async () => {
   const { draft: source } = await prepareExampleVersion(descriptor.id, locale, version);
   const sourceBytes = JSON.stringify(source), sourceFingerprint = caseFingerprint(source);
+  const rawSource = readStudioAggregate(sourceBytes, { kind: "draft" });
+  assert.equal(rawSource.status, "editable", "historical raw factories retain their established normalization contract");
+  if (rawSource.status !== "editable") assert.fail("Historical raw source was rejected");
+  assert.deepEqual(rawSource.draft, normalizeStudioDraft(source));
+  assert.equal(rawSource.rawText, sourceBytes);
   const first = createExampleWorkingCopy(source), second = createExampleWorkingCopy(source);
   assert.notEqual(first.caseId, second.caseId);
   assert.deepEqual(first.exampleSource, second.exampleSource);

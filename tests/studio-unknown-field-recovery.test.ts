@@ -76,4 +76,10 @@ test("ordinary legacy string normalization stays available while structural loss
   const raw = JSON.stringify(source());
   const lost = readStudioAggregate(raw, { kind: "draft", normalizeDraft: value => ({ ...normalizeStudioDraft(value), nodes: [] }) });
   assert.equal(lost.status, "unsupported"); assert.ok("rawText" in lost); assert.equal(lost.rawText, raw);
+  const legacyParent = { caseId: "legacy_simulation", version: "1.0.0", fingerprint: "a".repeat(64) };
+  const legacy = readStudioAggregate(JSON.stringify({ ...source(), parent: legacyParent }), { kind: "draft" });
+  assert.equal(legacy.status, "editable"); if (legacy.status === "editable") assert.equal(legacy.draft.parent, null, "an old scenario hint does not gain lineage authority");
+  const extended = JSON.stringify({ ...source(), parent: { ...legacyParent, futureLineage: "retain" } });
+  const parentRecovery = readStudioAggregate(extended, { kind: "draft" });
+  assert.equal(parentRecovery.status, "unsupported"); assert.ok("rawText" in parentRecovery); assert.equal(parentRecovery.rawText, extended);
 });
