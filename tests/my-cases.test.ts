@@ -9,6 +9,7 @@ import { build } from "esbuild";
 import { NavigationController } from "../app/navigation-controller";
 import { publishSessionBoundary } from "../app/session-boundary";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "../app/matters/studio-case-catalogue";
+import { selectStudioCases, studioUpdatedLabel } from "../app/matters/studio-case-list";
 
 const owner: SavedStudioCase = { id: 7, caseId: "synthetic_owner", title: "Same title", currentVersion: "1.2.3", access: "owner", isPrivate: true, updatedAt: "2026-09-27T10:00:00Z", ownerDisplayName: "Synthetic owner" };
 const shared: SavedStudioCase = { ...owner, id: 8, caseId: "synthetic_shared", access: "shared", isPrivate: false, ownerDisplayName: "Other author" };
@@ -101,10 +102,35 @@ const components = await import(pathToFileURL(output).href);
 
 test("rendered cards retain separate source IDs, role/version/privacy and exact Studio continuation", () => {
   const html = renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Available",cases:[owner,shared],locale:"en",location:"/matters?collection=personal&lang=ru&organization=receipt"}));
-  assert.equal((html.match(/Same title/g)??[]).length,2);
+  assert.equal((html.match(/<h4>/g)??[]).length,2);
   for (const text of ["Owner", "Shared access", "v1.2.3", "Private", "Restricted sharing", "2026-09-27T10:00:00Z"]) assert.ok(html.includes(text),text);
   assert.match(html,/custom_case=7&amp;studio_step=case_map&amp;organization=receipt&amp;lang=ru/); assert.match(html,/custom_case=8/);
   assert.doesNotMatch(html,/Approved|Merged|dossier_synthetic/);
+});
+
+test("loaded-list search and sorting preserve duplicate identities, immutable input and invalid dates", () => {
+  const cases = [owner, {...shared, updatedAt:"2026-10-19T12:30:00Z"}, {...owner,id:9,title:"Аудит договора",updatedAt:"invalid"}];
+  const before=JSON.stringify(cases);
+  assert.deepEqual(selectStudioCases(cases," Same TITLE ","updated","en").map(item=>item.id),[8,7]);
+  assert.deepEqual(selectStudioCases(cases,"","oldest","en").map(item=>item.id),[7,8,9]);
+  assert.deepEqual(selectStudioCases(cases,"АУДИТ","title","ru").map(item=>item.id),[9]);
+  assert.deepEqual(selectStudioCases(cases,"8","updated","en").map(item=>item.id),[8]);
+  assert.equal(selectStudioCases(cases,"absent","updated","en").length,0);
+  assert.equal(JSON.stringify(cases),before);
+  assert.match(studioUpdatedLabel(owner.updatedAt,"en"),/27 Sept 2026.*10:00/);
+  assert.match(studioUpdatedLabel(owner.updatedAt,"ru"),/27 сент.*2026.*10:00/);
+  assert.equal(studioUpdatedLabel("invalid","en"),"");
+});
+
+test("list rows expose readable UTC dates, full long titles, named edit/open links and Russian fallback", () => {
+  const title="Long synthetic case title — ".repeat(12);
+  const html=renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Owned",cases:[{...owner,title},shared],locale:"en",location:"/matters?collection=personal&organization=receipt&lang=en"}));
+  assert.match(html,/<ul class="rows">/);assert.ok(html.includes(title));
+  assert.match(html,/Edit in Studio/);assert.match(html,/Open in Studio/);
+  assert.match(html,/27 Sept 2026/);assert.match(html,/Updated · UTC/);
+  assert.match(html,/dateTime="2026-09-27T10:00:00Z"/i);
+  const ru=renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Мои",cases:[{...owner,updatedAt:"invalid"}],locale:"ru",location:"/matters?collection=personal&lang=ru"}));
+  assert.match(ru,/Редактировать в Studio/);assert.match(ru,/Дата недоступна/);assert.doesNotMatch(ru,/<time/);
 });
 
 test("wrapper retains the existing Matter owner for deep links, exposes normal guarded links, and hides Personal private metadata before verification", async () => {

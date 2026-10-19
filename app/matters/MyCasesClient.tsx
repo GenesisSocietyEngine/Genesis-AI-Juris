@@ -7,6 +7,7 @@ import { workspaceDestination } from "../workspace-navigation";
 import MattersClient from "./MattersClient";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "./studio-case-catalogue";
 import styles from "./my-cases.module.css";
+import { selectStudioCases, studioUpdatedLabel, type StudioCaseSort } from "./studio-case-list";
 
 export default function MyCasesClient({ initialLocation }: { initialLocation: string }) {
   const current = useWorkspaceLocation(), location = current === "/" ? initialLocation : current;
@@ -32,15 +33,19 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const [catalogue] = useState(() => new StudioCaseCatalogue(navigation, (path, init) => fetch(path, init)));
   const state = useSyncExternalStore(catalogue.subscribe, catalogue.getSnapshot, catalogue.getSnapshot);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<StudioCaseSort>("updated");
   useEffect(() => catalogue.attach(), [catalogue]);
   const en = locale === "en";
-  const visible = useMemo(() => state.cases.filter(item => [item.title, item.caseId, item.ownerDisplayName].some(value => value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))), [state.cases, search]);
+  const visible = useMemo(() => selectStudioCases(state.cases, search, sort, locale), [state.cases, search, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.
   if (session.phase !== "ready" || session.endingSession) return <main className={styles.personal}><p role="status">{en ? "Verify your access to view saved Studio drafts." : "Подтвердите доступ для просмотра сохранённых черновиков Studio."}</p></main>;
   return <main className={styles.personal}>
-    <header><h2>{en ? "Saved Studio drafts" : "Сохранённые черновики Studio"}</h2><p>{en ? "A draft opens in Case Studio with its saved identity and version. Saving a draft does not create a Matter, a review or an approval." : "Черновик откроется в Case Studio с сохранённым идентификатором и версией. Сохранение черновика не создаёт дело, рецензию или одобрение."}</p></header>
+    <header><h2>{en ? "Saved Studio drafts" : "Сохранённые черновики Studio"}</h2><p>{en ? "Open a saved draft to continue your work. Review and approval are tracked separately." : "Откройте сохранённый черновик, чтобы продолжить работу. Проверка и одобрение учитываются отдельно."}</p></header>
     <div className={styles.tools}>
-      <label>{en ? "Search loaded drafts" : "Поиск в загруженных черновиках"}<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
+      <label className={styles.search}>{en ? "Search loaded drafts" : "Поиск в загруженных черновиках"}<input type="search" placeholder={en ? "Title, author or case ID" : "Название, автор или ID кейса"} value={search} onChange={event => setSearch(event.target.value)} /></label>
+      <label>{en ? "Sort loaded drafts" : "Сортировка загруженных черновиков"}<select value={sort} onChange={event => setSort(event.target.value as StudioCaseSort)}><option value="updated">{en ? "Recently updated" : "Недавно обновлённые"}</option><option value="oldest">{en ? "Oldest update first" : "Давно обновлённые"}</option><option value="title">{en ? "Title A–Z" : "По названию А–Я"}</option></select></label>
+    </div>
+    <div className={styles.actions}>
       <button type="button" onClick={() => void catalogue.load()} disabled={state.phase === "loading"}>{en ? "Refresh drafts" : "Обновить черновики"}</button>
       <a href={workspaceDestination("/studio", location)}>{en ? "Open Case Studio" : "Открыть Case Studio"}</a>
       <a href={workspaceDestination("/studio?view=community", location)}>{en ? "Manage Studio sharing" : "Настроить доступ к черновикам Studio"}</a>
@@ -49,6 +54,7 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
     {state.phase === "error" && <p role="alert">{en ? "Saved drafts could not be read. Refresh drafts to retry; check your access if the problem continues." : "Не удалось прочитать черновики. Нажмите «Обновить черновики»; если ошибка повторяется, проверьте доступ."}</p>}
     {state.phase === "ready" && !state.cases.length && <p>{en ? "No saved Studio drafts are available to this account. Open Case Studio to create or import a draft, then save it to your account." : "Для аккаунта нет доступных сохранённых черновиков Studio. Создайте или импортируйте черновик в Case Studio и сохраните его в аккаунте."}</p>}
     {state.cases.length > 0 && <><p role="status">{en ? `${visible.length} matching loaded drafts` : `Найдено загруженных черновиков: ${visible.length}`}{state.nextCursor ? (en ? " · More drafts are available below." : " · Ниже можно загрузить ещё.") : ""}</p>
+      {!visible.length && <div className={styles.empty}><p>{en ? "No loaded drafts match your search. Try another title, author or case ID." : "Среди загруженных черновиков совпадений нет. Измените название, автора или ID кейса в запросе."}</p><button type="button" onClick={() => setSearch("")}>{en ? "Clear search" : "Сбросить поиск"}</button></div>}
       <StudioCaseGroup title={en ? "Owned by me" : "Мои черновики"} cases={visible.filter(item => item.access === "owner")} locale={locale} location={location}/>
       <StudioCaseGroup title={en ? "Other authorized Studio drafts" : "Другие доступные черновики Studio"} cases={visible.filter(item => item.access !== "owner")} locale={locale} location={location}/>
     </>}
@@ -59,10 +65,13 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
 export function StudioCaseGroup({ title, cases, locale, location }: { title: string; cases: SavedStudioCase[]; locale: "en" | "ru"; location: string }) {
   if (!cases.length) return null;
   const en = locale === "en";
-  return <section className={styles.group} aria-label={title}><h3>{title}</h3><div className={styles.cards}>{cases.map(item => <article key={item.id}>
-    <h4>{item.title}</h4><p>{item.ownerDisplayName} · {item.access === "owner" ? (en ? "Owner" : "Владелец") : item.access === "shared" ? (en ? "Shared access" : "Предоставлен доступ") : (en ? "Administrator access" : "Доступ администратора")}</p>
-    <p>{en ? "Studio draft" : "Черновик Studio"} · v{item.currentVersion} · {item.isPrivate ? (en ? "Private" : "Приватный") : (en ? "Restricted sharing" : "Ограниченный доступ")}</p>
-    <p>{en ? "Updated" : "Обновлён"}: <time dateTime={item.updatedAt}>{item.updatedAt}</time></p>
-    <a href={workspaceDestination(`/studio?custom_case=${item.id}&studio_step=case_map`, location)}>{en ? "Continue in Studio" : "Продолжить в Studio"}</a>
-  </article>)}</div></section>;
+  return <section className={styles.group} aria-label={title}><h3>{title} <span>{cases.length}</span></h3><ul className={styles.rows}>{cases.map(item => {
+    const href = workspaceDestination(`/studio?custom_case=${item.id}&studio_step=case_map`, location);
+    return <li key={item.id} className={styles.row}>
+      <div className={styles.identity}><h4><a href={href}>{item.title}</a></h4><p><span className={styles.badge}>{en ? "Draft" : "Черновик"}</span> <span>#{item.id} · v{item.currentVersion}</span></p></div>
+      <div className={styles.access}><p>{item.ownerDisplayName}</p><small>{item.access === "owner" ? (en ? "Owner" : "Владелец") : item.access === "shared" ? (en ? "Shared access" : "Предоставлен доступ") : (en ? "Administrator access" : "Доступ администратора")}</small><small>{item.isPrivate ? (en ? "Private" : "Приватный") : (en ? "Restricted sharing" : "Ограниченный доступ")}</small></div>
+      <div className={styles.updated}><small>{en ? "Updated · UTC" : "Обновлён · UTC"}</small>{Number.isFinite(Date.parse(item.updatedAt)) ? <time dateTime={item.updatedAt} title={item.updatedAt}>{studioUpdatedLabel(item.updatedAt, locale)}</time> : <span>{en ? "Date unavailable" : "Дата недоступна"}</span>}</div>
+      <a className={styles.open} href={href}><span>{item.access === "owner" ? (en ? "Edit in Studio" : "Редактировать в Studio") : (en ? "Open in Studio" : "Открыть в Studio")}</span><span className={styles.srOnly}>: {item.title} · #{item.id}</span><span aria-hidden="true"> →</span></a>
+    </li>;
+  })}</ul></section>;
 }
