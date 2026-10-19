@@ -1,6 +1,6 @@
 import rawRegistry from "./case-type-playbooks.v1.json";
 import { CASE_TYPE_REGISTRY } from "./case-type-registry";
-import { sanitizeReportSourceUrls } from "./report-source-url";
+import { studioSourceFeedback } from "./studio-source-input";
 import type { CaseTypeId, CaseTypeReference, StudioDraft, StudioNodeType } from "./types";
 
 export type LocalizedPlaybookText = { en: string; ru: string };
@@ -76,10 +76,8 @@ export function evaluateCaseTypeDraft(draft: StudioDraft, locale: "en" | "ru"): 
     : { id: "legal-as-of", level: "warn", text: t("Set the legal as-of date", "Укажите дату актуальности права") });
   if (playbook.requirements.httpsSources) {
     const sources = draft.classification?.sourceUrls ?? [];
-    const sanitizedSources = sanitizeReportSourceUrls(sources);
-    checks.push(sources.length > 0 && sanitizedSources.rejectedCount === 0
-      ? { id: "https-sources", level: "ok", text: t("Authoritative HTTPS sources are attached", "Авторитетные HTTPS-источники приложены") }
-      : { id: "https-sources", level: "warn", text: t("Attach at least one authoritative HTTPS source", "Добавьте хотя бы один авторитетный HTTPS-источник") });
+    const feedback = studioSourceFeedback(sources, locale);
+    checks.push({ id: "https-sources", level: feedback.valid ? "ok" : "warn", text: feedback.message });
   }
   if (playbook.requirements.complianceGate) checks.push(draft.classification?.complianceOnly
     ? { id: "compliance-gate", level: "ok", text: t("Lawful-planning and anti-abuse gate is enabled", "Контроль законности и anti-abuse включён") }

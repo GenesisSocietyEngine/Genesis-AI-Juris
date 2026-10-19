@@ -9,6 +9,7 @@ import ts from "typescript";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { emptyStudioEvidenceInput, hasStudioEvidenceInput, type StudioEvidenceBuffers, type StudioEvidenceInput } from "../app/studio-evidence-buffer";
 import type { StudioDraft, StudioNodeType } from "../app/types";
+import { validateStudioDraft } from "../app/studio-validation";
 
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const names = ["replaceStudioDraft", "clearStudioEvidenceBuffers", "changeStudioEvidenceInput", "clearStudioEvidenceType", "addConnectedItem"];
@@ -83,10 +84,39 @@ function elements(value: ReactNode): ReactElement<Record<string, unknown>>[] {
   if (!isValidElement<Record<string, unknown>>(value)) return [];
   return [value, ...elements(value.props.children as ReactNode)];
 }
-function form(owner: Owner, type: StudioNodeType = "evidence") {
-  return elements(actual.StudioEvidenceComposer({ draft: owner.state.draft, type, locale: "en", canEdit: true,
+function form(owner: Owner, type: StudioNodeType = "evidence", locale: "en" | "ru" = "en") {
+  return elements(actual.StudioEvidenceComposer({ draft: owner.state.draft, type, locale, canEdit: true,
     value: owner.state.buffers[type] ?? emptyStudioEvidenceInput(), onChange: patch => owner.change(type, patch), onClear: () => owner.clear(type), onSave: value => owner.save(value) }));
 }
+
+test("route-start form names the Trigger and actual submit preserves edges and clears missing-start", () => {
+  const draft = buildCanopyPackage("base").draft;
+  const trigger = draft.nodes.find(node => node.type === "trigger")!;
+  const first = draft.links.find(link => link.from === trigger.id)!.to;
+  draft.nodes = draft.nodes.filter(node => node.id !== trigger.id);
+  draft.links = draft.links.filter(link => link.from !== trigger.id && link.to !== trigger.id);
+  assert.equal(validateStudioDraft(draft, "en").checks.find(check => check.id === "route")?.missingStart, true);
+  const owner = actual.owner(draft, () => false);
+  for (const locale of ["en", "ru"] as const) {
+    const rendered = form(owner, "trigger", locale);
+    assert.equal(rendered.find(element => element.type === "h2")?.props.children, locale === "en" ? "Add a route start" : "Добавьте начало маршрута");
+    assert.ok(rendered.some(element => typeof element.props.children === "string" && element.props.children.includes("→")));
+  }
+  owner.change("trigger", { title: "Synthetic start", detail: "A new instruction arrives.", relatedId: first });
+  owner.change("evidence", { title: "Retained other work" });
+  const before = JSON.stringify(draft);
+  const submit = form(owner, "trigger").find(element => element.type === "form")!;
+  (submit.props.onSubmit as (event: unknown) => void)({ preventDefault() {} });
+  assert.equal(JSON.stringify(draft), before);
+  const added = owner.state.draft;
+  assert.deepEqual(added.links.slice(0, -1), draft.links);
+  assert.equal(added.nodes.at(-1)?.type, "trigger");
+  assert.equal(added.links.at(-1)?.from, added.nodes.at(-1)?.id);
+  assert.equal(added.links.at(-1)?.to, first);
+  assert.equal(validateStudioDraft(added, "en").checks.find(check => check.id === "route")?.missingStart, undefined);
+  assert.equal(owner.state.buffers.evidence?.title, "Retained other work");
+  assert.equal(owner.state.buffers.trigger, undefined);
+});
 
 test("controlled composer recovers title, explanation and selection after remount and keeps different item types separate", () => {
   const owner = actual.owner(buildCanopyPackage("base").draft, () => false);
