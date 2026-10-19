@@ -74,7 +74,9 @@ export function readStudioDeviceDraft(storage: Pick<DeviceStorage, "getItem">, s
  * corrupt, inaccessible or unreadable active slot must not be overwritten. */
 export function writeStudioDeviceDraft(storage: DeviceStorage, scope: string, value: StudioDraft): StudioDraft {
   if (!mayRestoreLocalStudioDraft(value)) throw new Error("Protected workspace cases cannot be stored on this device.");
-  const draft = normalizeIncompleteStudioDraft(value);
+  const candidate = readStudioAggregate(JSON.stringify(value), { kind: "draft", normalizeDraft: normalizeIncompleteStudioDraft });
+  if (candidate.status !== "editable") throw new Error("This device draft requires recovery before saving: " + candidate.reason);
+  const draft = candidate.draft;
   if (!mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft })) throw new Error("Protected workspace cases cannot be stored on this device.");
   const before = readStudioDeviceDraft(storage, scope);
   if (before.status !== "empty" && before.status !== "editable") throw new Error("The retained device draft requires recovery before saving. It has not been replaced.");
@@ -95,6 +97,8 @@ export function mayRestoreLocalStudioDraft(value: unknown): boolean {
 /** Existing explicit replacement/privacy cleanup may remove known local drafts,
  * but never silently deletes an unsupported record or its retained original. */
 export function removeKnownStudioDeviceDrafts(storage: DeviceStorage, scope: string) {
+  const active = readStudioDeviceDraft(storage, scope);
+  if (active.status !== "editable" && active.status !== "empty") return;
   for (const key of [studioDeviceDraftV2Key(scope), studioDeviceDraftKey(scope)]) {
     const raw = storage.getItem(key);
     if (raw === null) continue;

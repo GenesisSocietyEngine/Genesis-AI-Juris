@@ -18,7 +18,6 @@ const recovery = (rawText: string, reason: string, status: Recovery["status"] = 
 const caseFields = new Set(["id", "version", "fingerprint", "parent", "protection", "coreSchemaVersion", "caseType", "visibility"]);
 
 function supportedDraft(source: StudioDraft): StudioDraft {
-  if (!hasTaxAttachment(source)) return normalizeStudioDraft(structuredClone(source));
   const read = readStudioAggregate(JSON.stringify(source), { kind: "draft" });
   if (read.status !== "editable") throw new Error("This case requires read-only recovery: " + read.reason);
   return read.draft;

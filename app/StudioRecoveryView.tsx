@@ -8,6 +8,7 @@ export default function StudioRecoveryView({ recovery, locale, onReturn }: { rec
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   const en = locale === "en";
+  const unsupportedFields = ["The draft contains fields this application cannot preserve while editing.", "The Studio draft contains unsupported fields.", "The Studio envelope contains unsupported fields."].includes(recovery.reason);
   function download() {
     if (!recovery.canExport || recovery.rawText === undefined) return;
     const url = URL.createObjectURL(new Blob([recovery.rawText], { type: "application/json;charset=utf-8" }));
@@ -20,7 +21,7 @@ export default function StudioRecoveryView({ recovery, locale, onReturn }: { rec
   return <main className="studio-entry page-width" aria-labelledby="studio-recovery-title">
     <header className="workspace-page-header">
     <h1 ref={heading} id="studio-recovery-title" tabIndex={-1}>{en ? "Document retained for recovery" : "Документ сохранён для восстановления"}</h1>
-    <p role="status">{recovery.reason}</p>
+    <p role="status">{!en && unsupportedFields ? "Эта версия Studio не может сохранить все поля исходного документа. Оригинал сохранён для восстановления." : recovery.reason}</p>
     <p>{en ? "Studio cannot open this document for editing. The original has not been replaced, and your current case is unchanged." : "Studio не может открыть этот документ для редактирования. Исходный документ не заменён, текущий кейс не изменён."}</p>
     </header>
     <div className="entry-create-actions">

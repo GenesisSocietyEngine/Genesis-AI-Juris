@@ -200,6 +200,26 @@ test("unsupported stored carriers and duplicate incoming keys remain unmodified"
   await expect(await call(body, true), 400);
 });
 
+test("ordinary-case future fields require owner-only recovery and cannot be normalized into a write", async () => {
+  const draft = createExampleWorkingCopy(buildCategoryDemo("general_advisory", "en"));
+  const saved = await expect(await call({ action: "save", draft, isPrivate: true }), 200);
+  const before = await stored(draft.caseId);
+  const future = JSON.parse(before.payload);
+  future.nodes[0].futureReview = { exact: "900719925474099312345" };
+  const raw = JSON.stringify(future, null, "\t") + "\r\n";
+  await d1.prepare("update case_drafts set payload=? where case_id=?").bind(raw, draft.caseId).run();
+  const path = `/api/custom-cases?id=${saved.customCase.id}`;
+  const owner = await expect(await requestRoute(routes.custom, "GET", path), 200);
+  assert.equal(owner.recovery.rawText, raw); assert.equal(owner.recovery.canExport, true); assert.equal(owner.draft, undefined);
+  await expect(await requestRoute(routes.custom, "GET", path, undefined, "foreign"), 404);
+  await expect(await call({ action: "save", draft: before.draft, expectedFingerprint: caseFingerprint(before.draft), expectedPublicationFingerprint: casePublicationFingerprint(before.draft) }), 409);
+  assert.equal((await stored(draft.caseId)).payload, raw);
+  const incoming = createExampleWorkingCopy(buildCategoryDemo("general_advisory", "en"));
+  Object.assign(incoming.nodes[0], { futureReview: { exact: "retain" } });
+  await expect(await call({ action: "save", draft: incoming, isPrivate: true }), 409);
+  assert.equal(await d1.prepare("select count(*) n from custom_cases where case_id=?").bind(incoming.caseId).first("n"), 0);
+});
+
 test("future draft fields and invalid UTF-8 cannot be normalized into a successful write", async () => {
   const draft = initial("tax_future_input");
   for (const extra of [{ futureField: { amount: "900719925474099312345" } }, { schemaVersion: 99 }]) {

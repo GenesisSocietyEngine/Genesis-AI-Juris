@@ -38,6 +38,26 @@ function retainsSuppliedValues(before: unknown, after: unknown): boolean {
   return before === after;
 }
 
+/** Legacy values may be normalized, but newer fields/containers must never be
+ * discarded merely because a case has no tax attachment. Keep the raw carrier
+ * recoverable instead of presenting a lossy model as editable. */
+function legacySimulationParent(value: unknown): boolean {
+  return isRecord(value) && Object.keys(value).length === 3
+    && typeof value.caseId === "string" && value.caseId.length <= 140 && /^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(value.caseId)
+    && typeof value.version === "string" && /^\d+\.\d+\.\d+$/.test(value.version)
+    && typeof value.fingerprint === "string" && /^[a-f0-9]{64}$/.test(value.fingerprint);
+}
+function retainsSuppliedStructure(before: unknown, after: unknown, draftRoot = false): boolean {
+  if (Array.isArray(before)) return Array.isArray(after) && before.length === after.length && before.every((value, index) => retainsSuppliedStructure(value, after[index]));
+  if (isRecord(before)) return isRecord(after) && Object.entries(before).every(([key, value]) =>
+    // Frozen simulation factories used an unprefixed scenario hash as a hint,
+    // not valid saved-case lineage. Keep their established normalization to
+    // null; an extended/future parent object still requires exact raw recovery.
+    draftRoot && key === "parent" && after[key] === null && legacySimulationParent(value)
+      || Object.hasOwn(after, key) && retainsSuppliedStructure(value, after[key]));
+  return true;
+}
+
 /** Classify exact text before any whitelist normalizer. This is a data reader,
  * not access/seal verification: callers must retain their existing authority,
  * privacy, protection and export checks for editable AND raw recovery results.
@@ -71,15 +91,16 @@ export function readStudioAggregate(rawText: string, context: {
     const version = context.kind === "auth-continuation" ? value.version : value.schemaVersion;
     if (value.format !== spec.name || !(spec.versions as readonly unknown[]).includes(version)) return preserve("unsupported", "The Studio document format or version is unsupported.");
     candidate = value.draft;
-    if (version === spec.taxVersion && Object.keys(value).some(key => !(spec.fields as readonly string[]).includes(key))) return preserve("unsupported", "The Studio envelope contains unsupported fields.");
+    if (Object.keys(value).some(key => !(spec.fields as readonly string[]).includes(key))) return preserve("unsupported", "The Studio envelope contains unsupported fields.");
     if (hasTaxAttachment(candidate) && version !== spec.taxVersion) return preserve("unsupported", "This envelope version cannot carry tax authoring data.");
   }
   if (!isRecord(candidate)) return preserve("corrupt", "The Studio draft is missing or malformed.");
   const attachment = readTaxAttachment(candidate.taxAnalysis);
   if (attachment.status === "unsupported" || attachment.status === "corrupt") return preserve(attachment.status, attachment.reason);
-  if (attachment.status === "known" && Object.keys(candidate).some(key => !draftFields.has(key))) return preserve("unsupported", "The tax-bearing Studio draft contains unsupported fields.");
+  if (Object.keys(candidate).some(key => !draftFields.has(key))) return preserve("unsupported", "The Studio draft contains unsupported fields.");
   try {
     const draft = (context.normalizeDraft ?? normalizeStudioDraft)(candidate);
+    if (!retainsSuppliedStructure(candidate, draft, true)) return preserve("unsupported", "The draft contains fields this application cannot preserve while editing.");
     if (attachment.status === "known" && !retainsSuppliedValues(candidate, draft)) return preserve("unsupported", "The tax-bearing draft contains data this application cannot preserve while editing.");
     return { status: "editable", rawText, draft, envelope: value, kind: context.kind };
   } catch { return preserve("corrupt", "The Studio draft failed integrity validation."); }

@@ -23,7 +23,9 @@ export function createStudioAuthContinuation(input: Omit<Continuation, "version"
     throw new Error("This protected or oversized case cannot be retained for sign-in. Save it through its authorized workspace first.");
   }
   const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
-  return { version: 2, id, createdAt: now, scope: input.scope, prompt: input.prompt, draft: normalizeIncompleteStudioDraft(input.draft), selectedNodeId: input.selectedNodeId, action: input.action };
+  const candidate = readStudioAggregate(JSON.stringify(input.draft), { kind: "draft", normalizeDraft: normalizeIncompleteStudioDraft });
+  if (candidate.status !== "editable") throw new Error("This sign-in draft requires recovery: " + candidate.reason);
+  return { version: 2, id, createdAt: now, scope: input.scope, prompt: input.prompt, draft: candidate.draft, selectedNodeId: input.selectedNodeId, action: input.action };
 }
 
 export function readStudioAuthContinuation(value: string | null, id: string, currentScope: string | null, now = Date.now()): Continuation | null {
