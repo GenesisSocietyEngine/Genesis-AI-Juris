@@ -533,6 +533,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .tax-capability{margin-top:54px;border-color:var(--cyan);grid-template-columns:1fr auto}.tax-capability .primary-cta{white-space:nowrap}
 .studio-classification{margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1.4fr 1.4fr;gap:12px;padding:20px;border:1px solid var(--rule);background:var(--panel)}
 .studio-classification .wide-field,.studio-classification .source-field{grid-column:span 2}.studio-classification textarea{resize:vertical}
+.studio-classification .source-field{display:grid;gap:7px;min-width:0}.studio-classification .source-field p{margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.studio-classification .source-field textarea[aria-invalid=true]{border-color:#b42318}
 .studio-classification .compliance-gate{grid-column:1/-1;display:flex;gap:13px;align-items:flex-start;border-left:3px solid #72c6a4;background:rgba(114,198,164,.08);padding:15px}.compliance-gate b{font-size:13px}.compliance-gate p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
 .tax-economics{margin-top:12px;padding:22px;border:1px solid rgba(210,168,94,.38);background:linear-gradient(135deg,rgba(210,168,94,.075),var(--panel) 36%)}
 .tax-economics input[aria-invalid="true"]{border-color:var(--red);box-shadow:0 0 0 1px rgba(244,104,88,.22)}
