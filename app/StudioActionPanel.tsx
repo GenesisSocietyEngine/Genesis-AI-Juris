@@ -27,6 +27,9 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
     if (check.id === "legal-as-of") return { title: en ? "Confirm the legal review date" : "Укажите дату проверки права", target: { step: 3, id: "studio-legal-date" } };
     if (check.id === "https-sources") return { title: en ? "Attach authoritative sources" : "Добавьте авторитетные источники", target: { step: 3, id: "studio-source-urls" } };
     if (check.id === "compliance-gate") return { title: en ? "Review compliance controls" : "Проверьте контроль законности", target: { step: 3, id: "studio-compliance" } };
+    if (check.missingStart) return { title: en ? "Add a route start" : "Добавьте начало маршрута", target: { step: 3, id: "studio-evidence-composer", nodeType: "trigger" } };
+    const exactNode = check.nodeIds?.find(id => draft.nodes.some(node => node.id === id));
+    if (exactNode) return { title: en ? "Inspect the affected node" : "Проверьте проблемный узел", target: { step: 4, id: `studio-node-${exactNode}`, nodeId: exactNode } };
     const connected = new Set(draft.links.flatMap(link => [link.from, link.to]));
     return { title: en ? "Connect the decision route" : "Свяжите маршрут решения", target: { step: 4, id: "studio-connect-node", nodeId: draft.nodes.find(node => !connected.has(node.id))?.id ?? draft.nodes.find(node => node.type === "trigger")?.id ?? draft.nodes[0]?.id } };
   }

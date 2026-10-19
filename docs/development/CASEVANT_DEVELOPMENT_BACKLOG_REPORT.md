@@ -1,5 +1,9 @@
 # CaseVant development backlog and continuation instructions
 
+## Current priority — 19 October review and connection remediation
+
+Follow the [detailed execution plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and [audit evidence](../testing/review-connections-2026-10-19.md). PR 140 makes review status actionable, separates existing edges from explicit connection creation and flags exact node findings. The rerun corrects paging/search, hidden-node focus, dangling-link counts, blocker priority and an obsolete CI assertion. Source checkpoint delivery and production acceptance remain separate: the supported Sites credential handoff is policy-blocked and v146 remains live. Preserve user case 42, all earlier cases and unsaved tabs. Complete this correction's final CI/browser/release gates before resuming the 18-package/old-client matrix, account transitions and service-readiness work; do not repeat delivered v146 features.
+
 ## Latest closure — v146 product and retrieval refinement
 
 Delivered full-record finder in Decision, explicit Personal Studio continuation, coherent five-section entry/FAQ and resilient deferred optional panels. [Audit/receipt](../testing/product-commercial-ux-review-2026-10-18.md): runtime4b32993283c03f7b02d7c5f1edc27230d19a4d62; CI1619 passed/0 failed/3 inherited skips; entry319289/325000;171 assets per origin. Actual production41 reopen/search/list/EN-RU/export preserves all196 nodes/321 links/source/category/history/protection except two intentional export timestamps. Preserve41 and every previous case. Current ordered backlog and pilot/retrieval acceptance are in [the amended stage](CASEVANT_REFINEMENT_STAGE_2026-10-18.md#delivery-checkpoint-and-next-execution-order). Full package/old-client/account checks, missing sources, commercial demand/pricing, service readiness and moderated usability remain open; no validated market impact is claimed.

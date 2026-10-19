@@ -16,6 +16,8 @@
 .node rect { fill: var(--strong); stroke: var(--cyan); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .node:hover rect, .node:focus-visible rect { stroke-width: 4; }
 .node[data-node-type="outcome"] rect { stroke: var(--green); }
+.node[data-attention="true"] rect { stroke: var(--red); stroke-width: 3; }
+.node[data-attention="true"]:focus-visible rect { stroke-width: 5; }
 .nodeText { height: 100%; overflow: hidden; color: var(--copy); font: 14px/17px var(--sans); overflow-wrap: anywhere; }
 .nodeText span { display: block; font-size: 11px; line-height: 15px; color: var(--muted); margin-bottom: 5px; }
 .nodeText b { font-weight: 600; }

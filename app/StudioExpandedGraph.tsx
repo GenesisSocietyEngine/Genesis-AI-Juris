@@ -9,6 +9,7 @@ type Props = {
   nodes: StudioNode[];
   links: StudioLink[];
   locale: "en" | "ru";
+  attention?: Record<string, string[]>;
   onClose: () => void;
   onNode: (id: string) => void;
 };
@@ -35,7 +36,7 @@ function relationPath(from: StudioNode, to: StudioNode) {
   return `M ${startX} ${startY} C ${startX} ${startY + bend}, ${endX} ${endY - bend}, ${endX} ${endY}`;
 }
 
-export default function StudioExpandedGraph({ nodes, links, locale, onClose, onNode }: Props) {
+export default function StudioExpandedGraph({ nodes, links, locale, attention = {}, onClose, onNode }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const identity = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const titleId = `expanded-map-title-${identity}`, descriptionId = `expanded-map-description-${identity}`;
@@ -95,13 +96,13 @@ export default function StudioExpandedGraph({ nodes, links, locale, onClose, onN
             return <g key={link.id} data-link-id={link.id} role="img" aria-label={name}><title>{name}</title><path d={relationPath(from, to)} className={styles.relation} markerEnd={`url(#${markerId})`}/></g>;
           })}
           {nodes.map((node, index) => <g key={node.id} data-node-id={node.id} data-node-type={node.type}
-            className={styles.node} transform={`translate(${node.x} ${node.y})`} role="button" tabIndex={0}
-            aria-label={`${index + 1}. ${node.title || t("Untitled node", "Узел без названия")}. ${t("Open case detail", "Открыть в деле")}`}
+            className={styles.node} data-attention={attention[node.id]?.length ? "true" : undefined} transform={`translate(${node.x} ${node.y})`} role="button" tabIndex={0}
+            aria-label={`${index + 1}. ${node.title || t("Untitled node", "Узел без названия")}. ${attention[node.id]?.length ? t("Needs attention. ", "Нужна проверка. ") : ""}${t("Open case detail", "Открыть в деле")}`}
             onClick={() => inspect(node.id)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspect(node.id); } }}>
-            <title>{node.title || t("Untitled node", "Узел без названия")}</title>
+            <title>{[node.title || t("Untitled node", "Узел без названия"), ...(attention[node.id] ?? [])].join(". ")}</title>
             <rect width={nodeWidth} height={nodeHeight(node)} rx="8"/>
             <foreignObject x="10" y="9" width={nodeWidth - 20} height={nodeHeight(node) - 18}>
-              <div className={styles.nodeText}><span>{index + 1}</span><b>{node.title || t("Untitled node", "Узел без названия")}</b></div>
+              <div className={styles.nodeText}><span>{index + 1}{attention[node.id]?.length ? t(" · ! Needs attention", " · ! Нужна проверка") : ""}</span><b>{node.title || t("Untitled node", "Узел без названия")}</b></div>
             </foreignObject>
           </g>)}
         </svg>}

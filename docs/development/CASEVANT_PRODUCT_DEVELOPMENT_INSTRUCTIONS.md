@@ -1,5 +1,9 @@
 # CaseVant product development instructions
 
+## Current execution amendment — 19 October 2026
+
+Prioritize [Review and connection remediation](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) before the older next-slice order. It supplies the correction matrix, exact-head verification, supported rollout steps and owned follow-on work. PR 140 is a development candidate; v146 remains the last confirmed production version. The audit corrected an obsolete destination-menu test, a disappearing active search, node-action focus from List/Overview, mismatched dangling-link counts and private/oversized blocker priority. Publication remains blocked by automatic approval rejection of the Sites helper credential handoff. Preserve case 42 and all previous cases and unsaved tabs. Do not describe source fixes as delivered until the native/static/browser release receipt exists.
+
 Prepared 13 October 2026 following the elevated case-library audit. This is the implementation and acceptance playbook for subsequent work; proposed backlog items below are not claims of delivered features. Follow the current repository AGENTS.md and record each slice's review in docs/testing/.
 
 Execution update, 14 October 2026: the immediate remaining audit work now includes an implemented complete Canopy reference-packet download (Markdown/JSON, nine selected document versions plus all retained history and exact UTF-8 SHA-256 hashes), a separate eight-PDF/33-page Base/Medium visual cohort, and actual signed-in production browser acceptance with independent synthetic copies, hypothetical amendments, stale-save rejection and real PDF download. See `docs/testing/case-library-remaining-work-audit-2026-10-14.md` for measured coverage and the delivery receipt for final release/CI identity. These changes do not complete the broader proposed development backlog below.

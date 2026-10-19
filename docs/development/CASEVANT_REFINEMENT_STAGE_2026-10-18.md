@@ -1,5 +1,7 @@
 # Product, commercial and UX refinement stage
 
+19 October execution override: complete the [review/connection remediation plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and its release gates first. PR 140 is not deployed; v146 is the last confirmed live version. The plan records the rerun findings, correction/browser acceptance, policy-blocked Sites handoff and detailed continuation order. The v146 delivery below remains historical evidence. For the next release, resolve the actual live predecessor dynamically; the older v145 retention instruction at the end of this document applies only to the already-completed v146 release.
+
 18 October 2026. Current execution contract, supplementing the canonical product instructions. Read the [review and evidence](../testing/product-commercial-ux-review-2026-10-18.md). Older dated delivery notes are history, not commands to repeat completed work.
 
 ## Delivery checkpoint and next execution order
