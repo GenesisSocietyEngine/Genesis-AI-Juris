@@ -8,6 +8,8 @@
 
 ### Next bounded stage: compatibility and verified transitions
 
+**User-prioritized slice: My cases list usability.** Implement readable full-width saved-draft rows, larger search, loaded-only update/title sorting, explicit saved-copy IDs, readable bilingual dates and direct Studio actions. Keep owned/shared separation, original IDs/versions and all authority fences. Verify desktop/narrow EN/RU, duplicate/long titles, search-empty/pagination and exact reopen destinations. No inline mutation or new permission contract. Record independent tests/browser observations and a fresh Sites receipt in [the slice audit](../testing/my-cases-list-review-2026-10-19.md). The compatibility/account/file-input work below remains open; this UI slice does not close it.
+
 | Order / owner | Concrete work | Acceptance and stop conditions |
 | --- | --- | --- |
 | 1 / QA + application | Finish the normal authenticated production file-input check with the retained synthetic future-field file | Observe read-only recovery, exact original-file download/hash, return to unchanged current case and no new saved identity. The local/handler checks passed; the production chooser timed out. Use documented browser controls; do not change extension security settings or infer a product defect from automation alone. Keep this row open until observed. |
