@@ -1,6 +1,10 @@
 # CaseVant product development instructions
 
-## Current execution amendment — 19 October 2026
+## Current execution amendment — v150, 19 October 2026
+
+My cases list usability is live from runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`. Follow [the current detailed stage](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md) and [v150 receipt/remaining QA](../testing/my-cases-list-review-2026-10-19.md#delivered--public-sites-v150). Preserve full-width saved-draft rows, loaded-only search/sort, copy IDs, readable UTC dates, owner/shared separation and exact Studio destinations. No list interaction writes case data. Exact-main web/PDF gates passed (1,714 pass/0 fail/3 inherited skips), both origins176/176 and all25 production baseline rows retained exact title/time/link. Complete the production narrow EN/RU visual check in a working capture/viewport session; local synthetic390px evidence is separate. Preserve every real/synthetic case. Continue the existing ordered compatibility/account/source/research work afterward. Do not repeat delivered UI corrections or redeploy for Markdown closure.
+
+## Historical execution amendment — v148, 19 October 2026
 
 **Current delivery: public Sites v148**, runtime `6e2910758a6f13b4bf1a65167bbc070c4a950792`. Add a route start opens the Trigger form; source-field and Review feedback share strict HTTPS validation with an explicit correction for bare addresses. Never normalize on read, certify authority from URL syntax, or relax server publication gates. Preserve multiline input, buffers, undo/redo and outgoing Trigger direction. Production synthetic 44 saved and independently reopened both changes with existing edges intact. Preserve 44, 43, user 42 and every prior case/unsaved tab. Both origins passed 173/173 asset checks. Follow the [v148 audit](../testing/route-start-sources-2026-10-19.md) and [detailed plan](CASEVANT_REVIEW_REMEDIATION_2026-10-19.md), including Windows test preflight. Rust CI passed; remaining exact-source hosted workflows are queued/running at closure and must retain pending status until terminal evidence exists. Local environmental failures passed unchanged targeted reruns; do not claim a single clean full run. Entry320912/325000 requires extraction before growth. No runtime redeployment for this Markdown closure.
 

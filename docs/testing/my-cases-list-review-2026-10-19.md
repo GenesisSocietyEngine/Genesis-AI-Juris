@@ -1,5 +1,7 @@
 # My cases list and editing usability
 
+**Delivered: public Sites v150.** The final receipt below supersedes the temporary upload-blocked checkpoint. Do not repeat publication of the same candidate.
+
 ## Scope and source verification
 
 User requested a more usable list and editing entry, with amended UI style. Before editing: clean isolated checkout and freshly fetched canonical main `e2b5283549c3447bf590b809788551b06147ea53`; native Sites v149 points to `bcd50f3342413fb5ac8cd55811a519d3c9b5239b`. The difference is seven Markdown files only. Existing Site remains public. Supported Sites opening returned the exact canonical checkout/HEAD. Root checkout belongs to another writer and is untouched.
@@ -19,7 +21,7 @@ Candidate checks: 11/11 My cases tests pass, including existing authority expiry
 
 Rendered actual row component with clearly labelled synthetic fixtures: desktop long titles and aligned actions visually reviewed; narrow Russian at actual 390 CSS pixels, document scroll width 375, no horizontal content overflow. This fixture is layout evidence, not authenticated application acceptance. Full-application preview and production acceptance remain separate. Review caught and removed a misleading no-results instruction to load more when the final page has no cursor.
 
-## Final candidate and rollout status
+## Historical candidate and temporary upload blocker
 
 Implementation merged through [PR 146](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/146), exact runtime candidate `d4547efd3fcc1f36207f121ffe43348fc8530f6f`. The isolated source is clean. The first local build was discarded after detecting a Windows stylesheet line-ending mismatch; restored the exact Git blob and rebuilt. Final release identity proves exact merged bytes:
 
@@ -37,7 +39,7 @@ Raw package SHA256: `110af85fb349173f9e4c4a1add42805ff33d6215bb7962569f702fb0b75
 
 **Publication blocked by Sites archive upload connectivity.** Initial save response could not be retained by result handling; reconciled native version history before retrying. Two subsequent native save attempts explicitly failed connecting to `sdmntprindiasocentral.oaiusercontent.com`. Native newest-version reconciliation still returns **v149**, `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_3d8124b1d6288191bbe400b95efd92bd`, source `bcd50f3342413fb5ac8cd55811a519d3c9b5239b`. No v150 receipt or deployment exists. Production remains unchanged; do not call this UI shipped. Local package creation succeeded, so do not omit the archive to bypass the upload failure.
 
-## Continuation: bounded publication and authenticated acceptance
+## Historical continuation during the upload blocker
 
 1. Recheck the exact-main web/PDF run above; inspect any failure and correct/reversion/test before publication. Reverify canonical main and live v149 rather than assuming no concurrent release. If another application release exists, reconcile and retain its assets instead; do not overwrite it with this dated artifact.
 2. For unchanged candidate, verify the existing archive hash, exact pushed Sites source `d4547ef...` and application/hosting hashes above. Use fresh Sites credentials/source helper if source synchronization is needed; never expose credentials. Keep docs-only closure distinct from application inputs.
@@ -48,3 +50,23 @@ Raw package SHA256: `110af85fb349173f9e4c4a1add42805ff33d6215bb7962569f702fb0b75
 7. Save a production screenshot, append exact native/static/browser evidence here, and update current instructions/backlog/status through ordinary review. Preserve every original/synthetic case. The separate historical imports, same-tab account cancellation, original-source acquisition and product-research backlog remains open.
 
 Local evidence directory: `.artifacts/my-cases-preview/` (final-tests.log, merged-build-exact.log, verified predecessor extraction and list-layout-desktop.png). This candidate adds no schema migration, user-edit merge, data cleanup or human-review approval.
+
+## Delivered — public Sites v150
+
+Final retry succeeded after the earlier native storage-connect failures. Exact merged source `d4547efd3fcc1f36207f121ffe43348fc8530f6f`, application/hosting hashes and raw archive above are unchanged. Both exact-main jobs completed successfully in run **39325726429**: web **118310940041**, PDF **118310939469**. Web log: **1,717 tests / 1,714 passed / zero failed / three inherited skips**, packaged browser/Worker tax checks and tax-report history passed, both dependency audits zero vulnerabilities. PDF job passed its existing visual locks. Do not add the overlapping 13 local checks to the full-suite total.
+
+- Saved version **150**, ID `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_c820306242908191adfc736920de31da`.
+- Deployment `appgdep_6ad68a5c097481919cce18ae1400be04`, native **succeeded 2026-10-19T21:24:10.947934Z** (23:24 Paris).
+- Public audience, environment **42**, DB and DOSSIER_DOCUMENTS preserved.
+- Native normalized archive SHA256 `e29454d1bed3eb2fdb904b053578d7b6ba15d4e3720635431b7dd2396f477808`, **49,326,080 bytes / 556 files**. Raw local archive remains the separate hash above.
+- Both [custom origin](https://casevant.pro) and [native origin](https://genesis-juris-web.maxim-hayan.chatgpt.site) passed **176/176** status/MIME/byte/SHA checks, including **126 current + 50 retained previous** assets. Static verification does not assert browser authentication.
+
+Fresh authorized Chrome observed the deployed hydrated list and new toolbar. Read-only DOM comparison of all **25 baseline rows** found identical title, original timestamp and complete Studio destination, in both directions; the first page retains **23 owned + 2 other authorized** drafts. No persistence, deletion or sharing action was performed.
+
+Observed production interactions: title search reduced to one preserved carrier-recovery case; unmatched search showed zero plus Clear search, which restored results; oldest-first sorted dates correctly; title sort displayed alphabetical order separately within owned/shared groups; author search returned the 23 owned records; filtered Load more settled while retaining the one matching case and removed the exhausted next-page control. ID substring search returned matching loaded records (not an exact-ID-only mode). Direct named **Edit in Studio** for **45** opened its unchanged title, Saved to workspace status and **14-node/13-connection** map; Back returned to Personal. Other authorized records use **Open in Studio**, with server/Studio authorization unchanged. No new saved identity was needed.
+
+### Remaining bounded visual check
+
+Production DOM interactions passed, but live page screenshot capture repeatedly timed out, including in a fresh tab; requested viewport changes did not yield a reliable narrow viewport (measured **2280 CSS pixels**, not 390). Do not label those attempts narrow acceptance or infer a product defect from the automation failure. Actual 390px EN/RU row-layout and keyboard evidence belongs to the explicitly synthetic local fixture. Production toolbar/global-style narrow EN/RU visual acceptance and a production screenshot remain **open**. The saved local `list-layout-desktop.png` is a synthetic preview, not a production image.
+
+Next QA should use a functioning authorized browser capture/viewport session to inspect the full live Personal page at actual narrow widths, long titles, search/sort/actions and RU labels; record actual dimensions and preserve every case. Do not republish v150 merely to close this browser evidence gap. The broader old-binary/import/account/source-body/service-readiness/research backlog remains unchanged. Current instructions/status distinguish the shipped runtime from this QA limit and from later Markdown-only commits.

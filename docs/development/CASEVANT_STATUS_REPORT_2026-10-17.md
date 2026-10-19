@@ -1,6 +1,12 @@
 # CaseVant audit and rollout status — 19 October 2026
 
-## Current release — v149 preservation and report-contract corrections
+## Current release — v150 My cases usability
+
+Live runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; deployment `appgdep_6ad68a5c097481919cce18ae1400be04` succeeded 19 October 23:24 Paris. Full-width draft rows, readable dates/IDs, loaded-only search/sort and clear Studio actions shipped; authority/data contracts unchanged. Exact-main web/PDF gates passed: **1,717 total / 1,714 passed / 0 failed / 3 inherited skips**. Both origins **176/176** assets; entry remains **319,350 bytes**. Production baseline 25 rows matched exact title/time/destination; search/reset/sort/filtered pagination and case45 reopening observed without case writes. Temporary archive upload failure resolved. [Receipt, evidence and remaining visual limitation](../testing/my-cases-list-review-2026-10-19.md#delivered--public-sites-v150).
+
+Production narrow EN/RU screenshot/viewport acceptance remains open due browser capture/control failures; synthetic actual-390px EN/RU row review passed separately. Preserve all cases and complete this bounded QA row, then continue the existing historical/import/account/source/research backlog. No further runtime publication is needed for documentation-only closure.
+
+## Historical release — v149 preservation and report-contract corrections
 
 Live runtime bcd50f3342413fb5ac8cd55811a519d3c9b5239b; deployment appgdep_6ad674bce8088191aafe97597af578ff succeeded 19 October at 21:52 Paris, public audience/environment 42 unchanged. Exact-main web/PDF gates: 1,715 tests / 1,712 passed / zero failed / three inherited skips, unchanged PDF locks and zero-vulnerability dependency audits. Rust/Flutter/Android/iOS Native passed; iOS Tax was still running at the final observation. Both origins passed 190/190 asset checks; entry 319,350/325,000 bytes. Corrected canonical report-copy coupling, unsupported ordinary-case recovery and both-slot cleanup, with deferred bilingual recovery. [Detailed audit and receipt](../testing/re-audit-release-contract-2026-10-19.md#delivered--public-sites-v149).
 
