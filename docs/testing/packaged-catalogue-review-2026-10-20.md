@@ -1,5 +1,7 @@
 # Original packaged catalogue comparison — 20 October 2026
 
+[Final original-execution preservation receipt](receipts/packaged-catalogue-v156-2026-10-20.json). The later scoped product correction is delivered as [v157](catalogue-action-targets-review-2026-10-20.md#delivered--public-sites-v157); this original v156 diagnostic remains historical evidence and must not be renamed rebuilt-candidate or production-browser acceptance.
+
 Outcome: execute the exact published v156 Worker and client against isolated synthetic storage, then compare its pointer/request ordering with the passing source-shell fixture. This is diagnostic acceptance, not a production fix or universal closure of intermittent first-More activation.
 
 ## Source and artifact authority

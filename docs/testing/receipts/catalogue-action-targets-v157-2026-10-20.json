@@ -1,0 +1,203 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "catalogue-action-targets",
+  "date": "2026-10-20",
+  "runtimeCommit": "10a4ee5c49c8e32b2675f7b53d630003a5ebdde4",
+  "candidateCommit": "3fa97ade5df8c223d47a0b06a2877ebd8168b6ac",
+  "pullRequest": 166,
+  "applicationInputsSha256": "6e5fc21729d249828e4fa52d9dfe725492aded4ed0463f4e92ee0817a3ab7fdb",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_8afd66f6ed508191a50947d2bdf3e9be",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 157,
+    "source": {
+      "commit_sha": "10a4ee5c49c8e32b2675f7b53d630003a5ebdde4"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000005460822f92c402472a132beb",
+      "content_hash": "sha256:aa4d63815740137ca1b2c58983190b2822340b1e3e2289924534cb3dfaa1a77e",
+      "size_bytes": 49448960,
+      "file_count": 578
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad7c698e8488191b2345be99929077d",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_8afd66f6ed508191a50947d2bdf3e9be",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-20T19:53:26.423309+00:00"
+  },
+  "rawArchive": {
+    "sha256": "354eb64b3f7ed7b9dd0696c9ec00fe155e9efb22b916ac6eeb73d551d2f7f87c",
+    "bytes": 30380493,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "checks": {
+    "focused": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    "artifact": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "candidate": {
+      "run": 39484544495,
+      "web": 118841435162,
+      "pdf": 118841434676,
+      "conclusion": "success",
+      "tests": 1777,
+      "passed": 1774,
+      "failed": 0,
+      "skipped": 3
+    },
+    "exactMain": {
+      "run": 39485655029,
+      "web": 118845259641,
+      "pdf": 118845257628,
+      "conclusion": "success",
+      "tests": 1777,
+      "passed": 1774,
+      "failed": 0,
+      "skipped": 3
+    },
+    "candidateNative": {
+      "simulator": "pending at final observation",
+      "editorRestart": "pending at final observation",
+      "notClaimedPassed": true
+    }
+  },
+  "retention": {
+    "previousCommit": "3fbc027d6e92a8782814fa9d18ca010db3915025",
+    "currentAssets": 136,
+    "retainedPreviousAssets": 50,
+    "policy": "immediately-previous-current-manifest-only"
+  },
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "assetsVerified": 186,
+      "releaseDocumentMatches": true
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetsVerified": 186,
+      "releaseDocumentMatches": true
+    }
+  ],
+  "browser": {
+    "status": "dated authenticated Chrome observations; not universal intermittent-failure closure",
+    "catalogueMetadata": {
+      "rows": 48,
+      "unchanged": true,
+      "sha256": "9fa7140e63c21b2aa776b59c689abec7519e19cf86a23b09e97ea640fdf5a0cd",
+      "fullSavedBytesCompared": false,
+      "finalFreshComparisonAfterAllChecks": true
+    },
+    "firstMore": {
+      "before": 25,
+      "after": 48,
+      "activations": 1,
+      "universalClosure": false
+    },
+    "firstSearch": {
+      "query": "#48",
+      "results": 1,
+      "activations": 1
+    },
+    "measuredViewport": {
+      "width": 390,
+      "height": 480,
+      "scrollWidth": 367
+    },
+    "productionCaseWritesPerformed": 0,
+    "wrappedTitle": {
+      "savedId": 48,
+      "firstPointerOpened": true,
+      "savedStatusObserved": true,
+      "caseAmended": false
+    },
+    "return": {
+      "query": "#48",
+      "sort": "title",
+      "rows": 1,
+      "observed": true
+    },
+    "productionScreenshot": "capture timed out; not claimed",
+    "narrowRussian": {
+      "width": 390,
+      "height": 480,
+      "scrollWidth": 367,
+      "firstMore": {
+        "before": 25,
+        "after": 48,
+        "activations": 1
+      },
+      "keyboard": {
+        "tabFocused": "BUTTON Найти",
+        "enterQuery": "#48",
+        "results": 1,
+        "observed": true
+      }
+    },
+    "localNarrowEnglish": {
+      "width": 390,
+      "height": 480,
+      "scrollWidth": 375,
+      "firstSearch": true,
+      "firstMore": {
+        "before": 25,
+        "after": 48
+      },
+      "transport": "synthetic source components"
+    },
+    "localNarrowRussian": {
+      "width": 390,
+      "height": 480,
+      "firstMore": {
+        "before": 25,
+        "after": 48
+      },
+      "tabAndEnterSearch": true,
+      "results": 1,
+      "transport": "synthetic source components"
+    },
+    "restoration": {
+      "language": "en",
+      "heading": "My cases",
+      "width": 2283,
+      "height": 954,
+      "viewportOverrideReset": true,
+      "observed": true
+    },
+    "capturedDiagnostics": {
+      "count": 2,
+      "message": "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received",
+      "attribution": "unverified; not counted as a product defect or clean console"
+    }
+  },
+  "limits": [
+    "Specific earlier untraced first-More failure remains unresolved; fresh passes do not establish universal closure.",
+    "Catalogue-only local pointer A/B is not Account first-login acceptance.",
+    "All 48 production metadata tuples compared; full saved payload bytes were not exported/compared.",
+    "No production legacy SQL timestamps in the observed catalogue; correction covered by archived synthetic execution and three timezone processes.",
+    "Production screenshot capture timed out; local narrow screenshot retained separately.",
+    "Materials downloads, legitimate unsupported owner recovery, original v149 and same-tab A-to-B acceptance remain open."
+  ]
+}
