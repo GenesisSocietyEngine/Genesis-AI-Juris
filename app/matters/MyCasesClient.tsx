@@ -7,7 +7,7 @@ import { workspaceDestination } from "../workspace-navigation";
 import MattersClient from "./MattersClient";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "./studio-case-catalogue";
 import styles from "./my-cases.module.css";
-import { selectStudioCases, studioUpdatedLabel, type StudioCaseSort } from "./studio-case-list";
+import { selectStudioCases, studioUpdatedLabel, studioUpdatedTimestamp, type StudioCaseSort } from "./studio-case-list";
 import { readStudioSearchReturn, readStudioTabSearch, writeStudioTabSearch, studioSearchBoundary, withStudioSearchReturn } from "./studio-search-return";
 
 export default function MyCasesClient({ initialLocation }: { initialLocation: string }) {
@@ -67,8 +67,8 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const en = locale === "en";
   const visible = useMemo(() => selectStudioCases(state.cases, "", sort, locale), [state.cases, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.
-  if (session.phase !== "ready" || session.endingSession) return <main className={styles.personal}><p role="status">{en ? "Verify your access to view saved Studio drafts." : "Подтвердите доступ для просмотра сохранённых черновиков Studio."}</p></main>;
-  return <main className={styles.personal}>
+  if (session.phase !== "ready" || session.endingSession) return <main className={styles.personal} data-saved-case-actions><p role="status">{en ? "Verify your access to view saved Studio drafts." : "Подтвердите доступ для просмотра сохранённых черновиков Studio."}</p></main>;
+  return <main className={styles.personal} data-saved-case-actions>
     <header><h2>{en ? "Saved Studio drafts" : "Сохранённые черновики Studio"}</h2><p>{en ? "Open a saved draft to continue your work. Review and approval are tracked separately." : "Откройте сохранённый черновик, чтобы продолжить работу. Проверка и одобрение учитываются отдельно."}</p></header>
     <form className={styles.tools} role="search" aria-label={en ? "Search saved Studio drafts" : "Поиск сохранённых черновиков Studio"} onSubmit={event => { event.preventDefault(); void catalogue.search(search); }}>
       <label className={styles.search}>{en ? "Search all authorized drafts" : "Поиск во всех доступных черновиках"}<input type="search" maxLength={120} placeholder={en ? "Title, author or #saved ID" : "Название, автор или #ID копии"} value={search} onChange={event => setSearch(event.target.value)} /></label>
@@ -98,10 +98,11 @@ export function StudioCaseGroup({ title, cases, locale, location }: { title: str
   const en = locale === "en";
   return <section className={styles.group} aria-label={title}><h3>{title} <span>{cases.length}</span></h3><ul className={styles.rows}>{cases.map(item => {
     const href = workspaceDestination(`/studio?custom_case=${item.id}&studio_step=case_map`, location);
+    const updatedAt = studioUpdatedTimestamp(item.updatedAt);
     return <li key={item.id} className={styles.row}>
       <div className={styles.identity}><h4><a href={href}>{item.title}</a></h4><p><span className={styles.badge}>{en ? "Draft" : "Черновик"}</span> <span>#{item.id} · v{item.currentVersion}</span></p></div>
       <div className={styles.access}><p>{item.ownerDisplayName}</p><small>{item.access === "owner" ? (en ? "Owner" : "Владелец") : item.access === "shared" ? (en ? "Shared access" : "Предоставлен доступ") : (en ? "Administrator access" : "Доступ администратора")}</small><small>{item.isPrivate ? (en ? "Private" : "Приватный") : (en ? "Restricted sharing" : "Ограниченный доступ")}</small></div>
-      <div className={styles.updated}><small>{en ? "Updated · UTC" : "Обновлён · UTC"}</small>{Number.isFinite(Date.parse(item.updatedAt)) ? <time dateTime={item.updatedAt} title={item.updatedAt}>{studioUpdatedLabel(item.updatedAt, locale)}</time> : <span>{en ? "Date unavailable" : "Дата недоступна"}</span>}</div>
+      <div className={styles.updated}><small>{en ? "Updated · UTC" : "Обновлён · UTC"}</small>{updatedAt !== null ? <time dateTime={new Date(updatedAt).toISOString()} title={item.updatedAt}>{studioUpdatedLabel(item.updatedAt, locale)}</time> : <span>{en ? "Date unavailable" : "Дата недоступна"}</span>}</div>
       <a className={styles.open} href={href}><span>{item.access === "owner" ? (en ? "Edit in Studio" : "Редактировать в Studio") : (en ? "Open in Studio" : "Открыть в Studio")}</span><span className={styles.srOnly}>: {item.title} · #{item.id}</span><span aria-hidden="true"> →</span></a>
     </li>;
   })}</ul></section>;
