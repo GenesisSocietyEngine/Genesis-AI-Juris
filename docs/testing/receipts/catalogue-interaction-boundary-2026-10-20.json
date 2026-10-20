@@ -19,6 +19,17 @@
     "rootCauseEstablished": false,
     "caseWritesPerformed": false
   },
+  "laterProductionComparisons": {
+    "surface": "fresh authorized Chrome, normal existing Personal link",
+    "tabs": ["178219283", "178219286"],
+    "entryPaths": ["initially unqualified, normal organization initialization", "existing verified-context Personal link"],
+    "initialRows": 25,
+    "firstActivationSettledRows": [48, 48],
+    "capturedWarningOrErrorEntries": [0, 0],
+    "trustedEventTraceObserved": false,
+    "rootCauseEstablished": false,
+    "caseWritesPerformed": false
+  },
   "localOverlap": {
     "surface": "IAB source-shell fixture, synthetic transport",
     "tab": "7",
