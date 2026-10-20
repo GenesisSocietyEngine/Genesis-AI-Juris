@@ -1,0 +1,169 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "materials-toolbar-reaudit",
+  "date": "2026-10-20",
+  "runtimeCommit": "361b501ebc12416873db25864732c95af5d0345e",
+  "candidateCommit": "1df8c47ae448f6ba7c23e23185f8069dff088c4f",
+  "pullRequest": 168,
+  "applicationInputsSha256": "2888183313eaffe123009b8a29ca2473863d3f4a236773494320206589b02945",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5268c498b7788191a63ce077e61ee243",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 158,
+    "source": {
+      "commit_sha": "361b501ebc12416873db25864732c95af5d0345e"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000078c81f4b6b75a1526053092",
+      "content_hash": "sha256:1eacc6404bed274a851bf2ca92ff8b9106894234c4cae865348991a15327da32",
+      "size_bytes": 49418240,
+      "file_count": 581
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad7d7a9732c8191a05f90ef89a05e3d",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5268c498b7788191a63ce077e61ee243",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-20T21:06:09.698131+00:00"
+  },
+  "rawArchive": {
+    "sha256": "6411ab4357fec800891e41d3f7affbc5bca0a6789709964ac1eb60f571eb6345",
+    "bytes": 30375883,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "checks": {
+    "focused": {
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0
+    },
+    "artifact": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "dependencyAudit": {
+      "full": 0,
+      "production": 0
+    },
+    "candidate": {
+      "run": 39494752818,
+      "web": 118876762380,
+      "pdf": 118876761816,
+      "conclusion": "success",
+      "tests": 1778,
+      "passed": 1775,
+      "failed": 0,
+      "skipped": 3
+    },
+    "exactMain": {
+      "run": 39495863765,
+      "web": 118880615878,
+      "pdf": 118880616522,
+      "conclusion": "success",
+      "tests": 1778,
+      "passed": 1775,
+      "failed": 0,
+      "skipped": 3
+    },
+    "pdfLocks": "47 Full artifacts plus bilingual Base/Medium and tax locks unchanged",
+    "candidateNative": "PR168 simulator/editor-restart in progress at last observation; not counted passed",
+    "priorNative": "PR166 simulator passes; editor restart discovery/deadline failures remain open"
+  },
+  "retention": {
+    "previousCommit": "10a4ee5c49c8e32b2675f7b53d630003a5ebdde4",
+    "currentAssets": 136,
+    "retainedPreviousAssets": 53,
+    "policy": "immediately-previous-current-manifest-only"
+  },
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "assetsVerified": 189,
+      "releaseDocumentMatches": true
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetsVerified": 189,
+      "releaseDocumentMatches": true
+    }
+  ],
+  "browser": {
+    "transport": "authorized Chrome normal UI",
+    "actor": "Maxim Hayan / Personal workspace",
+    "catalogue": {
+      "rows": 48,
+      "exactMetadataUnchanged": true,
+      "metadataSnapshotSha256": "cbd541b9bfd7eee8f026f1a8fed4d16198a780db924c500d4fb15df83c45dcc9",
+      "finalComparisonAfterAllProductionChecks": true,
+      "fullSavedBytesCompared": false,
+      "reloadRestoredDepth": 48
+    },
+    "productionCaseWritesPerformed": 0,
+    "compact": {
+      "savedId": 48,
+      "source": "project_canopy_managed_site_expansion",
+      "templateVersion": "2.0.0",
+      "node": "N07",
+      "selectableWorkingRecords": 1,
+      "otherReferenceRecords": 1,
+      "selectionObserved": true,
+      "selectionCleared": true,
+      "toolbarPosition": "static",
+      "nodes": 14,
+      "connections": 13,
+      "savedStatusObserved": true,
+      "bulkMutationAcceptance": false
+    },
+    "firstMore": {
+      "missedSemanticCommand": true,
+      "initialCount": 25,
+      "scrollY": 0,
+      "buttonTop": 3338.64,
+      "focus": "BODY",
+      "rootScroll": "auto",
+      "cause": "unidentified; no received input/request trace",
+      "visibleRetry": {
+        "loadingObserved": true,
+        "settledCount": 48
+      },
+      "universalClosure": false
+    },
+    "screenshot": "production Page.captureScreenshot timed out; local responsive screenshot separate",
+    "downloadsReceipt": "materials-base-download-2026-10-20.json"
+  },
+  "local": {
+    "originalV157": "materials-original-v157-2026-10-20.json",
+    "componentRegression": "trusted pointer hit Disconnect before CSS; two INPUT selections and no selection mutation after CSS",
+    "viewports": [
+      "compact 1280x720",
+      "wide 1280x720",
+      "wide 1280x480",
+      "Russian 390x480"
+    ],
+    "fixtureAuthorityAndUndo": "synthetic; not full-app or production authority/history acceptance"
+  },
+  "limits": [
+    "First-More and Account activation boundaries remain unresolved.",
+    "Production compact smoke contains one selectable working record; full two-working-record regression is isolated actual-component evidence.",
+    "Production bulk attach/move/delete Cancel/Undo/save-reopen and remaining variants/roles remain open.",
+    "Owner unsupported recovery requires a legitimate authorized source; no unsupported row manufactured.",
+    "Original v149, 18 packages, historical ERP/GreenFire and same-tab identity acceptance remain open.",
+    "No native editor-restart, source acceptance, professional approval or service readiness claim."
+  ]
+}
