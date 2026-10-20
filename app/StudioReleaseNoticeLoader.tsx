@@ -3,7 +3,7 @@ import { Component, useEffect, useState, type ComponentType, type ReactNode } fr
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import type { StudioReleaseNoticeProps } from "./StudioReleaseNotice";
 
-export async function loadStudioReleaseNotice(active: () => boolean, loaded: (panel: ComponentType<StudioReleaseNoticeProps>) => void, load = () => import("./StudioReleaseNotice")) {
+export async function loadStudioReleaseNotice(active: () => boolean, loaded: (panel: ComponentType<StudioReleaseNoticeProps>) => void, load: () => Promise<{ default: ComponentType<StudioReleaseNoticeProps> }> = () => import("./StudioReleaseNotice")) {
   try {
     const result = await withLocalChunkRecovery(load);
     if (active()) loaded(result.default);
