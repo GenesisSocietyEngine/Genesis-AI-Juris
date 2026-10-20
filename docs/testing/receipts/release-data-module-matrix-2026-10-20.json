@@ -1,0 +1,148 @@
+{
+  "schema": "casevant.release-data-module-summary.v1",
+  "date": "2026-10-20",
+  "boundary": "Original historical data modules only. No historical UI binary, server authorization, production browser save or upgrade-merge acceptance.",
+  "executionPassed": true,
+  "allReleasesSafe": false,
+  "node": "v22.23.2",
+  "factoryTimestamp": "2026-10-20T06:00:00.000Z",
+  "lockSha256": "ea3bb60a7d3a5ef14d5e02039e3f3262744aaaa37eb83ae9dafa98ab01b3f465",
+  "fullReceiptSha256": "12df4573e5345faf1c3f721e018b3e1230f97e818f47bf67cf35fb18e06d715f",
+  "counts": {
+    "knownFixtures": 69,
+    "knownRows": 207,
+    "futureRows": 27,
+    "totalRows": 234,
+    "unsafeRows": 8
+  },
+  "casePayloadsSha256": "1e8b8a1639321afb32b37c227706a866db435cc3e38e991441da3ee7bc9700cc",
+  "provenance": [
+    {
+      "release": "v148",
+      "commit": "6e2910758a6f13b4bf1a65167bbc070c4a950792",
+      "esbuildVersion": "0.28.2",
+      "moduleCount": 15,
+      "moduleSetSha256": "00d1c0310f39bd2f2c4a29df0cc41fb5570a6c98c63c1e582252e5fb3a1e7969",
+      "bundleSha256": "316b4895bbe35317df008a3c8f4ef5ef64b21800353611490eae0308913450c8",
+      "externalImports": []
+    },
+    {
+      "release": "v149",
+      "commit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+      "esbuildVersion": "0.28.2",
+      "moduleCount": 15,
+      "moduleSetSha256": "5e706fa9e96b458fcc9a3fde54f0ada49eecbb82d15b315fcaa25a3477ab91a4",
+      "bundleSha256": "0107e02ea02d7fd0f03af437426f6e91635d9bd99b04f675db252ea21cc37789",
+      "externalImports": []
+    },
+    {
+      "release": "v150",
+      "commit": "d4547efd3fcc1f36207f121ffe43348fc8530f6f",
+      "esbuildVersion": "0.28.2",
+      "moduleCount": 15,
+      "moduleSetSha256": "5e706fa9e96b458fcc9a3fde54f0ada49eecbb82d15b315fcaa25a3477ab91a4",
+      "bundleSha256": "0107e02ea02d7fd0f03af437426f6e91635d9bd99b04f675db252ea21cc37789",
+      "externalImports": []
+    }
+  ],
+  "unsafeRows": [
+    {
+      "release": "v148",
+      "fixture": "future-node",
+      "kind": "future-field",
+      "status": "unsafe-lossy-editable",
+      "compatible": false,
+      "rawSha256": "7414307ea2a8c9c0890d83b692767c19c35aa8031cc14ff5c94146e89a7523bd",
+      "rawPreserved": true
+    },
+    {
+      "release": "v148",
+      "fixture": "future-device-node",
+      "kind": "future-device",
+      "status": "unsafe-device-replacement",
+      "deviceReadStatus": "editable",
+      "writeOutcome": "written",
+      "writes": 1,
+      "originalsPreserved": false,
+      "rawSha256": "65b54e648e4e5881ca39f871cbf215dff893313b4053b9e8d0a50fd136535719"
+    },
+    {
+      "release": "v148",
+      "fixture": "future-position",
+      "kind": "future-field",
+      "status": "unsafe-lossy-editable",
+      "compatible": false,
+      "rawSha256": "daaeef4066462d9973d69fcf741b5a58d550cc9d1bbba8df240ea28ce7fc5d90",
+      "rawPreserved": true
+    },
+    {
+      "release": "v148",
+      "fixture": "future-device-position",
+      "kind": "future-device",
+      "status": "unsafe-device-replacement",
+      "deviceReadStatus": "editable",
+      "writeOutcome": "written",
+      "writes": 1,
+      "originalsPreserved": false,
+      "rawSha256": "4144ac748e306b3ae6a128a539d3503520707bad1214779655f64cba3aa68cb6"
+    },
+    {
+      "release": "v148",
+      "fixture": "future-classification",
+      "kind": "future-field",
+      "status": "unsafe-lossy-editable",
+      "compatible": false,
+      "rawSha256": "3fab29442a3eb8cf3c5cf6c03fc0d61a367defedd4d8e5f0ee4611caa8d10d0d",
+      "rawPreserved": true
+    },
+    {
+      "release": "v148",
+      "fixture": "future-device-classification",
+      "kind": "future-device",
+      "status": "unsafe-device-replacement",
+      "deviceReadStatus": "editable",
+      "writeOutcome": "written",
+      "writes": 1,
+      "originalsPreserved": false,
+      "rawSha256": "f568f8491bf4478616463ae055ddbbc16b37e3481e20d3b631d55351676f90b9"
+    },
+    {
+      "release": "v148",
+      "fixture": "future-root",
+      "kind": "future-field",
+      "status": "unsafe-lossy-editable",
+      "compatible": false,
+      "rawSha256": "490d6bc3c5e20183686af8bb0a483ec6b66f6545a14e8790bc819796a1eac03e",
+      "rawPreserved": true
+    },
+    {
+      "release": "v148",
+      "fixture": "future-device-root",
+      "kind": "future-device",
+      "status": "unsafe-device-replacement",
+      "deviceReadStatus": "editable",
+      "writeOutcome": "written",
+      "writes": 1,
+      "originalsPreserved": false,
+      "rawSha256": "aaf37f793fba5b78302e17d821d8f66f01683f53ed0cab54db37c1c83c9a1f33"
+    }
+  ],
+  "localChecks": {
+    "targetedTests": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "passed",
+    "changedCodeLint": "passed",
+    "repeatedReceiptBytes": "identical"
+  },
+  "production": {
+    "version": 150,
+    "sourceCommit": "d4547efd3fcc1f36207f121ffe43348fc8530f6f",
+    "savedVersionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_c820306242908191adfc736920de31da",
+    "deploymentId": "appgdep_6ad68a5c097481919cce18ae1400be04",
+    "runtimeChanged": false
+  },
+  "recommendation": "Known carriers preserved in tested modules. v148 future-field handling is unsafe where marked; use current recovery guards and preserve original bytes. Never substitute current templates or treat a successful harness run as universal backward compatibility."
+}

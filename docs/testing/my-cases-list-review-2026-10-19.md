@@ -1,5 +1,7 @@
 # My cases list and editing usability
 
+**20 October visual-acceptance update:** [fresh production evidence](compatibility-continuation-review-2026-10-20.md) now closes the EN/RU full-application narrow visual gap below: actual390px viewport, client/scroll367px in both languages, live toolbar/row captures, search/sort and the Russian Edit action reaching saved45. The19October capture outage is historical. Browser key delivery still timed out, so new production keyboard acceptance remains separate from the earlier component evidence. No UI/data amendment or repeat runtime publication was needed.
+
 **Delivered: public Sites v150.** The final receipt below supersedes the temporary upload-blocked checkpoint. Do not repeat publication of the same candidate.
 
 ## Scope and source verification

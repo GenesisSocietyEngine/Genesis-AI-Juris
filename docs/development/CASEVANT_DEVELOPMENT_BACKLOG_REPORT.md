@@ -1,5 +1,9 @@
 # CaseVant development backlog and continuation instructions
 
+## 20 October continuation priority
+
+Use [the amended detailed stage](CASEVANT_COMPATIBILITY_STAGE_2026-10-20.md) and [fresh evidence](../testing/compatibility-continuation-review-2026-10-20.md). Production390px EN/RU visual acceptance and normal unverified-file read-only recovery/return are observed; the older capture/chooser limitations below are superseded. The imported file correctly lacks export authority; owner-verified saved recovery download remains a distinct requirement. Original release data-module execution is implemented:207 known rows and27 future probes, with8 explicitly unsafe v148 outcomes and safe v149/v150 results for these probes. Keep old full-app/Worker/browser acceptance distinct. Next complete legitimate owner recovery/keyboard evidence, original-artifact isolation and expanded authenticated A/B imports. Preserve every case; no runtime redeployment for tooling/docs with unchanged app inputs.
+
 ## Current closure and priority — v150
 
 My cases usability is shipped from exact runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; [the final native receipt and acceptance](../testing/my-cases-list-review-2026-10-19.md#delivered--public-sites-v150) supersede the temporary upload blocker. Full-width rows, larger search, loaded-only sorting, readable UTC dates, copy IDs and Studio actions preserve all identities/access. Exact-main gates pass (1,714 / 0 / 3); both origins176/176. Read-only 25-row production comparison and search/sort/pagination/reopen passed. No cases were saved or deleted for this slice.
