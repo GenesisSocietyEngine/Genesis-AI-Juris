@@ -1,0 +1,414 @@
+{
+  "schema": "casevant.catalogue-interaction-audit.v1",
+  "date": "2026-10-20",
+  "openingCanonicalMain": "2151df20ce10c28fe9266ffc382c599e9cf6eec9",
+  "runtimeSource": "3fbc027d6e92a8782814fa9d18ca010db3915025",
+  "applicationInputsSha256": "84270e600106ede4915210c2262862e15805e58b3b16611eda222d4234fd012f",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "production": {
+    "browser": "Chrome",
+    "tab": "178219255",
+    "viewport": [
+      2283,
+      954
+    ],
+    "initialRows": 25,
+    "firstAttemptSettledRows": 25,
+    "secondAttemptSettledRows": 48,
+    "trustedEventTraceObserved": false,
+    "rootCauseEstablished": false,
+    "caseWritesPerformed": false
+  },
+  "localOverlap": {
+    "surface": "IAB source-shell fixture, synthetic transport",
+    "tab": "7",
+    "status": [
+      "48 matching loaded drafts"
+    ],
+    "events": [
+      {
+        "ms": 428,
+        "kind": "read",
+        "id": 1,
+        "path": "/api/workspace-session"
+      },
+      {
+        "ms": 549,
+        "kind": "session",
+        "id": 1,
+        "phase": "ready"
+      },
+      {
+        "ms": 551,
+        "kind": "navigation",
+        "phase": "ready",
+        "authorityVersion": 0
+      },
+      {
+        "ms": 582,
+        "kind": "read",
+        "id": 2,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 598,
+        "kind": "read",
+        "id": 3,
+        "path": "/api/workspace-session?organization=org_synthetic_catalogue.1.1.actor_synthetic_catalogue_owner"
+      },
+      {
+        "ms": 710,
+        "kind": "response",
+        "id": 2,
+        "page": 1
+      },
+      {
+        "ms": 771,
+        "kind": "session",
+        "id": 3,
+        "phase": "ready"
+      },
+      {
+        "ms": 774,
+        "kind": "navigation",
+        "phase": "ready",
+        "authorityVersion": 0
+      },
+      {
+        "ms": 774,
+        "kind": "read",
+        "id": 4,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 897,
+        "kind": "response",
+        "id": 4,
+        "page": 1
+      },
+      {
+        "ms": 9661,
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "Load more authorized drafts",
+        "x": 385,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 9667,
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "Load more authorized drafts",
+        "x": 385,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 9668,
+        "kind": "click",
+        "trusted": true,
+        "target": "Load more authorized drafts",
+        "x": 385,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 9669,
+        "kind": "read",
+        "id": 5,
+        "path": "/api/custom-cases?limit=25&cursor=page_two"
+      },
+      {
+        "ms": 9797,
+        "kind": "read",
+        "id": 6,
+        "path": "/api/workspace-session"
+      },
+      {
+        "ms": 9930,
+        "kind": "session",
+        "id": 6,
+        "phase": "ready"
+      },
+      {
+        "ms": 9934,
+        "kind": "navigation",
+        "phase": "ready",
+        "authorityVersion": 0
+      },
+      {
+        "ms": 9934,
+        "kind": "abort",
+        "id": 5
+      },
+      {
+        "ms": 9935,
+        "kind": "read",
+        "id": 7,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 10061,
+        "kind": "response",
+        "id": 7,
+        "page": 1
+      },
+      {
+        "ms": 10087,
+        "kind": "read",
+        "id": 8,
+        "path": "/api/custom-cases?limit=25&cursor=page_two"
+      },
+      {
+        "ms": 10125,
+        "kind": "response",
+        "id": 5,
+        "page": 2
+      },
+      {
+        "ms": 10211,
+        "kind": "response",
+        "id": 8,
+        "page": 2
+      }
+    ]
+  },
+  "localRussian": {
+    "surface": "IAB source-shell fixture, synthetic transport",
+    "tab": "8",
+    "viewport": [
+      390,
+      480
+    ],
+    "documentWidths": [
+      375,
+      375
+    ],
+    "status": [
+      "Найдено загруженных черновиков: 1"
+    ],
+    "actualTabFocus": "Найти",
+    "actualEnterSubmitted": true,
+    "events": [
+      {
+        "ms": 233,
+        "kind": "read",
+        "id": 1,
+        "path": "/api/workspace-session"
+      },
+      {
+        "ms": 367,
+        "kind": "session",
+        "id": 1,
+        "phase": "ready"
+      },
+      {
+        "ms": 370,
+        "kind": "navigation",
+        "phase": "ready",
+        "authorityVersion": 0
+      },
+      {
+        "ms": 397,
+        "kind": "read",
+        "id": 2,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 413,
+        "kind": "read",
+        "id": 3,
+        "path": "/api/workspace-session?organization=org_synthetic_catalogue.1.1.actor_synthetic_catalogue_owner"
+      },
+      {
+        "ms": 520,
+        "kind": "response",
+        "id": 2,
+        "page": 1
+      },
+      {
+        "ms": 546,
+        "kind": "session",
+        "id": 3,
+        "phase": "ready"
+      },
+      {
+        "ms": 547,
+        "kind": "navigation",
+        "phase": "ready",
+        "authorityVersion": 0
+      },
+      {
+        "ms": 547,
+        "kind": "read",
+        "id": 4,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 670,
+        "kind": "response",
+        "id": 4,
+        "page": 1
+      },
+      {
+        "ms": 8622,
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 422,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 8631,
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 422,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 8632,
+        "kind": "click",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 422,
+        "y": 670,
+        "scrollY": 2744.800048828125
+      },
+      {
+        "ms": 8633,
+        "kind": "read",
+        "id": 5,
+        "path": "/api/custom-cases?limit=25&cursor=page_two"
+      },
+      {
+        "ms": 8770,
+        "kind": "response",
+        "id": 5,
+        "page": 2
+      },
+      {
+        "ms": 26447,
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "Обновить черновики",
+        "x": 188,
+        "y": 240,
+        "scrollY": 748
+      },
+      {
+        "ms": 26452,
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "Обновить черновики",
+        "x": 188,
+        "y": 240,
+        "scrollY": 748
+      },
+      {
+        "ms": 26453,
+        "kind": "click",
+        "trusted": true,
+        "target": "Обновить черновики",
+        "x": 188,
+        "y": 240,
+        "scrollY": 748
+      },
+      {
+        "ms": 26453,
+        "kind": "read",
+        "id": 6,
+        "path": "/api/custom-cases?limit=25"
+      },
+      {
+        "ms": 26586,
+        "kind": "response",
+        "id": 6,
+        "page": 1
+      },
+      {
+        "ms": 33963,
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 167,
+        "y": 437,
+        "scrollY": 7045.60009765625
+      },
+      {
+        "ms": 33967,
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 167,
+        "y": 437,
+        "scrollY": 7045.60009765625
+      },
+      {
+        "ms": 33968,
+        "kind": "click",
+        "trusted": true,
+        "target": "Загрузить ещё доступные черновики",
+        "x": 167,
+        "y": 437,
+        "scrollY": 7045.60009765625
+      },
+      {
+        "ms": 33968,
+        "kind": "read",
+        "id": 7,
+        "path": "/api/custom-cases?limit=25&cursor=page_two"
+      },
+      {
+        "ms": 34099,
+        "kind": "response",
+        "id": 7,
+        "page": 2
+      },
+      {
+        "ms": 47613,
+        "kind": "click",
+        "trusted": true,
+        "target": "Найти",
+        "x": 0,
+        "y": 0,
+        "scrollY": 586.4000244140625
+      },
+      {
+        "ms": 47619,
+        "kind": "read",
+        "id": 8,
+        "path": "/api/custom-cases?limit=25&q=case%2004"
+      },
+      {
+        "ms": 47754,
+        "kind": "response",
+        "id": 8,
+        "page": 1
+      }
+    ]
+  },
+  "tests": {
+    "focusedPassed": 47,
+    "failed": 0,
+    "skipped": 0,
+    "typecheck": "passed",
+    "fullCI": "not yet recorded"
+  },
+  "delivery": {
+    "runtimeChanged": false,
+    "newSitesDeployment": false,
+    "retainedSitesVersion": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_18468a876b788191a529d33d75f84b98",
+    "retainedDeployment": "appgdep_6ad7829562848191a6ab0172cdf0023f",
+    "environmentRevision": 42
+  },
+  "limits": [
+    "Production first-pointer delivery/root cause unresolved",
+    "Source-shell fixture is not packaged application/Worker or original historical artifact acceptance",
+    "Local narrow/Russian keyboard evidence is not authenticated production acceptance",
+    "No new stored-byte or whole-catalogue hash comparison"
+  ]
+}

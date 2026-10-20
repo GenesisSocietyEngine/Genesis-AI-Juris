@@ -1,0 +1,45 @@
+# Catalogue interaction boundary audit — 20 October 2026
+
+Outcome: revise the continuation plan and make first-activation diagnosis reproducible without changing production authority, persistence or scrolling on an unproven hypothesis. Acceptance for this checkpoint is a reusable local fixture, actual browser event/read ordering, fail-closed transport/server tests, unchanged runtime inputs and explicit remaining production acceptance.
+
+## Source and live baseline
+
+Fresh fetch confirmed clean canonical main `2151df20ce10c28fe9266ffc382c599e9cf6eec9`. Both public `/api/studio-release` endpoints still identify runtime `3fbc027d6e92a8782814fa9d18ca010db3915025`, application hash `84270e600106ede4915210c2262862e15805e58b3b16611eda222d4234fd012f`, hosting hash `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe`. Local release-input identity matches both hashes. No application/Worker/build/hosting input, dependency, binding or workflow is amended by this checkpoint.
+
+Sites remains [v156 with its native version/deployment receipt](receipts/correction-navigation-v156-2026-10-20.json), environment 42/public. This QA/documentation slice does not create a new Site version or manufacture a rollout. Source synchronization and integration status must be recorded separately below.
+
+## Actual observations
+
+| Surface | Action and result | Evidence boundary |
+| --- | --- | --- |
+| Fresh authorized Chrome production tab `178219255`, measured 2283 × 954 | Initially 25 rows. First pointer activation showed Loading with zero rows, then settled at 25 with Load more still present. A settled second activation reached 48 and removed Load more. | Reproduces the visible symptom. No production event/network trace establishes whether the first click reached its handler. No case opened, edited, saved, deleted or replaced. |
+| Local source component, IAB, inherited smooth scrolling | One trusted pointerdown/up/click on Load more issued a cursor read and reached 48. | Synthetic transport, actual catalogue/navigation, initially without organization shell. |
+| Same local comparison with `scroll=auto` | One trusted click reached 48. | Does not establish that smooth scrolling causes the production symptom. No CSS correction is justified by this comparison. |
+| Local Chrome tab `178219249` | One trusted Load more activation reached 48; pointer Search submitted `case 04` and returned one row. | Synthetic transport, component fixture; not production search acceptance. |
+| Complete source shell, Chrome tab `178219258` | Actual OrganizationBoundary added its organization receipt to the URL and caused a second session verification. After settling, one trusted click/cursor read reached 48. | Includes actual sidebar, organization boundary, NavigationSession, catalogue and production CSS. Only unused Team component is stubbed. Still a source bundle and synthetic transport, not the original application/Worker artifact. |
+| Versioned fixture, IAB tab `7`, `mode=overlap` | Trusted click at 9668 ms; cursor read 5; same-authority refresh; abort 5 at 9934 ms; fresh page-one read 7; fresh cursor read 8. Late response 5 resolved but was ignored; final count 48. | Explicitly forced overlap after a received request. Confirms v155's received-intent fence/depth behavior; it does not recreate a missing first production activation. |
+| Versioned fixture, IAB tab `8`, RU | Initial viewport request did not affect the new tab: measured 1280 × 720. Reapplying measured 390 × 480, document client/scroll widths 375/375. Explicit Refresh restored 25; one subsequent Load more pointer reached 48. Tab from search focused `Найти`; Enter submitted `case 04`, then one matching row appeared. | Local short-height/Russian keyboard evidence. Not fresh-tab narrow first activation or authenticated production acceptance. Temporary viewport reset afterward. |
+
+The user's ambient Studio tab and draft, port 4173, all existing production cases and earlier synthetic cases were left untouched. Production activity was catalogue navigation/read-only activation. This audit did not repeat a stored-byte comparison or export; do not reuse the prior 48-row hash comparison as a new one.
+
+Ignored local evidence: `.artifacts/catalogue-overlap-browser-trace-20261020.json`, `.artifacts/catalogue-ru-short-trace-20261020.json`, `.artifacts/catalogue-ru-short-local-20261020.png`. The screenshot was inspected: search controls wrap, the real Search button has visible focus, and the diagnostic trace is visibly labelled test instrumentation. It is not product styling or a production screenshot. The checked-in [observation receipt](receipts/catalogue-interaction-boundary-2026-10-20.json) retains the synthetic overlap ordering and factual acceptance limits.
+
+## Implemented diagnostic slice
+
+`scripts/preview-catalogue-interactions.mjs` bundles the actual Personal catalogue, navigation/session controller, organization boundary/sidebar and CSS into a loopback-only diagnostic page. All session/list responses are synthetic; requests are never forwarded. The transport refuses writes, bodies, foreign URLs and unexpected routes. The server validates Host, allows GET only, uses no-store responses, serves a fixed asset allowlist, and does not expose repository/config/API files. Default port is 4182; the CLI refuses user preview port 4173 and fails on a busy port. It never kills or restarts another preview. Only the unused Team component is stubbed.
+
+The visible bounded trace captures trusted pointerdown/up/click, actual target/coordinates/scroll offset, window focus, navigation authority version and synthetic read/abort/response order. Trace state stays local, bounded and in memory; no telemetry is added to production. The actual shell may write navigation preferences to this isolated localhost origin, as it normally does; this is not a claim of zero local-storage writes. There are no case/API writes. `mode=overlap` intentionally allows a late aborted synthetic response so the actual controller must fence it.
+
+Five new tests cover transport isolation, unique finite pages/literal search, actual-controller overlap, port validation and real built-server Host/method/file boundaries. The first expanded HTTP test incorrectly used Node fetch to override Host; fetch normalized that header. The corrected test sends an explicit Host through Node HTTP and verifies 403. Initial typechecking caught incomplete JS declarations; JSDoc signatures and explicit response types corrected them without suppressions.
+
+Final focused cohort: **47 passed, 0 failed, 0 skipped** across `catalogue-interaction-fixture`, `my-cases`, `navigation-shell`, and `saved-case-navigation-restore`. Typechecking passed. The restricted shell initially failed in Node/tsx user-info initialization (`uv_os_get_passwd ENOMEM`) before tests; the same cohort ran successfully outside that restriction. These are not an additional 47 cases on top of full-suite totals, nor a production browser pass.
+
+## Revised decision and continuation
+
+The production first activation remains unresolved. The initial suspected scrolling explanation was not reproduced. Organization URL initialization does trigger another access verification, but its presence alone is not a proven cause: the full-shell fixture still passes. Retain fresh server visibility checks and v155 depth reconstruction. Do not disable verification, retain private metadata after denial, replay writes, hook pointerdown as a substitute for click, or globally disable smooth scrolling from these observations.
+
+Next investigation must compare the current **packaged application/client**, its route hydration/initialization, actual focus activation and the source-shell fixture using labelled local synthetic data. Verify exact artifact bytes/source first and record its boundary separately from this component fixture and the original historical-artifact work. Use supported browser controls; capture actual delivery/read ordering locally, then a fresh normal production regression. If click delivery is still not observable, retain the precise limit instead of reporting the issue fixed. Independently continue materials file/download and governed recovery acceptance under the ordered workflow instructions.
+
+## Integration status
+
+Candidate checks and source synchronization are recorded here after publication. No new runtime deployment is warranted while the application and hosting hashes remain identical to v156.
