@@ -1,5 +1,7 @@
 # Detailed continuation instructions — 20 October 2026
 
+**Priority amendment:** [the competitive product stage](CASEVANT_COMPETITIVE_PRODUCT_STAGE_2026-10-20.md) adds bounded authorized server retrieval before pagination. The remaining compatibility/authority acceptance rows in this document stay open and mandatory for their affected features. Loaded-only search descriptions below describe v150; the new slice changes search scope only, retaining loaded-only sorting and all preservation requirements. Check its own receipt before calling it deployed.
+
 This bounded amendment supersedes the completed/misstated acceptance rows in the19October plan. Read AGENTS.md, the canonical product instructions and [this stage's evidence](../testing/compatibility-continuation-review-2026-10-20.md) first. Production is v150, runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; every new slice must still reverify current Site and canonical main.
 
 ## Completed work to preserve

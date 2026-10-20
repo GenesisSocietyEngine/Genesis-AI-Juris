@@ -1,5 +1,9 @@
 # CaseVant audit and rollout status — 19 October 2026
 
+## 20 October competitive product stage
+
+Reviewed official Casefleet, Harvey, Legora, Clio and Relativity documentation; [the amended plan](CASEVANT_COMPETITIVE_PRODUCT_STAGE_2026-10-20.md) maps current capabilities to a prioritized evidence/decision handoff roadmap. First implementation: authorized saved-Studio metadata search before pagination, exact #saved ID and query/authority fences. [Current audit and publication status](../testing/competitive-retrieval-review-2026-10-20.md) separates candidate tests, production browser checks and native Sites delivery. Later roadmap and compatibility rows are not completed by this slice. Preserve every existing case.
+
 ## 20 October continuation update
 
 Production remains verified public v150; this slice changes verification tooling/tests/instructions only. Actual390px production EN/RU list visual checks now pass without horizontal overflow. Ordinary production local-file chooser → read-only recovery → return is observed; its export is correctly withheld for an unverified source. Case45's actual post-recovery export matches its entire prior envelope apart from three verified exporter timestamps. No case was created, saved, deleted or reshared. [Detailed evidence and scope](../testing/compatibility-continuation-review-2026-10-20.md).
