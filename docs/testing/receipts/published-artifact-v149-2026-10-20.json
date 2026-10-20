@@ -1,0 +1,16 @@
+{
+  "siteVersion": 149,
+  "savedVersionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_3d8124b1d6288191bbe400b95efd92bd",
+  "deploymentId": "appgdep_6ad674bce8088191aafe97597af578ff",
+  "sourceCommit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+  "rawArchiveSha256": "f677057fa72ac542b5a6a40e4c36f61fb01ca179f0d77720c16f3c783f3c1028",
+  "rawArchiveBytes": 30342262,
+  "applicationInputsSha256": "9cbe6fb2e66e04a2d39c25d00f83169eef2c1dbb35c75abd921f461afdc5256a",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "nativeArchive": {
+    "contentHash": "sha256:0e180db8ab80237447cf325d82c7a8e287eef0b3b0695ab491294b34b0fbffd8",
+    "sizeBytes": 49418240,
+    "fileCount": 570
+  },
+  "receiptSource": "Native Sites get_site_version observed 2026-10-20; raw gzip hash and application/hosting hashes match the original v149 release receipt in re-audit-release-contract-2026-10-19.md. Native normalized bytes are a separate representation and are not recomputed by this inspector."
+}
