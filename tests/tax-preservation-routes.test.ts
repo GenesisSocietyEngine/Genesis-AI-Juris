@@ -277,6 +277,26 @@ test("ordinary-case future fields require owner-only recovery and cannot be norm
   assert.equal(await d1.prepare("select count(*) n from custom_cases where case_id=?").bind(incoming.caseId).first("n"), 0);
 });
 
+test("local recovery reads and refused stale writes leave all case rows and case audit events unchanged", async () => {
+  // Unsupported payload creation is exclusively in this isolated synthetic D1.
+  const draft = createExampleWorkingCopy(buildCategoryDemo("general_advisory", "ru"));
+  const saved = await expect(await call({ action: "save", draft, isPrivate: true }), 200);
+  const before = await stored(draft.caseId);
+  const raw = JSON.stringify({ ...before.draft, futureExact: "__RAW_BIG__" }, null, "\t").replace('"__RAW_BIG__"', '900719925474099312345') + "\r\n";
+  await d1.prepare("update case_drafts set payload=? where case_id=?").bind(raw, draft.caseId).run();
+  const snapshot = async () => ({
+    cases: (await d1.prepare("select * from custom_cases order by id").all()).results,
+    drafts: (await d1.prepare("select * from case_drafts order by id").all()).results,
+    audits: (await d1.prepare("select * from audit_events order by id").all()).results,
+  });
+  const frozen = await snapshot(), path = `/api/custom-cases?id=${saved.customCase.id}`;
+  const owner = await expect(await requestRoute(routes.custom, "GET", path), 200);
+  assert.equal(owner.recovery.rawText, raw); assert.equal(owner.recovery.canExport, true);
+  await expect(await requestRoute(routes.custom, "GET", path, undefined, "foreign"), 404);
+  await expect(await call({ action: "save", draft: before.draft, expectedFingerprint: caseFingerprint(before.draft), expectedPublicationFingerprint: casePublicationFingerprint(before.draft) }), 409);
+  assert.deepEqual(await snapshot(), frozen, "No case, payload, metadata or case audit write on recovery/denial/stale refusal");
+});
+
 test("future draft fields and invalid UTF-8 cannot be normalized into a successful write", async () => {
   const draft = initial("tax_future_input");
   for (const extra of [{ futureField: { amount: "900719925474099312345" } }, { schemaVersion: 99 }]) {
