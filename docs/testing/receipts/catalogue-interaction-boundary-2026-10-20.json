@@ -407,10 +407,25 @@
     "failed": 0,
     "skipped": 0,
     "typecheck": "passed",
-    "fullCI": "initial candidate dff6736 stopped at prefer-const lint error; corrected candidate pending",
+    "fullCI": {
+      "sourceCommit": "26342c50e43ef559ec771ee7590c3eb62f6f303e",
+      "run": "39468033485",
+      "webJob": "118784470155",
+      "pdfJob": "118784470169",
+      "conclusion": "success",
+      "total": 1771,
+      "passed": 1768,
+      "failed": 0,
+      "inheritedSkips": 3,
+      "initialCandidateLimit": "dff6736 stopped at prefer-const lint error, corrected without gate changes",
+      "pendingNativeJobsAtSnapshot": ["118784741362", "118784572585", "118784953810", "118784921772"]
+    },
     "focusedLint": "passed after const correction"
   },
   "delivery": {
+    "implementationPR": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/164",
+    "implementationMergeCommit": "b4fd195701e67ea006bc91e796d4ffdc94b091a0",
+    "mergedAt": "2026-10-20T17:50:32Z",
     "runtimeChanged": false,
     "newSitesDeployment": false,
     "retainedSitesVersion": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_18468a876b788191a529d33d75f84b98",
