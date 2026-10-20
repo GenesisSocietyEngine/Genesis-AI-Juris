@@ -1,0 +1,35 @@
+{
+  "schema": "casevant.packaged-catalogue-execution.v1",
+  "applicationVersion": 156,
+  "sourceCommit": "3fbc027d6e92a8782814fa9d18ca010db3915025",
+  "applicationInputsSha256": "84270e600106ede4915210c2262862e15805e58b3b16611eda222d4234fd012f",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "rawArchive": {
+    "sha256": "2a8c6a696be700f6e8d07385f47118add4545b596cf78a9c42fd927bb6ed48bf",
+    "bytes": 30374536,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "nativeArchive": {
+    "archive_format": "tar",
+    "sediment_file_id": "file_00000000c9d8820aaa8c9e58768a7f8d",
+    "content_hash": "sha256:f2fd260cd6e0d0be1e82ca8c3cf4244dbc0c969513c0361919dc68c93d19b450",
+    "size_bytes": 49397760,
+    "file_count": 577
+  },
+  "nativeNormalizationRecomputed": false,
+  "rebuilt": false,
+  "originalWorker": true,
+  "originalClient": true,
+  "productionBindingsUsed": false,
+  "host": "127.0.0.3",
+  "port": 4183,
+  "archiveFiles": 577,
+  "inventorySha256": "f550d5b91b717de0989508fb57094614a166411ebc5cc4e052e2f0ee7768f3fb",
+  "workerEntrySha256": "1d2a3db7d237a0c99b0a426bc012ff8f726c651c596fdb346e0101c2035ccc49",
+  "status": "stopped",
+  "caseBytesBefore": "1493eaa3228c659151bda42eac697ba67105fd174b27f52fc0a7a263879d03bf",
+  "caseBytesAfter": "1493eaa3228c659151bda42eac697ba67105fd174b27f52fc0a7a263879d03bf",
+  "caseBytesUnchanged": true,
+  "archiveBytesUnchanged": true,
+  "outboundDenied": 0
+}
