@@ -3,13 +3,14 @@ import { test } from "node:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { build } from "esbuild";
 import { NavigationController } from "../app/navigation-controller";
 import { publishSessionBoundary } from "../app/session-boundary";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "../app/matters/studio-case-catalogue";
-import { selectStudioCases, studioUpdatedLabel } from "../app/matters/studio-case-list";
+import { selectStudioCases, studioUpdatedLabel, studioUpdatedTimestamp } from "../app/matters/studio-case-list";
 import { readStudioSearchReturn, readStudioTabSearch, writeStudioTabSearch, withStudioSearchReturn, studioSearchBoundary } from "../app/matters/studio-search-return";
 import { studioCaseQuery } from "../app/studio-case-search";
 
@@ -232,13 +233,30 @@ test("loaded-list search and sorting preserve duplicate identities, immutable in
   assert.equal(studioUpdatedLabel("invalid","en"),"");
 });
 
+test("legacy UTC metadata sorts with ISO values identically across browser timezones without changing records", () => {
+  const code = `import {selectStudioCases,studioUpdatedLabel,studioUpdatedTimestamp} from './app/matters/studio-case-list.ts';
+    const base={caseId:'synthetic',title:'Synthetic',ownerDisplayName:'Synthetic'};
+    const rows=[{...base,id:1,updatedAt:'2026-10-20 19:11:42'}, {...base,id:2,updatedAt:'2026-10-20T18:30:00Z'}, {...base,id:3,updatedAt:'2026-10-20T21:11:42+02:00'}, {...base,id:4,updatedAt:'invalid'}];
+    const before=JSON.stringify(rows);
+    console.log(JSON.stringify({label:studioUpdatedLabel(rows[0].updatedAt,'en'),ru:studioUpdatedLabel(rows[0].updatedAt,'ru'),epoch:studioUpdatedTimestamp(rows[0].updatedAt),newest:selectStudioCases(rows,'','updated','en').map(x=>x.id),oldest:selectStudioCases(rows,'','oldest','ru').map(x=>x.id),unchanged:before===JSON.stringify(rows)}));`;
+  const observations = ["UTC", "Europe/Paris", "America/New_York"].map(TZ => JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code], { env: {...process.env, TZ}, encoding: "utf8" })));
+  for (const result of observations) {
+    assert.deepEqual(result, observations[0]); assert.equal(result.epoch, Date.UTC(2026,9,20,19,11,42));
+    assert.match(result.label,/20 Oct 2026.*19:11/); assert.match(result.ru,/20 окт.*2026.*19:11/);
+    assert.deepEqual(result.newest,[3,1,2,4]); assert.deepEqual(result.oldest,[2,3,1,4]); assert.equal(result.unchanged,true);
+  }
+  for (const value of ["invalid", "2026-02-30 19:11:42", "2026-10-20 25:00:00"]) assert.equal(studioUpdatedTimestamp(value),null);
+});
+
 test("list rows expose readable UTC dates, full long titles, named edit/open links and Russian fallback", () => {
   const title="Long synthetic case title — ".repeat(12);
   const html=renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Owned",cases:[{...owner,title},shared],locale:"en",location:"/matters?collection=personal&organization=receipt&lang=en"}));
   assert.match(html,/<ul class="rows">/);assert.ok(html.includes(title));
   assert.match(html,/Edit in Studio/);assert.match(html,/Open in Studio/);
   assert.match(html,/27 Sept 2026/);assert.match(html,/Updated · UTC/);
-  assert.match(html,/dateTime="2026-09-27T10:00:00Z"/i);
+  assert.match(html,/dateTime="2026-09-27T10:00:00\.000Z"/i);
+  const legacy=renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Owned",cases:[{...owner,updatedAt:"2026-10-20 19:11:42"}],locale:"en",location:"/matters?collection=personal"}));
+  assert.match(legacy,/dateTime="2026-10-20T19:11:42\.000Z"/i); assert.match(legacy,/title="2026-10-20 19:11:42"/); assert.match(legacy,/19:11/);
   const ru=renderToStaticMarkup(createElement(components.StudioCaseGroup,{title:"Мои",cases:[{...owner,updatedAt:"invalid"}],locale:"ru",location:"/matters?collection=personal&lang=ru"}));
   assert.match(ru,/Редактировать в Studio/);assert.match(ru,/Дата недоступна/);assert.doesNotMatch(ru,/<time/);
 });
@@ -250,6 +268,8 @@ test("wrapper retains the existing Matter owner for deep links, exposes normal g
   assert.match(matter,/data-existing-matter-owner="retained"/); assert.match(matter,/Personal workspace/); assert.match(matter,/Each case has its own role/);
   assert.match(matter,/href="\/matters\?collection=personal"/); assert.doesNotMatch(matter,/role="tab"/);
   const personal = render("/matters?collection=personal"); assert.doesNotMatch(personal,/data-existing-matter-owner/); assert.match(personal,/Search all authorized drafts/); assert.match(personal,/role="search"/); assert.match(personal,/type="submit"/); assert.match(personal,/maxLength="120"/i);
+  assert.match(personal,/data-saved-case-actions/); assert.doesNotMatch(matter,/data-saved-case-actions/);
+  assert.match(render("/matters?collection=personal",false),/data-saved-case-actions/);
   assert.match(render("/matters?collection=personal",false),/Verify your access/); assert.doesNotMatch(render("/matters?collection=personal",false),/Same title|Synthetic owner/);
 });
 
