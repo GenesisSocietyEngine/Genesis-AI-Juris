@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import StudioFirstCaseGuide from "../app/StudioFirstCaseGuide";
 import StudioActionPanel from "../app/StudioActionPanel";
@@ -8,7 +9,7 @@ import { buildCanopyPackage } from "../app/canopy-fixture";
 import { createOperationsDiagnostic } from "../app/operations-diagnostic";
 
 const noop = () => {};
-const props = { locale: "en" as const, hasStructure: true, hasTitle: true, saved: false, busy: false, canSave: true, needsSignIn: false, savedCaseHref: "/studio?custom_case=case-1", onBrief: noop, onTitle: noop, onSave: noop, onReport: noop };
+const props = { locale: "en" as const, hasStructure: true, hasTitle: true, saved: false, busy: false, canSave: true, needsSignIn: false, onBrief: noop, onTitle: noop, onSave: noop, onReport: noop };
 
 test("first-case guidance distinguishes content, pending work and confirmed persistence", () => {
   const unsaved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, props));
@@ -21,11 +22,9 @@ test("first-case guidance distinguishes content, pending work and confirmed pers
   const saving = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, busy: true }));
   assert.match(saving, /disabled=""/);
   assert.doesNotMatch(saving, /This version has a confirmed/);
-  const saved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, saved: true }));
+  const saved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, saved: true, saveConfirmedInSession: true }));
   assert.match(saved, /Preview report/);
-  assert.match(saved, /href="\/studio\?custom_case=case-1" target="_blank" rel="noopener noreferrer"/);
-  assert.match(saved, /This version has a confirmed workspace save/);
-  assert.match(saved, /Saving and exporting do not grant approval/);
+  assert.doesNotMatch(saved, /href=|three checkpoints|ready to revisit|confirmed workspace save/);
   const dirtyAgain = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, saved: false }));
   assert.doesNotMatch(dirtyAgain, /Open saved copy/);
 });
@@ -37,9 +36,36 @@ test("first-case guidance prioritizes missing content and preserves both languag
   assert.match(untitled, /Add a title/);
   const oversized = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, canSave: false }));
   assert.match(oversized, /disabled=""/);
-  const ru = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale: "ru", saved: true }));
-  assert.match(ru, /Сохранение этой версии в рабочем пространстве подтверждено/);
-  assert.match(ru, /Сохранение и экспорт не означают утверждения/);
+  const ru = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale: "ru", saved: true, saveConfirmedInSession: true }));
+  assert.match(ru, /Далее: просмотрите отчёт/);
+  assert.match(ru, /Посмотреть отчёт/);
+});
+
+test("restored cases skip onboarding; fresh receipts offer one guarded report action and dirty edits restore save guidance", () => {
+  for (const locale of ["en", "ru"] as const) {
+    assert.equal(renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: true })), "");
+    let reports = 0, saves = 0;
+    const fresh = StudioFirstCaseGuide({ ...props, locale, saved: true, saveConfirmedInSession: true, onReport: () => reports++, onSave: () => saves++ })!;
+    const button = fresh.props.children[1];
+    assert.equal(button.type, "button"); assert.equal(button.props.disabled, false);
+    button.props.onClick(); assert.equal(reports, 1); assert.equal(saves, 0);
+    const busy = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: true, saveConfirmedInSession: true, busy: true }));
+    assert.match(busy, /disabled=""/);
+    const dirty = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: false, saveConfirmedInSession: true }));
+    assert.match(dirty, locale === "en" ? /Save this case/ : /Сохранить кейс/);
+    assert.doesNotMatch(dirty, /first-case-saved/);
+  }
+});
+
+test("application retains header, unsaved-input and failure guidance while using only session receipt for the compact next action", () => {
+  const app = readFileSync("app/JurisApp.tsx", "utf8");
+  assert.match(app, /saveConfirmedInSession=\{workspaceSavedAt !== null\}/);
+  assert.match(app, /id="studio-save-status"[\s\S]*?Saved to workspace/);
+  assert.match(app, /displayMode === "developer" \|\| !\["saved", "submitted"\]\.includes\(visibleWorkspaceState\)/);
+  assert.match(app, /canDuplicate && !\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)/);
+  assert.match(app, /\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)[\s\S]*?Retry save/);
+  assert.match(app, /studio-evidence-pending/);
+  assert.match(app, /\{portableStudioActions\}\{customCaseId && \["saved", "submitted"\]/);
 });
 
 test("diagnostic downloads allowlist operational data and retain freshness limitations", () => {
