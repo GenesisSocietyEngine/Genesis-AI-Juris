@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import StudioFirstCaseGuide from "../app/StudioFirstCaseGuide";
+import StudioUserMoreActions from "../app/StudioUserMoreActions";
 import StudioActionPanel from "../app/StudioActionPanel";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { createOperationsDiagnostic } from "../app/operations-diagnostic";
@@ -65,7 +66,19 @@ test("application retains header, unsaved-input and failure guidance while using
   assert.match(app, /canDuplicate && !\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)/);
   assert.match(app, /\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)[\s\S]*?Retry save/);
   assert.match(app, /studio-evidence-pending/);
-  assert.match(app, /\{portableStudioActions\}\{customCaseId && \["saved", "submitted"\]/);
+  assert.match(app, /savedCaseHref=\{customCaseId && \["saved", "submitted"\]\.includes\(visibleWorkspaceState\)/);
+  assert.doesNotMatch(app, /\{portableStudioActions\}\{customCaseId/);
+});
+
+test("saved-version inspection is inside the existing More actions menu and preserves the exact separate-tab destination", () => {
+  const base = {grouped:true,locale:"en" as const,canDuplicate:true,exportReady:true,feedbackLabel:"Feedback",importLabel:"Import",exportLabel:"Export",startExample:noop,startTax:noop,requestFeedback:noop,importJson:noop,exportJson:noop,saveDevice:noop,markdownLoaded:noop,markdownOpened:noop,markdownFailed:noop};
+  for (const locale of ["en", "ru"] as const) {
+    const html = renderToStaticMarkup(createElement(StudioUserMoreActions, {...base,locale,savedCaseHref:"/studio?view=studio&custom_case=48&lang="+locale}));
+    assert.match(html, /<div class="studio-more-menu"><section>[\s\S]*?<a class="secondary-cta"/);
+    assert.match(html, /custom_case=48/);
+    assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+  }
+  assert.doesNotMatch(renderToStaticMarkup(createElement(StudioUserMoreActions,base)), /Inspect saved version/);
 });
 
 test("diagnostic downloads allowlist operational data and retain freshness limitations", () => {

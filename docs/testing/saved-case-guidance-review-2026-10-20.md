@@ -16,7 +16,7 @@ React review: pure derived rendering, unchanged lazy boundary, no hooks/effects/
 
 ## Verification before publication
 
-- Focused actual component/save-receipt/release-notice cohort:21 passed,0 failed. Includes restored/fresh/dirty, blank/title, guest/profile, oversized/pending, callback routing and existing receipt/full-carrier comparisons. Static application guard checks are not authenticated browser outcomes.
+- Focused actual component/save-receipt/release-notice cohort:22 passed,0 failed after the menu correction. Includes restored/fresh/dirty, blank/title, guest/profile, oversized/pending, callback routing, exact separate-tab menu destination and existing receipt/full-carrier comparisons. Static application guard checks are not authenticated browser outcomes.
 - TypeScript passed. Changed-file ESLint:0 errors,7 inherited unused-variable warnings in JurisApp. Diff whitespace check passed.
 - Initial restricted Node invocation failed before test loading (`uv_os_get_passwd ENOMEM`); unchanged pinned Node22.23.2 invocation outside that Windows sandbox restriction passed. Do not count the infrastructure error as a product test failure.
 - Actual updated component with built global styles in isolated port4178: EN1280×720 compact guide69.60px and button44px. RU390×640 long title/labels: guide140.80px, button44px, no horizontal overflow. Screenshots retained locally. These are labelled synthetic component views, not authenticated saves or full production visuals.
@@ -24,6 +24,10 @@ React review: pure derived rendering, unchanged lazy boundary, no hooks/effects/
 - Existing v153 Chrome47 tab retained without reload, including labelled unadded title `QA synthetic — keep unadded input across release`. No case write was made. Use this legitimate next release to observe the update notice if that original client remains available.
 
 The original v153 raw archive was pinned at30373723 bytes / SHA256 `183e9686da9d08337f95b7de28db1dfb4078a90d6412ef28801c22d3333facf8`. The existing historical-artifact inspector refuses its three PAX extended headers; it was not weakened. Native tar listing was checked for only regular files/directories, all paths confined to `dist`, no traversal/absolute/Windows paths, before extraction into a fresh workspace directory. Published provenance matches3d36b98/application identity. Asset retention will verify hashes against this exact predecessor. Native normalized archive hash remains separate from raw gzip hash.
+
+Pre-publication self-review corrected a placement mistake in the initial candidate: the inspection link must be inside `StudioUserMoreActions`' existing menu section, not an adjacent child outside its positioned container. The corrected real component renders the exact saved identity with noopener; its RU390px link measures44px high/14px font and wraps within the viewport. The local harness uses the same hero/menu stacking context; component observations remain separate from full application acceptance. Existing menu actions and developer-mode receipts remain intact.
+
+Production v153 baseline: one first-click normal save created independent synthetic48, `QA synthetic — saved guidance acceptance — 2026-10-20 A`, source Canopy2.0.0, Advisory decision, timestamp20October13:49:07Paris. Preserve48 and47. A subsequent normal owner JSON export was enabled and activated, but the10-second browser download observation timed out; no actual file/hash was established and no download success or defect is inferred.
 
 ## Publication and continuation
 

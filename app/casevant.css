@@ -103,6 +103,7 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .first-case-saved { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem 1.5rem; padding: .75rem 1rem; border-inline-start: 4px solid var(--workspace-accent); }
 .first-case-saved p { flex: 1 1 15rem; min-width: 0; margin: 0; font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
 .first-case-saved button { min-height: 44px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.studio-more-menu a.secondary-cta { min-height: 44px; font-size: .875rem; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .first-case-next { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 19rem); align-items: center; gap: 1.5rem; }
 .first-case-next h2 { font-size: 1.125rem; line-height: 1.45; margin: .35rem 0; }
 .first-case-next p { font-size: 1rem; line-height: 1.6; margin: .4rem 0; }
