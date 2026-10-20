@@ -10,10 +10,16 @@ import { NavigationController } from "../app/navigation-controller";
 import { publishSessionBoundary } from "../app/session-boundary";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "../app/matters/studio-case-catalogue";
 import { selectStudioCases, studioUpdatedLabel } from "../app/matters/studio-case-list";
+import { studioCaseQuery } from "../app/studio-case-search";
 
 const owner: SavedStudioCase = { id: 7, caseId: "synthetic_owner", title: "Same title", currentVersion: "1.2.3", access: "owner", isPrivate: true, updatedAt: "2026-09-27T10:00:00Z", ownerDisplayName: "Synthetic owner" };
 const shared: SavedStudioCase = { ...owner, id: 8, caseId: "synthetic_shared", access: "shared", isPrivate: false, ownerDisplayName: "Other author" };
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
+test("search input normalization is bounded, literal and safe for cursor encoding", () => {
+  assert.equal(studioCaseQuery(" АУДИТ %_[]?* "),"аудит %_[]?*");
+  assert.equal(studioCaseQuery("😀"),"😀");
+  for(const value of ["x".repeat(121),"line\nbreak","\u0000","\ud800","\udfff"]) assert.equal(studioCaseQuery(value),null);
+});
 async function session() {
   const actorId = "actor_synthetic_catalogue_owner";
   const selected = { id: "org_synthetic_catalogue", name: "Personal workspace", kind: "personal", status: "active", role: "org_owner", revision: 1, membershipRevision: 1, actorId, selection: `org_synthetic_catalogue.1.1.${actorId}` };
@@ -45,6 +51,42 @@ test("authorized catalogue paginates by server ID, never by title, and sends onl
   assert.equal(calls[1].path, "/api/custom-cases?limit=25&cursor=page_two");
   for (const call of calls) { assert.equal(call.init?.cache, "no-store"); assert.equal(call.init?.credentials, "same-origin"); assert.equal(call.init?.method, undefined); assert.equal(call.init?.body, undefined); }
   stop(); assert.deepEqual(catalogue.getSnapshot().cases, []);
+});
+
+test("server search replaces results/cursors, cancels old reads and rejects late responses", async () => {
+  const navigation = await session();
+  const calls: Array<{path:string;signal?:AbortSignal|null}> = [];
+  let late!: (response:Response)=>void;
+  const catalogue = new StudioCaseCatalogue(navigation, async (path, init) => {
+    calls.push({path,signal:init?.signal});
+    if (path.includes("q=old")) return new Promise<Response>(resolve => { late=resolve; });
+    return Response.json({customCases:[path.includes("q=") ? shared : owner],nextCursor:path.includes("q=") ? "filtered_page" : "unfiltered_page"});
+  });
+  const stop=catalogue.attach(); await tick();
+  const pending=catalogue.search("old"); await tick();
+  assert.deepEqual(catalogue.getSnapshot().cases,[]);
+  await catalogue.search(" АУДИТ ");
+  assert.equal(calls[1].signal?.aborted,true);
+  assert.equal(catalogue.getSnapshot().query,"аудит");
+  assert.deepEqual(catalogue.getSnapshot().cases,[shared]);
+  late(Response.json({customCases:[owner],nextCursor:"stale"})); await pending;
+  assert.deepEqual(catalogue.getSnapshot().cases,[shared]);
+  await catalogue.load(true);
+  assert.equal(calls.at(-1)?.path,"/api/custom-cases?limit=25&q="+encodeURIComponent("аудит")+"&cursor=filtered_page");
+  await catalogue.search(""); assert.equal(calls.at(-1)?.path,"/api/custom-cases?limit=25");
+  assert.equal(catalogue.getSnapshot().nextCursor,"unfiltered_page");
+  const count=calls.length; await catalogue.search("x".repeat(121));
+  assert.equal(calls.length,count); assert.equal(catalogue.getSnapshot().issue,"invalid-search"); assert.deepEqual(catalogue.getSnapshot().cases,[]);
+  stop();
+});
+
+test("search does not read without current account authority and expiry cancels the active query", async () => {
+  const navigation=await session(); let signal:AbortSignal|null|undefined; let count=0;
+  const catalogue=new StudioCaseCatalogue(navigation,async (_path,init)=> {count++; signal=init?.signal; return new Promise<Response>(()=>{});});
+  const stop=catalogue.attach(); await tick(); navigation.invalidate("expired");
+  assert.equal(signal?.aborted,true); assert.deepEqual(catalogue.getSnapshot().cases,[]);
+  await catalogue.search("private title"); assert.equal(count,1); assert.deepEqual(catalogue.getSnapshot().cases,[]);
+  stop();
 });
 
 test("expiry clears existing private metadata and a late response cannot restore it across renewed authority", async () => {
@@ -139,7 +181,7 @@ test("wrapper retains the existing Matter owner for deep links, exposes normal g
   const matter = render("/matters?dossier=dossier_synthetic&section=documents&target=document_1");
   assert.match(matter,/data-existing-matter-owner="retained"/); assert.match(matter,/Personal workspace/); assert.match(matter,/Each case has its own role/);
   assert.match(matter,/href="\/matters\?collection=personal"/); assert.doesNotMatch(matter,/role="tab"/);
-  const personal = render("/matters?collection=personal"); assert.doesNotMatch(personal,/data-existing-matter-owner/); assert.match(personal,/Search loaded drafts/);
+  const personal = render("/matters?collection=personal"); assert.doesNotMatch(personal,/data-existing-matter-owner/); assert.match(personal,/Search all authorized drafts/); assert.match(personal,/role="search"/); assert.match(personal,/type="submit"/); assert.match(personal,/maxLength="120"/i);
   assert.match(render("/matters?collection=personal",false),/Verify your access/); assert.doesNotMatch(render("/matters?collection=personal",false),/Same title|Synthetic owner/);
 });
 

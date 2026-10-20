@@ -86,6 +86,63 @@ before(async () => {
 });
 after(async () => { await mf?.dispose(); });
 
+test('authorized Studio search filters before pagination with literal EN/RU metadata and query-bound cursors', async () => {
+  // Local migrated D1 only. No production fixtures or case payloads are changed.
+  const prefix='retrieval_20261020_';
+  const foreign='foreign@example.test';
+  await d1.prepare('insert into users(email,display_name) values(?,?)').bind(foreign,'Автор Поиска').run();
+  const create=async (suffix:string,title:string,owner=email,privateCase=1,updated='2020-01-01 00:00:00') => {
+    const row=await d1.prepare('insert into custom_cases(owner_email,case_id,title,current_version,fingerprint,is_private,updated_at) values(?,?,?,?,?,?,?) returning id').bind(owner,prefix+suffix,title,'1.0.0','synthetic-search-only',privateCase,updated).first<{id:number}>();
+    assert.ok(row); return row.id;
+  };
+  const oldest=await create('oldest','Retrieval oldest NEEDLE');
+  for(let index=0;index<28;index++) await create('new_'+index,'Retrieval recent '+index,email,1,'2021-01-01 00:00:00');
+  const needle2=await create('second','Retrieval second needle');
+  const punctuation=await create('punctuation',"Retrieval literal % _ * ? [ ] ' quote");
+  const ru=await create('ru','Retrieval Аудит Договора Ёлка');
+  const shared=await create('shared','Retrieval granted needle',foreign,0);
+  const hidden=await create('hidden','Retrieval hidden needle',foreign,1);
+  const ungranted=await create('ungranted','Retrieval ungranted needle',foreign,0);
+  const longRu=await create('long_ru','Я'.repeat(120)+' A');
+  const longRu2=await create('long_ru_2','Я'.repeat(120)+' B');
+  await d1.prepare('insert into custom_case_grants(custom_case_id,recipient_email,granted_by_email) values(?,?,?)').bind(shared,email,foreign).run();
+  const rows=async (query:string,actor:'owner'|'shared'|'admin'|'foreign'='owner',limit=25,cursor='') => {
+    const response=await requestRoute(routes.custom,'GET',`/api/custom-cases?q=${encodeURIComponent(query)}&limit=${limit}`+(cursor?'&cursor='+encodeURIComponent(cursor):''),undefined,actor);
+    assert.equal(response.status,200,await response.clone().text());
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+    return await response.json() as {customCases:Array<{id:number;access:string;ownerDisplayName:string}>;nextCursor:string|null};
+  };
+  const unfiltered=await rows(''); assert.ok(!unfiltered.customCases.some(row=>row.id===oldest));
+  const all=await rows('needle'); assert.deepEqual(all.customCases.map(row=>row.id),[shared,needle2,oldest]);
+  const page1=await rows('NEEDLE','owner',1); assert.equal(page1.customCases[0].id,shared); assert.ok(page1.nextCursor);
+  const page2=await rows('needle','owner',1,page1.nextCursor); assert.equal(page2.customCases[0].id,needle2); assert.ok(page2.nextCursor);
+  const page3=await rows('needle','owner',1,page2.nextCursor); assert.equal(page3.customCases[0].id,oldest); assert.equal(page3.nextCursor,null);
+  for(const query of ['other','']) assert.equal((await requestRoute(routes.custom,'GET','/api/custom-cases?q='+query+'&cursor='+page1.nextCursor)).status,400);
+  assert.deepEqual((await rows('аУдИт дОгОвОрА ёЛкА')).customCases.map(row=>row.id),[ru]);
+  for(const query of ['%','_ *','* ?','[ ]',"' quote"]) assert.deepEqual((await rows(query)).customCases.map(row=>row.id),[punctuation]);
+  assert.deepEqual((await rows(prefix+'oldest')).customCases.map(row=>row.id),[oldest]);
+  assert.ok((await rows(String(oldest),'owner',50)).customCases.some(row=>row.id===oldest));
+  assert.deepEqual((await rows('#'+oldest)).customCases.map(row=>row.id),[oldest]);
+  assert.deepEqual((await rows('#'+hidden)).customCases,[]);
+  const ruPage=await rows('я'.repeat(120),'owner',1); assert.equal(ruPage.customCases[0].id,longRu2); assert.ok(ruPage.nextCursor);
+  assert.deepEqual((await rows('Я'.repeat(120),'owner',1,ruPage.nextCursor)).customCases.map(row=>row.id),[longRu]);
+  assert.deepEqual((await rows("' OR 1=1 --")).customCases,[]);
+  assert.deepEqual((await rows('АВТОР ПОИСКА')).customCases.map(row=>row.id),[shared]);
+  assert.equal((await rows(foreign)).customCases.length,0,'owner email is not a search field');
+  assert.deepEqual((await rows('hidden')).customCases,[]);
+  assert.deepEqual((await rows('needle','shared')).customCases,[]);
+  const admin=await rows('needle','admin'); assert.ok(admin.customCases.some(row=>row.id===shared)); assert.ok(admin.customCases.some(row=>row.id===ungranted)); assert.ok(!admin.customCases.some(row=>row.id===hidden||row.id===oldest));
+  const foreignRows=await rows('needle','foreign'); assert.ok(foreignRows.customCases.some(row=>row.id===hidden)); assert.ok(!foreignRows.customCases.some(row=>row.id===oldest));
+  await d1.prepare('delete from custom_case_grants where custom_case_id=? and recipient_email=?').bind(shared,email).run();
+  assert.deepEqual((await rows('АВТОР ПОИСКА')).customCases,[]);
+  assert.deepEqual((await rows('needle','owner',25,page1.nextCursor)).customCases.map(row=>row.id),[needle2,oldest]);
+  for(const query of ['x'.repeat(121),'line\nbreak','\u0000']) assert.equal((await requestRoute(routes.custom,'GET','/api/custom-cases?q='+encodeURIComponent(query))).status,400);
+  assert.equal((await rows('x'.repeat(120))).customCases.length,0);
+  // The legacy unfiltered cursor remains usable without a query.
+  assert.ok(unfiltered.nextCursor); assert.ok((await rows('','owner',25,unfiltered.nextCursor)).customCases.some(row=>row.id===oldest));
+  assert.equal((await d1.prepare('select count(*) as n from case_drafts where case_id like ?').bind(prefix+'%').first<{n:number}>())?.n,0,'search creates no draft payloads');
+});
+
 test('migrated examples survive real authenticated save, reopen, scenario amendment and stale writes', async () => {
   const examples = Object.keys(CONVERTED_EXAMPLES).map(id => buildConvertedExample(id, 'en'))
     .concat(CANOPY_SCENARIOS.map(scenario => buildCanopyPackage(scenario.id, true).draft))

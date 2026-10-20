@@ -11,6 +11,8 @@ import { readStudioAggregate } from "../../studio-aggregate";
 import { parsePreservedJson } from "../../preserved-json";
 import { isPlatformAdmin } from "../../server-authorization";
 import type { CaseProtectionV1 } from "../../types";
+import { studioCaseQuery } from "../../studio-case-search";
+import { studioMetadataMatch } from "../../server-studio-case-search";
 
 export const dynamic = "force-dynamic";
 
@@ -96,8 +98,10 @@ export async function GET(request: Request) {
 
   const requestedLimit = Number(url.searchParams.get("limit") ?? "25");
   const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(50, requestedLimit)) : 25;
+  const query = studioCaseQuery(url.searchParams.get("q") ?? "");
+  if (query === null) return privateJson({ error: "Search must contain at most 120 characters without control characters." }, 400);
   const cursorParam = url.searchParams.get("cursor");
-  const cursor = cursorParam ? decodeCursor(cursorParam) : null;
+  const cursor = cursorParam ? decodeCursor(cursorParam, query) : null;
   if (cursorParam && !cursor) return privateJson({ error: "Invalid custom-case cursor." }, 400);
 
   const ownerWhere = eq(customCases.ownerEmail, email);
@@ -124,10 +128,23 @@ export async function GET(request: Request) {
     order by current_draft.updated_at desc
     limit 1
   ), '"unavailable"')`;
-  const pageWhere = cursor ? and(visibleWhere, or(
+  // Search the authorized metadata set BEFORE pagination. Never search draft
+  // bodies, email addresses or grants, nor broaden existing visibility policy.
+  const savedId = /^#[1-9]\d{0,14}$/u.test(query) ? Number(query.slice(1)) : null;
+  const searchWhere = savedId ? eq(customCases.id, savedId) : query ? or(
+    studioMetadataMatch(customCases.title, query),
+    sql`instr(lower(${customCases.caseId}), ${query}) > 0`,
+    sql`instr(cast(${customCases.id} as text), ${query}) > 0`,
+    exists(db.select({ id: users.id }).from(users).where(and(
+      sql`lower(trim(${users.email})) = lower(trim(${customCases.ownerEmail}))`,
+      studioMetadataMatch(users.displayName, query),
+    ))),
+  ) : undefined;
+  const filteredWhere = and(visibleWhere, searchWhere)!;
+  const pageWhere = cursor ? and(filteredWhere, or(
     lt(customCases.updatedAt, cursor.updatedAt),
     and(eq(customCases.updatedAt, cursor.updatedAt), lt(customCases.id, cursor.id)),
-  )!) : visibleWhere;
+  )!) : filteredWhere;
   const page = await db.select({ ...getTableColumns(customCases), storedProtection }).from(customCases).where(pageWhere).orderBy(desc(customCases.updatedAt), desc(customCases.id)).limit(limit + 1);
   const records = page.slice(0, limit).map(record => {
     // A list hint never verifies a seal or authorizes copying. Unknown/malformed
@@ -137,7 +154,7 @@ export async function GET(request: Request) {
     catch { /* Recovery/detail inspection is required. */ }
     return { ...record, copyProtected };
   });
-  const nextCursor = page.length > limit && records.length ? encodeCursor(records.at(-1)!) : null;
+  const nextCursor = page.length > limit && records.length ? encodeCursor(records.at(-1)!, query) : null;
   if (!records.length) return privateJson({ customCases: [], nextCursor: null, licenseTier, isAdmin: admin });
   const pageIds = records.map((record) => record.id);
 
@@ -328,16 +345,17 @@ function storedParentIdentity(payload: Record<string, unknown>) {
   return { caseId: record.caseId, version: record.version, fingerprint: record.fingerprint };
 }
 
-function encodeCursor(record: { updatedAt: string; id: number }) {
-  return btoa(JSON.stringify([record.updatedAt, record.id])).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+function encodeCursor(record: { updatedAt: string; id: number }, query: string) {
+  const scope = query ? [encodeURIComponent(query)] : [];
+  return btoa(JSON.stringify([record.updatedAt, record.id, ...scope])).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
 }
 
-function decodeCursor(value: string) {
-  if (!/^[A-Za-z0-9_-]{4,256}$/u.test(value)) return null;
+function decodeCursor(value: string, query: string) {
+  if (!/^[A-Za-z0-9_-]{4,2048}$/u.test(value)) return null;
   try {
     const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
     const decoded: unknown = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
-    if (!Array.isArray(decoded) || decoded.length !== 2) return null;
+    if (!Array.isArray(decoded) || decoded.length !== (query ? 3 : 2) || (query && decoded[2] !== encodeURIComponent(query))) return null;
     const [updatedAt, id] = decoded;
     if (typeof updatedAt !== "string" || !/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{3}Z)?$/u.test(updatedAt) || !Number.isSafeInteger(id) || Number(id) <= 0) return null;
     const canonicalInput = updatedAt.includes(" ") ? `${updatedAt.replace(" ", "T")}Z` : updatedAt;

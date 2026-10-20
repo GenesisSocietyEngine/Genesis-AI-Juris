@@ -36,25 +36,27 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const [sort, setSort] = useState<StudioCaseSort>("updated");
   useEffect(() => catalogue.attach(), [catalogue]);
   const en = locale === "en";
-  const visible = useMemo(() => selectStudioCases(state.cases, search, sort, locale), [state.cases, search, sort, locale]);
+  const visible = useMemo(() => selectStudioCases(state.cases, "", sort, locale), [state.cases, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.
   if (session.phase !== "ready" || session.endingSession) return <main className={styles.personal}><p role="status">{en ? "Verify your access to view saved Studio drafts." : "Подтвердите доступ для просмотра сохранённых черновиков Studio."}</p></main>;
   return <main className={styles.personal}>
     <header><h2>{en ? "Saved Studio drafts" : "Сохранённые черновики Studio"}</h2><p>{en ? "Open a saved draft to continue your work. Review and approval are tracked separately." : "Откройте сохранённый черновик, чтобы продолжить работу. Проверка и одобрение учитываются отдельно."}</p></header>
-    <div className={styles.tools}>
-      <label className={styles.search}>{en ? "Search loaded drafts" : "Поиск в загруженных черновиках"}<input type="search" placeholder={en ? "Title, author or case ID" : "Название, автор или ID кейса"} value={search} onChange={event => setSearch(event.target.value)} /></label>
+    <form className={styles.tools} role="search" aria-label={en ? "Search saved Studio drafts" : "Поиск сохранённых черновиков Studio"} onSubmit={event => { event.preventDefault(); void catalogue.search(search); }}>
+      <label className={styles.search}>{en ? "Search all authorized drafts" : "Поиск во всех доступных черновиках"}<input type="search" maxLength={120} placeholder={en ? "Title, author or #saved ID" : "Название, автор или #ID копии"} value={search} onChange={event => setSearch(event.target.value)} /></label>
+      <button type="submit">{en ? "Search" : "Найти"}</button>
+      {(search || state.query) && <button type="button" onClick={() => { setSearch(""); void catalogue.search(""); }}>{en ? "Clear search" : "Сбросить поиск"}</button>}
       <label>{en ? "Sort loaded drafts" : "Сортировка загруженных черновиков"}<select value={sort} onChange={event => setSort(event.target.value as StudioCaseSort)}><option value="updated">{en ? "Recently updated" : "Недавно обновлённые"}</option><option value="oldest">{en ? "Oldest update first" : "Давно обновлённые"}</option><option value="title">{en ? "Title A–Z" : "По названию А–Я"}</option></select></label>
-    </div>
+    </form>
+    {state.query && <p>{en ? `Results for “${state.query}” across authorized saved drafts. Sorting applies to loaded results.` : `Результаты для «${state.query}» среди всех доступных сохранённых черновиков. Сортировка применяется к загруженным результатам.`}</p>}
     <div className={styles.actions}>
       <button type="button" onClick={() => void catalogue.load()} disabled={state.phase === "loading"}>{en ? "Refresh drafts" : "Обновить черновики"}</button>
       <a href={workspaceDestination("/studio", location)}>{en ? "Open Case Studio" : "Открыть Case Studio"}</a>
       <a href={workspaceDestination("/studio?view=community", location)}>{en ? "Manage Studio sharing" : "Настроить доступ к черновикам Studio"}</a>
     </div>
     {state.phase === "loading" && <p role="status">{en ? "Loading authorized drafts…" : "Загрузка доступных черновиков…"}</p>}
-    {state.phase === "error" && <p role="alert">{en ? "Saved drafts could not be read. Refresh drafts to retry; check your access if the problem continues." : "Не удалось прочитать черновики. Нажмите «Обновить черновики»; если ошибка повторяется, проверьте доступ."}</p>}
-    {state.phase === "ready" && !state.cases.length && <p>{en ? "No saved Studio drafts are available to this account. Open Case Studio to create or import a draft, then save it to your account." : "Для аккаунта нет доступных сохранённых черновиков Studio. Создайте или импортируйте черновик в Case Studio и сохраните его в аккаунте."}</p>}
+    {state.phase === "error" && <p role="alert">{state.issue === "invalid-search" ? (en ? "Use up to 120 characters without line breaks or control characters." : "Введите до 120 символов без переносов строк и управляющих символов.") : (en ? "Saved drafts could not be read. Refresh drafts to retry; check your access if the problem continues." : "Не удалось прочитать черновики. Нажмите «Обновить черновики»; если ошибка повторяется, проверьте доступ.")}</p>}
+    {state.phase === "ready" && !state.cases.length && <p role="status">{state.query ? (en ? "No authorized drafts match this search. Try another title, author or case ID, or clear search." : "Среди доступных черновиков совпадений нет. Измените название, автора или ID кейса либо сбросьте поиск.") : (en ? "No saved Studio drafts are available to this account. Open Case Studio to create or import a draft, then save it to your account." : "Для аккаунта нет доступных сохранённых черновиков Studio. Создайте или импортируйте черновик в Case Studio и сохраните его в аккаунте.")}</p>}
     {state.cases.length > 0 && <><p role="status">{en ? `${visible.length} matching loaded drafts` : `Найдено загруженных черновиков: ${visible.length}`}{state.nextCursor ? (en ? " · More drafts are available below." : " · Ниже можно загрузить ещё.") : ""}</p>
-      {!visible.length && <div className={styles.empty}><p>{en ? "No loaded drafts match your search. Try another title, author or case ID." : "Среди загруженных черновиков совпадений нет. Измените название, автора или ID кейса в запросе."}</p><button type="button" onClick={() => setSearch("")}>{en ? "Clear search" : "Сбросить поиск"}</button></div>}
       <StudioCaseGroup title={en ? "Owned by me" : "Мои черновики"} cases={visible.filter(item => item.access === "owner")} locale={locale} location={location}/>
       <StudioCaseGroup title={en ? "Other authorized Studio drafts" : "Другие доступные черновики Studio"} cases={visible.filter(item => item.access !== "owner")} locale={locale} location={location}/>
     </>}
