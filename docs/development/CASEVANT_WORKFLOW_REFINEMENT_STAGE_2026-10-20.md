@@ -2,11 +2,13 @@
 
 This is the current ordered improvements list. Preserve the canonical product instructions and compatibility contracts. Older dated acceptance claims are historical; each row requires its own dated evidence. Source synchronization, browser acceptance and production publication are separate outcomes.
 
+**Delivered v156:** [production review and native receipt](../testing/correction-navigation-review-2026-10-20.md#delivered--public-sites-v156), runtime3fbc027d6e92a8782814fa9d18ca010db3915025, environment42. Correction navigation and obsolete Undo/Redo notices are amended. Item1 below is the preserved implementation contract, not work to repeat. Next priority is item2: the final fresh catalogue check reopened first-pointer/focus acceptance despite earlier successful v155 observations. Do not treat it as universally closed or assume its cause.
+
 ## Audit baseline
 
-Clean canonical main2f8f8fa matches deployed v155 application/hosting inputs. Recheck exact main and native Site before each implementation. v155 first-pointer pagination is delivered in EN/RU; filtered pointer/English desktop keyboard and Back/Forward query/sort/two-page restoration are observed. Do not reimplement it. All48 catalogue metadata tuples were preserved; this is not full saved-byte comparison. Source/template versions, case IDs, authority, saved bytes, tax/evidence/protection/history carriers and PDF locks remain invariant.
+Opening audit: clean canonical main2f8f8fa matched deployed v155 application/hosting inputs. Recheck exact main and native Site before each implementation. v155 first-pointer pagination passed dated EN/RU observations; filtered pointer/English desktop keyboard and Back/Forward query/sort/two-page restoration were observed. Preserve its requested-depth fix. The later v156 first-pointer result below remains a separate unresolved observation. All48 catalogue metadata tuples were preserved again after v156; this is not full saved-byte comparison. Source/template versions, case IDs, authority, saved bytes, tax/evidence/protection/history carriers and PDF locks remain invariant.
 
-## 1. Correction navigation — execute this bounded slice
+## 1. Correction navigation — delivered v156, preserve
 
 Outcome: a correction shortcut belongs to the correction being worked on. Ordinary section/Overview navigation and browser Back/Forward must remove stale correction target/focus/return presentation and its temporary notice. Explicit correction opening still focuses the real control, and explicit Return still focuses the Review actions. Re-entering a section through history opens its normal panel; reopen a review action to resume its retained unadded input.
 
@@ -20,7 +22,11 @@ Release: independently reviewable PR; exact-main web/PDF and artifact checks; re
 
 ## 2. Interaction acceptance and ambiguity — independently reproduce
 
+**Execute next: catalogue first activation during focus.** Fresh v156 Chrome tab178218877 showed25 → loading →25 on its first pointer attempt; a settled second activation reached48. Earlier v155 observations and the real-controller focus-race fix still stand, but they do not explain this new attempt. Establish whether a trusted click reaches the handler, whether focus revalidation changes/remounts the control before delivery, or whether a received intent is cancelled/reset. Use a labelled isolated full-component fixture with inspectable event/read ordering, then normal supported browser actions. Keep local instrumentation out of production and do not add telemetry. Compare settled focus, window/tab activation, organization initialization, delayed reads and search submission. Preserve authority/query/cursor fences and fresh visibility checks. Do not replay a write, accept stale metadata, infer an intent from a failed automation action, or suppress verification. Implement a further amendment only after identifying the responsible boundary; require first received activation, explicit loading/error/cancellation, no writes and query/sort/return-depth preservation. This is also the context for the prior unconfirmed Search pointer attempt.
+
 Continue actual measured narrow/short-height EN/RU production checks and Russian Tab/Enter when supported key delivery works. A requested viewport is not a measured one. Screenshot/key delivery timeouts are not product defects. Keep local component and authenticated production evidence distinct. An initial v155 pointer Search activation was unconfirmed while Enter submitted correctly; reproduce with settled focus/scroll/context before changing event or scrolling behavior. Record visible outcomes, not attempted activations. Verify the user's language preference after testing if browser inspection is available; do not claim restoration after a timeout.
+
+**Separate CI reliability slice:** retain the observed npm connection reset and packaged Chrome startup failure/absent DevToolsActivePort diagnostics. Reproduce startup delay, early exit and missing startup-file cases in isolated fixtures; capture bounded exit/stderr/readiness evidence and fault-injection checks. Actual browser execution must remain mandatory. No workflow/gate weakening, soft pass, cancelled required job or blind timeout increase as a feature-release workaround. The unchanged candidate retry passed before v156 integration; the initial automatic merge rejection was respected. Historical v155 Mac jobs later ended cancelled, not passed; current native acceptance remains separately recorded.
 
 ## 3. Materials and persistence acceptance
 
