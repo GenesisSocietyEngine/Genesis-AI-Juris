@@ -10,7 +10,7 @@ import { NavigationController } from "../app/navigation-controller";
 import { publishSessionBoundary } from "../app/session-boundary";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "../app/matters/studio-case-catalogue";
 import { selectStudioCases, studioUpdatedLabel } from "../app/matters/studio-case-list";
-import { readStudioSearchReturn, withStudioSearchReturn, studioSearchBoundary } from "../app/matters/studio-search-return";
+import { readStudioSearchReturn, readStudioTabSearch, writeStudioTabSearch, withStudioSearchReturn, studioSearchBoundary } from "../app/matters/studio-search-return";
 import { studioCaseQuery } from "../app/studio-case-search";
 
 const owner: SavedStudioCase = { id: 7, caseId: "synthetic_owner", title: "Same title", currentVersion: "1.2.3", access: "owner", isPrivate: true, updatedAt: "2026-09-27T10:00:00Z", ownerDisplayName: "Synthetic owner" };
@@ -197,7 +197,7 @@ test("Studio recent work opens Personal drafts, clears governed-case targeting a
 });
 
 
-test("return search state is history-only, account/organization/boundary bound and preserves unrelated router state", () => {
+test("history return controls are account/organization/boundary bound and preserves unrelated router state", () => {
  const value={version:1 as const,scope:'actor/org',boundary:'nonce',query:'erp',input:'ERP',sort:'title' as const,pages:3};
  const state=withStudioSearchReturn({router:'retained'},value);
  assert.deepEqual(readStudioSearchReturn(state,'actor/org','nonce'),value);
@@ -222,4 +222,20 @@ test("return restores query/page depth through fresh no-store server reads, stop
 
 test("blocked localStorage access disables history restoration without crashing", () => {
  assert.equal(studioSearchBoundary(() => {throw new Error('blocked property');}),null);
+});
+
+
+test("return through workspace navigation restores controls from tab storage, never case rows or authority", () => {
+ const data=new Map<string,string>(), store={getItem:(key:string)=>data.get(key)??null,setItem:(key:string,value:string)=>{data.set(key,value);},removeItem:(key:string)=>{data.delete(key);}};
+ const value={version:1 as const,scope:'actor/org',boundary:'nonce',query:'erp',input:'ERP',sort:'title' as const,pages:2};
+ writeStudioTabSearch(()=>store,value);
+ assert.deepEqual(readStudioTabSearch(()=>store,'actor/org','nonce'),value);
+ assert.equal(readStudioSearchReturn(null,'actor/org','nonce'),null,'fresh navigation has no prior history state');
+ assert.ok(![...data.values()].join('').includes('customCases'));
+ for(const [scope,boundary] of [['other/org','nonce'],['actor/other','nonce'],['actor/org','changed']]){
+  writeStudioTabSearch(()=>store,value);assert.equal(readStudioTabSearch(()=>store,scope,boundary),null);assert.equal(data.size,0);
+ }
+ writeStudioTabSearch(()=>store,value);writeStudioTabSearch(()=>store,null);assert.equal(data.size,0);
+ assert.equal(readStudioTabSearch(()=>{throw Error('blocked');},'actor/org','nonce'),null);
+ assert.doesNotThrow(()=>writeStudioTabSearch(()=>{throw Error('blocked');},value));
 });

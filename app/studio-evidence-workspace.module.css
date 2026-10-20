@@ -11,3 +11,5 @@
 :global(.theme-after-hours) .meta{color:#c2d2df}
 :global(.theme-after-hours) .surface summary,:global(.theme-after-hours) .eyebrow{color:#a3e9e2}
 :global(.theme-after-hours) .surface input:not([type=checkbox]),:global(.theme-after-hours) .surface select{color:#123345}
+
+.bulk{position:sticky;top:72px;z-index:2;box-shadow:0 4px 16px #12334522}.bulk legend{font-weight:650}.bulk label{display:grid;gap:6px}
