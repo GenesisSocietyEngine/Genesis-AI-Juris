@@ -48,7 +48,8 @@ test("node endpoint menus stay DOM-bounded while search and paging expose every 
   assert.equal(allIds.size, 200, "paging must preserve access to every endpoint");
 
   const pinned = studioNodeMenuOptions(first.nodes, byId, "outcome-1");
-  assert.equal(pinned[0].id, "outcome-1");
+  assert.ok(pinned.some(node => node.id === "outcome-1"));
+  assert.deepEqual(pinned, [...pinned].sort((a,b)=>graphNodes.indexOf(a)-graphNodes.indexOf(b)));
   assert.ok(pinned.length <= STUDIO_NODE_MENU_PAGE_SIZE + 1);
   assert.equal(studioNodeMenuPage(graphNodes, "Node 173", 0).nodes[0].title, "Node 173");
   assert.equal(studioNodeMenuPage(graphNodes, "decision-172", 0).nodes[0].id, "decision-172");
@@ -80,7 +81,7 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.match(source, /setDerivationAttempt\(\(attempt\) => attempt \+ 1\)/, "a failed calculation exposes a bounded manual retry");
   assert.doesNotMatch(source, /useMemo\(\(\) => compileStudioDraft/);
   assert.doesNotMatch(source, /<code>\{caseFingerprint\(draft\)\}<\/code>/);
-  assert.match(source, /studioNodeMenuOptions\(relationNodeMenu\.nodes,nodeById,link\.to\)/);
+  assert.match(source, /studioNodeMenuOptions\(relationNodeMenu\.nodes,nodeById,link\.to,nodeNumberById\)/);
   assert.match(source, /import StudioNodeConnections from "\.\/StudioNodeConnectionsLoader"/);
 });
 

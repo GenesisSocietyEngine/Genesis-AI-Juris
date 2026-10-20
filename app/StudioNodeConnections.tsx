@@ -14,16 +14,17 @@ export default function StudioNodeConnections({ nodes, links, sourceId, locale, 
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState("");
   const en = locale === "en";
+  const indices = new Map(nodes.map((node,index) => [node.id,index+1]));
   const byId = new Map(nodes.map(node => [node.id, node]));
   const outgoing = links.filter(link => link.from === sourceId);
   const incoming = links.filter(link => link.to === sourceId);
   const connected = new Set(outgoing.map(link => link.to));
   const candidates = nodes.filter(node => node.id !== sourceId && !connected.has(node.id));
-  const menu = studioNodeMenuPage(candidates, query, page);
+  const menu = studioNodeMenuPage(candidates, query, page, STUDIO_NODE_MENU_PAGE_SIZE, indices);
   const target = byId.get(targetId);
   const alreadyConnected = connected.has(targetId);
   // Keep the chosen destination visible through search, paging and successful add.
-  const options = studioNodeMenuOptions(menu.nodes, byId, targetId);
+  const options = studioNodeMenuOptions(menu.nodes, byId, targetId, indices);
   return <section className="inspector-destination-picker" aria-label={en ? "Node connections" : "Связи узла"}>
     <h4>{en ? "Existing connections" : "Текущие связи"}</h4>
     <p>{en ? `${incoming.length} incoming · ${outgoing.length} outgoing` : `${incoming.length} входящих · ${outgoing.length} исходящих`}</p>
@@ -37,7 +38,7 @@ export default function StudioNodeConnections({ nodes, links, sourceId, locale, 
     {(query !== "" || candidates.length > STUDIO_NODE_MENU_PAGE_SIZE) && <label><span>{en ? "Find destination" : "Найти назначение"}</span><input type="search" value={query} placeholder={en ? "Title, type or ID" : "Название, тип или ID"} onChange={event => { setQuery(event.target.value); setPage(0); }}/></label>}
     <label><span>{en ? "New destination" : "Новое назначение"}</span><select id="studio-connect-node" disabled={disabled} value={target ? targetId : ""} onChange={event => { setTargetId(event.target.value); setMessage(""); }}>
       <option value="">{en ? "Choose destination…" : "Выберите узел…"}</option>
-      {options.map(node => <option key={node.id} value={node.id}>{labels[node.type]} · {node.title}{connected.has(node.id) ? (en ? " — Already connected" : " — Уже связан") : ""}</option>)}
+      {options.map(node => <option key={node.id} value={node.id}>N{String(indices.get(node.id)).padStart(2,"0")} · {labels[node.type]} · {node.title}{connected.has(node.id) ? (en ? " — Already connected" : " — Уже связан") : ""}</option>)}
     </select></label>
     {menu.pageCount > 1 && <div className="node-menu-pagination"><span>{menu.start}–{menu.end} / {menu.total}</span><button type="button" disabled={menu.page === 0} onClick={() => setPage(menu.page - 1)} aria-label={en ? "Previous destinations" : "Предыдущие назначения"}>←</button><button type="button" disabled={menu.page >= menu.pageCount - 1} onClick={() => setPage(menu.page + 1)} aria-label={en ? "Next destinations" : "Следующие назначения"}>→</button></div>}
     {!candidates.length && <p>{en ? "No additional destinations are available." : "Дополнительных назначений нет."}</p>}

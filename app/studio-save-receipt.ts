@@ -1,3 +1,4 @@
+import { workspaceDestination } from "./workspace-navigation";
 import { caseFingerprint, casePublicationFingerprint, isRecord, normalizeStudioDraft } from './case-integrity';
 import type { StudioDraft } from './types';
 
@@ -24,11 +25,12 @@ export function verifiedStudioSaveReceipt(value: unknown, draft: StudioDraft, ac
   return { id: Number(record.id), isPrivate: record.isPrivate, fingerprint, publicationFingerprint, savedAt, protection: record.protection as StudioDraft['protection'] };
 }
 
-export function savedStudioPath(id: number, step = 'run_compare', locale = 'en', panel: string | null = null) {
+export function savedStudioPath(id: number, step = 'run_compare', locale = 'en', panel: string | null = null, origin?: string) {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid saved case');
   const params = new URLSearchParams({ view: 'studio', custom_case: String(id), studio_step: step, lang: locale });
   if (panel === 'overview') params.set('studio_panel', panel);
-  return '/studio?' + params.toString();
+  const path = '/studio?' + params.toString();
+  return origin ? workspaceDestination(path, origin) : path;
 }
 
 

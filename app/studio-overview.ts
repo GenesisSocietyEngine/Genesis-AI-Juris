@@ -1,8 +1,7 @@
 import { caseFingerprint } from "./case-integrity";
 import { CANOPY_QUESTION, CANOPY_SCENARIOS, CANOPY_SOURCES, CANOPY_UNAVAILABLE, buildCanopyPackage, type CanopyScenarioId, type CanopySource } from "./canopy-fixture";
 import { caseTypePlaybook } from "./case-type-playbooks";
-import { validateStudioDraft, type StudioCheck } from "./studio-validation";
-import type { StudioActionTarget } from "./StudioActionPanel";
+import { validateStudioDraft } from "./studio-validation";
 import type { StudioDraft } from "./types";
 
 type Locale = "en" | "ru";
@@ -61,8 +60,8 @@ export function studioOverview(draft: StudioDraft, locale: Locale) {
     recordedCount: recordGroup ? draft.nodes.filter(node => recordGroup.types.includes(node.type)).length : facts.length + evidence.length,
     references,
     // Reference material exists in the fixture, not as uploaded/accepted dossier evidence.
-    sourcePacket: family ? CANOPY_SOURCES : [],
-    documentCount: family ? new Set(CANOPY_SOURCES.map(source => source.id)).size : null,
+    sourcePacket: sourceCandidate || exact ? CANOPY_SOURCES : [],
+    documentCount: sourceCandidate || exact ? new Set(CANOPY_SOURCES.map(source => source.id)).size : null,
     exactScenario: exact?.declaration.id as CanopyScenarioId | undefined,
     referenceScenario: sourceCandidate?.declaration.id ?? exact?.declaration.id,
     publicationContextReviewed: draft.premisePublication === "author-reviewed",
@@ -71,20 +70,7 @@ export function studioOverview(draft: StudioDraft, locale: Locale) {
 }
 
 /** Reuses validation IDs and existing form destinations; contains no second validation policy. */
-export function studioOverviewAction(draft: StudioDraft, check: StudioCheck): StudioActionTarget {
-  if (!draft.nodes.length) return { step: 1, id: "studio-case-brief" };
-  const group = caseTypePlaybook(draft.caseType).requiredNodeGroups.find(item => `nodes:${item.id}` === check.id);
-  if (group) return { step: 3, id: "studio-evidence-composer", nodeType: group.types.includes("evidence") ? "evidence" : group.types[0] };
-  if (check.id === "context") return { step: 3, id: "studio-publishable-context" };
-  if (check.id === "brief") return { step: 3, id: draft.title.trim() ? "studio-publishable-context" : "studio-title" };
-  if (check.id === "identity" || check.id === "version") return { step: 3, id: check.id === "identity" ? "studio-case-identity" : "studio-case-version", developer: true };
-  if (check.id === "participants") return { step: 3, id: draft.jurisdiction.trim() ? "studio-role" : "studio-jurisdiction" };
-  if (check.id === "legal-as-of") return { step: 3, id: "studio-legal-date" };
-  if (check.id === "https-sources") return { step: 3, id: "studio-source-urls" };
-  if (check.id === "compliance-gate") return { step: 3, id: "studio-compliance" };
-  const connected = new Set(draft.links.flatMap(link => [link.from, link.to]));
-  return { step: 4, id: "studio-connect-node", nodeId: draft.nodes.find(node => !connected.has(node.id))?.id ?? draft.nodes[0]?.id };
-}
+export { studioReviewAction as studioOverviewAction } from "./studio-review-action";
 
 export function studioSourceFragmentId(document: string, version: number, section: string) {
   return `studio-reference-${document}-v${version}-${section}`;

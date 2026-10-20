@@ -1,0 +1,15 @@
+# Evidence, review actions and search-return audit — 20 October 2026
+
+Plan: [detailed stage](../development/CASEVANT_EVIDENCE_UX_STAGE_2026-10-20.md). Intended outcomes and acceptance are specified there before implementation. Baseline native public151/source035f6483421c9b962d01035007dfbc18527026ab; canonical and Sites source opening5da7adf7db5477d9af055df5122bac8eecde159d. App hash eace1fc5249b18a53afffe042cc54d851a966c8faf46a8f1c9768efd022a458b and hosting20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe match prior live inputs. Isolated branch codex/evidence-workflow-20261020; root workspace's unrelated writer changes remain untouched.
+
+Findings: category-check status is non-interactive; it repeats large technical explanations. Studio search is component-local and resets after full-page navigation. Source packets are fragmented across Canopy/converted panels; custom cases lack a common downloadable register. Evidence is already represented by independent nodes/links, so reassignment can use existing carriers without a destructive data migration. Source body absence, immutable reference versions, human review and working records must remain distinct. Node menus currently rank by text match and prepend pinned values, which can contradict the map's N index.
+
+Implementation/testing/publication evidence will be added only after each check completes. No production case may be deleted or overwritten for this stage.
+
+## Candidate implementation review
+
+Implemented shared completeness correction routing, history-bound saved-case search/query/sort/page-depth restoration, example-library filter retention, N-index endpoint ordering, a lazy materials register with individual exact-text/ZIP exports and hash manifest, and existing-record bulk attachment/move/disconnection. Node removal offers batch evidence transfer or library retention; evidence-node removal disconnects rather than discards its body. No persisted schema/source-template/approval changes. Unknown Canopy versions no longer project current document counts.
+
+Focused tests: initial41/41 passed; after exact-version correction38/38 passed across materials, save receipts, overview, graph performance and demo catalogue (overlapping suites; counts must not be added). TypeScript passed before the final small UI refinements; repeat in final build. Focused lint:0errors/7 existing JurisApp unused-symbol warnings. Initial restricted Node test invocation failed before execution with uv_os_get_passwd/ENOMEM; the unchanged tests ran successfully with the installed runtime outside that restriction.
+
+Local Chrome preview rendered the Canopy shared register with9selected documents/15retained versions and available working evidence. Automatic review rejected discarding its unsaved local example; it was retained, and the return journey is not yet browser-accepted. Preview HMR triggered a beforeunload prompt, dismissed to retain the draft. Final browser acceptance must use saved synthetic cases and actual downloads; publication remains pending.
