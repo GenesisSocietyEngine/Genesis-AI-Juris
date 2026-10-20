@@ -2,7 +2,27 @@
 
 **Priority amendment:** [the competitive product stage](CASEVANT_COMPETITIVE_PRODUCT_STAGE_2026-10-20.md) adds bounded authorized server retrieval before pagination. The remaining compatibility/authority acceptance rows in this document stay open and mandatory for their affected features. Loaded-only search descriptions below describe v150; the new slice changes search scope only, retaining loaded-only sorting and all preservation requirements. Check its own receipt before calling it deployed.
 
-This bounded amendment supersedes the completed/misstated acceptance rows in the19October plan. Read AGENTS.md, the canonical product instructions and [this stage's evidence](../testing/compatibility-continuation-review-2026-10-20.md) first. Production is v150, runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; every new slice must still reverify current Site and canonical main.
+This bounded amendment supersedes the completed/misstated acceptance rows in the19October plan. Read AGENTS.md, the canonical product instructions and [this stage's evidence](../testing/compatibility-continuation-review-2026-10-20.md) first. The opening v150 reference is historical. On the current review, production remains v152, runtime `3f0fda5ec6d3a8c511eb8e911f88d9d493fc363d`; PR155 is merged as `5dbb2cf4ff915334648937483dd811ebd109527e`. Reverify current Site and canonical main at every slice.
+
+## UI/UX and functionality amendment — current review
+
+Read [the fresh review and execution evidence](../testing/ui-ux-refinement-review-2026-10-20.md). Prioritize preservation and task completion before further decoration or workflow growth. Current production Review-count activation opens and focuses the real evidence title control; do not reimplement the superseded passive card. Search survives case navigation, and a two-page return restores47 authorized entries. The measured390×561 EN/RU list has no horizontal overflow; pointer pagination works at the bottom. These are DOM/interaction observations. Tab-key delivery timed out again, screenshot capture returned blank or timed out, and neither counts as completed keyboard/visual acceptance.
+
+### Next bounded implementation: release awareness
+
+Outcome: users of a long-lived Studio tab can learn that a different application release exists without losing their current draft. Compare validated packaged application/hosting hashes against a small same-origin, no-store public release document; a source-only documentation commit must not trigger a notice. Unknown identity, offline/error/malformed/oversized responses, hidden tabs and late unmounted requests must fail quietly without blocking the editor. No account/case/search context is sent in the check.
+
+Render a concise EN/RU, in-flow notice only on a verified mismatch. Keep save/export as the existing governed handlers with their current authority, readiness and pending-operation guards. Explain that unadded inputs remain in the current tab and export is not a confirmed workspace save. Opening updated Studio must be an explicit same-origin new-tab link with noopener; never reload, auto-save, replace a template, transfer draft data or clear recovery/storage. Dismissal is in-memory for that exact mismatch, not a permanent version preference. Keep focus where the user is working; announce politely without stealing it. Use44px controls, readable accents, wrapping long Russian labels and no overlay over the map.
+
+Acceptance before release: exact mismatch/same hashes/unknown build; clean and dirty drafts; unadded inputs; protected/read-only/expired authority; busy restore/save; failed/aborted/oversized checks; dismiss and later distinct release; new-tab behavior; EN/RU rendered layout and keyboard controls. Preserve full carriers, saved IDs, source locks, PDF locks and bundle caps. The first deployment cannot retroactively install this notice in v152 tabs; real cross-deployment notice acceptance requires a tab that already contains this feature and a later release. Keep that row explicitly open until observed.
+
+### Following independently reviewable work
+
+1. Complete remaining live materials bulk move/delete Cancel/transfer/Undo and actual per-file downloads on clearly labelled synthetic copies. Existing immutable reference text is not a movable working record. Retain every prior case and unadded form input.
+2. Reduce repeated saved-state/first-use prompts only after reviewing clean, dirty and first-save journeys. Keep one primary task per surface, keep the confirmed save state visible, and measure time to locate the next action. Do not remove evidence qualifications to shorten the page.
+3. Revisit targeted correction state on browser Back: the current form can leave a Back-to-actions affordance across Studio section history. Confirm expected navigation and retained input before changing it; cancellation must not delete an added record or saved work.
+4. Resume original v149 application round trips, production owner recovery only from a legitimate existing synthetic unsupported row, full historical A/B acceptance and isolated account/source races. Keep exact handler, browser and production evidence separate.
+5. Benchmark authorization/gap/owner/action retrieval before report renderer edits; keep the43 missing-source disclosures and full record. Recruitment, evaluator targets and service readiness retain their existing human/consent gates.
 
 ## Completed work to preserve
 

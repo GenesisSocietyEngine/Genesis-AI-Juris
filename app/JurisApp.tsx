@@ -14,6 +14,7 @@ import { registerStudioDeparture, studioDepartureFingerprint, type StudioSavedBa
 import { clearStudioEvidenceInput, emptyStudioEvidenceInput, hasStudioEvidenceInput, updateStudioEvidenceInput, type StudioEvidenceBuffers, type StudioEvidenceInput } from "./studio-evidence-buffer";
 import StudioWorkspaceTabs from "./StudioWorkspaceTabs";
 import StudioRecoveryView from "./StudioRecoveryViewLoader";
+import StudioReleaseNotice from "./StudioReleaseNoticeLoader";
 import type { StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionListLoader";
 import StudioSimulationPanelLoader from "./StudioSimulationPanelLoader";
@@ -3508,6 +3509,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   </>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
 
+    <Suspense fallback={null}><StudioReleaseNotice locale={locale} canSave={canDuplicate && saveWithinEnvelope} canExport={canDuplicate && reportAuthority.allowed && derivationsSettled && (visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted")} busy={restorePending || operationPending.current} onSave={() => void shareDraft("save")} onExport={() => void exportDraft()}/></Suspense>
     {nodeDeletion && <Suspense fallback={null}><StudioDeleteNodeDialog draft={draft} nodeId={nodeDeletion.id} locale={locale} onCancel={() => { deletionRequest.current = null; setNodeDeletion(null); }} onConfirm={target => void confirmNodeDeletion(target)}/></Suspense>}
 
       <section className="studio-hero studio-compact-hero page-width">
