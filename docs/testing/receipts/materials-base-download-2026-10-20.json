@@ -1,0 +1,33 @@
+{
+  "schema": "casevant.materials-download-inspection.v1",
+  "applicationVersion": 157,
+  "sourceCommit": "10a4ee5c49c8e32b2675f7b53d630003a5ebdde4",
+  "savedId": 48,
+  "caseId": "example_work_5746b45688ae48998d3c462cf2d04094",
+  "templateVersion": "2.0.0",
+  "observedBy": "authorized Chrome normal material controls; exact file-path verification after download-event timeout",
+  "archive": {
+    "bytes": 12144,
+    "sha256": "875a5b4c6b9860a8d0a19e7cc1e9f4f72c58c0316c0a82160fba92575f1cebd6",
+    "files": 17,
+    "entries": 16,
+    "referenceVersions": 15,
+    "selectedReferenceVersions": 9,
+    "workingRecords": 1,
+    "allManifestFileHashesVerified": true,
+    "referenceTextsMatchPinnedFactory": true
+  },
+  "perFile": {
+    "id": "canopy:D01:v1",
+    "bytes": 1225,
+    "sha256": "9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+    "matchesArchiveBytes": true
+  },
+  "sourceApprovalAsserted": false,
+  "caseWritesPerformed": 0,
+  "limits": [
+    "One retained synthetic Base copy; not all variants, languages, roles or cancellation contexts.",
+    "Exact bytes from normal downloads verified; browser download-event capture timed out.",
+    "No full saved-case payload comparison or evidence acceptance is inferred."
+  ]
+}
