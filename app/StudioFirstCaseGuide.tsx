@@ -1,17 +1,17 @@
 "use client";
 
 /** Guidance reflects current content and a confirmed save, never approval. */
-export default function StudioFirstCaseGuide({ locale, hasStructure, hasTitle, saved, busy, busyReason = "checking", canSave, needsSignIn, needsProfile = false, savedCaseHref, onBrief, onTitle, onSave, onReport }: {
+export default function StudioFirstCaseGuide({ locale, hasStructure, hasTitle, saved, saveConfirmedInSession = false, busy, busyReason = "checking", canSave, needsSignIn, needsProfile = false, onBrief, onTitle, onSave, onReport }: {
   locale: "en" | "ru";
   hasStructure: boolean;
   hasTitle: boolean;
   saved: boolean;
+  saveConfirmedInSession?: boolean;
   busy: boolean;
   busyReason?: "checking" | "saving" | "restoring" | "check_failed";
   canSave: boolean;
   needsSignIn: boolean;
   needsProfile?: boolean;
-  savedCaseHref?: string;
   onBrief: () => void;
   onTitle: () => void;
   onSave: () => void;
@@ -19,20 +19,23 @@ export default function StudioFirstCaseGuide({ locale, hasStructure, hasTitle, s
 }) {
   const en = locale === "en";
   const structured = hasStructure && hasTitle;
+  // A restored case already has its header status and report action. A fresh
+  // receipt offers one compact next step, never first-use/reopen instructions.
+  if (saved && structured) return saveConfirmedInSession ? <aside className="first-case-guide first-case-saved page-width" aria-label={en ? "After saving" : "После сохранения"}>
+    <p>{en ? "Next: preview the report and check its findings." : "Далее: просмотрите отчёт и проверьте выводы."}</p>
+    <button type="button" className="secondary-cta" onClick={onReport} disabled={busy}>{busy ? (en ? "Checking current changes…" : "Проверка текущих изменений…") : (en ? "Preview report" : "Посмотреть отчёт")}</button>
+  </aside> : null;
   const action = !hasStructure
     ? { title: en ? "Start with the decision you need to make" : "Начните с решения, которое нужно принять", detail: en ? "Describe the situation, known facts and desired outcome. Review the proposed structure before applying it." : "Опишите ситуацию, известные факты и желаемый результат. Проверьте предложенную структуру перед применением.", label: en ? "Write the brief" : "Описать задачу", run: onBrief }
     : !hasTitle
       ? { title: en ? "Give this case a name" : "Назовите кейс", detail: en ? "A clear title helps you find the saved case and identify its report." : "Понятное название поможет найти сохранённый кейс и его отчёт.", label: en ? "Add a title" : "Добавить название", run: onTitle }
-      : !saved
-        ? { title: en ? "Save this version so you can return to it" : "Сохраните версию, чтобы вернуться к ней", detail: en ? "Wait for “Saved to workspace”. You can then find it in My cases → Personal. Changes in this tab alone are not a confirmed save." : "Дождитесь статуса «Сохранено в workspace». Затем кейс можно найти в «Мои кейсы → Личные». Правки во вкладке ещё не означают, что кейс сохранён.", label: needsSignIn ? (en ? "Sign in and save" : "Войти и сохранить") : needsProfile ? (en ? "Complete profile and save" : "Заполнить профиль и сохранить") : (en ? "Save this case" : "Сохранить кейс"), run: onSave }
-        : { title: en ? "Your saved case is ready to revisit" : "К сохранённому кейсу можно вернуться", detail: en ? "Open the saved copy to check it, or preview a report. A report remains preliminary until independently reviewed and approved." : "Откройте сохранённую копию для проверки или просмотрите отчёт. Отчёт остаётся предварительным до независимой проверки и утверждения.", label: en ? "Preview report" : "Посмотреть отчёт", run: onReport };
+      : { title: en ? "Save this version so you can return to it" : "Сохраните версию, чтобы вернуться к ней", detail: en ? "Wait for “Saved to workspace”. You can then find it in My cases → Personal. Changes in this tab alone are not a confirmed save." : "Дождитесь статуса «Сохранено в workspace». Затем кейс можно найти в «Мои кейсы → Личные». Правки во вкладке ещё не означают, что кейс сохранён.", label: needsSignIn ? (en ? "Sign in and save" : "Войти и сохранить") : needsProfile ? (en ? "Complete profile and save" : "Заполнить профиль и сохранить") : (en ? "Save this case" : "Сохранить кейс"), run: onSave };
   const disabled = busy || (structured && !saved && !canSave);
   return <aside className="first-case-guide page-width" aria-labelledby="first-case-next-title">
     <div className="first-case-next">
       <div><span className="workspace-eyebrow">{en ? "Next step" : "Следующий шаг"}</span><h2 id="first-case-next-title">{action.title}</h2><p>{action.detail}</p></div>
       <div className="first-case-actions"><button type="button" className="primary-cta" onClick={action.run} disabled={disabled} aria-describedby={structured && !canSave ? "first-case-save-limit" : undefined}>{busy ? busyReason === "saving" ? (en ? "Saving…" : "Сохранение…") : busyReason === "restoring" ? (en ? "Preparing workspace…" : "Подготовка рабочего пространства…") : busyReason === "check_failed" ? (en ? "Check needs retry" : "Повторите проверку") : (en ? "Checking current changes…" : "Проверка текущих изменений…") : action.label}</button>
         {structured && !canSave && <p id="first-case-save-limit" role="status">{en ? "Shorten the case before saving: the working draft exceeds the supported size." : "Сократите кейс перед сохранением: черновик превышает допустимый размер."}</p>}
-        {saved && savedCaseHref && <a className="secondary-cta" href={savedCaseHref} target="_blank" rel="noopener noreferrer">{en ? "Open saved copy in a new tab" : "Открыть сохранённую копию в новой вкладке"}</a>}
       </div>
     </div>
     <details className="first-case-checkpoints"><summary>{en ? "Your first case: three checkpoints" : "Первый кейс: три контрольные точки"}</summary>
