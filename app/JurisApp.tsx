@@ -2709,7 +2709,11 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     function restoreGuidedStepFromHistory() {
       if (restorePending) return;
       const step = parseStudioWorkflowStep(new URL(window.location.href).searchParams.get("studio_step"));
-      if (step) setGuidedStep(guidedDraftIsEmpty ? 1 : step);
+      if (step) {
+        setActionTarget(null);
+        setActionNotice("");
+        setGuidedStep(guidedDraftIsEmpty ? 1 : step);
+      }
     }
     window.addEventListener("popstate", restoreGuidedStepFromHistory);
     window.addEventListener("genesis-studio-navigation", restoreGuidedStepFromHistory);
@@ -3428,6 +3432,8 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted",
   ] as const;
   function selectGuidedStep(step: GuidedStudioStep) {
+    setActionTarget(null);
+    setActionNotice("");
     const url = new URL(window.location.href);
     url.searchParams.delete("studio_panel");
     url.searchParams.set("studio_step", serializedStudioWorkflowStep(step));
@@ -3436,6 +3442,8 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     setGuidedStep(step);
   }
   function openOverview() {
+    setActionTarget(null);
+    setActionNotice("");
     const url = new URL(window.location.href);
     url.searchParams.set("studio_panel", "overview");
     window.history.pushState(window.history.state, "", url);
@@ -3554,7 +3562,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
     {displayMode === "user" && !trainingWorkflow && canDuplicate && !["error", "conflict", "auth_required"].includes(visibleWorkspaceState) && <Suspense fallback={null}><StudioFirstCaseGuide locale={locale} hasStructure={draft.nodes.length > 0} hasTitle={Boolean(draft.title.trim())} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} busy={restorePending || workspaceState === "saving" || ((visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted") && !derivationsSettled)} busyReason={workspaceState === "saving" ? "saving" : restorePending ? "restoring" : derivationError ? "check_failed" : "checking"} canSave={saveWithinEnvelope} needsSignIn={aiEntitlement === "anonymous"} needsProfile={aiEntitlement === "profile_required"} saveConfirmedInSession={workspaceSavedAt !== null} onBrief={() => openStudioAction({step: 1, id: "studio-case-brief"})} onTitle={() => openStudioAction({step: 3, id: "studio-title"})} onSave={() => void shareDraft("save")} onReport={() => void openCaseReport()}/></Suspense>}
-    {displayMode === "user" && !trainingWorkflow && <StudioWorkspaceTabs locale={locale} activeStep={guidedStep} overview={showOverview} onOverview={() => { setActionTarget(null); openOverview(); }} onStep={step => { setActionTarget(null); selectGuidedStep(step); }}/>}
+    {displayMode === "user" && !trainingWorkflow && <StudioWorkspaceTabs locale={locale} activeStep={guidedStep} overview={showOverview} onOverview={openOverview} onStep={selectGuidedStep}/>}
     {showOverview && <Suspense fallback={<p role="status">{locale === "en" ? "Opening case overview…" : "Открывается обзор дела…"}</p>}><StudioOverview draft={draft} locale={locale} onStep={selectGuidedStep} onNode={openOverviewNode} onAction={openStudioAction}/></Suspense>}
     {displayMode === "user" && trainingWorkflow && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { if (operationPending.current) return; const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
     window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
