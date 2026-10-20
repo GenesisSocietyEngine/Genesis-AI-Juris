@@ -4,6 +4,31 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { PACKAGED_CATALOGUE_HOST, archiveHash, catalogueHtmlVariant, catalogueObserver, cataloguePort, catalogueRequestAllowed, catalogueTiming, extractCatalogueArchive, validateNativeListing } from '../scripts/lib/packaged-catalogue.mjs';
+import { packagedCatalogueCases } from './fixtures/packaged-catalogue-cases';
+import { buildCanopyPackage } from '../app/canopy-fixture';
+import { caseFingerprint } from '../app/case-integrity';
+import { studioMaterials } from '../app/studio-materials';
+
+test('packaged synthetic copies retain genuine reference identity and independent graph bytes after title amendments', async () => {
+  const source = buildCanopyPackage('base').draft, before = JSON.stringify(source);
+  const renamed = { ...source, caseId: 'qa_renamed_without_reference' };
+  assert.equal((await studioMaterials(renamed, 'en')).filter(item => item.kind === 'reference').length, 0);
+  const copies = packagedCatalogueCases();
+  assert.equal(copies.length, 48); assert.equal(new Set(copies.map(item => item.draft.caseId)).size, 48);
+  for (const { id, draft } of copies) {
+    assert.equal(draft.exampleSource?.caseId, source.caseId);
+    assert.equal(draft.exampleSource?.version, source.version);
+    assert.equal(draft.exampleSource?.fingerprint, caseFingerprint(source));
+    assert.match(draft.title, /SYNTHETIC packaged catalogue/); assert.notEqual(draft.caseId, source.caseId);
+    const materials = await studioMaterials(draft, id % 2 ? 'en' : 'ru');
+    assert.equal(materials.filter(item => item.kind === 'reference').length, 15);
+    assert.equal(materials.filter(item => item.kind === 'reference' && item.selected).length, 9);
+  }
+  const secondBefore = JSON.stringify(copies[1].draft);
+  copies[0].draft.nodes[0].detail += '\nSynthetic independent amendment.';
+  assert.equal(JSON.stringify(copies[1].draft), secondBefore);
+  assert.equal(JSON.stringify(source), before);
+});
 
 test('local observation/scroll variants are explicit, confined and never interpolate query code into original HTML', () => {
   const html = '<html><head></head><body>original</body></html>';

@@ -4,9 +4,10 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createServer } from 'node:http';
 import { createInterface } from 'node:readline';
+import { execFileSync } from 'node:child_process';
 import { Miniflare, Log, LogLevel, Response as LocalResponse } from 'miniflare';
 import { createPasswordCredential } from '../app/auth-crypto.ts';
-import { buildCanopyPackage } from '../app/canopy-fixture.ts';
+import { packagedCatalogueCases } from '../tests/fixtures/packaged-catalogue-cases.ts';
 import { caseFingerprint } from '../app/case-integrity.ts';
 import { PACKAGED_CATALOGUE_HOST as host, archiveHash, archivedFiles, catalogueHtmlVariant, catalogueObserver, cataloguePort, catalogueRequestAllowed, catalogueTiming, extractCatalogueArchive } from './lib/packaged-catalogue.mjs';
 
@@ -41,6 +42,8 @@ const receipt = { schema: 'casevant.packaged-catalogue-execution.v1', applicatio
   sourceCommit: review.runtimeCommit, applicationInputsSha256: review.applicationInputsSha256, hostingConfigSha256: review.hostingConfigSha256,
   rawArchive: review.rawArchive, nativeArchive: review.version.archive_storage, nativeNormalizationRecomputed: false,
   rebuilt: false, originalWorker: true, originalClient: true, productionBindingsUsed: false,
+  fixturePreparationCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  fixturePreparation: 'normal independent working-copy contract; exact exampleSource retained; synthetic title amendments',
   host, port, archiveFiles: inspected.files.length, inventorySha256: inspected.inventorySha256,
   workerEntrySha256: archiveHash(modules['index.js'].contents), status: 'starting' };
 const saveTrace = () => writeFileSync(join(output, 'requests.json'), JSON.stringify(events, null, 2));
@@ -75,12 +78,9 @@ try {
   await database.prepare('insert into users(email,display_name) values(?,?)').bind(email, 'SYNTHETIC original packaged catalogue QA').run();
   await database.prepare('insert into local_accounts(user_email,password_hash,password_salt,password_iterations,password_changed_at) values(?,?,?,?,?)').bind(email, credential.hash, credential.salt, credential.iterations, '2026-01-01T00:00:00.000Z').run();
   const fixtures = [];
-  for (let id = 1; id <= 48; id++) {
-    const draft = structuredClone(buildCanopyPackage('base').draft);
-    draft.caseId = `qa_packaged_catalogue_${id}`;
-    draft.title = `SYNTHETIC packaged catalogue — case ${String(id).padStart(2, '0')} — ${id % 3 === 0 ? 'Long title for source, authority, evidence, owner and action review' : 'Pagination acceptance'}`;
+  for (const { id, draft } of packagedCatalogueCases()) {
     const raw = JSON.stringify(draft), fingerprint = caseFingerprint(draft);
-    fixtures.push({ id, caseId: draft.caseId, templateVersion: draft.version, sha256: archiveHash(raw), raw });
+    fixtures.push({ id, caseId: draft.caseId, templateVersion: draft.version, exampleSource: draft.exampleSource, sha256: archiveHash(raw), raw });
     await database.prepare('insert into custom_cases(id,owner_email,case_id,title,current_version,fingerprint,is_private) values(?,?,?,?,?,?,1)').bind(id, email, draft.caseId, draft.title, draft.version, fingerprint).run();
     await database.prepare('insert into case_drafts(id,custom_case_id,user_email,case_id,version,fingerprint,title,payload) values(?,?,?,?,?,?,?,?)').bind(id, id, email, draft.caseId, draft.version, fingerprint, draft.title, raw).run();
   }
