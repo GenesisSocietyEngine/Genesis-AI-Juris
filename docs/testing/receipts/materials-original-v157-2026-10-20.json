@@ -1,0 +1,37 @@
+{
+  "schema": "casevant.packaged-catalogue-execution.v1",
+  "applicationVersion": 157,
+  "sourceCommit": "10a4ee5c49c8e32b2675f7b53d630003a5ebdde4",
+  "applicationInputsSha256": "6e5fc21729d249828e4fa52d9dfe725492aded4ed0463f4e92ee0817a3ab7fdb",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "rawArchive": {
+    "sha256": "354eb64b3f7ed7b9dd0696c9ec00fe155e9efb22b916ac6eeb73d551d2f7f87c",
+    "bytes": 30380493,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "nativeArchive": {
+    "archive_format": "tar",
+    "sediment_file_id": "file_000000005460822f92c402472a132beb",
+    "content_hash": "sha256:aa4d63815740137ca1b2c58983190b2822340b1e3e2289924534cb3dfaa1a77e",
+    "size_bytes": 49448960,
+    "file_count": 578
+  },
+  "nativeNormalizationRecomputed": false,
+  "rebuilt": false,
+  "originalWorker": true,
+  "originalClient": true,
+  "productionBindingsUsed": false,
+  "fixturePreparationCommit": "4b38db793da5c9a0f68d6afeb9ab879b5fe7a3a7",
+  "fixturePreparation": "normal independent working-copy contract; exact exampleSource retained; synthetic title amendments",
+  "host": "127.0.0.3",
+  "port": 4183,
+  "archiveFiles": 578,
+  "inventorySha256": "c9499a80af89aaeb162aefe6402240b55f0c4460adaa14b34ceb573dd67947dc",
+  "workerEntrySha256": "792d4e4bf506496a86e0c3a423c0246387e84503aa79212160075f56b361f1ff",
+  "status": "stopped",
+  "caseBytesBefore": "c85ec813896d88fa28771acad485e5c592b74fbb33cc0549d3baa82c48505b30",
+  "caseBytesAfter": "c85ec813896d88fa28771acad485e5c592b74fbb33cc0549d3baa82c48505b30",
+  "caseBytesUnchanged": true,
+  "archiveBytesUnchanged": true,
+  "outboundDenied": 0
+}
