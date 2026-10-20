@@ -1,0 +1,150 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "correction-navigation",
+  "date": "2026-10-20",
+  "runtimeCommit": "3fbc027d6e92a8782814fa9d18ca010db3915025",
+  "candidateCommit": "eee8cef2fdc662a9d7b24346f24ab9960e06e3fd",
+  "pullRequest": 162,
+  "applicationInputsSha256": "84270e600106ede4915210c2262862e15805e58b3b16611eda222d4234fd012f",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_18468a876b788191a529d33d75f84b98",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 156,
+    "source": {
+      "commit_sha": "3fbc027d6e92a8782814fa9d18ca010db3915025"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000c9d8820aaa8c9e58768a7f8d",
+      "content_hash": "sha256:f2fd260cd6e0d0be1e82ca8c3cf4244dbc0c969513c0361919dc68c93d19b450",
+      "size_bytes": 49397760,
+      "file_count": 577
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad7829562848191a6ab0172cdf0023f",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_18468a876b788191a529d33d75f84b98",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-20T15:03:13.353456+00:00"
+  },
+  "rawArchive": {
+    "sha256": "2a8c6a696be700f6e8d07385f47118add4545b596cf78a9c42fd927bb6ed48bf",
+    "bytes": 30374536,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "checks": {
+    "focused": 28,
+    "artifact": 7,
+    "typecheck": "passed",
+    "exactMain": {
+      "run": 39443196800,
+      "web": 118698163033,
+      "pdf": 118698171870,
+      "total": 1766,
+      "pass": 1763,
+      "fail": 0,
+      "skip": 3
+    },
+    "candidateRetry": {
+      "run": 39439865353,
+      "attempt": 2,
+      "web": 118692209803,
+      "pdf": 118692210202,
+      "result": "success"
+    },
+    "priorFailures": [
+      "npm ECONNRESET before PDF tests",
+      "packaged Chrome did not create DevToolsActivePort; unit suite1763/0/3 passed"
+    ],
+    "approval": "Initial merge rejected while packaged-browser validation unresolved; same-source retry succeeded before ordinary merge. No bypass or waiver.",
+    "nativeAtGate": {
+      "simulator": {
+        "id": 118698163705,
+        "status": "in_progress"
+      },
+      "editor": {
+        "id": 118698164540,
+        "status": "in_progress"
+      }
+    }
+  },
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "verifiedAssets": 185,
+      "totalAssets": 185,
+      "releaseDocumentMatches": true
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verifiedAssets": 185,
+      "totalAssets": 185,
+      "releaseDocumentMatches": true
+    }
+  ],
+  "currentAssets": 136,
+  "retainedPreviousAssets": 49,
+  "browser": {
+    "production": {
+      "beforeTab": "178218871",
+      "afterTab": "178218874",
+      "case": 48,
+      "backClearsReturnBar": true,
+      "forwardOpensNormalSources": true,
+      "explicitReturnFocusInsideReview": true,
+      "focusedId": "action-context",
+      "caseWrites": 0,
+      "catalogueTab": "178218877",
+      "metadata": {
+        "rows": 48,
+        "changed": 0,
+        "scope": "displayed title/time/destination tuples; not stored-case bytes"
+      },
+      "pagination": {
+        "firstPointerAttempt": [
+          25,
+          25
+        ],
+        "settledSecond": [
+          25,
+          48
+        ],
+        "cause": "unconfirmed click delivery versus focus revalidation; reopened acceptance"
+      }
+    },
+    "local": {
+      "origin": "http://127.0.0.1:4181",
+      "scope": "full current application; anonymous independent Canopy copy; no production binding",
+      "retainedInputThroughCancelledBackAndSectionNavigation": true,
+      "resumeAddUndoRedo": true,
+      "obsoleteNoticeCleared": true,
+      "russianViewport": {
+        "width": 390,
+        "height": 640,
+        "documentWidth": 375
+      },
+      "screenshot": ".artifacts/correction-review-ru-local-20261020.png"
+    }
+  },
+  "remaining": [
+    "fresh first-pointer catalogue acceptance during focus revalidation",
+    "actual narrow/Russian keyboard production checks",
+    "actual report/material downloaded bytes",
+    "production authoring/Undo and material bulk operation matrix",
+    "legitimate owner recovery and original-application historical compatibility",
+    "isolated same-tab account transitions",
+    "missing originals and human retrieval/service readiness"
+  ]
+}
