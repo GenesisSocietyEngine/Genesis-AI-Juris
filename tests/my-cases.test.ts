@@ -129,6 +129,73 @@ test("successful focus verification refreshes the server-authorized list even wh
   current=[owner]; await navigation.refresh(); await tick(); assert.deepEqual(catalogue.getSnapshot().cases,[owner]); stop();
 });
 
+test("focus verification during the first pagination request revalidates and completes its requested depth", async () => {
+  const navigation = await session();
+  const calls: Array<{ path: string; signal?: AbortSignal | null }> = [];
+  let finishOldPage!: (response: Response) => void;
+  const catalogue = new StudioCaseCatalogue(navigation, async (path, init) => {
+    calls.push({ path, signal: init?.signal });
+    if (calls.length === 2) return new Promise<Response>(resolve => { finishOldPage = resolve; });
+    return Response.json(path.includes("cursor=") ? { customCases: [shared], nextCursor: null } : { customCases: [owner], nextCursor: "page_two" });
+  });
+  const stop = catalogue.attach(); await tick();
+  const firstClick = catalogue.load(true); await tick();
+  await navigation.refresh(); await tick();
+  assert.equal(calls[1].signal?.aborted, true, "focus verification must still recheck server visibility");
+  assert.deepEqual(catalogue.getSnapshot().cases, [owner, shared], "the same first activation must reach page two after revalidation");
+  assert.equal(catalogue.getSnapshot().pages, 2);
+  assert.equal(catalogue.getSnapshot().nextCursor, null);
+  finishOldPage(Response.json({ customCases: [{ ...owner, id: 999 }], nextCursor: "stale" })); await firstClick;
+  assert.deepEqual(catalogue.getSnapshot().cases, [owner, shared], "late cancelled metadata must never return");
+  stop();
+});
+
+test("focus revalidation retains searched page depth but uses fresh cursors and drops revoked metadata", async () => {
+  const navigation = await session(); let revision = 0;
+  const paths: string[] = [];
+  const catalogue = new StudioCaseCatalogue(navigation, async path => {
+    paths.push(path);
+    const cursor = new URL(path, "https://synthetic.invalid").searchParams.get("cursor");
+    if (!cursor) return Response.json({ customCases: revision ? [shared] : [owner], nextCursor: `page_${revision}` });
+    assert.equal(cursor, `page_${revision}`, "never replay a stale cursor after revalidation");
+    return Response.json({ customCases: revision ? [] : [shared], nextCursor: null });
+  });
+  const stop = catalogue.attach(); await tick();
+  await catalogue.search(" АУДИТ "); await catalogue.load(true);
+  assert.equal(catalogue.getSnapshot().pages, 2);
+  revision++; await navigation.refresh(); await tick();
+  assert.deepEqual(catalogue.getSnapshot().cases, [shared]);
+  assert.equal(catalogue.getSnapshot().pages, 2);
+  assert.equal(catalogue.getSnapshot().query, "аудит");
+  assert.ok(paths.at(-1)?.includes("q=" + encodeURIComponent("аудит") + "&cursor=page_1"));
+  await catalogue.search("empty");
+  assert.equal(catalogue.getSnapshot().pages, 1);
+  const before = paths.length; await navigation.refresh(); await tick();
+  assert.equal(paths.length - before, 1, "new search resets the remembered depth");
+  stop();
+});
+
+test("duplicate pagination is bounded and lost authority cancels the remembered depth with zero writes", async () => {
+  const navigation = await session(); let calls = 0, finish!: (response: Response) => void;
+  const catalogue = new StudioCaseCatalogue(navigation, async (_path, init) => {
+    assert.equal(init?.method, undefined); assert.equal(init?.body, undefined);
+    calls++;
+    if (calls === 2) return new Promise<Response>(resolve => { finish = resolve; });
+    return Response.json({ customCases: [owner], nextCursor: "next" });
+  });
+  const stop = catalogue.attach(); await tick();
+  const pending = catalogue.load(true); await catalogue.load(true);
+  assert.equal(calls, 2, "rapid double activation sends one page read");
+  navigation.invalidate("denied");
+  assert.deepEqual(catalogue.getSnapshot().cases, []);
+  finish(Response.json({ customCases: [shared], nextCursor: null })); await pending;
+  assert.deepEqual(catalogue.getSnapshot().cases, []);
+  await navigation.refresh(); await tick();
+  assert.equal(calls, 3); assert.equal(catalogue.getSnapshot().pages, 1);
+  assert.deepEqual(catalogue.getSnapshot().cases, [owner]);
+  stop();
+});
+
 const output = resolve(".artifacts/my-cases/components.mjs"); mkdirSync(resolve(".artifacts/my-cases"), {recursive:true});
 const compiled = await build({
   stdin: { contents: "export {default as MyCasesClient, StudioCaseGroup} from './app/matters/MyCasesClient'; export {default as NavigationSession} from './app/NavigationSession'; export {default as StudioEntryScreen} from './app/StudioEntryScreen';", resolveDir: process.cwd(), loader: "tsx" },
