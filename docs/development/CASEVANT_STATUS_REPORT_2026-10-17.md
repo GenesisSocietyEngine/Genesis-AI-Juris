@@ -1,4 +1,8 @@
-# CaseVant audit and rollout status — 19 October 2026
+# CaseVant audit and rollout status — 20 October 2026
+
+## Current delivery — public Sites v151
+
+The competitive-retrieval slice is live at casevant.pro and the existing native origin. Runtime035f6483421c9b962d01035007dfbc18527026ab; [native receipt and full evidence](../testing/competitive-retrieval-review-2026-10-20.md#delivered--public-sites-v151). Exact-main web/PDF jobs pass (1721pass/0fail/3 inherited skips); both origins177/177assets. Search finds older synthetic20 without loading earlier pages; filtered pagination and exact #ID use the new read-only server query. All45 authorized baseline entries retain exact titles, times and Studio links. No production cases are saved, deleted or reshared. [Detailed continuation plan](CASEVANT_COMPETITIVE_PRODUCT_STAGE_2026-10-20.md) separates delivered retrieval from remaining compatibility, inspectable source passages, governed handoff/concise reporting and consented commercial measurement.
 
 ## 20 October competitive product stage
 

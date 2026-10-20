@@ -1,0 +1,170 @@
+{
+  "schema": "casevant.competitive-retrieval-release.v1",
+  "date": "2026-10-20",
+  "runtimeCommit": "035f6483421c9b962d01035007dfbc18527026ab",
+  "previousRuntimeCommit": "d4547efd3fcc1f36207f121ffe43348fc8530f6f",
+  "applicationInputsSha256": "eace1fc5249b18a53afffe042cc54d851a966c8faf46a8f1c9768efd022a458b",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "sourcePullRequest": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/150",
+  "nativeSaved": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_714ce6da18248191b714d99b3a94fbfc",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 151,
+    "source": {
+      "commit_sha": "035f6483421c9b962d01035007dfbc18527026ab"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_0000000056f88243ac4e0d6877ef3a0d",
+      "content_hash": "sha256:fb5e8777225a1c79422c23419ecf18b38703f421148529757bc433ed3a023395",
+      "size_bytes": 49295360,
+      "file_count": 557
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "nativeDeployment": {
+    "id": "appgdep_6ad6e07458b08191a700259a0697d162",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_714ce6da18248191b714d99b3a94fbfc",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-20T03:31:25.379960+00:00"
+  },
+  "rawArchiveSha256": "4b2292c74f08c7e77f1ab3a4d977dea4e74b49af018f89d9a62e33974f710369",
+  "validation": {
+    "targetedPassed": 27,
+    "targetedFailed": 0,
+    "exactRuntimeWebPdfRun": 39363936506,
+    "webJob": 118436274950,
+    "pdfJob": 118436274766,
+    "totalTests": 1724,
+    "passed": 1721,
+    "failed": 0,
+    "inheritedSkipped": 3,
+    "packagedRustAndTaxWorker": true,
+    "dependencyVulnerabilities": 0
+  },
+  "staticAssets": {
+    "origins": [
+      "https://casevant.pro",
+      "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+    ],
+    "current": 126,
+    "retainedPrevious": 51,
+    "verifiedPerOrigin": 177,
+    "authenticatedProof": false
+  },
+  "browser": {
+    "authorizedProfile": "Chrome Maxim",
+    "beforeLoadedOnly": {
+      "initialRecords": 25,
+      "allRecords": 45,
+      "olderSavedId": 20,
+      "query": "ERP format 2.5 B",
+      "matches": 0
+    },
+    "after": {
+      "olderMatches": 1,
+      "exactSavedIdLookup": true,
+      "filteredPaginationCounts": [
+        25,
+        38
+      ],
+      "resetFirst25Exact": true,
+      "all45TitleTimeDestinationEqual": true,
+      "nativeTabAndEnterSubmission": true,
+      "desktopCssWidth": 1281,
+      "desktopScrollWidth": 1281,
+      "narrowLocales": [
+        "en",
+        "ru"
+      ],
+      "narrowCssWidth": 390,
+      "narrowClientWidth": 367,
+      "narrowScrollWidth": 367,
+      "ruNoMatchState": true,
+      "productionCaseWrites": 0,
+      "saved20Opened": { "correctSavedTitle": true, "displayedSavedState": true, "nodes": 196, "connections": 321, "saveActivated": false },
+      "backToCatalogue": true,
+      "searchPreservedOnBack": false,
+      "viewportReset": true
+    },
+    "russianTitleFolding": "Real migrated D1 fixture; production catalogue had no Cyrillic titles",
+    "scopeLimits": [
+      "No full-payload comparison of all45 production cases",
+      "No new same-tab account transition acceptance",
+      "No claim of complete old application/Worker/browser compatibility",
+      "No domain evidence approval or moderated/commercial validation"
+    ]
+  },
+  "localBenchmark": {
+    "scope": "Local Miniflare real production GET handler; synthetic metadata only; NOT production p95 or browser usability",
+    "commit": "035f6483421c9b962d01035007dfbc18527026ab",
+    "node": "v22.23.2",
+    "records": 10000,
+    "bodyPayloads": 0,
+    "bundleSha256": "0dbc4b44a65e48005ed18eddd41ce5fd000b33657a964a8c55cd6c3b5f0291c8",
+    "observations": [
+      {
+        "query": "rare oldest needle",
+        "coldMs": 234.65,
+        "warmMs": [
+          226.77,
+          221.23,
+          222.2,
+          217.93,
+          226.97
+        ],
+        "warmMedianMs": 222.2,
+        "warmMaxMs": 226.97
+      },
+      {
+        "query": "аУдИт дОгОвОрА",
+        "coldMs": 178.37,
+        "warmMs": [
+          161.68,
+          172.82,
+          168.98,
+          172.02,
+          199.99
+        ],
+        "warmMedianMs": 172.02,
+        "warmMaxMs": 199.99
+      },
+      {
+        "query": "#1",
+        "coldMs": 85.84,
+        "warmMs": [
+          65.56,
+          66.92,
+          60.12,
+          62.93,
+          60.01
+        ],
+        "warmMedianMs": 62.93,
+        "warmMaxMs": 66.92
+      },
+      {
+        "query": "definitely absent",
+        "coldMs": 189.45,
+        "warmMs": [
+          181.68,
+          197.23,
+          188.82,
+          180.35,
+          183.06
+        ],
+        "warmMedianMs": 183.06,
+        "warmMaxMs": 197.23
+      }
+    ]
+  }
+}
