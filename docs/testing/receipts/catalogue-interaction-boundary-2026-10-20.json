@@ -396,7 +396,8 @@
     "failed": 0,
     "skipped": 0,
     "typecheck": "passed",
-    "fullCI": "not yet recorded"
+    "fullCI": "initial candidate dff6736 stopped at prefer-const lint error; corrected candidate pending",
+    "focusedLint": "passed after const correction"
   },
   "delivery": {
     "runtimeChanged": false,

@@ -22,11 +22,10 @@ for (const name of ['pointerdown', 'pointerup', 'click']) {
   }, true);
 }
 window.addEventListener('focus', () => trace('window-focus'));
-let navigation;
 const transport = createCatalogueInteractionTransport({ trace, overlap: params.get('mode') === 'overlap',
   refresh: () => { void navigation.refresh(); } });
 window.fetch = transport;
-navigation = new NavigationController({ transport,
+const navigation = new NavigationController({ transport,
   leave: () => trace('blocked-navigation'), clear: () => trace('synthetic-memory-cleanup') });
 navigation.subscribe(() => trace('navigation', { phase: navigation.getSnapshot().phase,
   authorityVersion: navigation.authorityVersion }));

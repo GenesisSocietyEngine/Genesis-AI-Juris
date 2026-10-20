@@ -22,6 +22,8 @@ Sites remains [v156 with its native version/deployment receipt](receipts/correct
 
 The user's ambient Studio tab and draft, port 4173, all existing production cases and earlier synthetic cases were left untouched. Production activity was catalogue navigation/read-only activation. This audit did not repeat a stored-byte comparison or export; do not reuse the prior 48-row hash comparison as a new one.
 
+A later console inspection could not access the original production test tab in the active browser-control session. No production hydration/console conclusion is drawn from that unavailable follow-up, and the tab was not reloaded or discarded to obtain one.
+
 Ignored local evidence: `.artifacts/catalogue-overlap-browser-trace-20261020.json`, `.artifacts/catalogue-ru-short-trace-20261020.json`, `.artifacts/catalogue-ru-short-local-20261020.png`. The screenshot was inspected: search controls wrap, the real Search button has visible focus, and the diagnostic trace is visibly labelled test instrumentation. It is not product styling or a production screenshot. The checked-in [observation receipt](receipts/catalogue-interaction-boundary-2026-10-20.json) retains the synthetic overlap ordering and factual acceptance limits.
 
 ## Implemented diagnostic slice
@@ -31,6 +33,8 @@ Ignored local evidence: `.artifacts/catalogue-overlap-browser-trace-20261020.jso
 The visible bounded trace captures trusted pointerdown/up/click, actual target/coordinates/scroll offset, window focus, navigation authority version and synthetic read/abort/response order. Trace state stays local, bounded and in memory; no telemetry is added to production. The actual shell may write navigation preferences to this isolated localhost origin, as it normally does; this is not a claim of zero local-storage writes. There are no case/API writes. `mode=overlap` intentionally allows a late aborted synthetic response so the actual controller must fence it.
 
 Five new tests cover transport isolation, unique finite pages/literal search, actual-controller overlap, port validation and real built-server Host/method/file boundaries. The first expanded HTTP test incorrectly used Node fetch to override Host; fetch normalized that header. The corrected test sends an explicit Host through Node HTTP and verifies 403. Initial typechecking caught incomplete JS declarations; JSDoc signatures and explicit response types corrected them without suppressions.
+
+Initial candidate CI stopped at lint: the new test declared its once-assigned navigation controller with `let`. The corrected candidate uses `const`, retaining the deferred refresh callback and all checks. Focused lint and the full 47-test local cohort then passed. This was a candidate defect, not infrastructure or a product regression; no gate was bypassed.
 
 Final focused cohort: **47 passed, 0 failed, 0 skipped** across `catalogue-interaction-fixture`, `my-cases`, `navigation-shell`, and `saved-case-navigation-restore`. Typechecking passed. The restricted shell initially failed in Node/tsx user-info initialization (`uv_os_get_passwd ENOMEM`) before tests; the same cohort ran successfully outside that restriction. These are not an additional 47 cases on top of full-suite totals, nor a production browser pass.
 

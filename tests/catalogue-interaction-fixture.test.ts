@@ -34,11 +34,10 @@ test('diagnostic pages have separate synthetic identities, literal search and a 
 
 test('actual navigation and catalogue reconstruct received pagination after fixture overlap; late aborted response is ignored', async () => {
   const events: Array<{ kind: string; id?: number }> = [];
-  let navigation: NavigationController;
   const transport = createCatalogueInteractionTransport({ overlap: true,
     trace: (kind: string, detail: object) => events.push({ kind, ...detail }),
     refresh: () => { void navigation.refresh(); }, delay: async () => { await new Promise(resolve => setImmediate(resolve)); } });
-  navigation = new NavigationController({ transport, leave: () => assert.fail('No navigation'), clear: () => assert.fail('No cleanup') });
+  const navigation = new NavigationController({ transport, leave: () => assert.fail('No navigation'), clear: () => assert.fail('No cleanup') });
   await navigation.refresh();
   const catalogue = new StudioCaseCatalogue(navigation, transport);
   const stop = catalogue.attach();
