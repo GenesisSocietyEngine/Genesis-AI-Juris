@@ -45,6 +45,8 @@ function harness(query = "custom_case=1&studio_step=case_map") {
     savedCaseRequestRef: { current: 0 }, draftRef: { current: blank as StudioDraft }, currentStudioScopeRef: { current: "account-A" as string | null },
     studioTaxWriteBaseline: { current: new StudioTaxWriteBaseline() },
     restoredSavedCaseRef: { current: null as string | null }, studioSavedBaseline: { current: null },
+    studioChangedBeforeRestoreRef: { current: false }, recovery: null as null | { rawText?: string; canExport: boolean; scope: string; filename: string },
+    setStudioRecovery: (value: { rawText?: string; canExport: boolean; scope: string; filename: string }) => { state.recovery = value; },
     savedCaseRestorePending: null as number | null, studioAIEntitlement: "not_configured", studioRestoreReady: true, studioCustomCaseId: null,
     fetch: (_path: string, init: RequestInit) => { assert.ok(init.signal, "Saved-case read has bounded cancellation"); return new Promise<Response>((resolve, reject) => requests.push({ resolve, reject })); },
     readJsonResponse: (response: Response) => response.json(),
@@ -160,5 +162,47 @@ test("anonymous and unavailable identity do not start or retain a saved-case res
     h.actions.entry(); h.flush();
     assert.equal(h.requests.length, 0); assert.equal(h.state.savedCaseRestorePending, null);
     assert.equal(h.actions.pending(), false);
+  }
+});
+
+const unsupportedRecovery = (access = "owner", canExport = true) => ({
+  customCase: { id: 1, access },
+  recovery: { status: "unsupported", reason: "Synthetic newer document", canExport, rawText: ' \ufeff{"future":900719925474099312345}\r\n' },
+});
+
+test("actual saved recovery grants exact raw export only to the verified owner without replacing current work", async () => {
+  for (const [access, canExport, allowed] of [["owner", true, true], ["owner", false, false], ["shared", true, false], ["admin", true, false]] as const) {
+    const h = harness(), before = JSON.stringify(h.state.draftRef.current), url = h.url().href;
+    const pending = h.actions.load(1, true), response = unsupportedRecovery(access, canExport);
+    h.requests[0].resolve(Response.json(response)); await pending;
+    assert.equal(h.state.recovery?.rawText, response.recovery.rawText);
+    assert.equal(h.state.recovery?.canExport, allowed, access);
+    assert.equal(h.state.recovery?.filename, "studio-workspace-1-recovery.json");
+    assert.equal(h.state.recovery?.scope, "account-A");
+    assert.equal(h.installed(), null); assert.equal(JSON.stringify(h.state.draftRef.current), before);
+    assert.equal(h.url().href, url); assert.equal(h.storage.size, 0);
+    assert.equal(h.state.savedCaseRestorePending, null);
+  }
+});
+
+test("actual late recovery completion reveals no raw text after source/account/request/navigation cancellation", async () => {
+  for (const change of ["source", "account", "request", "view", "case", "path"]) {
+    const h = harness(), pending = h.actions.load(1, true);
+    if (change === "source") h.state.draftRef.current = { ...h.blank, title: "Retained newer synthetic input" };
+    if (change === "account") h.state.currentStudioScopeRef.current = "account-B";
+    if (change === "request") h.state.savedCaseRequestRef.current++;
+    if (change === "view") h.navigate("?view=demos");
+    if (change === "case") h.navigate("?custom_case=2");
+    if (change === "path") h.navigate("/matters");
+    const before = JSON.stringify(h.state.draftRef.current), url = h.url().href;
+    h.requests[0].resolve(Response.json(unsupportedRecovery())); await pending;
+    assert.equal(h.state.recovery, null, change); assert.equal(h.installed(), null);
+    assert.equal(JSON.stringify(h.state.draftRef.current), before); assert.equal(h.url().href, url);
+    assert.equal(h.storage.size, 0); assert.equal(h.state.savedCaseRestorePending, null);
+  }
+  for (const status of [401, 403, 404]) {
+    const h = harness(), pending = h.actions.load(1, true);
+    h.requests[0].resolve(Response.json({ error: "No access" }, { status })); await pending;
+    assert.equal(h.state.recovery, null); assert.equal(h.installed(), null); assert.equal(h.storage.size, 0);
   }
 });
