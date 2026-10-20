@@ -24,6 +24,7 @@ function readPage(value: unknown): Page {
 export class StudioCaseCatalogue {
   private state: StudioCatalogueState = { phase: "idle", cases: [], nextCursor: null, issue: "", query: "", pages: 0 };
   private pages = 0;
+  private requestedPages = 0;
   private restoreEpoch = 0;
   private query = "";
   private readController: AbortController | null = null;
@@ -41,29 +42,36 @@ export class StudioCaseCatalogue {
   sync = () => {
     const scope = this.currentScope();
     if (!scope && scope === this.scope) return;
+    // Focus verification still refreshes server visibility. Rebuild the depth
+    // already requested in this exact authority scope, including an active
+    // Load more request, rather than silently replacing it with page one.
+    const depth = scope && scope === this.scope ? Math.max(1, this.requestedPages) : 1;
     this.readController?.abort();
-    this.scope = scope; this.epoch++; this.restoreEpoch++; this.pages = 0;
+    this.scope = scope; this.epoch++; this.restoreEpoch++; this.pages = 0; this.requestedPages = 0;
     this.publish({ phase: "idle", cases: [], nextCursor: null, issue: "" });
-    if (scope) void this.load();
+    if (scope) void this.restore(this.query, depth);
   };
   attach() {
     this.sync();
     const stop = this.navigation.subscribe(this.sync);
     const stopBoundary = subscribeSessionBoundary(phase => this.navigation.invalidate(phase === "revoke" ? "denied" : "expired"));
-    return () => { stop(); stopBoundary(); this.readController?.abort(); this.scope = ""; this.epoch++; this.restoreEpoch++; this.pages = 0; this.publish({ phase: "idle", cases: [], nextCursor: null, issue: "" }); };
+    return () => { stop(); stopBoundary(); this.readController?.abort(); this.scope = ""; this.epoch++; this.restoreEpoch++; this.pages = 0; this.requestedPages = 0; this.publish({ phase: "idle", cases: [], nextCursor: null, issue: "" }); };
   }
   async restore(value: string, pages: number) {
     const scope = this.currentScope(), pending = this.search(value), ticket = this.restoreEpoch;
+    const depth = Math.max(1, Math.min(40, pages));
+    this.requestedPages = depth;
     await pending;
-    for (let page = 1; page < Math.min(40, pages); page++) {
+    for (let page = 1; page < depth; page++) {
       if (ticket !== this.restoreEpoch || scope !== this.currentScope() || this.state.phase !== "ready" || !this.state.nextCursor) return;
       await this.load(true);
     }
+    if (ticket === this.restoreEpoch) this.requestedPages = this.pages;
   }
   async search(value: string) {
     const query = studioCaseQuery(value);
     this.readController?.abort();
-    this.epoch++; this.restoreEpoch++; this.pages = 0;
+    this.epoch++; this.restoreEpoch++; this.pages = 0; this.requestedPages = 0;
     this.query = query ?? "";
     this.publish({ phase: query === null ? "error" : "idle", cases: [], nextCursor: null, issue: query === null ? "invalid-search" : "" });
     if (query !== null) await this.load();
@@ -73,6 +81,7 @@ export class StudioCaseCatalogue {
     if (!scope || scope !== this.scope || this.state.phase === "loading" || more && !this.state.nextCursor) return;
     const ticket = ++this.epoch, previous = more ? this.state.cases : [], cursor = more ? this.state.nextCursor : null;
     const previousPages = more ? this.pages : 0;
+    this.requestedPages = more ? Math.max(this.requestedPages, previousPages + 1) : 1;
     if (!more) this.pages = 0;
     const controller = new AbortController(); this.readController = controller;
     this.publish({ phase: "loading", cases: previous, nextCursor: cursor, issue: "" });
@@ -88,7 +97,7 @@ export class StudioCaseCatalogue {
     } catch {
       if (ticket !== this.epoch || scope !== this.currentScope()) return;
       // A failed/denied refresh is never presented as a current private list.
-      this.pages = 0;
+      this.pages = 0; this.requestedPages = 0;
       this.publish({ phase: "error", cases: [], nextCursor: null, issue: "unavailable" });
     } finally {
       if (this.readController === controller) this.readController = null;
