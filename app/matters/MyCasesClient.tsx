@@ -39,7 +39,7 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const [restoredScope, setRestoredScope] = useState("");
   useEffect(() => {
     let active = true;
-    const saved = readStudioSearchReturn(window.history.state, scope, studioSearchBoundary(window.localStorage));
+    const saved = readStudioSearchReturn(window.history.state, scope, studioSearchBoundary(() => window.localStorage));
     const stop = catalogue.attach();
     const pending = saved ? catalogue.restore(saved.query, saved.pages) : Promise.resolve();
     void pending.then(() => { if (active) { setSearch(saved?.input ?? ""); setSort(saved?.sort ?? "updated"); setRestoredScope(scope); } });
@@ -47,7 +47,7 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
     return () => { active = false; stop(); };
   }, [catalogue, scope, session.phase]);
   useEffect(() => {
-    const boundary = studioSearchBoundary(window.localStorage);
+    const boundary = studioSearchBoundary(() => window.localStorage);
     if (!scope || restoredScope !== scope || boundary === null || state.phase !== "ready") return;
     window.history.replaceState(withStudioSearchReturn(window.history.state, { version: 1, scope, boundary, input: search, query: state.query, sort, pages: Math.min(40, state.pages) }), "");
   }, [scope, restoredScope, search, sort, state]);

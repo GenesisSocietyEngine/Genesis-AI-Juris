@@ -342,8 +342,10 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");
   const deleteHandler = appSource.slice(appSource.indexOf("function deleteSelectedGraphItem"), appSource.indexOf("async function shareDraft"));
   assert.match(deleteHandler, /deleteLink\(link\)/, "Delete removes a selected relation");
-  assert.match(deleteHandler, /deleteNode\(\)/, "Delete removes a selected node");
-  assert.match(deleteHandler, /window\.confirm/, "keyboard node deletion confirms removal of connected relations");
+  assert.match(deleteHandler, /requestNodeDeletion\(\)/, "Delete opens the evidence-preserving confirmation for a selected node");
+  assert.doesNotMatch(deleteHandler, /deleteStudioNodeKeepingEvidence\(/, "the keyboard handler must not remove a node before confirmation");
+  assert.match(appSource, /<StudioDeleteNodeDialog/, "node deletion uses the shared evidence-transfer confirmation");
+  assert.match(appSource, /deletionRequest\.current !== pending/, "cancelled confirmations cannot apply after asynchronous verification");
   assert.match(css, /\.theme-after-hours \.node-inspector \.inspector-form select option\{color:#14212c;background-color:#fff\}/);
   assert.match(css, /\.studio-submit-blocker\{/);
 });

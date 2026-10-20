@@ -3088,7 +3088,11 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     if (deletionRequest.current !== pending || materialContext.current !== current || operationPending.current) { setNodeDeletion(null); return; }
     const next = deleteStudioNodeKeepingEvidence(current.draft, pending.id, target);
     if (applyMaterials(pending.fingerprint, next)) { selectNode(null); setRelationStatus(locale === "en" ? "Node removed or disconnected. Evidence records retained; Undo is available." : "Узел удалён или отсоединён. Материалы сохранены; доступна отмена."); }
-    } catch { setRelationStatus(locale === "en" ? "Deletion was not applied. Check access and retry." : "Удаление не применено. Проверьте доступ и повторите."); }
+    } catch (error) { setRelationStatus(error instanceof Error && error.message === "evidence-destination-conflict"
+      ? (locale === "en" ? "Transfer would duplicate an evidence connection. Nothing changed; choose another destination." : "Перенос создаст дублирующую связь. Изменений нет; выберите другое назначение.")
+      : error instanceof Error && error.message === "deadline-fallback-in-use"
+      ? (locale === "en" ? "This node is used by a deadline fallback. Choose a replacement in the deadline settings before deletion." : "Узел используется как переход при пропуске дедлайна. Сначала измените переход в настройках дедлайна.")
+      : (locale === "en" ? "Deletion was not applied. Check access and retry." : "Удаление не применено. Проверьте доступ и повторите.")); }
     setNodeDeletion(null);
   }
 

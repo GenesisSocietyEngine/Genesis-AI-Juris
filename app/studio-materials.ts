@@ -10,10 +10,12 @@ export type StudioMaterial = {
 };
 /** A reading projection. Original documents that were never supplied have no invented body. */
 export async function studioMaterials(draft: StudioDraft, locale: "en" | "ru"): Promise<StudioMaterial[]> {
+  const indices = new Map(draft.nodes.map((node, index) => [node.id, index]));
+  const ordered = (ids: string[]) => [...new Set(ids)].filter(id => indices.has(id)).sort((a, b) => indices.get(a)! - indices.get(b)!);
   const materials: StudioMaterial[] = draft.nodes.filter(node => node.type === "evidence").map(node => ({
     id: `working:${node.id}`, title: node.title, kind: "working", text: node.detail,
     note: locale === "en" ? "Working evidence record · review is separate" : "Рабочая запись материала · проверка отдельно",
-    nodeIds: [node.id, ...draft.links.flatMap(link => link.from === node.id ? [link.to] : link.to === node.id ? [link.from] : [])], selected: true,
+    nodeIds: ordered([node.id, ...draft.links.flatMap(link => link.from === node.id ? [link.to] : link.to === node.id ? [link.from] : [])]), selected: true,
   }));
   const overview = studioOverview(draft, locale);
   if (overview.referenceScenario) {
@@ -35,7 +37,7 @@ export async function studioMaterials(draft: StudioDraft, locale: "en" | "ru"): 
   }
   for (const [index, url] of (draft.classification?.sourceUrls ?? []).entries()) materials.push({ id: `url:${index}`, title: url,
     kind: "url", text: null, note: locale === "en" ? "URL only · source body not attached" : "Только URL · текст источника не приложен", selected: true, nodeIds: [] });
-  return materials;
+  return materials.map(item => ({ ...item, nodeIds: ordered(item.nodeIds) }));
 }
 
 export async function materialHash(text: string) {

@@ -219,3 +219,7 @@ test("return restores query/page depth through fresh no-store server reads, stop
  navigation.invalidate('expired'); await catalogue.restore('erp',3);
  assert.equal(catalogue.getSnapshot().cases.length,0); stop();
 });
+
+test("blocked localStorage access disables history restoration without crashing", () => {
+ assert.equal(studioSearchBoundary(() => {throw new Error('blocked property');}),null);
+});

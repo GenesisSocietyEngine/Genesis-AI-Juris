@@ -5,8 +5,8 @@ import type { StudioCaseSort } from "./studio-case-list";
 const KEY = "casevantStudioSearch";
 export type StudioSearchReturn = { version: 1; scope: string; boundary: string; query: string; input: string; sort: StudioCaseSort; pages: number };
 /** A withdrawal stamp, never identity or permission. Unavailable storage disables restore. */
-export function studioSearchBoundary(storage: Pick<Storage, "getItem">): string | null {
-  try { return storage.getItem(SESSION_BOUNDARY_KEY) ?? ""; } catch { return null; }
+export function studioSearchBoundary(storage: Pick<Storage, "getItem"> | (() => Pick<Storage, "getItem">)): string | null {
+  try { return (typeof storage === "function" ? storage() : storage).getItem(SESSION_BOUNDARY_KEY) ?? ""; } catch { return null; }
 }
 export function readStudioSearchReturn(state: unknown, scope: string, boundary: string | null): StudioSearchReturn | null {
   if (!scope || boundary === null || !state || typeof state !== "object") return null;

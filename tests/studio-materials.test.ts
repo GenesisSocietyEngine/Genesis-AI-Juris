@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { unzipSync, strFromU8 } from "fflate";
 import { buildCanopyPackage } from "../app/canopy-fixture";
@@ -7,6 +8,7 @@ import { buildConvertedExample } from "../app/converted-examples";
 import { studioMaterials, studioMaterialsArchive } from "../app/studio-materials";
 import { rearrangeStudioEvidence, deleteStudioNodeKeepingEvidence } from "../app/studio-evidence-operations";
 import { studioReviewAction } from "../app/studio-review-action";
+import { normalizeStudioDraft } from "../app/case-integrity";
 
 test("Canopy archives contain all immutable versions, exact file hashes and no invented binary originals", async () => {
   const draft = buildCanopyPackage("base").draft, before = JSON.stringify(draft);
@@ -55,4 +57,30 @@ test("review controls use exact affected nodes and route-start correction before
   const draft = buildCanopyPackage("base").draft, id = draft.nodes[2].id;
   assert.deepEqual(studioReviewAction(draft, {level:"warn", text:"orphan", nodeIds:[id]}), {step:4,id:`studio-node-${id}`,nodeId:id});
   assert.deepEqual(studioReviewAction(draft, {level:"warn", text:"start", missingStart:true}), {step:3,id:"studio-evidence-composer",nodeType:"trigger"});
+});
+
+test("evidence connection IDs fit the saved contract and conflicting rules are never silently merged", () => {
+  const draft = buildCanopyPackage("base").draft;
+  const evidence = draft.nodes.find(node => node.type === "evidence")!, first = draft.nodes.find(node => node.type === "decision")!, other = draft.nodes.find(node => node.type === "outcome")!;
+  evidence.id = "e".repeat(80); first.id = "d".repeat(80); other.id = "o".repeat(80);
+  draft.links = [];
+  const added = rearrangeStudioEvidence(draft, [evidence.id], null, first.id);
+  assert.match(added.links[0].id, /^[a-z0-9][a-z0-9_-]{0,79}$/);
+  assert.doesNotThrow(() => normalizeStudioDraft(added));
+  const connected = rearrangeStudioEvidence(added, [evidence.id], null, other.id), before = JSON.stringify(connected);
+  assert.throws(() => rearrangeStudioEvidence(connected, [evidence.id], first.id, other.id), /evidence-destination-conflict/);
+  assert.throws(() => deleteStudioNodeKeepingEvidence(connected, first.id, other.id), /evidence-destination-conflict/);
+  assert.equal(JSON.stringify(connected), before);
+  const deadline = { ...draft.nodes[0], id:"deadline_test", type:"deadline" as const, runtime:{missedOutcomeNodeId:other.id} };
+  assert.throws(() => deleteStudioNodeKeepingEvidence({...connected,nodes:[...connected.nodes,deadline]},other.id,null), /deadline-fallback-in-use/);
+});
+
+test("evidence operations retain complete tax and approval carrier references", () => {
+ const fixture=JSON.parse(readFileSync(new URL('./fixtures/fiveflats-rent-146000.studio-draft.json',import.meta.url),'utf8'));
+ const base=buildCanopyPackage('base').draft;
+ const draft={...base,taxEconomics:fixture.taxEconomics,taxAnalysis:{format:'genesis-juris-tax-attachment' as const,carrierVersion:1 as const,document:' {"exact":"historical bytes","approval":"unreviewed"} \r\n'}};
+ const evidence=draft.nodes.find(node=>node.type==='evidence')!, target=draft.nodes.find(node=>node.type==='outcome')!;
+ const next=rearrangeStudioEvidence(draft,[evidence.id],null,target.id);
+ assert.equal(next.taxAnalysis,draft.taxAnalysis);assert.equal(next.taxEconomics,draft.taxEconomics);
+ assert.equal(next.taxAnalysis.document,draft.taxAnalysis.document);
 });

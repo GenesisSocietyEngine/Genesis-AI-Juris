@@ -26,6 +26,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   }, [draft, locale, nodeId, authority?.epoch]);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const items = loaded?.draft === draft ? loaded.items : [];
+  const loading = loaded?.draft !== draft && !notice;
   const attached = items.filter(item => !nodeId || item.nodeIds.includes(nodeId));
   const filtered = attached.filter(item => (history || item.selected || item.nodeIds.length > 0)
     && (filter === "all" || filter === "unassigned" ? filter === "all" || item.kind === "working" && item.nodeIds.length === 1 : item.kind === filter)
@@ -60,14 +61,16 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       const next = rearrangeStudioEvidence(draft, evidenceIds, mode === "attach" ? null : nodeId ?? null, mode === "detach" ? null : target);
       if (!onApply(expected, next)) throw new Error("Changed context");
       setSelected([]);
-    } catch { if (context.current === snapshot) setNotice(t("The case or access changed, or the selection is invalid. Reopen this section and retry. Nothing was applied.", "Кейс или доступ изменился либо выбор некорректен. Откройте раздел повторно. Изменения не применены.")); }
+    } catch (error) { if (context.current === snapshot) setNotice(error instanceof Error && error.message === "evidence-destination-conflict"
+      ? t("That destination already has this evidence connection. Choose another node; no link details were merged or removed.", "У назначения уже есть эта связь с материалом. Выберите другой узел; сведения связей не объединены и не удалены.")
+      : t("The case or access changed, or the selection is invalid. Reopen this section and retry. Nothing was applied.", "Кейс или доступ изменился либо выбор некорректен. Откройте раздел повторно. Изменения не применены.")); }
     finally { setBusy(false); }
   }
   return <section className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
     <header className={styles.header}><div><h3>{nodeId ? t("Evidence for this node", "Материалы этого узла") : t("Materials library", "Библиотека материалов")}</h3><p>{nodeId ? t("Select working records to move or disconnect them. Their text remains in the library.", "Выберите рабочие записи для переноса или отсоединения. Тексты останутся в библиотеке.") : t("Browse text, inspect linked nodes, or download files. Working records and illustrative references require review; missing originals have no file.", "Просматривайте тексты и узлы или скачивайте файлы. Рабочие записи и учебные источники требуют проверки; отсутствующие оригиналы не имеют файла.")}</p></div>{!nodeId && <button className={styles.primary} type="button" disabled={busy || !authority?.allowed || !items.length} onClick={() => void download()}>{t("Download all (.zip)", "Скачать всё (.zip)")}</button>}</header>
     <div className={styles.toolbar}><label>{t("Find a material", "Найти материал")}<input type="search" value={query} onChange={event => { setQuery(event.target.value); setLimit(20); }} /></label><label>{t("Show materials", "Показать материалы")}<select value={filter} onChange={event => { setFilter(event.target.value); setLimit(20); }}><option value="all">{t("All materials", "Все материалы")}</option><option value="working">{t("Working evidence", "Рабочие материалы")}</option><option value="reference">{t("Illustrative references", "Учебные источники")}</option><option value="missing">{t("Missing originals", "Отсутствующие оригиналы")}</option><option value="unassigned">{t("Unassigned evidence", "Неприкреплённые материалы")}</option></select></label><label><input type="checkbox" checked={history} onChange={event => setHistory(event.target.checked)} /> {t("Include retained versions", "Включить прежние версии")}</label></div>
-    <p role="status">{notice || t(`${filtered.length} matching materials`, `Материалов найдено: ${filtered.length}`)}</p>
-    {!filtered.length && <p className={styles.empty}>{t("No matching materials. Add a connected evidence record in Sources & evidence, or change the search.", "Материалы не найдены. Добавьте связанную запись в разделе источников или измените поиск.")}</p>}
+    <p role="status">{notice || (loading ? t("Loading materials…", "Загрузка материалов…") : t(`${filtered.length} matching materials`, `Материалов найдено: ${filtered.length}`))}</p>
+    {!loading && !filtered.length && <p className={styles.empty}>{t("No matching materials. Add a connected evidence record in Sources & evidence, or change the search.", "Материалы не найдены. Добавьте связанную запись в разделе источников или измените поиск.")}</p>}
     <ul className={styles.rows}>{filtered.slice(0, limit).map(item => <li key={item.id}>
       <div className={styles.rowHeading}>{item.kind === "working" && item.id !== `working:${nodeId}` && onApply && <input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => setSelected(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))} />}<strong>{item.title}</strong></div>
       <p className={styles.meta}>{item.note}</p>
