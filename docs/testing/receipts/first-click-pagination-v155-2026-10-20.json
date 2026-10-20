@@ -1,0 +1,180 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "first-click-pagination",
+  "date": "2026-10-20",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "runtimeCommit": "4f1c0ba92584aa2286680660b51267b0c447dc18",
+  "implementationCommit": "997bf1b246bd9e0c1a60c9ab693496bfe975808a",
+  "pullRequest": 160,
+  "applicationInputsSha256": "b5833a06e79e235ef31cd38f61cf0c53fc5055c1a7a6b370729e33a8d5ba3ae2",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_81b6f44f4ef48191914b5cc7170aba2f",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 155,
+    "source": {
+      "commit_sha": "4f1c0ba92584aa2286680660b51267b0c447dc18"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000cb808243bfbca6c159ff7ff0",
+      "content_hash": "sha256:da793fd53967cad91d29fa52544a1eda0ba1a22c051b69293c1cc4a2250f2129",
+      "size_bytes": 49408000,
+      "file_count": 579
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad76a7c7c548191931b14691d990206",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_81b6f44f4ef48191914b5cc7170aba2f",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-20T13:20:23.443447+00:00"
+  },
+  "rawArchive": {
+    "path": "C:/PROJECTS/Genesis-AI-Juris/.artifacts/casevant-pagination-4f1c0ba-20261020.tar",
+    "sha256": "cf2276056d3a4019736e56c445e7e3ae01119c558690ea1461b96092df254375",
+    "bytes": 30374358,
+    "representation": "local gzip archive; distinct from Sites-normalized tar hash"
+  },
+  "checks": {
+    "candidate": {
+      "job": 118641556380,
+      "total": 1761,
+      "passed": 1758,
+      "failed": 0,
+      "skipped": 3
+    },
+    "exactMain": {
+      "run": 39427989444,
+      "webJob": 118645307836,
+      "pdfJob": 118645307071,
+      "passed": 1758,
+      "failed": 0,
+      "skipped": 3
+    },
+    "focused": {
+      "passed": 42
+    },
+    "packagedArtifact": {
+      "passed": 7
+    },
+    "nativeAtPublication": {
+      "simulator": {
+        "job": 118646550327,
+        "status": "queued"
+      },
+      "editor": {
+        "job": 118645959501,
+        "status": "in_progress"
+      }
+    }
+  },
+  "assets": {
+    "current": 136,
+    "retainedPrevious": 51,
+    "origins": [
+      {
+        "url": "https://casevant.pro",
+        "verified": 187,
+        "total": 187,
+        "releaseDocumentMatches": true
+      },
+      {
+        "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+        "verified": 187,
+        "total": 187,
+        "releaseDocumentMatches": true
+      }
+    ],
+    "scope": "Asset MIME/hash checks and public release documents; distinct from browser observations"
+  },
+  "browserProduction": {
+    "actorDisplayName": "Maxim Hayan",
+    "before": {
+      "version": 154,
+      "tab": "178218857",
+      "firstActivation": [
+        25,
+        25
+      ],
+      "secondActivation": [
+        25,
+        48
+      ]
+    },
+    "after": {
+      "version": 155,
+      "englishTab": "178218860",
+      "russianTab": "178218863",
+      "firstPointerEnglish": [
+        25,
+        48
+      ],
+      "firstPointerRussian": [
+        25,
+        48
+      ],
+      "filteredPointer": [
+        25,
+        40
+      ],
+      "filteredKeyboardEnter": [
+        25,
+        40
+      ],
+      "tabFocusVisibleAfterSettling": true,
+      "backForward": {
+        "case": 48,
+        "query": "QA",
+        "sort": "title",
+        "restoredRows": 40,
+        "pages": 2
+      },
+      "metadata": {
+        "before": 48,
+        "after": 48,
+        "changed": 0,
+        "scope": "displayed title/time/destination only; not full stored-case bytes"
+      },
+      "caseWrites": 0,
+      "measuredNarrow": false,
+      "screenshot": false
+    }
+  },
+  "browserLocal": {
+    "scope": "real component/controllers; synthetic transport; no production binding",
+    "forcedVerificationOverlap": [
+      25,
+      48
+    ],
+    "russianKeyboard": [
+      25,
+      48
+    ],
+    "viewport": {
+      "width": 390,
+      "height": 562,
+      "documentWidth": 375
+    },
+    "screenshot": ".artifacts/pagination-ru-local-result-20261020.png"
+  },
+  "limits": [
+    "Individual production network event ordering was not captured; real-controller regression reproduces the focus verification race.",
+    "Production Russian key delivery timed out; new English desktop Tab/Enter passed.",
+    "Chrome viewport request did not apply; measured desktop width2280. Production narrow/short-height remains open.",
+    "Production screenshot timed out; final English language restoration could not be confirmed after a later browser inspection timeout.",
+    "One initial Search pointer activation did not yield a new query; Enter submitted successfully. Cause unconfirmed; do not count it as passed pointer acceptance or a proven product defect.",
+    "Older held tab IDs178218781 and178218806 were absent from the current inventory; no close/reload/discard was issued for them.",
+    "Recovery, actual downloaded bytes, same-tab account switching, historical packages and source-content acceptance remain separate."
+  ]
+}
