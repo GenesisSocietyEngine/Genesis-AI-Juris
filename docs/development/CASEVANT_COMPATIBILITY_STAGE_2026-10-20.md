@@ -51,4 +51,12 @@ For concise reports/navigation, first measure the authorization/evidence-gap/own
 
 ## Delivery and stop rules
 
+### Current execution checkpoint and preview operation
+
+Read `docs/testing/recovery-artifact-acceptance-2026-10-20.md` before continuing. Actual restore/download handler and isolated D1 authority tests have advanced; original v149 Worker/client bytes now execute locally and one ERP 2.2 EN import was observed. Original-application round-trip acceptance remains partial: the browser download timed out. Use exact archived bytes and retain failed fixtures; do not substitute pinned-module results for the outstanding browser matrix.
+
+For the normal local preview, run `node scripts/preview-casevant.mjs` from the canonical CaseVant checkout with supported Node 22. This loopback-only launcher explains the Sites-owned `/signin-with-chatgpt` route in EN/RU and offers hosted sign-in without transferring local case context. It does not supply local ChatGPT authentication. The generic `npm run dev` launcher does not install this helper. Before any preview restart, inspect active drafts and export available recovery copies through normal controls. If an editor is already unmounted, retain storage/downloads and record that fresh full exports were unavailable. Never claim preservation of newly exported bytes without a file and hash.
+
+The authorized port 4173 restart is complete. Continue production and original-artifact acceptance separately; preserve v152 runtime and all saved cases while only tooling/tests/docs change.
+
 State outcome/acceptance before each slice. Reverify main/live/ownership, review the diff and actual changed flow, test proportionately, commit coherent checkpoints and integrate through ordinary PR controls. Runtime changes require exact merged gates/build, current predecessor assets, native Sites receipt, both-origin verification and authenticated acceptance. Verification-only/Markdown changes that leave application and hosting input hashes unchanged do not justify a runtime redeployment. Preserve a read-only native current-release receipt instead. Report incomplete rows explicitly. Never weaken authority/recovery guards, clean up production cases without express disposal authorization, raise bundle caps or describe independent copies as governed user-edit merging.
