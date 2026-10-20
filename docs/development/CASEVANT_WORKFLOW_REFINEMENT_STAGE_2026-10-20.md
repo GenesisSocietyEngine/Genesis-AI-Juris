@@ -14,6 +14,8 @@ Confirmed v155 production reproduction on existing synthetic48: Review → Compl
 
 Keep input buffers, graph selection/placement, draft records, existing Undo/Redo and saved identities untouched. No auto-save, deletion, migration, current-template substitution or new authority behavior. Cover ordinary section/Overview moves, Back/Forward, restore-pending cancellation, invalid history steps, explicit correction/Return and a connected item add/Undo. Test actual extracted handlers separately from browser observations. For any production authoring acceptance, use a clearly labelled independent synthetic copy, retain it and all earlier work, and do not clear unsaved user tabs. If only a local synthetic authoring fixture is available, record that boundary.
 
+Audit refinement: actual local add → Undo removed the item but left the old Item added notice. Clear obsolete temporary completion feedback on button and case-level keyboard Undo/Redo while delegating exactly once to existing history handlers. Native text-field Undo remains untouched. Do not change history bytes, selection or authoring authority to fix this presentation issue.
+
 Release: independently reviewable PR; exact-main web/PDF and artifact checks; retain previous client assets; native Sites version/deployment receipt; both-origin assets/release document; actual browser regression check. No publishing merely for later Markdown closure.
 
 ## 2. Interaction acceptance and ambiguity — independently reproduce

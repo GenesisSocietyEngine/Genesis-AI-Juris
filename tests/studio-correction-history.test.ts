@@ -6,7 +6,7 @@ import { parseStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/st
 
 // Execute the actual application handlers, including their shared calls.
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openOverview", "openStudioAction", "returnToActions"];
+const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openOverview", "openStudioAction", "returnToActions", "undoStudioEdit", "redoStudioEdit", "timelineShortcut"];
 const handlers = new Map<string, string>();
 function visit(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name && names.includes(node.name.text)) handlers.set(node.name.text, node.getText(source));
@@ -18,7 +18,11 @@ const compiled = ts.transpileModule([...handlers.values()].join("\n") + "\nretur
 function harness(options: { pending?: boolean; empty?: boolean } = {}) {
   let href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=run_compare";
   const input = { title: "QA synthetic retained evidence", detail: "Unadded input", relatedId: "source-node" };
-  const state = { target: { step: 3, id: "studio-evidence-composer", nodeType: "evidence" } as null | Record<string, unknown>, notice: "Temporary action notice", step: 3, overview: false, selected: "source-node", presentation: "list", zoom: 0.5, mode: "user", input, draft: { nodes: [{ id: "existing" }], links: [] }, undo: [{ id: "earlier-revision" }], pushes: [] as string[] };
+  const state = { target: { step: 3, id: "studio-evidence-composer", nodeType: "evidence" } as null | Record<string, unknown>, notice: "Temporary action notice", step: 3, overview: false, selected: "source-node", presentation: "list", zoom: 0.5, mode: "user", input, draft: { nodes: [{ id: "existing" }], links: [] }, undo: [{ id: "earlier-revision" }], pushes: [] as string[], travels: [] as string[] };
+  class Element { isContentEditable = false; }
+  class Input extends Element {}
+  class Textarea extends Element {}
+  class Select extends Element {}
   const forbidden = () => { throw Error("Navigation must not mutate draft/input/history or persist"); };
   const scope = {
     URL, parseStudioWorkflowStep, serializedStudioWorkflowStep, restorePending: options.pending ?? false, guidedDraftIsEmpty: options.empty ?? false,
@@ -32,12 +36,15 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
     selectNode: (value: string) => { state.selected = value; },
     changeDisplayMode: (value: string) => { state.mode = value; },
     clearStudioEvidenceBuffers: forbidden, onEvidenceClear: forbidden, applyCaseChange: forbidden, setDraft: forbidden, saveDraft: forbidden,
+    undoDraft: () => state.travels.push("undo"), redoDraft: () => state.travels.push("redo"),
+    HTMLElement: Element, HTMLInputElement: Input, HTMLTextAreaElement: Textarea, HTMLSelectElement: Select,
   };
   const actions = new Function(...Object.keys(scope), compiled)(...Object.values(scope)) as {
     restoreGuidedStepFromHistory: () => void; selectGuidedStep: (step: number) => void; openOverview: () => void;
     openStudioAction: (target: Record<string, unknown>) => void; returnToActions: (message?: string) => void;
+    undoStudioEdit: () => void; redoStudioEdit: () => void; timelineShortcut: (event: Record<string, unknown>) => void;
   };
-  return { state, actions, navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
+  return { state, actions, inputElement: new Input(), navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
 }
 
 test("browser history leaves the correction normally and preserves unadded input, records and Undo", () => {
@@ -83,4 +90,18 @@ test("pending restore and unrecognized history do not cancel the current correct
   assert.equal(invalid.state.target?.id, "studio-evidence-composer");
   const empty = harness({ empty: true }); empty.actions.restoreGuidedStepFromHistory();
   assert.equal(empty.state.step, 1); assert.equal(empty.state.target, null);
+});
+
+test("button and keyboard Undo/Redo clear obsolete completion feedback and delegate exactly once", () => {
+  const { state, actions, inputElement } = harness();
+  actions.undoStudioEdit(); assert.equal(state.notice, "");
+  state.notice = "Item added"; actions.redoStudioEdit(); assert.equal(state.notice, "");
+  let prevented = 0;
+  const event = { ctrlKey: true, key: "z", shiftKey: false, target: null, preventDefault: () => { prevented++; } };
+  state.notice = "Item added"; actions.timelineShortcut(event); assert.equal(state.notice, "");
+  state.notice = "Item added"; actions.timelineShortcut({ ...event, shiftKey: true }); assert.equal(state.notice, "");
+  assert.deepEqual(state.travels, ["undo", "redo", "undo", "redo"]); assert.equal(prevented, 2);
+  state.notice = "Retained notice"; actions.timelineShortcut({ ...event, target: inputElement });
+  assert.equal(state.notice, "Retained notice", "native field Undo is left alone"); assert.equal(state.travels.length, 4);
+  assert.equal(state.target?.id, "studio-evidence-composer"); assert.equal(state.input.detail, "Unadded input");
 });

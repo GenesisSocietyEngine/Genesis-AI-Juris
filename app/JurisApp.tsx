@@ -2467,6 +2467,8 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const caseSettingsAction = visibleStep === 3 && actionTarget?.step === 3
     && ["studio-title", "studio-publishable-context", "studio-legal-date", "studio-source-urls", "studio-privacy"].includes(actionTarget.id);
   const [actionNotice, setActionNotice] = useState("");
+  function undoStudioEdit() { setActionNotice(""); undoDraft(); }
+  function redoStudioEdit() { setActionNotice(""); redoDraft(); }
 
   useEffect(() => {
     if (!actionTarget) return;
@@ -2802,6 +2804,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       const target = event.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable)) return;
       event.preventDefault();
+      setActionNotice("");
       if (event.shiftKey) redoDraft(); else undoDraft();
     }
     document.addEventListener("keydown", timelineShortcut);
@@ -3567,11 +3570,11 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     {displayMode === "user" && trainingWorkflow && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { if (operationPending.current) return; const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
     window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
     {visibleStep === 3 && displayMode === "user" && !trainingWorkflow && !caseSettingsAction && <Suspense fallback={null}><StudioSourcesPanel onMaterialsChange={applyMaterials} onUpgrade={openUpdatedExample} draft={draft} locale={locale} onStep={selectGuidedStep} onNode={openOverviewNode} onAction={openStudioAction} packetAuthority={{ allowed: canDuplicate && reportAuthority.allowed && !restorePending, epoch: reportAuthority.epoch, verify: reportAuthority.verify }}/></Suspense>}
-    {displayMode === "user" && timeline.revisions.length > 0 && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} draft change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
+    {displayMode === "user" && timeline.revisions.length > 0 && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} draft change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoStudioEdit} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoStudioEdit} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
     {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>
         <div><span>{locale === "en" ? "Prompt & edit history" : "История промпта и правок"}</span><h2 id="studio-history-title">{locale === "en" ? "One case, one continuous authoring record" : "Один кейс — единая история редактирования"}</h2></div>
-        <div className="history-toolbar"><button onClick={undoDraft} disabled={timeline.cursor === 0} aria-label={locale === "en" ? "Undo last Studio change" : "Отменить последнюю правку"}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length} aria-label={locale === "en" ? "Redo Studio change" : "Повторить правку"}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button><b>{draft.editHistory.length.toString().padStart(2,"0")}</b></div>
+        <div className="history-toolbar"><button onClick={undoStudioEdit} disabled={timeline.cursor === 0} aria-label={locale === "en" ? "Undo last Studio change" : "Отменить последнюю правку"}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoStudioEdit} disabled={timeline.cursor >= timeline.revisions.length} aria-label={locale === "en" ? "Redo Studio change" : "Повторить правку"}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button><b>{draft.editHistory.length.toString().padStart(2,"0")}</b></div>
       </header>
       {timeline.revisions.length > 0 && <div className="revision-console">
         <label><span>{locale === "en" ? "Session revision" : "Версия сессии"}</span><select value={selectedRevision?.id ?? ""} onChange={(event) => setSelectedRevisionId(event.target.value)}>{timeline.revisions.map((revision, index) => <option key={revision.id} value={revision.id}>{String(index + 1).padStart(2,"0")} · {revision.label}</option>)}</select></label>
