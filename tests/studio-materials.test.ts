@@ -84,3 +84,17 @@ test("evidence operations retain complete tax and approval carrier references", 
  assert.equal(next.taxAnalysis,draft.taxAnalysis);assert.equal(next.taxEconomics,draft.taxEconomics);
  assert.equal(next.taxAnalysis.document,draft.taxAnalysis.document);
 });
+
+test("multiple evidence records move together and a conflict rejects the whole batch", () => {
+  const draft=buildCanopyPackage("base").draft, first=draft.nodes.find(node=>node.type==="decision")!, target=draft.nodes.find(node=>node.type==="outcome")!, evidence=draft.nodes.find(node=>node.type==="evidence")!;
+  const second={...evidence,id:"evidence_second",detail:"Exact second working record\nNo acceptance inferred."};
+  draft.nodes=[...draft.nodes,second];
+  draft.links=[{id:"batch_a",from:evidence.id,to:first.id,rule:{detail:"Retain A"}},{id:"batch_b",from:second.id,to:first.id,rule:{detail:"Retain B"}}];
+  const before=JSON.stringify(draft), ids=[evidence.id,second.id];
+  const next=rearrangeStudioEvidence(draft,ids,first.id,target.id);
+  assert.deepEqual(next.links,draft.links.map(link=>({...link,to:target.id})));
+  assert.equal(next.nodes,draft.nodes);assert.equal(JSON.stringify(draft),before);
+  const conflicting={...draft,links:[...draft.links,{id:"existing",from:second.id,to:target.id,rule:{detail:"Independent existing details"}}]}, bytes=JSON.stringify(conflicting);
+  assert.throws(()=>rearrangeStudioEvidence(conflicting,ids,first.id,target.id),/evidence-destination-conflict/);
+  assert.equal(JSON.stringify(conflicting),bytes);
+});

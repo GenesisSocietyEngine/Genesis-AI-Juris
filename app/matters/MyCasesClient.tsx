@@ -8,7 +8,7 @@ import MattersClient from "./MattersClient";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "./studio-case-catalogue";
 import styles from "./my-cases.module.css";
 import { selectStudioCases, studioUpdatedLabel, type StudioCaseSort } from "./studio-case-list";
-import { readStudioSearchReturn, studioSearchBoundary, withStudioSearchReturn } from "./studio-search-return";
+import { readStudioSearchReturn, readStudioTabSearch, writeStudioTabSearch, studioSearchBoundary, withStudioSearchReturn } from "./studio-search-return";
 
 export default function MyCasesClient({ initialLocation }: { initialLocation: string }) {
   const current = useWorkspaceLocation(), location = current === "/" ? initialLocation : current;
@@ -39,18 +39,31 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const [restoredScope, setRestoredScope] = useState("");
   useEffect(() => {
     let active = true;
-    const saved = readStudioSearchReturn(window.history.state, scope, studioSearchBoundary(() => window.localStorage));
+    const boundary = studioSearchBoundary(() => window.localStorage);
+    const saved = readStudioSearchReturn(window.history.state, scope, boundary) ?? readStudioTabSearch(() => window.sessionStorage, scope, boundary);
     const stop = catalogue.attach();
     const pending = saved ? catalogue.restore(saved.query, saved.pages) : Promise.resolve();
     void pending.then(() => { if (active) { setSearch(saved?.input ?? ""); setSort(saved?.sort ?? "updated"); setRestoredScope(scope); } });
-    if (!scope && ["anonymous", "expired", "denied", "error"].includes(session.phase)) window.history.replaceState(withStudioSearchReturn(window.history.state, null), "");
+    if (!scope && ["anonymous", "expired", "denied", "error"].includes(session.phase)) {
+      window.history.replaceState(withStudioSearchReturn(window.history.state, null), "");
+      writeStudioTabSearch(() => window.sessionStorage, null);
+    }
     return () => { active = false; stop(); };
   }, [catalogue, scope, session.phase]);
   useEffect(() => {
     const boundary = studioSearchBoundary(() => window.localStorage);
     if (!scope || restoredScope !== scope || boundary === null || state.phase !== "ready") return;
-    window.history.replaceState(withStudioSearchReturn(window.history.state, { version: 1, scope, boundary, input: search, query: state.query, sort, pages: Math.min(40, state.pages) }), "");
-  }, [scope, restoredScope, search, sort, state]);
+    const value = { version: 1 as const, scope, boundary, input: search, query: state.query, sort, pages: Math.min(40, state.pages) };
+    const persist = () => {
+      const current = navigation.getSnapshot();
+      if (current.phase !== "ready" || current.endingSession || JSON.stringify([current.actorId, current.selected?.selection]) !== scope || studioSearchBoundary(() => window.localStorage) !== boundary) return;
+      writeStudioTabSearch(() => window.sessionStorage, value);
+      try { window.history.replaceState(withStudioSearchReturn(window.history.state, value), ""); } catch { /* A throttled history write must not break the catalogue. */ }
+    };
+    const timer = window.setTimeout(persist, 150);
+    window.addEventListener("pagehide", persist);
+    return () => { window.clearTimeout(timer); window.removeEventListener("pagehide", persist); };
+  }, [navigation, scope, restoredScope, search, sort, state]);
   const en = locale === "en";
   const visible = useMemo(() => selectStudioCases(state.cases, "", sort, locale), [state.cases, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.
