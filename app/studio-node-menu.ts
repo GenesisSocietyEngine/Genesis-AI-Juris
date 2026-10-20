@@ -16,14 +16,13 @@ export type StudioNodeMenuPage = {
   end: number;
 };
 
-export function studioNodeMenuPage(nodes: readonly StudioNode[], query: string, requestedPage: number, pageSize = STUDIO_NODE_MENU_PAGE_SIZE): StudioNodeMenuPage {
+export function studioNodeMenuPage(nodes: readonly StudioNode[], query: string, requestedPage: number, pageSize = STUDIO_NODE_MENU_PAGE_SIZE, indices?: ReadonlyMap<string, number>): StudioNodeMenuPage {
   const safePageSize = Math.max(1, Math.min(50, Math.trunc(pageSize) || STUDIO_NODE_MENU_PAGE_SIZE));
   const needle = query.trim().toLocaleLowerCase();
   const matches = needle
     ? nodes
-      .map((node, index) => ({ node, index, score: nodeMatchScore(node, needle) }))
+      .map((node, index) => ({ node, index, score: nodeMatchScore(node, needle, indices ? (indices.get(node.id) ?? index + 1) - 1 : index) }))
       .filter((entry) => entry.score < 4)
-      .sort((left, right) => left.score - right.score || left.index - right.index)
       .map((entry) => entry.node)
     : [...nodes];
   const pageCount = Math.max(1, Math.ceil(matches.length / safePageSize));
@@ -41,13 +40,15 @@ export function studioNodeMenuPage(nodes: readonly StudioNode[], query: string, 
 }
 
 /** Keep a select's current value mounted while its other choices are paged. */
-export function studioNodeMenuOptions(pageNodes: readonly StudioNode[], nodesById: ReadonlyMap<string, StudioNode>, pinnedId?: string | null) {
+export function studioNodeMenuOptions(pageNodes: readonly StudioNode[], nodesById: ReadonlyMap<string, StudioNode>, pinnedId?: string | null, indices?: ReadonlyMap<string, number>) {
   const pinned = pinnedId ? nodesById.get(pinnedId) : undefined;
-  if (!pinned || pageNodes.some((node) => node.id === pinned.id)) return [...pageNodes];
-  return [pinned, ...pageNodes];
+  const order = indices ?? new Map([...nodesById.keys()].map((id, index) => [id, index]));
+  const values = !pinned || pageNodes.some(node => node.id === pinned.id) ? [...pageNodes] : [pinned, ...pageNodes];
+  return values.sort((left, right) => (order.get(left.id) ?? Infinity) - (order.get(right.id) ?? Infinity));
 }
 
-function nodeMatchScore(node: StudioNode, needle: string) {
+function nodeMatchScore(node: StudioNode, needle: string, index: number) {
+  if (`n${String(index + 1).padStart(2, "0")}`.includes(needle)) return 0;
   const title = node.title.toLocaleLowerCase();
   const id = node.id.toLocaleLowerCase();
   const type = node.type.toLocaleLowerCase().replaceAll("_", " ");

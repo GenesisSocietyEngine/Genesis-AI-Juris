@@ -1,5 +1,6 @@
 "use client";
 
+import { studioReviewAction } from "./studio-review-action";
 import ActionTile from "./ActionTile";
 import { caseTypePlaybook } from "./case-type-playbooks";
 import type { StudioDraft, StudioNodeType } from "./types";
@@ -16,22 +17,18 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
   const en = locale === "en";
   const warnings = checks.filter(check => check.level === "warn");
   const playbook = caseTypePlaybook(draft.caseType);
-  function action(check: StudioCheck): { title: string; target: StudioActionTarget } {
-    if (!draft.nodes.length) return { title: en ? "Build the initial case draft" : "Создайте начальный черновик", target: { step: 1, id: "studio-case-brief" } };
+  function action(check: StudioCheck) {
     const group = playbook.requiredNodeGroups.find(group => `nodes:${group.id}` === check.id);
-    if (group) return { title: group.types.includes("evidence") ? (en ? "Complete facts or evidence records" : "Дополните записи фактов или доказательств") : `${en ? "Add" : "Добавьте"} ${group.label[locale].toLowerCase()}`, target: { step: 3, id: "studio-evidence-composer", nodeType: group.types.includes("evidence") ? "evidence" : group.types[0] } };
-    if (check.id === "brief") return { title: en ? "Complete the case title and context" : "Заполните название и контекст", target: { step: 3, id: draft.title.trim() ? "studio-publishable-context" : "studio-title" } };
-    if (check.id === "context") return { title: en ? "Review case context" : "Проверьте контекст кейса", target: { step: 3, id: "studio-publishable-context" } };
-    if (check.id === "identity" || check.id === "version") return { title: en ? "Correct case identity" : "Исправьте идентификатор кейса", target: { step: 3, id: check.id === "version" ? "studio-case-version" : "studio-case-identity", developer: true } };
-    if (check.id === "participants") return { title: en ? "Complete case details" : "Заполните данные кейса", target: { step: 3, id: draft.jurisdiction.trim() ? "studio-role" : "studio-jurisdiction" } };
-    if (check.id === "legal-as-of") return { title: en ? "Confirm the legal review date" : "Укажите дату проверки права", target: { step: 3, id: "studio-legal-date" } };
-    if (check.id === "https-sources") return { title: en ? "Attach authoritative sources" : "Добавьте авторитетные источники", target: { step: 3, id: "studio-source-urls" } };
-    if (check.id === "compliance-gate") return { title: en ? "Review compliance controls" : "Проверьте контроль законности", target: { step: 3, id: "studio-compliance" } };
-    if (check.missingStart) return { title: en ? "Add a route start" : "Добавьте начало маршрута", target: { step: 3, id: "studio-evidence-composer", nodeType: "trigger" } };
-    const exactNode = check.nodeIds?.find(id => draft.nodes.some(node => node.id === id));
-    if (exactNode) return { title: en ? "Inspect the affected node" : "Проверьте проблемный узел", target: { step: 4, id: `studio-node-${exactNode}`, nodeId: exactNode } };
-    const connected = new Set(draft.links.flatMap(link => [link.from, link.to]));
-    return { title: en ? "Connect the decision route" : "Свяжите маршрут решения", target: { step: 4, id: "studio-connect-node", nodeId: draft.nodes.find(node => !connected.has(node.id))?.id ?? draft.nodes.find(node => node.type === "trigger")?.id ?? draft.nodes[0]?.id } };
+    const titles: Record<string, [string,string]> = {
+      brief:["Complete the case title and context","Заполните название и контекст"], context:["Review case context","Проверьте контекст кейса"],
+      identity:["Correct case identity","Исправьте идентификатор кейса"], version:["Correct case identity","Исправьте идентификатор кейса"],
+      participants:["Complete case details","Заполните данные кейса"], "legal-as-of":["Confirm the legal review date","Укажите дату проверки права"],
+      "https-sources":["Attach authoritative sources","Добавьте авторитетные источники"], "compliance-gate":["Review compliance controls","Проверьте контроль законности"]
+    };
+    const title = !draft.nodes.length ? (en ? "Build the initial case draft" : "Создайте начальный черновик")
+      : group ? group.types.includes("evidence") ? (en ? "Complete facts or evidence records" : "Дополните записи фактов или доказательств") : `${en ? "Add" : "Добавьте"} ${group.label[locale].toLowerCase()}`
+      : titles[check.id ?? ""]?.[en ? 0 : 1] ?? (check.missingStart ? (en ? "Add a route start" : "Добавьте начало маршрута") : check.nodeIds?.length ? (en ? "Inspect the affected node" : "Проверьте проблемный узел") : (en ? "Connect the decision route" : "Свяжите маршрут решения"));
+    return { title, target: studioReviewAction(draft, check) };
   }
   return <section id="studio-next-actions" className="action-center page-width" aria-labelledby="studio-next-actions-title" tabIndex={-1}>
     <header><div><h2 id="studio-next-actions-title">{en ? "Your next actions" : "Следующие действия"}</h2><p>{en ? "Open an action, make the change, then return here to check progress." : "Откройте действие, внесите изменения и вернитесь сюда проверить результат."}</p></div><span role="status">{checking ? (en ? "Checking changes…" : "Проверка изменений…") : `${warnings.length} ${en ? "to complete" : "для завершения"}`}</span></header>
@@ -60,7 +57,7 @@ export function StudioEvidenceComposer({ draft, type, locale, canEdit, value, on
       <p>{en ? "This form stays in this tab when you change sections. Add the item before saving or exporting the case." : "Форма остаётся в этой вкладке при смене разделов. Добавьте элемент перед сохранением или экспортом кейса."}</p>
       <label><span>{routeStart ? (en ? "Route start title" : "Название начала маршрута") : (en ? "Item title" : "Название элемента")}</span><input name="title" required maxLength={160} value={value.title} onChange={event => onChange({ title: event.target.value })}/></label>
       <label><span>{routeStart ? (en ? "What starts this route?" : "Что запускает маршрут?") : (en ? "Source and explanation" : "Источник и пояснение")}</span><textarea name="detail" required maxLength={8000} value={value.detail} onChange={event => onChange({ detail: event.target.value })}/></label>
-      <label><span>{routeStart ? (en ? "First step after this Trigger" : "Первый шаг после триггера") : (en ? "Connect to this step" : "Связать с шагом")}</span><select name="relatedId" required value={draft.nodes.some(node => node.id === value.relatedId) ? value.relatedId : ""} onChange={event => onChange({ relatedId: event.target.value })}><option value="">{routeStart ? (en ? "Choose the first step" : "Выберите первый шаг") : (en ? "Choose the related step" : "Выберите связанный шаг")}</option>{draft.nodes.map(node => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
+      <label><span>{routeStart ? (en ? "First step after this Trigger" : "Первый шаг после триггера") : (en ? "Connect to this step" : "Связать с шагом")}</span><select name="relatedId" required value={draft.nodes.some(node => node.id === value.relatedId) ? value.relatedId : ""} onChange={event => onChange({ relatedId: event.target.value })}><option value="">{routeStart ? (en ? "Choose the first step" : "Выберите первый шаг") : (en ? "Choose the related step" : "Выберите связанный шаг")}</option>{draft.nodes.map((node, index) => <option key={node.id} value={node.id}>N{String(index + 1).padStart(2, "0")} · {node.title}</option>)}</select></label>
       {value.relatedId && !draft.nodes.some(node => node.id === value.relatedId) && <p role="alert">{en ? "The previously selected step is no longer in this case. Choose another step." : "Выбранного ранее шага больше нет в кейсе. Выберите другой шаг."}</p>}
       <button className="primary-cta" disabled={draft.nodes.length >= 200 || draft.links.length >= 500 || !draft.nodes.length}>{routeStart ? (en ? "Add Trigger and return to actions" : "Добавить триггер и вернуться к действиям") : (en ? "Add item and return to actions" : "Добавить и вернуться к действиям")}</button>
       <button type="button" className="secondary-cta" onClick={onClear}>{en ? "Discard this unadded item" : "Отменить недобавленный элемент"}</button>

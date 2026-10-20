@@ -264,7 +264,9 @@ test("leaving a restricted Studio context cannot carry snapshots or history into
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const enterNewLocalDraft = source.slice(source.indexOf("function enterNewLocalDraft"), source.indexOf("function updateStudioDraft"));
   const generateDraft = source.slice(source.indexOf("function generateDraft"), source.indexOf("function applyPromptIteration"));
-  const taxTemplate = source.slice(source.indexOf("function loadTaxTemplate"), source.indexOf("function deleteNode"));
+  const taxStart = source.indexOf("function loadTaxTemplate"), taxEnd = source.indexOf("function moveNode", taxStart);
+  assert.ok(taxStart >= 0 && taxEnd > taxStart, "both function boundaries must exist before testing source isolation");
+  const taxTemplate = source.slice(taxStart, taxEnd);
   const resetDraft = source.slice(source.indexOf("function resetStudioDraft"), source.indexOf("function purgeLocalStudioState"));
 
   assert.match(enterNewLocalDraft, /delete isolated\.protection/);

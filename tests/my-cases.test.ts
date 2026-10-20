@@ -10,6 +10,7 @@ import { NavigationController } from "../app/navigation-controller";
 import { publishSessionBoundary } from "../app/session-boundary";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "../app/matters/studio-case-catalogue";
 import { selectStudioCases, studioUpdatedLabel } from "../app/matters/studio-case-list";
+import { readStudioSearchReturn, withStudioSearchReturn, studioSearchBoundary } from "../app/matters/studio-search-return";
 import { studioCaseQuery } from "../app/studio-case-search";
 
 const owner: SavedStudioCase = { id: 7, caseId: "synthetic_owner", title: "Same title", currentVersion: "1.2.3", access: "owner", isPrivate: true, updatedAt: "2026-09-27T10:00:00Z", ownerDisplayName: "Synthetic owner" };
@@ -193,4 +194,32 @@ test("Studio recent work opens Personal drafts, clears governed-case targeting a
   assert.match(html, /Overview<\/li>/); assert.match(html, /Sources &amp; evidence<\/li>/); assert.match(html, /Reports<\/li>/);
   assert.equal((html.match(/<li>/g) ?? []).length, 5);
   assert.doesNotMatch(html,/href="\/studio\?view=community"/);
+});
+
+
+test("return search state is history-only, account/organization/boundary bound and preserves unrelated router state", () => {
+ const value={version:1 as const,scope:'actor/org',boundary:'nonce',query:'erp',input:'ERP',sort:'title' as const,pages:3};
+ const state=withStudioSearchReturn({router:'retained'},value);
+ assert.deepEqual(readStudioSearchReturn(state,'actor/org','nonce'),value);
+ for(const [scope,boundary] of [['other/org','nonce'],['actor/other','nonce'],['actor/org','changed'],['actor/org',null]]) assert.equal(readStudioSearchReturn(state,scope!,boundary),null);
+ for(const patch of [{version:2},{pages:0},{pages:41},{query:'ERP'},{input:'x'.repeat(121)},{sort:'random'}]) assert.equal(readStudioSearchReturn(withStudioSearchReturn({}, {...value,...patch} as typeof value),'actor/org','nonce'),null);
+ assert.deepEqual(withStudioSearchReturn(state,null),{router:'retained'});
+ assert.equal(studioSearchBoundary({getItem:()=>{throw Error('blocked')}}),null);
+ assert.ok(!JSON.stringify(state).includes('customCases'));
+});
+
+test("return restores query/page depth through fresh no-store server reads, stopping at current authorization", async () => {
+ const navigation=await session(), calls:string[]=[];
+ const catalogue=new StudioCaseCatalogue(navigation,async path=>{calls.push(path); const url=new URL(path,'https://test.invalid');return Response.json({customCases:[{...owner,id:url.searchParams.has('cursor')?8:7}],nextCursor:url.searchParams.has('cursor')?null:'next'});});
+ const stop=catalogue.attach(); await tick();
+ await catalogue.restore('ERP',3);
+ assert.equal(catalogue.getSnapshot().query,'erp');assert.equal(catalogue.getSnapshot().pages,2);
+ assert.deepEqual(catalogue.getSnapshot().cases.map(row=>row.id),[7,8]);
+ assert.equal(calls.at(-1),'/api/custom-cases?limit=25&q=erp&cursor=next');
+ navigation.invalidate('expired'); await catalogue.restore('erp',3);
+ assert.equal(catalogue.getSnapshot().cases.length,0); stop();
+});
+
+test("blocked localStorage access disables history restoration without crashing", () => {
+ assert.equal(studioSearchBoundary(() => {throw new Error('blocked property');}),null);
 });

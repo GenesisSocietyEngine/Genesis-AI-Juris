@@ -8,6 +8,7 @@ import MattersClient from "./MattersClient";
 import { myCasesHref, myCasesView, StudioCaseCatalogue, type SavedStudioCase } from "./studio-case-catalogue";
 import styles from "./my-cases.module.css";
 import { selectStudioCases, studioUpdatedLabel, type StudioCaseSort } from "./studio-case-list";
+import { readStudioSearchReturn, studioSearchBoundary, withStudioSearchReturn } from "./studio-search-return";
 
 export default function MyCasesClient({ initialLocation }: { initialLocation: string }) {
   const current = useWorkspaceLocation(), location = current === "/" ? initialLocation : current;
@@ -34,7 +35,22 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const state = useSyncExternalStore(catalogue.subscribe, catalogue.getSnapshot, catalogue.getSnapshot);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<StudioCaseSort>("updated");
-  useEffect(() => catalogue.attach(), [catalogue]);
+  const scope = session.phase === "ready" && !session.endingSession && session.actorId ? JSON.stringify([session.actorId, session.selected?.selection]) : "";
+  const [restoredScope, setRestoredScope] = useState("");
+  useEffect(() => {
+    let active = true;
+    const saved = readStudioSearchReturn(window.history.state, scope, studioSearchBoundary(() => window.localStorage));
+    const stop = catalogue.attach();
+    const pending = saved ? catalogue.restore(saved.query, saved.pages) : Promise.resolve();
+    void pending.then(() => { if (active) { setSearch(saved?.input ?? ""); setSort(saved?.sort ?? "updated"); setRestoredScope(scope); } });
+    if (!scope && ["anonymous", "expired", "denied", "error"].includes(session.phase)) window.history.replaceState(withStudioSearchReturn(window.history.state, null), "");
+    return () => { active = false; stop(); };
+  }, [catalogue, scope, session.phase]);
+  useEffect(() => {
+    const boundary = studioSearchBoundary(() => window.localStorage);
+    if (!scope || restoredScope !== scope || boundary === null || state.phase !== "ready") return;
+    window.history.replaceState(withStudioSearchReturn(window.history.state, { version: 1, scope, boundary, input: search, query: state.query, sort, pages: Math.min(40, state.pages) }), "");
+  }, [scope, restoredScope, search, sort, state]);
   const en = locale === "en";
   const visible = useMemo(() => selectStudioCases(state.cases, "", sort, locale), [state.cases, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.

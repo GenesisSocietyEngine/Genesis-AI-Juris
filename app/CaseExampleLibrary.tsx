@@ -1,5 +1,5 @@
 "use client";
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { EXAMPLE_REGISTRY, exampleDescriptor } from './example-registry';
 import { caseTypePlaybook } from './case-type-playbooks';
 import { caseTypePresentation } from './case-type-presentation';
@@ -30,6 +30,25 @@ export default function LibraryView({locale, restorePlaySession, records, launch
   const [topic, setTopic] = useState("all");
   const [jurisdiction, setJurisdiction] = useState("all");
   const [guided, setGuided] = useState(false);
+  const [filtersReady, setFiltersReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve(window.history.state?.casevantExampleFilters).then(value => {
+    if (!active) return;
+    if (value?.version === 1 && value.locale === locale && typeof value.query === "string" && value.query.length <= 120) {
+      setQuery(value.query);
+      setCategory(CASE_TYPE_REGISTRY.some(item => item.id === value.category) ? value.category : "all");
+      setTopic(typeof value.topic === "string" && value.topic.length < 200 ? value.topic : "all");
+      setJurisdiction(typeof value.jurisdiction === "string" && value.jurisdiction.length < 200 ? value.jurisdiction : "all");
+      setGuided(value.guided === true);
+    }
+    setFiltersReady(true);
+    });
+    return () => { active = false; };
+  }, [locale]);
+  useEffect(() => {
+    if (filtersReady) window.history.replaceState({...window.history.state, casevantExampleFilters:{version:1,locale,query,category,topic,jurisdiction,guided}}, "");
+  }, [filtersReady, locale, query, category, topic, jurisdiction, guided]);
   const label = (id: CaseTypeId) => caseTypePresentation(caseTypePlaybook(caseTypeReference(id)), locale).label;
   const bundled = records;
   const topics = [...new Set(EXAMPLE_REGISTRY.filter(item => item.visible && item.family !== "category").flatMap(item => item.topics))].sort();
@@ -54,7 +73,7 @@ export default function LibraryView({locale, restorePlaySession, records, launch
   return <main className="library-view demo-catalogue">
     <header className="demo-catalogue-header page-width"><div><h1>{locale === "en" ? "Example cases" : "Примеры кейсов"}</h1><p>{locale === "en" ? "Explore worked cases across nine categories. Open a working copy to review sources, compare options and prepare an output. Guided walkthroughs are available on selected cases." : "Изучите кейсы девяти категорий. Откройте рабочую копию, проверьте источники, сравните варианты и подготовьте результат. Для отдельных кейсов доступен пошаговый обзор."}</p></div><button className="secondary-cta" onClick={openTemplates}>{locale === "en" ? "Create your own case" : "Создать свой кейс"}</button></header>
     <section className="catalogue-filters page-width">
-      <label className="filter-search"><span>{locale === "en" ? "Search example cases" : "Поиск примеров"}</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder={locale === "en" ? "Title, category, topic or jurisdiction" : "Название, категория, тема или юрисдикция"}/></label>
+      <label className="filter-search"><span>{locale === "en" ? "Search example cases" : "Поиск примеров"}</span><input maxLength={120} value={query} onChange={e => setQuery(e.target.value)} placeholder={locale === "en" ? "Title, category, topic or jurisdiction" : "Название, категория, тема или юрисдикция"}/></label>
       <label><span>{locale === "en" ? "Case category" : "Категория кейса"}</span><select value={category} onChange={e => setCategory(e.target.value)}><option value="all">{locale === "en" ? "All categories" : "Все категории"}</option>{CASE_TYPE_REGISTRY.map(type => <option key={type.id} value={type.id}>{label(type.id)}</option>)}</select></label>
       <details className="catalogue-filter-more"><summary>{locale === "en" ? "More filters" : "Другие фильтры"}</summary><div>
         <label><span>{locale === "en" ? "Topic" : "Тема"}</span><select value={topic} onChange={e => setTopic(e.target.value)}><option value="all">{locale === "en" ? "All topics" : "Все темы"}</option>{topics.map(item => <option key={item}>{item}</option>)}</select></label>
