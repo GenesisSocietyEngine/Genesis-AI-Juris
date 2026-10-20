@@ -1,6 +1,12 @@
 # CaseVant audit and rollout status — 19 October 2026
 
-## Current release — v150 My cases usability
+## 20 October continuation update
+
+Production remains verified public v150; this slice changes verification tooling/tests/instructions only. Actual390px production EN/RU list visual checks now pass without horizontal overflow. Ordinary production local-file chooser → read-only recovery → return is observed; its export is correctly withheld for an unverified source. Case45's actual post-recovery export matches its entire prior envelope apart from three verified exporter timestamps. No case was created, saved, deleted or reshared. [Detailed evidence and scope](../testing/compatibility-continuation-review-2026-10-20.md).
+
+Implemented original historical data-module execution for v148/v149/v150:69 fixtures,207 known-carrier rows preserved plus27 future probes. Eight unsafe historical v148 read/device outcomes are explicit; v149/v150 guard them. This is not full old browser/Worker acceptance.35 targeted tests passed; final receipt/checkpoint is recorded in the linked review. Next follow [the amended detailed instructions](CASEVANT_COMPATIBILITY_STAGE_2026-10-20.md). Production keyboard delivery and legitimate owner-recovery original download remain open separately from these completed visual/local-file checks.
+
+## Production release — v150 My cases usability (19 October receipt)
 
 Live runtime `d4547efd3fcc1f36207f121ffe43348fc8530f6f`; deployment `appgdep_6ad68a5c097481919cce18ae1400be04` succeeded 19 October 23:24 Paris. Full-width draft rows, readable dates/IDs, loaded-only search/sort and clear Studio actions shipped; authority/data contracts unchanged. Exact-main web/PDF gates passed: **1,717 total / 1,714 passed / 0 failed / 3 inherited skips**. Both origins **176/176** assets; entry remains **319,350 bytes**. Production baseline 25 rows matched exact title/time/destination; search/reset/sort/filtered pagination and case45 reopening observed without case writes. Temporary archive upload failure resolved. [Receipt, evidence and remaining visual limitation](../testing/my-cases-list-review-2026-10-19.md#delivered--public-sites-v150).
 
