@@ -22,14 +22,14 @@ for (const name of ['pointerdown', 'pointerup', 'click']) {
   }, true);
 }
 window.addEventListener('focus', () => trace('window-focus'));
-let holdNextPage = false, releasePage = null;
+let holdNextPage = false, holdNextCursor = params.get('mode') === 'held-cursor', releasePage = null;
 const syntheticRead = createCatalogueInteractionTransport({ trace, overlap: params.get('mode') === 'overlap',
   focusGap: params.get('mode') === 'focus-gap',
   refresh: () => { void navigation.refresh(); } });
 const transport = async (path, init) => {
-  if (holdNextPage && path.startsWith('/api/custom-cases?') && !path.includes('cursor=') &&
+  if ((holdNextPage && !path.includes('cursor=') || holdNextCursor && path.includes('cursor=')) && path.startsWith('/api/custom-cases?') &&
       !init?.body && (!init?.method || init.method === 'GET')) {
-    holdNextPage = false;
+    holdNextPage = false; holdNextCursor = false;
     trace('held-fresh-page');
     await new Promise(resolve => { releasePage = () => { releasePage = null; resolve(); }; });
     trace('released-fresh-page');
@@ -44,9 +44,10 @@ navigation.subscribe(() => trace('navigation', { phase: navigation.getSnapshot()
 
 createRoot(document.getElementById('root')).render(
   <NavigationSession controller={navigation}>
-    {params.get('mode') === 'held-refresh' && <aside aria-label="Local synthetic verification controls">
+    {['held-refresh', 'held-cursor'].includes(params.get('mode')) && <aside aria-label="Local synthetic verification controls">
       <button type="button" onClick={() => { if (!releasePage) { holdNextPage = true; void navigation.refresh(); } }}>Recheck synthetic access and hold page</button>
       <button type="button" onClick={() => releasePage?.()}>Release synthetic page</button>
+      <button type="button" onClick={() => navigation.invalidate('denied')}>Withdraw synthetic access</button>
     </aside>}
     <OrganizationBoundary signedIn={true} signInUrl="/signin">
       <MyCasesClient initialLocation={'/matters?collection=personal&lang=' + (params.get('lang') === 'ru' ? 'ru' : 'en')}/>
