@@ -292,6 +292,52 @@ class SystemLogTests(unittest.TestCase):
                                pathlib.Path(temp), seconds=1)
             self.assertFalse((pathlib.Path(temp) / "write-discovery.json").exists())
 
+    def delayed_history(self, folder, second, *, query_elapsed=0):
+        clock, calls = [0.0], []
+        def query(argv, *, timeout, check):
+            calls.append((argv, timeout))
+            if len(calls) == 1:
+                return subprocess.CompletedProcess(argv, 0, b"[]", b"")
+            clock[0] += query_elapsed
+            return subprocess.CompletedProcess(argv, 0, second, b"")
+        with patch.object(phase, "command", side_effect=query), \
+             patch.object(phase.time, "monotonic", side_effect=lambda: clock[0]), \
+             patch.object(phase.time, "sleep", side_effect=lambda _: clock.__setitem__(0, clock[0] + 5)):
+            phase.discover(Mock(), log_identity(), SimpleNamespace(phase="write", device="isolated"), pathlib.Path(folder))
+        return calls
+
+    def test_empty_initial_history_can_recover_later_exact_authenticated_announcement(self):
+        with tempfile.TemporaryDirectory() as folder:
+            calls = self.delayed_history(folder, json.dumps([log_event()]).encode())
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(calls[0][0], calls[1][0])
+            self.assertTrue(all(0 < timeout <= 20 for _, timeout in calls))
+            proof = json.loads((pathlib.Path(folder) / "write-discovery.json").read_text())
+            self.assertEqual(proof["origins"], ["backfill"])
+            self.assertEqual(len(proof["backfill_attempts"]), 2)
+            self.assertTrue((pathlib.Path(folder) / "write-backfill-02-status.json").exists())
+
+    def test_later_history_still_refuses_foreign_pid_and_malformed_records(self):
+        for payload in (json.dumps([log_event(processID=124)]).encode(), b"[not-json"):
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as folder:
+                with self.assertRaises((RuntimeError, ValueError)):
+                    self.delayed_history(folder, payload)
+                self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
+    def test_later_valid_history_cannot_extend_original_deadline(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                self.delayed_history(folder, json.dumps([log_event()]).encode(), query_elapsed=41)
+            self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
+    def test_unavailable_announcement_remains_failure_after_three_bounded_queries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                self.delayed_history(folder, b"[]")
+            files = list(pathlib.Path(folder).glob("write-backfill*-status.json"))
+            self.assertEqual(len(files), 3)
+            self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
 
 class PhaseLifecycleTests(unittest.TestCase):
     def exercise(self, driver_mode="success", preexisting=False, phase_name="write"):
