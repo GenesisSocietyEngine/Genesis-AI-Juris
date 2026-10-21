@@ -1,0 +1,186 @@
+{
+  "schema": "casevant.native-scope-acceptance.v1",
+  "date": "2026-10-21",
+  "candidate": "3a79bad6f5a5186922f73edbef2a4948dc47519f",
+  "rawVerificationReproduced": true,
+  "runs": [
+    {
+      "run": "39605526566",
+      "source": "3a79bad6f5a5186922f73edbef2a4948dc47519f",
+      "runNonce": "39605526566-1",
+      "verification": {
+        "schema": "tax-mobile-application-verification-v2",
+        "source_sha": "3a79bad6f5a5186922f73edbef2a4948dc47519f",
+        "run_nonce": "39605526566-1",
+        "phases": [
+          "write",
+          "read",
+          "incomplete-write",
+          "incomplete-read",
+          "legacy-write",
+          "legacy-read"
+        ],
+        "pids": [
+          25429,
+          30926,
+          34962,
+          39484,
+          42080,
+          45814
+        ],
+        "same_bundle_sha256": "c7506d2a278409e8184f106115329f62d145d06b5819882a6f7470020329e84b",
+        "complete_pairs_equal": true,
+        "fresh_native_reopen": true,
+        "incomplete_native_error": true,
+        "legacy_record_preserved": true
+      },
+      "proofSha256": "f7dec38be4896ca47a4ec2fb048d3edbab86029c914af4bb35f42d8be53a0dd2",
+      "phases": [
+        {
+          "phase": "write",
+          "receiptSha256": "bfc907152f2603323e231574af9bbeb4eff558532211c3b491d2e2fd44c7a43a",
+          "receiptBytes": 32037,
+          "systemLogBytes": 130894,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "read",
+          "receiptSha256": "64ab895eef9aa01209993166484dadd989f405c6bb61fc23e674bf833d2d1c52",
+          "receiptBytes": 32035,
+          "systemLogBytes": 89643,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "incomplete-write",
+          "receiptSha256": "2265441f4e1fccae76e3424570e5541aca3da95963beac5c28b800e83fd255a6",
+          "receiptBytes": 38401,
+          "systemLogBytes": 131887,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "incomplete-read",
+          "receiptSha256": "68fae962f50650473f3c236873aebedb0f192b7e156049a48f1e4f34db896223",
+          "receiptBytes": 18779,
+          "systemLogBytes": 87559,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "legacy-write",
+          "receiptSha256": "c1c3ddeed8e7332dcf127810cf05b501615d75f9f178d5472176a97dd1708317",
+          "receiptBytes": 44903,
+          "systemLogBytes": 170364,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "legacy-read",
+          "receiptSha256": "efcb0d90af7dd53f7a5a87d65cd61495f29e1fa0462307184b4db8c90ff1f575",
+          "receiptBytes": 35587,
+          "systemLogBytes": 84587,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        }
+      ]
+    },
+    {
+      "run": "39605517119",
+      "source": "3a79bad6f5a5186922f73edbef2a4948dc47519f",
+      "runNonce": "39605517119-1",
+      "verification": {
+        "schema": "tax-mobile-application-verification-v2",
+        "source_sha": "3a79bad6f5a5186922f73edbef2a4948dc47519f",
+        "run_nonce": "39605517119-1",
+        "phases": [
+          "write",
+          "read",
+          "incomplete-write",
+          "incomplete-read",
+          "legacy-write",
+          "legacy-read"
+        ],
+        "pids": [
+          38352,
+          45046,
+          51110,
+          55580,
+          59991,
+          64954
+        ],
+        "same_bundle_sha256": "aa0a43a1774f79ad5b8a159e8007ad8d884dceb5950149dec9422a4a56663b07",
+        "complete_pairs_equal": true,
+        "fresh_native_reopen": true,
+        "incomplete_native_error": true,
+        "legacy_record_preserved": true
+      },
+      "proofSha256": "7c28cc538c58a4bff0eab34e839225713e475c25bab5b8ee077a7004e7bb005f",
+      "phases": [
+        {
+          "phase": "write",
+          "receiptSha256": "021a780cfad3d556f979bcbab4960bfcc195759b636e8aebc90a0916edae9e2b",
+          "receiptBytes": 32037,
+          "systemLogBytes": 132435,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "read",
+          "receiptSha256": "2de59fa30bd17a8fbea8164b9ab8d5947f7054e0b49c0287dfcad4a2f335ba02",
+          "receiptBytes": 32035,
+          "systemLogBytes": 92464,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "incomplete-write",
+          "receiptSha256": "4925efaa9eb5e5ec9efb1d3f7e9c12620400f277f75db62d59b00821794c95b2",
+          "receiptBytes": 38401,
+          "systemLogBytes": 131982,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "incomplete-read",
+          "receiptSha256": "74c5b92d9c444e9f32ee08394fedc2629a144551408697812714a34428590686",
+          "receiptBytes": 18779,
+          "systemLogBytes": 93115,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "legacy-write",
+          "receiptSha256": "a10bc63366dfbeb6b00f339b3070c63c919b0f9e570db499eb3a998eaaa835ec",
+          "receiptBytes": 44903,
+          "systemLogBytes": 181432,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        },
+        {
+          "phase": "legacy-read",
+          "receiptSha256": "25c0c09b5135b09bb8666a75db3f766f62be898b18df35ed6d997d77ab23bc89",
+          "receiptBytes": 35587,
+          "systemLogBytes": 87357,
+          "launchSchema": "tax-ios-system-log-launch-v2",
+          "capturePolicy": "flutter-framework-v1",
+          "driverAllTestsPassed": true
+        }
+      ]
+    }
+  ],
+  "historicalPaddingCause": "unconfirmed; no recurrence in these two six-phase executions",
+  "productionRuntimeChanged": false
+}

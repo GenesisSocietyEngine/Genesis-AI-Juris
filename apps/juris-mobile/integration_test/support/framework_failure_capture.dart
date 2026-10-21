@@ -26,7 +26,8 @@ final class FrameworkFailureCapture {
       if (_records.length < 4) {
         Map<String, Object?> metrics;
         try {
-          metrics = snapshot();
+          metrics =
+              snapshot().map((key, value) => MapEntry(key, _jsonValue(value)));
         } on Object catch (error) {
           metrics = {'snapshot_error_type': '${error.runtimeType}'};
         }
@@ -52,4 +53,22 @@ final class FrameworkFailureCapture {
   String _bounded(String value, int limit) => value.length <= limit
       ? value
       : '${value.substring(0, limit)} [truncated]';
+
+  // Invalid geometry is evidence, too: jsonEncode otherwise rejects NaN and
+  // infinity both in the native log and the failed integration response.
+  // Keep finite negative values intact; do not repair application metrics.
+  Object? _jsonValue(Object? value, [int depth = 0]) {
+    if (value is num) return value.isFinite ? value : '$value';
+    if (value == null || value is bool) return value;
+    if (value is String) return _bounded(value, 512);
+    if (depth >= 4) return '[snapshot depth limit]';
+    if (value is Map<String, Object?>) {
+      return Map.fromEntries(value.entries.take(32).map(
+          (entry) => MapEntry(entry.key, _jsonValue(entry.value, depth + 1))));
+    }
+    if (value is List) {
+      return value.take(32).map((item) => _jsonValue(item, depth + 1)).toList();
+    }
+    return '[unsupported ${value.runtimeType}]';
+  }
 }
