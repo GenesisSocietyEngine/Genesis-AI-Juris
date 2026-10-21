@@ -1,0 +1,239 @@
+{
+  "schema": "casevant.original-worker-continuation.v1",
+  "date": "2026-10-21",
+  "applicationVersion": 149,
+  "sourceCommit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+  "browser": false,
+  "productionBindingsUsed": false,
+  "roundtrip": {
+    "schema": "casevant.original-worker-roundtrip.v1",
+    "applicationVersion": 149,
+    "sourceCommit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+    "originalWorker": true,
+    "browser": false,
+    "productionBindingsUsed": false,
+    "output": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836",
+    "rows": [
+      {
+        "fixture": "erp-2.2-en",
+        "inputSha256": "08ac8e69292e4c65469444a47349a7a7eb1ba853bf0a79fbb6ac4d2d9714ed5c",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 2,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "8747cfcf6c093f347bfa3b1b99eaa139e99e25b602a47d7c98906a3e90149047",
+        "foreignStatus": 404
+      },
+      {
+        "fixture": "erp-2.5-ru",
+        "inputSha256": "3e02d19abe357405170f4401111e3a701854a543279a48ce7b86b161680fca33",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 3,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "cf76a2aa50f250d370b7f2df7324c9df74af4503d7a9d4a734653cfb90670bc3",
+        "foreignStatus": 404
+      },
+      {
+        "fixture": "greenfire-2.3-en",
+        "inputSha256": "e90dc09c3af33452ef53beb1969fffdd5071a4267c5b2e2dffb73b15e03577dc",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 4,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "6b127dfd06e7e26faa9664550bb5a907fa6421afacae0bff85782f0ed1dbdba1",
+        "foreignStatus": 404
+      },
+      {
+        "fixture": "greenfire-2.5-ru",
+        "inputSha256": "08b1b8c44d9d65e3ab9c6e1dfeaae5ba01c392759d86097e3c6c71906fdb96b3",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 5,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "428c37a52900ca010e379969a66f765b26f837839b90359b1185aa2d3976c88d",
+        "foreignStatus": 404
+      },
+      {
+        "fixture": "canopy-base-en",
+        "inputSha256": "92ec971e1e6982574e4d318018b5b0eaa36e8abdbad063b80a71bd8883174b4c",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 6,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "6212781d66cd6447713fea03d2d25da20f6657a5cd35c36619f90737db88a7e7",
+        "foreignStatus": 404
+      },
+      {
+        "fixture": "full-tax-en",
+        "inputSha256": "649c27064eaf7acb2c5f7f9d0c003db15e361812bf8a48c3558ab12ae49633fb",
+        "stage": "preserved",
+        "saveStatus": 200,
+        "savedId": 7,
+        "reopenStatus": 200,
+        "allInputFieldsPreserved": true,
+        "reopenedSha256": "0042a15b8a274d124299c9f23a042403a8bfd49cdf2f6876359cb4c812d4b272",
+        "foreignStatus": 404
+      }
+    ],
+    "status": "passed",
+    "seedOriginalSha256": "8dd54094ed33ee0fee71217dee11723a5bba46a8e7c8c51968f55a4b6fc81c77",
+    "seedOriginalUnchanged": true
+  },
+  "guards": {
+    "schema": "casevant.original-worker-guards.v1",
+    "applicationVersion": 149,
+    "sourceCommit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+    "browser": false,
+    "productionBindingsUsed": false,
+    "savedId": 2,
+    "status": "passed",
+    "amendStatus": 200,
+    "staleStatus": 409,
+    "unsupportedStatus": 409,
+    "allAmendedInputFieldsPreserved": true,
+    "sourceReference": {
+      "format": "casevant-example-source-v1",
+      "caseId": "be_commercial_failed_erp_001",
+      "version": "2.2.0",
+      "fingerprint": "sha256-57f8622ba3f8fa565cf1e26e5c9721d02e8ca1b50238b05f11090bbb9a03a1cb"
+    },
+    "staleAndUnsupportedReadBytesUnchanged": true,
+    "seedOriginalSha256": "8dd54094ed33ee0fee71217dee11723a5bba46a8e7c8c51968f55a4b6fc81c77",
+    "seedOriginalUnchanged": true,
+    "output": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155"
+  },
+  "evidence": [
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\canopy-base-en-reopen.json",
+      "bytes": 17653,
+      "sha256": "6212781d66cd6447713fea03d2d25da20f6657a5cd35c36619f90737db88a7e7"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\canopy-base-en-save.json",
+      "bytes": 1343,
+      "sha256": "243c6fa9d7ed9eaf744a20753fb1cd3e2b70331b51308851116379eb3ebc8470"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\erp-2.2-en-reopen.json",
+      "bytes": 164327,
+      "sha256": "8747cfcf6c093f347bfa3b1b99eaa139e99e25b602a47d7c98906a3e90149047"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\erp-2.2-en-save.json",
+      "bytes": 1331,
+      "sha256": "7187035310a0450f614c569bd4f84e4f67f34ad18ad25ee8f64f8155db5cf875"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\erp-2.5-ru-reopen.json",
+      "bytes": 179173,
+      "sha256": "cf76a2aa50f250d370b7f2df7324c9df74af4503d7a9d4a734653cfb90670bc3"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\erp-2.5-ru-save.json",
+      "bytes": 1331,
+      "sha256": "7fa1c36f7ebe21d3b1a310400d91ef578cc431534bf2a20d9e850ed71314cffa"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\full-tax-en-reopen.json",
+      "bytes": 6170,
+      "sha256": "0042a15b8a274d124299c9f23a042403a8bfd49cdf2f6876359cb4c812d4b272"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\full-tax-en-save.json",
+      "bytes": 1315,
+      "sha256": "faa6dbb20711df3bde750ab520e0a4649097c0f14d69226f26a1ff1cef69b86e"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\greenfire-2.3-en-reopen.json",
+      "bytes": 56856,
+      "sha256": "6b127dfd06e7e26faa9664550bb5a907fa6421afacae0bff85782f0ed1dbdba1"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\greenfire-2.3-en-save.json",
+      "bytes": 1349,
+      "sha256": "757c837ba528fd8d5ae7ea182bd36b829f5dacc6b5498c03b494a9511ac12f47"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\greenfire-2.5-ru-reopen.json",
+      "bytes": 64287,
+      "sha256": "428c37a52900ca010e379969a66f765b26f837839b90359b1185aa2d3976c88d"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\greenfire-2.5-ru-save.json",
+      "bytes": 1349,
+      "sha256": "44ece496ee5b9d9b0959b3b7223eb0bf566cbc13b38f813ca691cf91e2cc6251"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\review.json",
+      "bytes": 2877,
+      "sha256": "925355e834b2b7f65f9b241651450af618d73e678f5871925b0e7fe3ef4cfc00"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-roundtrip-1792593646836\\source1-before-original.json",
+      "bytes": 18961,
+      "sha256": "8dd54094ed33ee0fee71217dee11723a5bba46a8e7c8c51968f55a4b6fc81c77"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\after-amend.json",
+      "bytes": 164363,
+      "sha256": "9b8e381e8708e585ab63de70930f663e7ac0cc58677fa6c0845425f9b295d250"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\after-stale.json",
+      "bytes": 164363,
+      "sha256": "9b8e381e8708e585ab63de70930f663e7ac0cc58677fa6c0845425f9b295d250"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\after-unsupported.json",
+      "bytes": 164363,
+      "sha256": "9b8e381e8708e585ab63de70930f663e7ac0cc58677fa6c0845425f9b295d250"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\amend.json",
+      "bytes": 1349,
+      "sha256": "8396684810f9b71aec8651088d03c4f16d65e91403eef448483e2a03e9d5afb9"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\before.json",
+      "bytes": 164327,
+      "sha256": "8747cfcf6c093f347bfa3b1b99eaa139e99e25b602a47d7c98906a3e90149047"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\review.json",
+      "bytes": 880,
+      "sha256": "dfd0dc01c16853a1669b98b048604600b34fc980beed686290a5aac82c9c2294"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\seed-after.json",
+      "bytes": 23021,
+      "sha256": "328a4c6ae9868667f8696398ba9e8646b0d817d2f93a3b012b70df575657adb2"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\seed-before.json",
+      "bytes": 23021,
+      "sha256": "328a4c6ae9868667f8696398ba9e8646b0d817d2f93a3b012b70df575657adb2"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\stale.json",
+      "bytes": 486,
+      "sha256": "a8584e6446c1276d051a37a351bf4ba238152b49b5a5f76f0d37507166df7845"
+    },
+    {
+      "path": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z\\api-guards-1792593740155\\unsupported.json",
+      "bytes": 94,
+      "sha256": "1897a645883ea869a006a1c3589973dc2285cbd8cb074916d910aed2c9285fc2"
+    }
+  ],
+  "limits": [
+    "API calls are not browser import/export/download acceptance",
+    "Known tax draft and carrier preserved; no tax source editing/recalculation tested",
+    "No held source/account completion race tested",
+    "No production case changed"
+  ]
+}
