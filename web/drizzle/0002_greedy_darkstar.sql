@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `case_versions_root_uidx` ON `case_versions` (`case_id`) WHERE "case_versions"."parent_case_id" is null;
