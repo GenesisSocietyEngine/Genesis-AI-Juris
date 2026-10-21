@@ -72,16 +72,28 @@ def verify_discovery(root, phase, launch, pid, discovery_tools):
         assert datetime.datetime.fromisoformat(entry["arrival_utc"]).tzinfo is not None
         fresh_identity.observe(entry["event"], "stream")
     records_by_origin = {"stream": stream_records, "backfill": []}
-    backfill = json.loads((root / f"{phase}-backfill-status.json").read_text())
-    assert discovery["backfill_status"] == backfill
-    if backfill.get("exit_code") == 0:
-        backfill_parser = discovery_tools["JsonLogObjects"]()
-        records = backfill_parser.feed((root / f"{phase}-backfill.json").read_text(), final=True)
-        assert not backfill_parser.array or backfill_parser.closed
-        for record in records:
-            fresh_identity.observe(record, "backfill")
-        records_by_origin["backfill"] = records
-    else:
+    # Older retained proofs have one query. New proofs must bind every bounded
+    # attempt to its own immutable raw/status files, including a later recovery.
+    attempts = discovery.get("backfill_attempts", [json.loads((root / f"{phase}-backfill-status.json").read_text())])
+    assert type(attempts) is list and 1 <= len(attempts) <= 3
+    assert discovery["backfill_status"] == attempts[-1]
+    for index, attempt in enumerate(attempts):
+        assert type(attempt) is dict
+        suffix = "" if index == 0 else f"-{index + 1:02d}"
+        prefix = f"{phase}-backfill{suffix}"
+        backfill = json.loads((root / f"{prefix}-status.json").read_text())
+        assert attempt == backfill
+        raw = (root / f"{prefix}.json").read_text()
+        assert len(raw.encode("utf-8")) <= 1024 * 1024
+        if backfill.get("exit_code") == 0:
+            assert backfill.get("status") == "completed"
+            backfill_parser = discovery_tools["JsonLogObjects"]()
+            records = backfill_parser.feed(raw, final=True)
+            assert not backfill_parser.array or backfill_parser.closed
+            for record in records:
+                fresh_identity.observe(record, "backfill")
+            records_by_origin["backfill"].extend(records)
+    if not any(attempt.get("exit_code") == 0 for attempt in attempts):
         assert discovery["origins"] == ["stream"]
     assert discovery["observations"]
     assert event in [entry["event"] for entry in discovery["observations"]]

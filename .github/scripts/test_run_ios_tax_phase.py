@@ -292,6 +292,52 @@ class SystemLogTests(unittest.TestCase):
                                pathlib.Path(temp), seconds=1)
             self.assertFalse((pathlib.Path(temp) / "write-discovery.json").exists())
 
+    def delayed_history(self, folder, second, *, query_elapsed=0):
+        clock, calls = [0.0], []
+        def query(argv, *, timeout, check):
+            calls.append((argv, timeout))
+            if len(calls) == 1:
+                return subprocess.CompletedProcess(argv, 0, b"[]", b"")
+            clock[0] += query_elapsed
+            return subprocess.CompletedProcess(argv, 0, second, b"")
+        with patch.object(phase, "command", side_effect=query), \
+             patch.object(phase.time, "monotonic", side_effect=lambda: clock[0]), \
+             patch.object(phase.time, "sleep", side_effect=lambda _: clock.__setitem__(0, clock[0] + 5)):
+            phase.discover(Mock(), log_identity(), SimpleNamespace(phase="write", device="isolated"), pathlib.Path(folder))
+        return calls
+
+    def test_empty_initial_history_can_recover_later_exact_authenticated_announcement(self):
+        with tempfile.TemporaryDirectory() as folder:
+            calls = self.delayed_history(folder, json.dumps([log_event()]).encode())
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(calls[0][0], calls[1][0])
+            self.assertTrue(all(0 < timeout <= 20 for _, timeout in calls))
+            proof = json.loads((pathlib.Path(folder) / "write-discovery.json").read_text())
+            self.assertEqual(proof["origins"], ["backfill"])
+            self.assertEqual(len(proof["backfill_attempts"]), 2)
+            self.assertTrue((pathlib.Path(folder) / "write-backfill-02-status.json").exists())
+
+    def test_later_history_still_refuses_foreign_pid_and_malformed_records(self):
+        for payload in (json.dumps([log_event(processID=124)]).encode(), b"[not-json"):
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as folder:
+                with self.assertRaises((RuntimeError, ValueError)):
+                    self.delayed_history(folder, payload)
+                self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
+    def test_later_valid_history_cannot_extend_original_deadline(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                self.delayed_history(folder, json.dumps([log_event()]).encode(), query_elapsed=41)
+            self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
+    def test_unavailable_announcement_remains_failure_after_three_bounded_queries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                self.delayed_history(folder, b"[]")
+            files = list(pathlib.Path(folder).glob("write-backfill*-status.json"))
+            self.assertEqual(len(files), 3)
+            self.assertFalse((pathlib.Path(folder) / "write-discovery.json").exists())
+
 
 class PhaseLifecycleTests(unittest.TestCase):
     def exercise(self, driver_mode="success", preexisting=False, phase_name="write"):
@@ -415,7 +461,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                         self.assertLess(log.index("event=terminate"), log.index("event=process_absent"))
                         builds = [command for command in driver_commands if command[:3] == ["flutter", "build", "ios"]]
                         if phase_name == "write":
-                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub", "--no-codesign",
                                                      "--target=" + phase.TARGET,
                                                      "--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source,
                                                      "--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce,
@@ -495,6 +541,11 @@ class PreparationTests(unittest.TestCase):
         return phase.validate_preparation(self.evidence, self.args.source, self.args.nonce, self.args.device, built)
 
     def test_prepare_builds_once_without_installation_or_launch(self):
+        argv = phase.build_command(self.args.source, self.args.nonce, self.args.device)
+        self.assertIn("--simulator", argv)
+        self.assertIn("--no-codesign", argv)
+        self.assertIn("--no-pub", argv)
+        self.assertIn(f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={self.args.source}", argv)
         with patch.object(phase, "command") as native:
             built = self.prepared()
         native.assert_not_called()
@@ -702,6 +753,48 @@ class RetainedVerifierTests(unittest.TestCase):
             directory = pathlib.Path(temp)
             launch = self.fixture(directory)
             verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
+
+    def delayed_fixture(self, directory):
+        launch = self.fixture(directory)
+        proof = json.loads((directory / "write-discovery.json").read_text())
+        observed = proof["observations"][1]
+        first = proof["backfill_status"]
+        second = {**first, "started_at": phase.utc_now().isoformat()}
+        proof.update(event=observed["event"], origins=["backfill"], observations=[observed],
+                     backfill_status=second, backfill_attempts=[first, second])
+        phase.write_json(directory / "write-discovery.json", proof)
+        phase.write_json(directory / "write-backfill.json", [])
+        phase.write_json(directory / "write-backfill-02.json", [observed["event"]])
+        phase.write_json(directory / "write-backfill-02-status.json", second)
+        phase.write_json(directory / "write-system.log", [])
+        (directory / "write-system-events.jsonl").write_text("")
+        return launch
+
+    def test_retained_verifier_binds_later_discovery_to_its_own_raw_attempt(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")
+        with tempfile.TemporaryDirectory() as temp:
+            directory = pathlib.Path(temp)
+            launch = self.delayed_fixture(directory)
+            verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
+
+    def test_retained_verifier_refuses_tampered_later_attempts(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")
+        for mode in ("raw-missing", "wrong-pid", "changed-status", "too-many"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
+                directory = pathlib.Path(temp)
+                launch = self.delayed_fixture(directory)
+                proof = json.loads((directory / "write-discovery.json").read_text())
+                if mode == "raw-missing":
+                    phase.write_json(directory / "write-backfill-02.json", [])
+                elif mode == "wrong-pid":
+                    phase.write_json(directory / "write-backfill-02.json", [{**proof["event"], "processID": 124}])
+                elif mode == "changed-status":
+                    phase.write_json(directory / "write-backfill-02-status.json", {"status": "timeout"})
+                else:
+                    proof["backfill_attempts"] = [proof["backfill_status"]] * 4
+                    phase.write_json(directory / "write-discovery.json", proof)
+                with self.assertRaises((AssertionError, RuntimeError)):
+                    verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
 
     def test_retained_verifier_rejects_changed_raw_identity_or_missing_provenance(self):
         verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")

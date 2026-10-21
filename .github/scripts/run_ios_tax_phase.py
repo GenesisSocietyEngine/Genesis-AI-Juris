@@ -281,40 +281,53 @@ def discover(reader, identity, args, evidence, seconds=60):
     deadline = time.monotonic() + seconds
     events = evidence / f"{args.phase}-system-events.jsonl"
     reader.drain(identity, events)
-    # Do not infer readiness from the stream header. The exact new PID/path and
-    # timestamp gate makes a short retrospective query cover any subscription race.
+    # A stream header is not a subscription acknowledgement. A single immediate
+    # history query can also precede log persistence. Requery only the exact new
+    # PID/path within the existing deadline; every announcement retains all OS
+    # identity, freshness and authenticated-URI validation in LogIdentity.
     predicate = f"processID == {identity.pid} AND processImagePath == {json.dumps(identity.executable)}"
     query = ["xcrun", "simctl", "spawn", args.device, "log", "show", "--last", "2m",
              "--style", "json", "--predicate", predicate]
-    backfill = {"command": query, "started_at": utc_now().isoformat()}
-    try:
-        result = command(query, timeout=min(20, seconds), check=False)
-        backfill.update(status="completed", exit_code=result.returncode)
-        stdout, stderr = result.stdout, result.stderr
-    except subprocess.TimeoutExpired as error:
-        backfill.update(status="timeout", error=str(error))
-        stdout, stderr = error.output or b"", error.stderr or b""
-    if len(stdout) + len(stderr) > 1024 * 1024:
-        stdout, stderr = stdout[:512 * 1024], stderr[:512 * 1024]
-        backfill.update(status="output_limit", exit_code=None)
-    (evidence / f"{args.phase}-backfill.json").write_bytes(stdout)
-    (evidence / f"{args.phase}-backfill.stderr.log").write_bytes(stderr)
-    backfill["completed_at"] = utc_now().isoformat()
-    write_json(evidence / f"{args.phase}-backfill-status.json", backfill)
-    if backfill.get("exit_code") == 0:
-        parser = JsonLogObjects()
-        for event in parser.feed(stdout.decode("utf-8", errors="strict"), final=True):
-            identity.observe(event, "backfill")
-        require(not parser.array or parser.closed, "Truncated backfill array")
+    attempts, next_query = [], 0
     while True:
         reader.drain(identity, events)
+        now = time.monotonic()
+        require(now < deadline, "Fresh system-log VM discovery timed out")
+        if not attempts or identity.uri is None and len(attempts) < 3 and now >= next_query:
+            backfill = {"command": query, "started_at": utc_now().isoformat()}
+            try:
+                result = command(query, timeout=min(20, deadline - now), check=False)
+                backfill.update(status="completed", exit_code=result.returncode)
+                stdout, stderr = result.stdout, result.stderr
+            except subprocess.TimeoutExpired as error:
+                backfill.update(status="timeout", error=str(error))
+                stdout, stderr = error.output or b"", error.stderr or b""
+            if len(stdout) + len(stderr) > 1024 * 1024:
+                stdout, stderr = stdout[:512 * 1024], stderr[:512 * 1024]
+                backfill.update(status="output_limit", exit_code=None)
+            suffix = "" if not attempts else f"-{len(attempts) + 1:02d}"
+            prefix = f"{args.phase}-backfill{suffix}"
+            (evidence / f"{prefix}.json").write_bytes(stdout)
+            (evidence / f"{prefix}.stderr.log").write_bytes(stderr)
+            backfill["completed_at"] = utc_now().isoformat()
+            write_json(evidence / f"{prefix}-status.json", backfill)
+            attempts.append(backfill)
+            next_query = now + 20
+            require(time.monotonic() < deadline, "Fresh system-log VM discovery timed out")
+            if backfill.get("exit_code") == 0:
+                parser = JsonLogObjects()
+                for event in parser.feed(stdout.decode("utf-8", errors="strict"), final=True):
+                    identity.observe(event, "backfill")
+                require(not parser.array or parser.closed, "Truncated backfill array")
+            reader.drain(identity, events)
         require(time.monotonic() < deadline, "Fresh system-log VM discovery timed out")
         if identity.uri is not None:
             write_json(evidence / f"{args.phase}-discovery.json", {
                 "launch_started_at": identity.started.isoformat(), "pid": identity.pid,
                 "event": identity.event, "origins": identity.origins,
                 "observations": identity.observations,
-                "backfill_status": backfill, "verified_at": utc_now().isoformat(),
+                "backfill_status": attempts[-1], "backfill_attempts": attempts,
+                "verified_at": utc_now().isoformat(),
             })
             return identity
         time.sleep(0.1)
@@ -454,7 +467,9 @@ def validate_receipt(receipt, phase, source, nonce, pid):
 
 
 def build_command(source, nonce, device):
-    return ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+    # Simulator acceptance has no developer-account provisioning dependency.
+    # Keep the exact bundle/PID checks and preparation deadline unchanged.
+    return ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub", "--no-codesign",
             f"--target={TARGET}", f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={source}",
             f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={nonce}", "-d", device]
 
