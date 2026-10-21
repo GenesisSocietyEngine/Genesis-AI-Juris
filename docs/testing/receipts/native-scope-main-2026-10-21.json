@@ -1,0 +1,107 @@
+{
+  "schema": "casevant.native-scope-main-review.v1",
+  "date": "2026-10-21",
+  "sourceCommit": "371b0f436fc0c5c8a4fc7c911f7d9069142c0ffb",
+  "runtimeWebVersionUnchanged": 160,
+  "originalPaddingCause": "unconfirmed; no recurrence in this run",
+  "web": {
+    "run": 39617585240,
+    "job": 119282493877,
+    "pdfJob": 119282493402,
+    "tests": 1783,
+    "passed": 1780,
+    "failed": 0,
+    "skipped": 3,
+    "conclusion": "success"
+  },
+  "editor": {
+    "run": 39617585228,
+    "job": 119282493590,
+    "conclusion": "success",
+    "verification": {
+      "schema": "tax-mobile-application-verification-v2",
+      "source_sha": "371b0f436fc0c5c8a4fc7c911f7d9069142c0ffb",
+      "run_nonce": "39617585228-1",
+      "phases": [
+        "write",
+        "read",
+        "incomplete-write",
+        "incomplete-read",
+        "legacy-write",
+        "legacy-read"
+      ],
+      "pids": [
+        31535,
+        36098,
+        40471,
+        45968,
+        49994,
+        54492
+      ],
+      "same_bundle_sha256": "f824ecb9b0069eed4e293d19c5b30d7ab07fcdb1b2b2deaffdbd7b79f6938f76",
+      "complete_pairs_equal": true,
+      "fresh_native_reopen": true,
+      "incomplete_native_error": true,
+      "legacy_record_preserved": true
+    },
+    "verificationSha256": "7b7f08cf14c81a97ef13187084f65532c6e00fbc03fcd6c1dc90290cf3c42b8e",
+    "independentRawVerificationReproduced": true,
+    "phases": [
+      {
+        "phase": "write",
+        "receiptSha256": "ce01bf1b7fd1f6bac0f0ac643f43c50d22221f760a040b1c40071494ade6051e",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 128156
+      },
+      {
+        "phase": "read",
+        "receiptSha256": "6ded66e8ac56b537362fa93ff5981f85c5e9f52e798695184b2b243a56a9544f",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 86909
+      },
+      {
+        "phase": "incomplete-write",
+        "receiptSha256": "8f705026e92075402e50a32114ea1cd2b5d0f45597f3e52f6d0cd4b5e0f83cc9",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 131982
+      },
+      {
+        "phase": "incomplete-read",
+        "receiptSha256": "89e634ecbb256856b743b18cfd9bb57e1e3e087a3fc5974baff519793102623f",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 93115
+      },
+      {
+        "phase": "legacy-write",
+        "receiptSha256": "4240ee97bcfbe4116256aa0f93e762efb224bfbba4b368bb9fdb7d0180522f90",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 178660
+      },
+      {
+        "phase": "legacy-read",
+        "receiptSha256": "690fe005e12f6542628c0a1516f760f99ca8f7d3bcf993f19eb3dbab5b97d752",
+        "launchSchema": "tax-ios-system-log-launch-v2",
+        "capturePolicy": "flutter-framework-v1",
+        "systemLogBytes": 84587
+      }
+    ]
+  },
+  "smoke": {
+    "run": 39617585279,
+    "conclusion": "success",
+    "preparedIdentitySha256": "ee51c7da0594bf037fbfb0f6a2950765c1ed00ad26bdfe1d0780782884e9a05e",
+    "phasesSha256": "d987f485a30c82a57b2d3b870cc3144ea1b3625f7091cca27ceb84299e646429",
+    "nativeLogisticsLifecyclePassed": true,
+    "attempt": 1
+  },
+  "limits": [
+    "Three focus/Cancel probes precede Import; not a controlled cold-first Import recurrence test",
+    "Native programmatic text entry is not OS keyboard or production browser evidence",
+    "Unchanged byte/deadline/identity bounds; no product inset clamp or SDK upgrade"
+  ]
+}
