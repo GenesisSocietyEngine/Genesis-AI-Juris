@@ -9,6 +9,16 @@ import { get } from 'node:http';
 
 type FixturePage = { customCases: SavedStudioCase[]; nextCursor: string | null };
 
+test('focus-gap fixture separately delays access, fresh page one and cursor delivery without changing responses', async () => {
+  const delays: number[] = [];
+  const transport = createCatalogueInteractionTransport({ focusGap: true, delay: async ms => { delays.push(ms); } });
+  await transport('/api/workspace-session');
+  const first = await (await transport('/api/custom-cases?limit=25')).json() as FixturePage;
+  const second = await (await transport('/api/custom-cases?limit=25&cursor=page_two')).json() as FixturePage;
+  assert.deepEqual(delays, [500, 450, 1200]);
+  assert.equal(first.customCases.length, 25); assert.equal(second.customCases.length, 23);
+});
+
 test('diagnostic transport rejects writes, foreign URLs and unexpected routes before side effects', async () => {
   let sideEffects = 0;
   const transport = createCatalogueInteractionTransport({ delay: async () => { sideEffects++; }, trace: () => { sideEffects++; } });

@@ -23,6 +23,7 @@ for (const name of ['pointerdown', 'pointerup', 'click']) {
 }
 window.addEventListener('focus', () => trace('window-focus'));
 const transport = createCatalogueInteractionTransport({ trace, overlap: params.get('mode') === 'overlap',
+  focusGap: params.get('mode') === 'focus-gap',
   refresh: () => { void navigation.refresh(); } });
 window.fetch = transport;
 const navigation = new NavigationController({ transport,

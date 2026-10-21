@@ -151,6 +151,92 @@ test("focus verification during the first pagination request revalidates and com
   stop();
 });
 
+test("same-authority refresh keeps the target stable and queues one More intent behind fresh cursors", async () => {
+  const navigation = await session();
+  let reads = 0, finish!: (response: Response) => void;
+  const paths: string[] = [];
+  const catalogue = new StudioCaseCatalogue(navigation, async path => {
+    paths.push(path);
+    if (++reads === 2) return new Promise<Response>(resolve => { finish = resolve; });
+    return Response.json(path.includes("cursor=") ? { customCases: [shared], nextCursor: null } : { customCases: [owner], nextCursor: "old_cursor" });
+  });
+  const stop = catalogue.attach(); await tick();
+  await navigation.refresh(); await tick();
+  assert.deepEqual(catalogue.getSnapshot().cases, [owner], "same verified authority must not remove the measured target/list during revalidation");
+  assert.equal(catalogue.getSnapshot().nextCursor, "old_cursor", "presentation only; do not read this stale cursor");
+  await catalogue.load(true); await catalogue.load(true);
+  assert.equal(reads, 2, "one queued intent, no request with the old cursor");
+  finish(Response.json({ customCases: [owner], nextCursor: "fresh_cursor" })); await tick(); await tick();
+  assert.deepEqual(catalogue.getSnapshot().cases, [owner, shared]);
+  assert.equal(catalogue.getSnapshot().pages, 2);
+  assert.ok(paths.at(-1)?.includes("cursor=fresh_cursor"));
+  assert.equal(reads, 3);
+  stop();
+});
+
+test("failed revalidation clears retained metadata and queued More without reusing its cursor", async () => {
+  for (const status of [401, 403, 500]) {
+    const navigation = await session(); let reads = 0, finish!: (response: Response) => void;
+    const catalogue = new StudioCaseCatalogue(navigation, async () => ++reads === 1
+      ? Response.json({ customCases: [owner], nextCursor: "old" })
+      : new Promise<Response>(resolve => { finish = resolve; }));
+    const stop = catalogue.attach();
+    try {
+      await tick(); await navigation.refresh(); await tick();
+      assert.equal(catalogue.getSnapshot().refreshing, true);
+      await catalogue.load(true);
+      finish(new Response(null, { status })); await tick();
+      assert.equal(catalogue.getSnapshot().phase, "error");
+      assert.equal(catalogue.getSnapshot().refreshing, false);
+      assert.deepEqual(catalogue.getSnapshot().cases, []);
+      assert.equal(catalogue.getSnapshot().nextCursor, null);
+      assert.equal(reads, 2);
+    } finally { stop(); }
+  }
+});
+
+test("authority withdrawal during queued pagination clears immediately and rejects the late refresh", async () => {
+  const navigation = await session(); let reads = 0, finish!: (response: Response) => void, signal: AbortSignal | null | undefined;
+  const catalogue = new StudioCaseCatalogue(navigation, async (_path, init) => {
+    assert.equal(init?.method, undefined); assert.equal(init?.body, undefined);
+    if (++reads === 1) return Response.json({ customCases: [owner], nextCursor: "old" });
+    signal = init?.signal; return new Promise<Response>(resolve => { finish = resolve; });
+  });
+  const stop = catalogue.attach();
+  try {
+    await tick(); await navigation.refresh(); await tick(); await catalogue.load(true);
+    navigation.invalidate("denied");
+    assert.deepEqual(catalogue.getSnapshot().cases, []);
+    assert.equal(catalogue.getSnapshot().refreshing, false);
+    assert.equal(signal?.aborted, true);
+    finish(Response.json({ customCases: [shared], nextCursor: "foreign" })); await tick();
+    assert.deepEqual(catalogue.getSnapshot().cases, []);
+    assert.equal(reads, 2);
+  } finally { stop(); }
+});
+
+test("a new search cancels revalidation and its queued pagination intent", async () => {
+  const navigation = await session(); let reads = 0, finish!: (response: Response) => void;
+  const paths: string[] = [];
+  const catalogue = new StudioCaseCatalogue(navigation, async path => {
+    paths.push(path);
+    if (++reads === 2) return new Promise<Response>(resolve => { finish = resolve; });
+    return Response.json({ customCases: path.includes("q=") ? [shared] : [owner], nextCursor: "current" });
+  });
+  const stop = catalogue.attach();
+  try {
+    await tick(); await navigation.refresh(); await tick(); await catalogue.load(true);
+    await catalogue.search("ERP");
+    finish(Response.json({ customCases: [owner], nextCursor: "obsolete" })); await tick();
+    assert.deepEqual(catalogue.getSnapshot().cases, [shared]);
+    assert.equal(catalogue.getSnapshot().query, "erp");
+    assert.equal(catalogue.getSnapshot().pages, 1);
+    assert.equal(catalogue.getSnapshot().refreshing, false);
+    assert.equal(paths.length, 3);
+    assert.ok(paths[2].endsWith("&q=erp"));
+  } finally { stop(); }
+});
+
 test("focus revalidation retains searched page depth but uses fresh cursors and drops revoked metadata", async () => {
   const navigation = await session(); let revision = 0;
   const paths: string[] = [];

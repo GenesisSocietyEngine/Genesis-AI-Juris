@@ -39,7 +39,7 @@ export function validateNativeListing(paths, types) {
 export function catalogueTiming(value) {
   const source = value && typeof value === 'object' ? value : {};
   const bounded = key => Number.isInteger(source[key]) && source[key] >= 0 && source[key] <= 10000 ? source[key] : 0;
-  return { selectedSessionMs: bounded('selectedSessionMs'), cursorMs: bounded('cursorMs') };
+  return { selectedSessionMs: bounded('selectedSessionMs'), cursorMs: bounded('cursorMs'), firstPageMs: bounded('firstPageMs') };
 }
 
 export function cataloguePort(value = '4183') {
