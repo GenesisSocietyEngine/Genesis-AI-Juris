@@ -1,0 +1,113 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "pagination-focus-gap",
+  "date": "2026-10-21",
+  "runtimeCommit": "a20025cca06dc07f8b8236bb984e4d7bc7245288",
+  "candidateCommit": "dedf641f66cf1b73aef4478195c9e43e91dc06bc",
+  "pullRequest": 175,
+  "applicationInputsSha256": "7845f3eca7488527fbedd29e90e653173bd64281a9fbeabe1221e8136573b240",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_29849b988cac81919735d122b9c46b48",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 159,
+    "source": {
+      "commit_sha": "a20025cca06dc07f8b8236bb984e4d7bc7245288"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000009e3881f5a02349d2e170538a",
+      "content_hash": "sha256:f0cb58f2048c13c6ffb60b9e2cfe5f14cca9a629a979543f3defd70adf4f0bd8",
+      "size_bytes": 49469440,
+      "file_count": 580
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad8962364e88191b68c117efaf4fb1c",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_29849b988cac81919735d122b9c46b48",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-21T10:38:57.175601+00:00"
+  },
+  "rawArchive": {
+    "sha256": "ea253c465d10edcdff6e3421b35f78a3c27ce1fc792c11724aed036f8a5b5dd9",
+    "bytes": 30381219,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "checks": {
+    "focused": {
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "passed",
+    "exactMain": {
+      "run": 39584828196,
+      "web": 119171034980,
+      "pdf": 119171035108,
+      "conclusion": "success",
+      "tests": 1783,
+      "passed": 1780,
+      "failed": 0,
+      "skipped": 3
+    },
+    "assets": {
+      "custom": {
+        "verified": 188,
+        "total": 188
+      },
+      "sites": {
+        "verified": 188,
+        "total": 188
+      }
+    },
+    "production": {
+      "enFirstClick": "25 to 49",
+      "metadata": "all 49 title/version/timestamp/destination tuples identical",
+      "ruNarrowPointer": {
+        "viewport": [
+          390,
+          480
+        ],
+        "scrollWidth": 367,
+        "result": "25 to 49"
+      },
+      "keyboard": "production Shift+Tab/Enter timed out; focus More observed; no live keyboard pass claimed",
+      "screenshot": "production capture timed out; no raster acceptance claimed"
+    },
+    "native": "PR174 remains unmerged: both native candidates fail read VM discovery before Import probes; padding geometry remains unknown",
+    "dependencyAudit": {
+      "full": 0,
+      "production": 0
+    },
+    "publishedArchive": {
+      "applicationVersion": 159,
+      "sourceCommit": "a20025cca06dc07f8b8236bb984e4d7bc7245288",
+      "rebuilt": false,
+      "localOnlyLatencyMs": {
+        "selectedSession": 500,
+        "firstPage": 450,
+        "cursor": 1200
+      },
+      "trustedPointerTarget": "BUTTON",
+      "result": "25 to 48",
+      "freshPageRequest": 60,
+      "freshCursorRequest": 61,
+      "caseBytesBefore": "158e12101c52804e1770d9f1ec2211d9ceca5ca2106f6b0495711af76553451b",
+      "caseBytesAfter": "158e12101c52804e1770d9f1ec2211d9ceca5ca2106f6b0495711af76553451b",
+      "archiveFiles": 580,
+      "archiveBytesUnchanged": true,
+      "outboundAttempts": 0
+    }
+  }
+}
