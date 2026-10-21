@@ -43,6 +43,15 @@ def log_identity():
 
 
 class IdentityTests(unittest.TestCase):
+    def test_capture_predicate_narrows_both_live_and_fresh_pid_history_to_installed_flutter(self):
+        expected = ('eventType == logEvent AND processImagePath == "/isolated/Runner.app/Runner" '
+                    'AND senderImagePath == "/isolated/Runner.app/Frameworks/Flutter.framework/Flutter"')
+        self.assertEqual(phase.flutter_log_predicate(EXE), expected)
+        self.assertEqual(phase.flutter_log_predicate(EXE, 123), expected + ' AND processID == 123')
+        for pid in (True, 0, 1, -1, '123'):
+            with self.subTest(pid=pid), self.assertRaisesRegex(RuntimeError, 'Invalid fresh log PID'):
+                phase.flutter_log_predicate(EXE, pid)
+
     def observed_views(self):
         fixture = pathlib.Path(__file__).parent / "fixtures/ios_vm_announcement_views.json"
         return json.loads(fixture.read_text())["views"]
@@ -726,6 +735,44 @@ class VmAndProcessTests(unittest.TestCase):
 
 
 class RetainedVerifierTests(unittest.TestCase):
+    def scoped_fixture(self, directory):
+        launch = self.fixture(directory)
+        launch.update(schema='tax-ios-system-log-launch-v2', simulator='AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
+                      log_capture_policy='flutter-framework-v1', log_capture_predicate=phase.flutter_log_predicate(EXE))
+        status = json.loads((directory / 'write-backfill-status.json').read_text())
+        status['command'] = ['xcrun', 'simctl', 'spawn', launch['simulator'], 'log', 'show', '--last', '2m',
+                             '--style', 'json', '--predicate', phase.flutter_log_predicate(EXE, 123)]
+        phase.write_json(directory / 'write-backfill-status.json', status)
+        proof = json.loads((directory / 'write-discovery.json').read_text())
+        proof['backfill_status'] = status
+        phase.write_json(directory / 'write-discovery.json', proof)
+        return launch
+
+    def test_scoped_capture_retains_strict_announcement_and_raw_origin_verification(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name('verify_ios_tax_journeys.py')), run_name='test_verifier')
+        with tempfile.TemporaryDirectory() as temp:
+            directory = pathlib.Path(temp)
+            launch = self.scoped_fixture(directory)
+            verifier['verify_discovery'](directory, 'write', launch, 123, phase.__dict__)
+            for key, value in [('log_capture_policy', 'all-processes'), ('log_capture_predicate', 'TRUEPREDICATE')]:
+                with self.subTest(key=key), self.assertRaises(AssertionError):
+                    verifier['verify_discovery'](directory, 'write', {**launch, key: value}, 123, phase.__dict__)
+
+    def test_scoped_capture_rejects_unrelated_native_noise_and_foreign_rows_even_without_vm_marker(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name('verify_ios_tax_journeys.py')), run_name='test_verifier')
+        for changes in ({'senderImagePath': '/System/MediaToolbox'}, {'processID': 124},
+                        {'processImagePath': '/foreign/Runner'}, {'eventType': 'activityCreateEvent'}):
+            with self.subTest(changes=changes), tempfile.TemporaryDirectory() as temp:
+                directory = pathlib.Path(temp)
+                launch = self.scoped_fixture(directory)
+                original = json.loads((directory / 'write-system.log').read_text())[0]
+                rows = [original, {**original, 'eventMessage': 'non-VM native noise', **changes}]
+                phase.write_json(directory / 'write-system.log', rows)
+                (directory / 'write-system-events.jsonl').write_text(''.join(json.dumps({
+                    'arrival_utc': phase.utc_now().isoformat(), 'event': row}) + '\n' for row in rows), encoding='utf-8')
+                with self.assertRaisesRegex(AssertionError, 'off-scope'):
+                    verifier['verify_discovery'](directory, 'write', launch, 123, phase.__dict__)
+
     def fixture(self, directory):
         event = log_event(metadata="live")
         backfill_event = {**event, "metadata": "retrospective"}
