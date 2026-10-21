@@ -1,0 +1,98 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "catalogue-focus",
+  "date": "2026-10-21",
+  "runtimeCommit": "8644ee279bc2dbaf89fad3266936e96ef1e9a72f",
+  "candidateCommit": "b8b34d1bc66dfccb2e8f5973274db9a4bfef2a27",
+  "pullRequest": 177,
+  "applicationInputsSha256": "cdf8a1bf82f2004bdf0569ec8d6be510047722f4ad6e309d4310059f9356ce2f",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_fa53ff7c69a48191b1025cef592a89b1",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 160,
+    "source": {
+      "commit_sha": "8644ee279bc2dbaf89fad3266936e96ef1e9a72f"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_0000000003488211a3dc13d58f7664d9",
+      "content_hash": "sha256:05d15e4bcb4e66ea4f2571243911ca3a5264c958a63610af6120bab1acc33f99",
+      "size_bytes": 49459200,
+      "file_count": 578
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ad8b909d0748191937afb6902c504b0",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_fa53ff7c69a48191b1025cef592a89b1",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-21T13:07:55.067237+00:00"
+  },
+  "rawArchive": {
+    "sha256": "4f0c0afe3916b6719193fa4ebabebebb449befd309a930d0f078cff1e8f2d1b3",
+    "bytes": 30382123,
+    "representation": "local gzip; distinct from Sites-normalized tar"
+  },
+  "checks": {
+    "focused": {
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "passed",
+    "exactMain": {
+      "run": 39603622010,
+      "web": 119234094220,
+      "pdf": 119234094015,
+      "conclusion": "success",
+      "tests": 1783,
+      "passed": 1780,
+      "failed": 0,
+      "skipped": 3
+    },
+    "assets": {
+      "custom": {
+        "verified": 186,
+        "total": 186
+      },
+      "sites": {
+        "verified": 186,
+        "total": 186
+      }
+    },
+    "dependencyAudit": {
+      "full": 0,
+      "production": 0
+    },
+    "production": {
+      "enFirstClick": "25 to 49; first new rendered title22 focused",
+      "ruNarrow": {
+        "viewport": [
+          390,
+          480
+        ],
+        "scrollWidth": 367,
+        "result": "25 to 49; title22 focused; cyan solid2.4px outline"
+      },
+      "metadata": "all49 title/version/timestamp/destination tuples identical",
+      "keyboard": "Actual Tab moves title22 to Edit22; Enter opens saved synthetic Logistics22; Back restores49 rows and query",
+      "writes": 0,
+      "screenshot": "Fresh production capture timed out; no production raster proof",
+      "download": "Historical GreenFire ZIP command timed out without a file result; bytes unconfirmed",
+      "recovery": "Existing synthetic45 opens normally as supported14-node13-link case; not an unsupported owner-recovery source"
+    },
+    "native": "PR174 scoped Flutter log collector pending fresh Mac execution; historical padding root remains unconfirmed"
+  },
+  "scope": "UI focus only; no saved case, source, database, binding or policy changes"
+}
