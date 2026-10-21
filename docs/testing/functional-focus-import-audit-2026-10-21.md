@@ -38,6 +38,8 @@ Fresh authorized Chrome EN at2280×952 and RU at measured390×480/scrollWidth367
 
 Production screenshot capture still times out; no production raster proof is claimed. The final local RU component image is separate evidence. A historical synthetic17 ZIP command times out without a returned file path; actual download bytes remain unconfirmed. Normal inspection of recovery-labelled synthetic45 opens a supported14-node/13-link case; it is not an eligible unsupported owner-recovery source. No unsupported payload is injected.
 
+Fresh v160 synthetic45 also provides a nonzero completeness check: Review shows two outstanding items. Activating Review 2 items opens Sources & evidence, expands Case settings & context and focuses the existing mandate field. Back to case actions restores Review with the same two items; header remains Saved to workspace. No content is changed or saved. This verifies the formerly passive-count journey in this one supported owner case, not every warning/category/role.
+
 ## Native cause review and correction boundary
 
 Both4434056 native runs39599951215/39599941532 pass the application legacy-write phase, including three focus/Cancel probes and original import/calculation/save assertions. The outer runner then exceeds its4MiB log cap before legacy-read. Run39599951215 contains2780 parsed prefix events:91 Flutter and2689 unrelated native-framework events from the same app. No original padding assertion/framework failure is recorded; neither run is a full-six-phase pass.
