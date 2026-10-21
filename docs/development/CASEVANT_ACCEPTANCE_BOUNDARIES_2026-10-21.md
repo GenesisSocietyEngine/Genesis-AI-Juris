@@ -1,5 +1,7 @@
 # CaseVant acceptance and refinement instructions — 21 October 2026
 
+**Latest checkpoint:** exact-main web/PDF and native smoke pass, but editor run `39559539193` fails a new `AnimatedPadding.padding.isNonNegative` assertion during legacy Import. Follow the [framework-padding investigation](../testing/framework-padding-investigation-2026-10-21.md). Capture the original stack and geometry without suppressing failures; native reliability remains open. The user answered **Not sure** about manual versus audit-only pagination failure.
+
 ## Purpose and verified baseline
 
 Improve reliable first-action behavior, native editor restart acceptance and evidence editing without risking saved work. This stage follows the canonical [product instructions](CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md), [compatibility stage](CASEVANT_COMPATIBILITY_STAGE_2026-10-20.md) and [workflow refinement stage](CASEVANT_WORKFLOW_REFINEMENT_STAGE_2026-10-20.md). Its dated [audit](../testing/acceptance-boundaries-review-2026-10-21.md) and [machine-readable receipt](../testing/receipts/acceptance-boundaries-2026-10-21.json) distinguish production, archived application, component fixture and native simulator evidence.
@@ -18,7 +20,7 @@ The isolated runner now provides opt-in `qa_observe=1` on normal Account and cat
 
 Next investigation:
 
-1. Establish whether the miss occurs with normal manual input, audit automation, or both. Preserve the unanswered clarification as a limit.
+1. Establish whether the miss occurs with normal manual input, audit automation, or both. The user answered **Not sure**; preserve manual-versus-automation occurrence as unknown.
 2. Record the actual measured viewport and scale. A requested 390×480 override measured 585×720 in the authorized browser; a calibrated override measured 390×480. Do not equate an automation command with a received click.
 3. Pair a trusted pointer or keyboard activation with its hit target, focus, loading transition and cursor request/response. Distinguish offscreen automatic scrolling from an already-visible control.
 4. Retain normalized API query and displayed query separately. Account for normal requested-depth restoration when returning to the catalogue; do not mislabel a restored 48-row view as a fresh 25-row baseline.
