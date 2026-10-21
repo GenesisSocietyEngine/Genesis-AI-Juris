@@ -56,8 +56,8 @@ test('packaged catalogue permits real local login but refuses every case/account
 test('packaged fixture keeps a dedicated cookie host, refuses user preview port and bounds timing', () => {
   assert.equal(PACKAGED_CATALOGUE_HOST, '127.0.0.3'); assert.equal(cataloguePort(), 4183);
   for (const port of ['4173', '80', '65536', '4183;echo', '0']) assert.throws(() => cataloguePort(port));
-  assert.deepEqual(catalogueTiming({ selectedSessionMs: 8000, cursorMs: 10000 }), { selectedSessionMs: 8000, cursorMs: 10000 });
-  for (const value of [-1, 10001, Infinity, '8000', 1.5]) assert.deepEqual(catalogueTiming({ selectedSessionMs: value, cursorMs: value }), { selectedSessionMs: 0, cursorMs: 0 });
+  assert.deepEqual(catalogueTiming({ selectedSessionMs: 8000, cursorMs: 10000, firstPageMs: 450 }), { selectedSessionMs: 8000, cursorMs: 10000, firstPageMs: 450 });
+  for (const value of [-1, 10001, Infinity, '8000', 1.5]) assert.deepEqual(catalogueTiming({ selectedSessionMs: value, cursorMs: value, firstPageMs: value }), { selectedSessionMs: 0, cursorMs: 0, firstPageMs: 0 });
 });
 
 test('native listing rejects traversal, duplicate/case aliases, Windows aliases and links before extraction', () => {

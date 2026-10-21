@@ -22,8 +22,20 @@ for (const name of ['pointerdown', 'pointerup', 'click']) {
   }, true);
 }
 window.addEventListener('focus', () => trace('window-focus'));
-const transport = createCatalogueInteractionTransport({ trace, overlap: params.get('mode') === 'overlap',
+let holdNextPage = false, releasePage = null;
+const syntheticRead = createCatalogueInteractionTransport({ trace, overlap: params.get('mode') === 'overlap',
+  focusGap: params.get('mode') === 'focus-gap',
   refresh: () => { void navigation.refresh(); } });
+const transport = async (path, init) => {
+  if (holdNextPage && path.startsWith('/api/custom-cases?') && !path.includes('cursor=') &&
+      !init?.body && (!init?.method || init.method === 'GET')) {
+    holdNextPage = false;
+    trace('held-fresh-page');
+    await new Promise(resolve => { releasePage = () => { releasePage = null; resolve(); }; });
+    trace('released-fresh-page');
+  }
+  return syntheticRead(path, init);
+};
 window.fetch = transport;
 const navigation = new NavigationController({ transport,
   leave: () => trace('blocked-navigation'), clear: () => trace('synthetic-memory-cleanup') });
@@ -32,6 +44,10 @@ navigation.subscribe(() => trace('navigation', { phase: navigation.getSnapshot()
 
 createRoot(document.getElementById('root')).render(
   <NavigationSession controller={navigation}>
+    {params.get('mode') === 'held-refresh' && <aside aria-label="Local synthetic verification controls">
+      <button type="button" onClick={() => { if (!releasePage) { holdNextPage = true; void navigation.refresh(); } }}>Recheck synthetic access and hold page</button>
+      <button type="button" onClick={() => releasePage?.()}>Release synthetic page</button>
+    </aside>}
     <OrganizationBoundary signedIn={true} signInUrl="/signin">
       <MyCasesClient initialLocation={'/matters?collection=personal&lang=' + (params.get('lang') === 'ru' ? 'ru' : 'en')}/>
     </OrganizationBoundary>
