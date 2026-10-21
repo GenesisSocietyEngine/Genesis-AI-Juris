@@ -65,6 +65,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const port = fixturePort(process.argv.slice(2));
   const server = await startCatalogueInteractionPreview(resolve(import.meta.dirname, '..'), port);
   console.log(`Synthetic catalogue trace: http://127.0.0.1:${port}/matters?collection=personal&lang=en`);
-  console.log('Comparisons: &scroll=auto; &mode=overlap; &mode=focus-gap (500ms access, 450ms page one, 1200ms cursor); &lang=ru. Fixture results are not production acceptance.');
+  console.log('Comparisons: &scroll=auto; &mode=overlap; &mode=focus-gap (500ms access, 450ms page one, 1200ms cursor); &mode=held-refresh (explicit synthetic controls); &lang=ru. Fixture results are not production acceptance.');
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => process.exit(0)));
 }
