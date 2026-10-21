@@ -1,9 +1,38 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../integration_test/support/framework_failure_capture.dart';
 
 void main() {
+  test('non-finite geometry remains serializable without losing original error',
+      () {
+    FlutterErrorDetails? forwarded;
+    Map<String, Object?>? published;
+    final original = FlutterErrorDetails(exception: AssertionError('padding'));
+    final capture = FrameworkFailureCapture(
+      delegate: (details) => forwarded = details,
+      snapshot: () => {
+        'device_pixel_ratio': double.nan,
+        'view_insets': {'bottom': double.negativeInfinity, 'top': -30.0},
+        'sizes': [double.infinity, 402.0],
+      },
+      publish: (value) {
+        // The real native log and integration response both encode JSON.
+        jsonEncode(value);
+        published = value;
+      },
+    );
+    capture.handle(original);
+    expect(forwarded, same(original));
+    expect(published, isNotNull);
+    final metrics = ((published!['records'] as List).single as Map)['metrics'];
+    expect(metrics['device_pixel_ratio'], 'NaN');
+    expect(metrics['view_insets'], {'bottom': '-Infinity', 'top': -30.0});
+    expect(metrics['sizes'], ['Infinity', 402.0]);
+    expect(() => jsonEncode(capture.evidence), returnsNormally);
+  });
   testWidgets('framework still reports the same pending exception',
       (tester) async {
     final originalHandler = FlutterError.onError!;

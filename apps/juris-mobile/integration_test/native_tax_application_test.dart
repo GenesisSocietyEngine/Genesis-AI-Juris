@@ -282,6 +282,23 @@ void main() {
 
     if (phase == 'legacy-write') {
       expect(bridge.calculations, isEmpty);
+      // Bounded targeted reproduction of the keyboard/route-dismissal boundary
+      // from the retained Import failure. These are cancelled synthetic inputs:
+      // no import command or save is allowed before the original journey below.
+      for (int round = 1; round <= 3; round++) {
+        await _checkpoints.wait('legacy-cancel-probe-$round', () async {
+          await _tap(tester, find.text('Import analysis / legacy input'));
+          final Finder probe = find.byType(AlertDialog);
+          await tester.enterText(
+            find.descendant(of: probe, matching: find.byType(TextField)),
+            '{"synthetic_cancel_probe":true}',
+          );
+          await _tap(tester, find.widgetWithText(TextButton, 'Cancel'));
+          expect(probe, findsNothing);
+          expect(bridge.command('tax_import'), isEmpty);
+          expect(bridge.calculations, isEmpty);
+        });
+      }
       await _tap(tester, find.text('Import analysis / legacy input'));
       final Finder dialog = find.byType(AlertDialog);
       await _tap(
