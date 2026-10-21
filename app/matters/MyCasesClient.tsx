@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import { workspaceDestination } from "../workspace-navigation";
@@ -37,6 +37,32 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const [sort, setSort] = useState<StudioCaseSort>("updated");
   const scope = session.phase === "ready" && !session.endingSession && session.actorId ? JSON.stringify([session.actorId, session.selected?.selection]) : "";
   const [restoredScope, setRestoredScope] = useState("");
+  const listRoot = useRef<HTMLElement | null>(null);
+  const pageFocus = useRef<{ button: HTMLButtonElement; known: Set<number>; context: string } | null>(null);
+  const focusContext = JSON.stringify([scope, navigation.authorityVersion, state.query, sort]);
+  useEffect(() => {
+    // A later user action owns focus, even when the page read is still pending.
+    const cancel = (event: Event) => {
+      if (pageFocus.current && event.target !== pageFocus.current.button) pageFocus.current = null;
+    };
+    document.addEventListener("pointerdown", cancel, true);
+    document.addEventListener("focusin", cancel, true);
+    return () => { document.removeEventListener("pointerdown", cancel, true); document.removeEventListener("focusin", cancel, true); pageFocus.current = null; };
+  }, []);
+  useLayoutEffect(() => {
+    const pending = pageFocus.current;
+    if (!pending) return;
+    if (pending.context !== focusContext || session.phase !== "ready" || session.endingSession || ["idle", "error"].includes(state.phase)) { pageFocus.current = null; return; }
+    if (state.phase !== "ready") return;
+    pageFocus.current = null;
+    // The completed final page removes More. Continue at the first newly
+    // rendered row instead of leaving the reader at BODY or jumping to the top.
+    // Never take focus back from another control during an asynchronous read.
+    if (document.activeElement !== pending.button && document.activeElement !== document.body) return;
+    const next = Array.from(listRoot.current?.querySelectorAll<HTMLAnchorElement>("a[data-saved-case-title]") ?? [])
+      .find(link => !pending.known.has(Number(link.dataset.savedCaseTitle)));
+    next?.focus();
+  }, [focusContext, session.phase, session.endingSession, state]);
   useEffect(() => {
     let active = true;
     const boundary = studioSearchBoundary(() => window.localStorage);
@@ -68,7 +94,7 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
   const visible = useMemo(() => selectStudioCases(state.cases, "", sort, locale), [state.cases, sort, locale]);
   // Render authority is checked synchronously as well as fencing async reads.
   if (session.phase !== "ready" || session.endingSession) return <main className={styles.personal} data-saved-case-actions><p role="status">{en ? "Verify your access to view saved Studio drafts." : "Подтвердите доступ для просмотра сохранённых черновиков Studio."}</p></main>;
-  return <main className={styles.personal} data-saved-case-actions>
+  return <main ref={listRoot} className={styles.personal} data-saved-case-actions>
     <header><h2>{en ? "Saved Studio drafts" : "Сохранённые черновики Studio"}</h2><p>{en ? "Open a saved draft to continue your work. Review and approval are tracked separately." : "Откройте сохранённый черновик, чтобы продолжить работу. Проверка и одобрение учитываются отдельно."}</p></header>
     <form className={styles.tools} role="search" aria-label={en ? "Search saved Studio drafts" : "Поиск сохранённых черновиков Studio"} onSubmit={event => { event.preventDefault(); void catalogue.search(search); }}>
       <label className={styles.search}>{en ? "Search all authorized drafts" : "Поиск во всех доступных черновиках"}<input type="search" maxLength={120} placeholder={en ? "Title, author or #saved ID" : "Название, автор или #ID копии"} value={search} onChange={event => setSearch(event.target.value)} /></label>
@@ -89,7 +115,10 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
       <StudioCaseGroup title={en ? "Owned by me" : "Мои черновики"} cases={visible.filter(item => item.access === "owner")} locale={locale} location={location}/>
       <StudioCaseGroup title={en ? "Other authorized Studio drafts" : "Другие доступные черновики Studio"} cases={visible.filter(item => item.access !== "owner")} locale={locale} location={location}/>
     </>}
-    {state.nextCursor && <button type="button" onClick={() => void catalogue.load(true)} disabled={state.phase === "loading" && !state.refreshing}>{en ? "Load more authorized drafts" : "Загрузить ещё доступные черновики"}</button>}
+    {state.nextCursor && <button type="button" onClick={event => {
+      if (document.activeElement === event.currentTarget) pageFocus.current = { button: event.currentTarget, known: new Set(state.cases.map(item => item.id)), context: focusContext };
+      void catalogue.load(true);
+    }} disabled={state.phase === "loading" && !state.refreshing}>{en ? "Load more authorized drafts" : "Загрузить ещё доступные черновики"}</button>}
   </main>;
 }
 
@@ -100,7 +129,7 @@ export function StudioCaseGroup({ title, cases, locale, location }: { title: str
     const href = workspaceDestination(`/studio?custom_case=${item.id}&studio_step=case_map`, location);
     const updatedAt = studioUpdatedTimestamp(item.updatedAt);
     return <li key={item.id} className={styles.row}>
-      <div className={styles.identity}><h4><a href={href}>{item.title}</a></h4><p><span className={styles.badge}>{en ? "Draft" : "Черновик"}</span> <span>#{item.id} · v{item.currentVersion}</span></p></div>
+      <div className={styles.identity}><h4><a data-saved-case-title={item.id} href={href}>{item.title}</a></h4><p><span className={styles.badge}>{en ? "Draft" : "Черновик"}</span> <span>#{item.id} · v{item.currentVersion}</span></p></div>
       <div className={styles.access}><p>{item.ownerDisplayName}</p><small>{item.access === "owner" ? (en ? "Owner" : "Владелец") : item.access === "shared" ? (en ? "Shared access" : "Предоставлен доступ") : (en ? "Administrator access" : "Доступ администратора")}</small><small>{item.isPrivate ? (en ? "Private" : "Приватный") : (en ? "Restricted sharing" : "Ограниченный доступ")}</small></div>
       <div className={styles.updated}><small>{en ? "Updated · UTC" : "Обновлён · UTC"}</small>{updatedAt !== null ? <time dateTime={new Date(updatedAt).toISOString()} title={item.updatedAt}>{studioUpdatedLabel(item.updatedAt, locale)}</time> : <span>{en ? "Date unavailable" : "Дата недоступна"}</span>}</div>
       <a className={styles.open} href={href}><span>{item.access === "owner" ? (en ? "Edit in Studio" : "Редактировать в Studio") : (en ? "Open in Studio" : "Открыть в Studio")}</span><span className={styles.srOnly}>: {item.title} · #{item.id}</span><span aria-hidden="true"> →</span></a>
