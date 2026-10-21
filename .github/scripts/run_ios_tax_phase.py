@@ -454,7 +454,9 @@ def validate_receipt(receipt, phase, source, nonce, pid):
 
 
 def build_command(source, nonce, device):
-    return ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+    # Simulator acceptance has no developer-account provisioning dependency.
+    # Keep the exact bundle/PID checks and preparation deadline unchanged.
+    return ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub", "--no-codesign",
             f"--target={TARGET}", f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={source}",
             f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={nonce}", "-d", device]
 

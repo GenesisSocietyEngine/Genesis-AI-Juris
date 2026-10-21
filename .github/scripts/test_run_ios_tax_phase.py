@@ -415,7 +415,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                         self.assertLess(log.index("event=terminate"), log.index("event=process_absent"))
                         builds = [command for command in driver_commands if command[:3] == ["flutter", "build", "ios"]]
                         if phase_name == "write":
-                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub", "--no-codesign",
                                                      "--target=" + phase.TARGET,
                                                      "--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source,
                                                      "--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce,
@@ -495,6 +495,11 @@ class PreparationTests(unittest.TestCase):
         return phase.validate_preparation(self.evidence, self.args.source, self.args.nonce, self.args.device, built)
 
     def test_prepare_builds_once_without_installation_or_launch(self):
+        argv = phase.build_command(self.args.source, self.args.nonce, self.args.device)
+        self.assertIn("--simulator", argv)
+        self.assertIn("--no-codesign", argv)
+        self.assertIn("--no-pub", argv)
+        self.assertIn(f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={self.args.source}", argv)
         with patch.object(phase, "command") as native:
             built = self.prepared()
         native.assert_not_called()
