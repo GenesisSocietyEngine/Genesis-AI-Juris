@@ -8,7 +8,7 @@ import { buildConvertedExample } from "../app/converted-examples";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { fixture as taxFixture } from "../tests/helpers/tax-report-fixture";
 import { caseFingerprint } from "../app/case-integrity";
-import { readStudioAggregate } from "../app/studio-aggregate";
+import { preparePublishedStudioFixture } from "./lib/published-studio-fixtures";
 
 // Execute the original inspected Worker/client, never a same-source rebuild.
 // Current fixture factories only prepare labelled synthetic input, not executors.
@@ -67,14 +67,13 @@ try {
     ["canopy-base-en", buildCanopyPackage("base").draft], ["full-tax-en", taxFixture().draft],
   ] as const;
   for (const [id, original] of cases) {
-    const draft = structuredClone(original); draft.caseId = `qa_original_v149_${id.replace(/[^a-zA-Z0-9_]/g, "_")}`;
-    draft.title = `SYNTHETIC original v149 QA — ${id}`;
-    draft.nodes[0].mapPosition = { x: 413, y: 14003 };
+    const draft = await preparePublishedStudioFixture(original, id);
     const raw = JSON.stringify(draft, null, "\t") + "\r\n", path = join(fixtureDirectory, id + ".json");
-    const preflight = readStudioAggregate(raw, { kind: "draft" });
-    assert.equal(preflight.status, "editable", `Invalid synthetic fixture ${id}: ${preflight.status === "editable" ? "" : preflight.reason}`);
     writeFileSync(path, raw);
-    fixtures.push({ id, templateVersion: original.version, caseId: draft.caseId, envelopeVersion: null, kind: "raw-draft", bytes: Buffer.byteLength(raw), sha256: hash(raw), path });
+    fixtures.push({ id, syntheticLabel: `SYNTHETIC original v149 QA — ${id}`,
+      preparation: original.taxAnalysis ? "bound-tax-unchanged-v1" : "independent-source-pinned-manual-position-v1",
+      draftVersion: draft.version, templateVersion: draft.exampleSource?.version ?? null, sourceReference: draft.exampleSource ?? null,
+      caseId: draft.caseId, envelopeVersion: null, kind: "raw-draft", bytes: Buffer.byteLength(raw), sha256: hash(raw), path });
   }
   const known = structuredClone(cases[4][1]); known.caseId = "qa_original_v149_stored_recovery"; known.title = "SYNTHETIC owner-only unsupported recovery";
   const raw = JSON.stringify({ ...known, futureExact: "__RAW_BIG__" }, null, "\t").replace('"__RAW_BIG__"', "900719925474099312345") + "\r\n";
