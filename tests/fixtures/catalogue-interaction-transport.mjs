@@ -6,10 +6,10 @@ export const syntheticOrganization = {
   actorId: syntheticActor, selection: `org_synthetic_catalogue.1.1.${syntheticActor}`,
 };
 
-/** @param {{ trace?: (kind: string, detail: object) => void, delay?: (ms: number) => Promise<void>, overlap?: boolean, refresh?: () => void }} [options] */
+/** @param {{ trace?: (kind: string, detail: object) => void, delay?: (ms: number) => Promise<void>, overlap?: boolean, refresh?: () => void, focusGap?: boolean }} [options] */
 export function createCatalogueInteractionTransport({
   trace = () => {}, delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
-  overlap = false, refresh = () => {},
+  overlap = false, refresh = () => {}, focusGap = false,
 } = {}) {
   let read = 0;
   const rows = Array.from({ length: 48 }, (_, index) => ({
@@ -29,7 +29,7 @@ export function createCatalogueInteractionTransport({
     const id = ++read;
     trace('read', { id, path });
     init?.signal?.addEventListener('abort', () => trace('abort', { id }), { once: true });
-    await delay(120);
+    await delay(focusGap ? (url.pathname === '/api/workspace-session' ? 500 : url.searchParams.has('cursor') ? 1200 : 450) : 120);
     if (url.pathname === '/api/workspace-session') {
       trace('session', { id, phase: 'ready' });
       return Response.json({ authenticated: true,

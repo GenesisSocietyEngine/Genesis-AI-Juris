@@ -9,6 +9,7 @@
 .tools{padding:20px;background:var(--panel,#f0f7fc);border:1px solid var(--rule);border-radius:10px}
 .tools label{display:grid;gap:8px;min-width:0;font-size:14px;font-weight:600}.tools .search{flex:1 1 360px}.tools input,.tools select{box-sizing:border-box;width:100%;min-height:46px;border:1px solid var(--rule);border-radius:6px;padding:10px 12px;background:var(--paper,#fff);color:inherit;font:inherit;font-weight:400}.tools label:last-child{flex:0 1 260px}
 .actions{margin:14px 0 20px}
+.readStatus{min-height:1.55em}
 .personal button,.actions a,.open{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--rule);border-radius:6px;background:var(--paper,#fff);color:inherit;font:inherit;text-decoration:none;overflow-wrap:anywhere;box-sizing:border-box}
 .personal button:disabled{opacity:.6;cursor:wait}.actions a:hover,.personal button:hover{background:var(--cyan-soft,#eefafa)}
 .group{margin:28px 0}.group h3{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:18px;font-weight:700}.group h3>span{font-size:13px;border-radius:20px;background:var(--panel,#eef5fb);padding:3px 9px}

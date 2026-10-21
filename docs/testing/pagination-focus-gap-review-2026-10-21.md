@@ -1,0 +1,35 @@
+# First-click pagination: captured focus gap — 21 October 2026
+
+## Reproduced boundary
+
+Clean opening main4d981566c4a43200d4ddeefb29396c31761cc10e and public Sites v158 were reverified. The supported Sites source helper opened that exact checkout before runtime editing. Hosting/bindings/audience remain unchanged. No production case is written, exported, overwritten or deleted in this slice; retain all49 and the rejected stale writer.
+
+A fresh authorized production tab at2280×952 has25 rows and an enabled More below the viewport, with immediate root scrolling. One normal locator click shows only Loading, then returns to25, focus BODY and scrollY0; it remains25 in a later read. Production console inspection reports no warning/error in that tab. Read-only Sites Worker logs around09:51:15UTC show two successful selected-workspace checks, followed by a successful page-one read without a cursor. Relevant request IDs are d3f87bba9db1ebb9cf733f76e855f347,95cef77a7ff7e26fc98b8ab663276ddf and5c6e20ee891ab4a97e5c7496f636fa06. These observations do not capture production pointer events or prove a More handler ran. Loading is also used for revalidation. Initial commentary implying handler receipt from Loading alone was corrected.
+
+The exact original unrebuilt v158 archive then reproduces the miss in synthetic isolation. Default delivery passes25→48. A separately labelled local timing experiment delays selected-session500ms, fresh page-one450ms and cursor1200ms. On a fresh authenticated tab, the optional read-only observer records trusted window focus twice at1792576858033/34, with the measured target at scrollY3274.4. At1792576858621 the trusted pointerdown hits MAIN at the old More coordinate, with scrollY0; pointerup/click also hit MAIN. No cursor read follows; the list settles25. Client and Worker bytes are original; latency and optional observer are explicitly local modifications, not production instrumentation. See `.artifacts/archived-pagination-focus-gap-20261021.json` and the run directory `.artifacts/packaged-catalogue-1792576703645-32600/`.
+
+Cause: same-authority access completion immediately clears the catalogue. Removing its rows collapses document height and relocates a target measured before focus. Input subsequently reaches the replacement surface, so requested-page retention inside More cannot help. The earlier passing fixture delayed the session/cursor, but not page-one delivery; it could finish rebuilding before input or interrupt an already received handler. Its passes did not cover this gap. The new trace explains this reproduced path; it does not retroactively identify every earlier untraced command miss.
+
+## Bounded correction and authority review
+
+Only after a successful session check with exactly the same authority version, actor, email and organization selection, retain the last loaded list/More geometry while rebuilding fresh authorized pages. An Updating status distinguishes that pending presentation. One explicit More intent during this refresh is coalesced and completed only with newly returned cursors. No old cursor is replayed. Publish the newly read list atomically. Ordinary append remains single-flight.
+
+Expiry, denied/changed authority, organization transition, disposal, new search and failed reads keep their abort/epoch fences. Authority withdrawal immediately clears metadata and cancels queued intent; a failed revalidation clears the retained list and shows the existing retry state. Retention is only of already displayed metadata within the identical freshly verified scope, never a cache granting access. Case content and visibility remain governed by existing server APIs; this adds no write, permission, persisted schema or user-edit migration.
+
+A real-controller regression fails on the original source because revalidation removes the existing list/target. Corrected controls verify stable presentation, one queued intention, fresh cursor use, duplicate coalescing,401/403/500 refusal, immediate authority withdrawal, late-response rejection, new search cancellation and zero writes. Existing searched-depth, removed-access, return navigation, authority and immutable metadata checks remain intact.
+
+## Checkpoint
+
+Local focused cohort37 pass/0 fail before the separately added focus-gap transport control; strict types pass. Rendered actual-component and candidate/full CI, original packaged candidate, exact-main and native Sites/public/browser acceptance are pending at this checkpoint. Do not treat a controller pass as deployed closure. The existing public v158 remains live until a later native receipt confirms rollout.
+
+Padding is a separate investigation. Exact-main4d98156 native editor run39577989927 passes six phases; the committed verifier independently reproduces receipt SHA25680e70d58dccaede2661e6093f3f69e4a8be592b97815523b75a503a8f90a36d5 with no framework_failure logs. This does not identify the prior assertion's geometry. PR174 retains invalid-number diagnostic serialization and bounded cancellation probes; keep its candidate/gates distinct from this web correction.
+
+## Rendered review correction
+
+Self-review caught that conditionally inserting Updating above the retained list would itself move More. The candidate now keeps a permanent status slot with a reserved line; the revalidation label is short in EN/RU. This is a material correction before rollout, not a reason to waive or reuse old candidate gates.
+
+An explicitly labelled held-refresh fixture uses actual components/navigation and synthetic controls to hold a fresh page after successful access verification. At1520×635, More's documentY3461.5, width230.1625, height45.6000 and enabled state are identical before/during the hold. One trusted More click while held queues the intent; release leads to fresh page one, then cursor page two, ending48. Trace/geometry: `.artifacts/focus-gap-held-component-20261021.json`. The controls exist only in the local fixture; this is not original-artifact or production acceptance.
+
+The corrected controller/navigation/packaged cohort passes38/0 and strict types pass. Local actual-component pointer EN and Tab→visible More→Enter RU each complete25→48 at measured390×480, scrollWidth375. The RU screenshot is `.artifacts/focus-gap-candidate-ru-narrow.png`; the labelled debug overlay is fixture-only. Those narrow checks preceded the reserved-status correction; the subsequent held-refresh check verifies that correction's geometry. Do not count the earlier image as a new post-correction narrow raster check.
+
+Browser control then stopped at a Chrome-extension version check. The user updated it; supported control resumed. The old stale-draft tab ID was absent afterwards; a same-URL replacement178219444 was found with a sleeping title and marked for handoff without waking/reloading/saving. Its unsaved memory was not reverified. No user case is written or discarded. Keep this preservation limit distinct from the stored49 case. Full candidate/exact-main/native Sites and new production acceptance remain pending.

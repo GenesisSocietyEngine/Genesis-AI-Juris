@@ -108,7 +108,7 @@ try {
     try {
       const timingText = existsSync(timingPath) ? readFileSync(timingPath, 'utf8') : '{}'; assert.ok(timingText.length <= 2048);
       const timing = catalogueTiming(JSON.parse(timingText));
-      event.delayMs = event.path === '/api/workspace-session' && event.selected ? timing.selectedSessionMs : event.path === '/api/custom-cases' && event.cursor ? timing.cursorMs : 0;
+      event.delayMs = event.path === '/api/workspace-session' && event.selected ? timing.selectedSessionMs : event.path === '/api/custom-cases' ? (event.cursor ? timing.cursorMs : timing.firstPageMs) : 0;
       if (event.delayMs) await new Promise(resolve => setTimeout(resolve, event.delayMs));
       const parts = []; let length = 0;
       for await (const part of request) { length += part.length; assert.ok(length <= 12000, 'Only bounded synthetic login bodies'); parts.push(part); }
