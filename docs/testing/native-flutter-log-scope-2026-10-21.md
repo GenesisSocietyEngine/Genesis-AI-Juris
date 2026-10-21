@@ -8,6 +8,8 @@ The retained raw prefix contains 2,780 events, all from exact Runner PID 47895 a
 
 This is a demonstrated collection-scope failure after successful application execution. It is distinct from both the earlier fresh-VM discovery timeouts and historical `287d086`'s AnimatedPadding assertion after pressing Import while dismissing focused text input. The original assertion still lacks its construction stack/inset values; this new application pass does not resolve its root cause.
 
+Companion run `39599941532` is also retained before the correction is pushed. It completes the same legacy-write application journey and then fails the same post-driver 4 MiB log drain; it does not reach legacy-read. This independently confirms the collection boundary without supplying a padding recurrence. Both original failed artifacts remain unmodified.
+
 ## Bounded correction
 
 The live stream and bounded history queries now require the exact installed Flutter framework sender as well as the existing exact executable (and fresh PID for history). This is the same sender already required for every accepted VM announcement. It excludes unrelated native audio/video traffic before collection instead of raising the byte limit. Apple documents sender-based simulator filtering in [Getting the Most Out of Simulator](https://developer.apple.com/videos/play/wwdc2019/418/).
