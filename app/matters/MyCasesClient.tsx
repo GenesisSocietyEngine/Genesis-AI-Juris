@@ -45,9 +45,12 @@ export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; lo
     const cancel = (event: Event) => {
       if (pageFocus.current && event.target !== pageFocus.current.button) pageFocus.current = null;
     };
+    const hide = () => { if (document.visibilityState !== "visible") pageFocus.current = null; };
     document.addEventListener("pointerdown", cancel, true);
     document.addEventListener("focusin", cancel, true);
-    return () => { document.removeEventListener("pointerdown", cancel, true); document.removeEventListener("focusin", cancel, true); pageFocus.current = null; };
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", hide);
+    return () => { document.removeEventListener("pointerdown", cancel, true); document.removeEventListener("focusin", cancel, true); window.removeEventListener("blur", cancel); document.removeEventListener("visibilitychange", hide); pageFocus.current = null; };
   }, []);
   useLayoutEffect(() => {
     const pending = pageFocus.current;
