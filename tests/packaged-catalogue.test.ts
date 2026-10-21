@@ -34,9 +34,15 @@ test('local observation/scroll variants are explicit, confined and never interpo
   const html = '<html><head></head><body>original</body></html>';
   assert.equal(catalogueHtmlVariant(html, '/matters', new URLSearchParams()).html, html);
   assert.equal(catalogueHtmlVariant(html, '/studio', new URLSearchParams('qa_observe=1&qa_scroll=auto')).html, html);
+  assert.equal(catalogueHtmlVariant(html, '/account', new URLSearchParams()).html, html);
+  const account = catalogueHtmlVariant(html, '/account', new URLSearchParams('qa_observe=1&qa_scroll=auto'));
+  assert.equal(account.observed, true); assert.equal(account.immediateScroll, false);
+  assert.match(account.html, /\/__qa\/observer.js/); assert.doesNotMatch(account.html, /\/__qa\/scroll.css/);
   const variant = catalogueHtmlVariant(html, '/matters', new URLSearchParams('qa_observe=1&qa_scroll=auto&other=%3Cscript%3E'));
   assert.ok(variant.observed && variant.immediateScroll); assert.match(variant.html, /\/__qa\/observer.js/); assert.match(variant.html, /\/__qa\/scroll.css/);
   assert.doesNotMatch(variant.html, /other|<script>/); assert.doesNotMatch(catalogueObserver, /preventDefault|stopPropagation|fetch\(|XMLHttpRequest|cookie|localStorage/);
+  assert.doesNotMatch(catalogueObserver, /\.value|FormData|password|email/);
+  for (const boundary of ['submit', 'focusin', 'elementFromPoint', 'document.hasFocus()', 'Date.now()']) assert.ok(catalogueObserver.includes(boundary));
 });
 
 test('packaged catalogue permits real local login but refuses every case/account mutation', () => {

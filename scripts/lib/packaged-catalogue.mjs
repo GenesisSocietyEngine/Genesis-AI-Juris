@@ -12,7 +12,7 @@ export function catalogueRequestAllowed(method, path) {
 }
 
 export function catalogueHtmlVariant(html, path, query) {
-  const observed = path === '/matters' && query.get('qa_observe') === '1';
+  const observed = ['/matters', '/account'].includes(path) && query.get('qa_observe') === '1';
   const immediateScroll = path === '/matters' && query.get('qa_scroll') === 'auto';
   const extra = (immediateScroll ? '<link rel="stylesheet" href="/__qa/scroll.css">' : '') +
     (observed ? '<script src="/__qa/observer.js"></script>' : '');
@@ -21,7 +21,7 @@ export function catalogueHtmlVariant(html, path, query) {
 
 // Operator-authored local instrumentation only. It does not prevent events,
 // change handlers, inspect React state, issue requests or enter production.
-export const catalogueObserver = `(()=>{let n=0;function record(e){if(n++>=100)return;const t=e.target instanceof Element?e.target.closest('button,a,input,select'):null;console.info('LOCAL_CATALOGUE_POINTER '+JSON.stringify({event:e.type,trusted:e.isTrusted,target:t?.tagName,label:t?.tagName==='BUTTON'?t.textContent:null,x:e.clientX,y:e.clientY,scrollY,behavior:getComputedStyle(document.documentElement).scrollBehavior}));}for(const name of ['pointerdown','pointerup','click'])document.addEventListener(name,record,true);window.addEventListener('focus',record);})();`;
+export const catalogueObserver = `(()=>{let n=0;function record(e){if(n++>=100)return;const t=e.target instanceof Element?e.target.closest('button,a,input,select,form'):null;const h=Number.isFinite(e.clientX)&&Number.isFinite(e.clientY)?document.elementFromPoint(e.clientX,e.clientY):null;console.info('LOCAL_CATALOGUE_POINTER '+JSON.stringify({at:Date.now(),event:e.type,trusted:e.isTrusted,target:t?.tagName,label:t?.tagName==='BUTTON'?t.textContent:null,x:e.clientX,y:e.clientY,hit:h?.tagName,focused:document.hasFocus(),active:document.activeElement?.tagName,scrollY,width:innerWidth,height:innerHeight,behavior:getComputedStyle(document.documentElement).scrollBehavior}));}for(const name of ['pointerdown','pointerup','click','submit','focusin'])document.addEventListener(name,record,true);for(const name of ['focus','blur'])window.addEventListener(name,record);})();`;
 
 export function validateNativeListing(paths, types) {
   assert.equal(paths.length, types.length, 'Archive listings disagree');
