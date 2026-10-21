@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -16,6 +17,8 @@ import 'package:juris_mobile/data/tax_artifact_store.dart';
 import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:path_provider/path_provider.dart';
+
+import 'support/framework_failure_capture.dart';
 
 const List<String> _phases = <String>[
   'write',
@@ -68,6 +71,44 @@ void main() {
     // source/nonce-bound proof; the independent driver checks the expected phase.
     final String phase = _phases[index];
     _checkpoints = _Checkpoints(source, phase);
+    final FlutterExceptionHandler originalErrorHandler = FlutterError.onError!;
+    final FrameworkFailureCapture frameworkFailures = FrameworkFailureCapture(
+      delegate: originalErrorHandler,
+      snapshot: () {
+        final view = tester.view;
+        Map<String, Object?> insets(dynamic value) => {
+              'left': value.left,
+              'top': value.top,
+              'right': value.right,
+              'bottom': value.bottom,
+            };
+        final dialogs = find.byType(AlertDialog);
+        final media = dialogs.evaluate().isEmpty
+            ? null
+            : MediaQuery.maybeOf(tester.element(dialogs.first));
+        return {
+          'phase': phase,
+          'checkpoint': _checkpoints.current,
+          'device_pixel_ratio': view.devicePixelRatio,
+          'physical_width': view.physicalSize.width,
+          'physical_height': view.physicalSize.height,
+          'view_insets': insets(view.viewInsets),
+          'view_padding': insets(view.viewPadding),
+          if (media != null) 'dialog_view_insets': insets(media.viewInsets),
+          'focused_widget_type':
+              '${FocusManager.instance.primaryFocus?.context?.widget.runtimeType}',
+        };
+      },
+      publish: (evidence) {
+        binding.reportData = {
+          ...?binding.reportData,
+          'framework_failures': evidence,
+        };
+        debugPrint('tax_application framework_failure=${jsonEncode(evidence)}');
+      },
+    );
+    FlutterError.onError = frameworkFailures.handle;
+    addTearDown(() => FlutterError.onError = originalErrorHandler);
     debugPrint('tax_application phase=$phase source=$source state=started');
     late final _ObservedWorkspaceStore workspaceStore;
     final StudioAuthoringServices authoringServices = _checkpoints.sync(
@@ -425,7 +466,9 @@ final class _Checkpoints {
   final String source;
   final String phase;
   int _sequence = 0;
+  String current = 'bootstrap';
   void _mark(String name, int sequence, String state) {
+    current = '$name:$state';
     debugPrint('tax_application checkpoint=$name sequence=$sequence '
         'state=$state phase=$phase source=$source');
   }

@@ -119,6 +119,7 @@ Future<void> main() async {
   FlutterDriver? driver;
   bool expired = false;
   String stage = 'connect';
+  dynamic frameworkFailures;
   try {
     final Response response = await runTaxDriverPhase<Response>(
       timeout: const Duration(minutes: 4),
@@ -130,6 +131,7 @@ Future<void> main() async {
         final String value = await driver!.requestData(null);
         if (expired) throw StateError('Late response after phase timeout');
         final Response response = Response.fromJson(value);
+        frameworkFailures = response.data?['framework_failures'];
         if (!response.allTestsPassed) {
           throw StateError('Selected application test failed: '
               '${response.formattedFailureDetails}');
@@ -154,6 +156,8 @@ Future<void> main() async {
           'error': '$error',
           'stack': '$stack',
           'utc': DateTime.now().toUtc().toIso8601String(),
+          if (frameworkFailures != null)
+            'framework_failures': frameworkFailures,
         };
         final File file = File('${directory.path}/$phase-driver-failure.json');
         // Persist the primary failure before a VM diagnostic can time out.
