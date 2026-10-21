@@ -1,0 +1,492 @@
+{
+  "schema": "casevant.acceptance-review.v1",
+  "date": "2026-10-21",
+  "openingMain": "7b57cd94e3f37a6245fd3b8e16408ee57914777b",
+  "candidate": "51e895da5969e9d82d8bd5695704567af352aef2",
+  "pullRequest": 170,
+  "site": {
+    "version": 158,
+    "runtimeCommit": "361b501ebc12416873db25864732c95af5d0345e",
+    "applicationInputsSha256": "2888183313eaffe123009b8a29ca2473863d3f4a236773494320206589b02945",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "existingNativeReceipt": "materials-toolbar-v158-2026-10-20.json",
+    "newRuntimePublicationRequired": false,
+    "reason": "QA/CI-only changes; runtime inputs unchanged",
+    "closingNativeObservation": {
+      "version": 158,
+      "url": "https://casevant.pro",
+      "role": "owner",
+      "access": "public",
+      "newVersionCreated": false
+    }
+  },
+  "production": {
+    "actor": "Maxim Hayan / Personal workspace / owner",
+    "savedIdentity": 49,
+    "caseId": "example_work_19f72ea0263844c384b0ed85e5e855d2",
+    "version": "2.0.0",
+    "caseType": {
+      "registry": "genesis-juris-case-types",
+      "id": "general_advisory",
+      "version": "1.0.0"
+    },
+    "exampleSource": {
+      "caseId": "project_canopy_managed_site_expansion",
+      "version": "2.0.0",
+      "fingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702"
+    },
+    "observedSuccessfulSaves": 3,
+    "afterAddedEvidence": {
+      "nodes": 15,
+      "links": 14
+    },
+    "afterBulkAttach": {
+      "nodes": 15,
+      "links": 16,
+      "node": "N12",
+      "records": 2
+    },
+    "move": {
+      "from": "N12",
+      "to": "N13",
+      "sourceRecordsAfter": 0,
+      "realUndoRestored": 2
+    },
+    "deleteCancel": {
+      "nodesBefore": 15,
+      "linksBefore": 16,
+      "nodesAfter": 15,
+      "linksAfter": 16,
+      "historyPresentationUnchanged": true,
+      "productionWriteTraceCaptured": false
+    },
+    "deleteBulkReattach": {
+      "from": "N12",
+      "to": "N11",
+      "nodesAfter": 14,
+      "linksAfter": 15,
+      "evidenceRecordsRetained": 2,
+      "realUndo": {
+        "nodes": 15,
+        "links": 16,
+        "recordsAtN12": 2
+      }
+    },
+    "duplicateDestination": {
+      "target": "N07",
+      "refused": true,
+      "nodes": 15,
+      "links": 16,
+      "savedStatusRetained": true
+    },
+    "independentReopen": {
+      "savedIdentity": 49,
+      "nodes": 15,
+      "links": 16,
+      "recordsAtN12": 2,
+      "titleAmendmentSaved": true
+    },
+    "staleWriter": {
+      "uiConflictObserved": true,
+      "newerSavedTitleRetained": true,
+      "httpStatusCaptured": false,
+      "rejectedDraftRetainedInOwnedChromeTab": "178219399",
+      "deviceCacheConfirmationAccepted": false
+    },
+    "metadataPreservation": {
+      "beforeRows": 48,
+      "afterRows": 49,
+      "retainedRows": 48,
+      "exactRetainedMetadata": true,
+      "beforeRowsSha256": "2e5d2a92b41e3dc99e34b3302baa92582c25e4deefc0c7bccd5d44e6fa8f14ce",
+      "afterRetainedRowsSha256": "2e5d2a92b41e3dc99e34b3302baa92582c25e4deefc0c7bccd5d44e6fa8f14ce",
+      "fullSavedBytesCompared": false
+    },
+    "jsonBefore": {
+      "bytes": 26286,
+      "sha256": "c7b70a01fac16f638b29d815f9c0dce9644fa48d27f34c9c0eff579b49743900",
+      "nodes": 15,
+      "links": 16,
+      "historyEntries": 9
+    },
+    "jsonAfter": {
+      "bytes": 26501,
+      "sha256": "fcd030dcedf757a2581cf1b82b0b3ad9cce0586bddb96586f236fa0f97d8a88e",
+      "nodes": 15,
+      "links": 16,
+      "historyEntries": 10
+    },
+    "carrierComparison": {
+      "aggregateReader": "editable for both",
+      "unchanged": [
+        "caseId",
+        "exampleSource",
+        "version",
+        "caseType",
+        "parent",
+        "premise",
+        "premisePublication",
+        "classification",
+        "nodes",
+        "links"
+      ],
+      "coreUnchanged": [
+        "evidence",
+        "facts",
+        "participants",
+        "issues",
+        "deadlines",
+        "outcomes"
+      ],
+      "protectionPolicyAndParentUnchanged": true,
+      "historyPrefixUnchanged": true,
+      "changedFields": [
+        "title",
+        "editHistory",
+        "protection.currentCode/seal",
+        "updatedAt"
+      ],
+      "taxCaseRoundtripCovered": false,
+      "serverSealLocallyReverified": false,
+      "immutableReferences": 15,
+      "selectedReferences": 9
+    },
+    "pdf": {
+      "format": "Base",
+      "profileId": "decision_memorandum",
+      "audience": "internal",
+      "generatedAt": "2026-10-21T06:08:20.139Z",
+      "bytes": 36643,
+      "sha256": "76e4e63506cd290c77e1ec75bf33957490de1c711d6d5c8c7ba84551712e167a",
+      "pages": 3,
+      "a4": true,
+      "renderedFirstLastInspected": true,
+      "conditionalAndUnacceptedDisclosuresPresent": true,
+      "accountReceiptObserved": true,
+      "renderedPagesInspected": [
+        1,
+        2,
+        3
+      ]
+    },
+    "narrow": {
+      "english": {
+        "width": 390,
+        "height": 480,
+        "scrollWidth": 367,
+        "twoWorkingRecordsKeyboardSelected": true,
+        "toolbarPosition": "static",
+        "destinationPrefixesAscending": true
+      },
+      "russian": {
+        "width": 390,
+        "height": 480,
+        "scrollWidth": 367,
+        "records": 2,
+        "savedStatus": true,
+        "authoredContentNotAutoTranslated": true
+      },
+      "restored": {
+        "language": "en",
+        "width": 2280,
+        "height": 952,
+        "overrideReset": true
+      },
+      "productionScreenshotCaptured": false,
+      "reason": "Page.captureScreenshot timed out"
+    },
+    "materialsDownloads": {
+      "schema": "casevant.material-download-inspection.v1",
+      "caseId": "example_work_19f72ea0263844c384b0ed85e5e855d2",
+      "zip": {
+        "bytes": 12596,
+        "sha256": "2ac56474da4d721b84f9e752032fda97a4dd39111ebaf122d01c9268b4b92a00",
+        "files": 18,
+        "manifestEntries": 18,
+        "referenceVersions": 15,
+        "selectedReferenceVersions": 9,
+        "workingRecords": 2,
+        "urlOnlyNoFabricatedFile": 1,
+        "allHashesAndUtf8AndExactTextsVerified": true,
+        "allNodeAttachmentsMatchExport": true
+      },
+      "perFile": {
+        "filename": "002-working_evidence-1.txt",
+        "bytes": 197,
+        "sha256": "4202bdb5c47348d2b8d17de5789b68e813cd09e494a1ef7ef4f20f488093fdb1",
+        "matchesArchiveAndSavedEvidence": true
+      }
+    }
+  },
+  "pagination": {
+    "production": {
+      "initial": 25,
+      "settled": 48,
+      "firstActivationReachedLoading": true,
+      "receivedPointerTrace": false
+    },
+    "fixture": {
+      "syntheticTransport": true,
+      "authorityRefreshOverlap": true,
+      "initial": 25,
+      "settled": 48,
+      "activations": 1
+    },
+    "original": {
+      "applicationVersion": 158,
+      "sourceCommit": "361b501ebc12416873db25864732c95af5d0345e",
+      "fixturePreparationCommit": "bd2f45cd50af78d30350e64670db4abe835deba8",
+      "unfiltered": {
+        "trustedPointer": true,
+        "cursorStatus": 200,
+        "cursorRows": 23,
+        "settled": 48
+      },
+      "filtered": {
+        "query": "SYNTHETIC",
+        "initial": 25,
+        "settled": 48,
+        "selectedSessionDelayMs": 1000,
+        "cursorDelayMs": 1500,
+        "activations": 1
+      },
+      "caseBytesBefore": "794235bb64bf1e37586fb1953b9ae8e958dac62d1104bc78bd0c6320e83c283f",
+      "caseBytesAfter": "794235bb64bf1e37586fb1953b9ae8e958dac62d1104bc78bd0c6320e83c283f",
+      "caseBytesUnchanged": true,
+      "archiveBytesUnchanged": true,
+      "outboundDenied": 0,
+      "gracefulStopExit": 0
+    },
+    "earlierUntracedMissUniversallyResolved": false,
+    "productionInstrumentationAdded": false,
+    "applicationStatePatchAdded": false
+  },
+  "native": {
+    "previousPass": {
+      "source": "1df8c47ae448f6ba7c23e23185f8069dff088c4f",
+      "run": 39494759571,
+      "job": 118877208580,
+      "actualPhases": 6
+    },
+    "freshBaseline": {
+      "source": "7b57cd94e3f37a6245fd3b8e16408ee57914777b",
+      "run": 39551808751,
+      "job": 119062481834,
+      "conclusion": "failure",
+      "phase": "legacy-read",
+      "reason": "Fresh system-log VM discovery timed out"
+    },
+    "candidate": {
+      "source": "51e895da5969e9d82d8bd5695704567af352aef2",
+      "pullRequestRun": 39555394703,
+      "pushRun": 39555389139,
+      "status": "both actual Mac acceptance runs passed; both retained proofs independently verified",
+      "webPdf": {
+        "run": 39555394745,
+        "webJob": 119073869446,
+        "pdfJob": 119073869254,
+        "conclusion": "success",
+        "tests": 1778,
+        "passed": 1775,
+        "failed": 0,
+        "skipped": 3
+      },
+      "pushConclusion": "success",
+      "retainedProof": {
+        "verification": {
+          "schema": "tax-mobile-application-verification-v2",
+          "source_sha": "51e895da5969e9d82d8bd5695704567af352aef2",
+          "run_nonce": "39555389139-1",
+          "phases": [
+            "write",
+            "read",
+            "incomplete-write",
+            "incomplete-read",
+            "legacy-write",
+            "legacy-read"
+          ],
+          "pids": [
+            34564,
+            41593,
+            44772,
+            49269,
+            53096,
+            56605
+          ],
+          "same_bundle_sha256": "3b8630b8474fc110aa17772c5ac1b401e95d3c8f4a993b27aeafb52c407e4d6f",
+          "complete_pairs_equal": true,
+          "fresh_native_reopen": true,
+          "incomplete_native_error": true,
+          "legacy_record_preserved": true
+        },
+        "verificationSha256": "60a8c6975ae52801e29a331c7946009e64ae1304227907511c14f96a40f08910",
+        "discoveries": [
+          {
+            "phase": "write",
+            "pid": 34564,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "read",
+            "pid": 41593,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "incomplete-write",
+            "pid": 44772,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "incomplete-read",
+            "pid": 49269,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "legacy-write",
+            "pid": 53096,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "legacy-read",
+            "pid": 56605,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          }
+        ],
+        "localVerifierEncoding": "UTF-8"
+      },
+      "actualDelayedHistoryRecoveryObserved": false,
+      "pullRequestConclusion": "success",
+      "pullRequestRetainedProof": {
+        "verification": {
+          "schema": "tax-mobile-application-verification-v2",
+          "source_sha": "51e895da5969e9d82d8bd5695704567af352aef2",
+          "run_nonce": "39555394703-1",
+          "phases": [
+            "write",
+            "read",
+            "incomplete-write",
+            "incomplete-read",
+            "legacy-write",
+            "legacy-read"
+          ],
+          "pids": [
+            34758,
+            40877,
+            45269,
+            50805,
+            55230,
+            60765
+          ],
+          "same_bundle_sha256": "af69ac0a7e9175cec2c8fdbbf34ad2a079833d59590340cbf26d5265bb5b6c69",
+          "complete_pairs_equal": true,
+          "fresh_native_reopen": true,
+          "incomplete_native_error": true,
+          "legacy_record_preserved": true
+        },
+        "verificationSha256": "0c879b4751eb516c2add5e2a46245d8f249773dfc74014931136fa5ce9cf8181",
+        "discoveries": [
+          {
+            "phase": "write",
+            "pid": 34758,
+            "queries": 1,
+            "origins": [
+              "backfill",
+              "stream"
+            ]
+          },
+          {
+            "phase": "read",
+            "pid": 40877,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "incomplete-write",
+            "pid": 45269,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "incomplete-read",
+            "pid": 50805,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "legacy-write",
+            "pid": 55230,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          },
+          {
+            "phase": "legacy-read",
+            "pid": 60765,
+            "queries": 1,
+            "origins": [
+              "stream"
+            ]
+          }
+        ],
+        "localVerifierEncoding": "UTF-8"
+      }
+    },
+    "local": {
+      "nativeControls": 55,
+      "deadlinePassed": 9,
+      "deadlineWindowsSkips": 2,
+      "packagedDiagnosticsPassed": 6
+    },
+    "budgetsUnchanged": {
+      "preparationSeconds": 900,
+      "runtimePhaseSeconds": 300,
+      "discoverySeconds": 60,
+      "maxExactHistoryQueries": 3
+    },
+    "rawAttemptVerifierRegressionCaughtAndCorrected": true
+  },
+  "limits": [
+    "No universal closure of the earlier untraced first-More miss; optional manual-reproduction clarification pending.",
+    "Production owner/Base acceptance does not close every variant/role/account/source boundary.",
+    "No full export/comparison of all48 original payload bytes.",
+    "Stale draft kept open; shared-device workspace caching is not claimed.",
+    "Original v149, 18 historical packages, legitimate unsupported owner recovery and43 missing-original disclosures remain separate.",
+    "Both candidate Mac runs pass; delayed second/third-history recovery remains fixture evidence. Merge-triggered exact-main checks are separate."
+  ],
+  "integration": {
+    "implementationPr": 170,
+    "mergeCommit": "d1d56b6671d56803d6179a64afc4e3dbad942a65",
+    "allCandidateChecks": "success",
+    "exactMainChecks": "new merge-triggered runs pending; candidate evidence is not exact-main evidence",
+    "mergedInputs": {
+      "applicationInputsSha256": "2888183313eaffe123009b8a29ca2473863d3f4a236773494320206589b02945",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+      "sourceCommit": "d1d56b6671d56803d6179a64afc4e3dbad942a65"
+    }
+  }
+}
