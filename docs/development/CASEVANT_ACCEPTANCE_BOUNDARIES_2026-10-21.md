@@ -1,5 +1,7 @@
 # CaseVant acceptance and refinement instructions — 21 October 2026
 
+**Diagnostic stage integrated:** PR172 merges normally at `6e5fba02f74e5296e388aed582ae41ef359f88cf` after both actual Mac candidate runs, full Flutter and web/PDF gates pass. Original framework stack/geometry capture is delivered in the isolated test; the padding root cause remains unconfirmed because neither run reproduces it. Fresh original-client pointer/Tab+Enter and production short-height pointer pagination pass, with all49 title/date/destination tuples unchanged. Production keyboard/capture limits remain. Existing synthetic29 correctly allows protected material inspection while disabling Save/report/ZIP/per-file downloads. Read [the final review and next execution steps](../testing/framework-padding-investigation-2026-10-21.md#integration-and-next-execution). Keep source stable, preserve all work, and avoid another Site version for unchanged runtime inputs. Older pending checkpoints below are dated history.
+
 **Latest checkpoint:** exact-main web/PDF and native smoke pass, but editor run `39559539193` fails a new `AnimatedPadding.padding.isNonNegative` assertion during legacy Import. Follow the [framework-padding investigation](../testing/framework-padding-investigation-2026-10-21.md). Capture the original stack and geometry without suppressing failures; native reliability remains open. The user answered **Not sure** about manual versus audit-only pagination failure.
 
 ## Purpose and verified baseline

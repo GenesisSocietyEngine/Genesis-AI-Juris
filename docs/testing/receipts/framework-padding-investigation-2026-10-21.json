@@ -1,0 +1,267 @@
+{
+  "schema": "casevant.framework-padding-review.v1",
+  "date": "2026-10-21",
+  "openingMain": "287d086e0f44888770c6fe849351b2f60fcf6529",
+  "candidate": "767b9abba908cf3963d8bfa5ed63e13f68dc9555",
+  "pullRequest": 172,
+  "site": {
+    "version": 158,
+    "url": "https://casevant.pro",
+    "access": "public",
+    "applicationInputsSha256": "2888183313eaffe123009b8a29ca2473863d3f4a236773494320206589b02945",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "newPublicationRequired": false,
+    "nativeReceipt": "materials-toolbar-v158-2026-10-20.json"
+  },
+  "failedMainNative": {
+    "run": 39559539193,
+    "source": "287d086e0f44888770c6fe849351b2f60fcf6529",
+    "phase": "legacy-write",
+    "priorCompletedPhases": 4,
+    "prepareSucceeded": true,
+    "authenticatedDiscoverySucceeded": true,
+    "failure": "AnimatedPadding constructor padding.isNonNegative",
+    "originalRenderStackAvailable": false,
+    "negativeKeyboardMetricObserved": false,
+    "legacyReadExecuted": false,
+    "driverStage": "request_data",
+    "driverReceiptSha256": "61b0a759207d3795cf02cea5dc125768cce9a6b24f64981f142e72dc888463ce"
+  },
+  "checks": {
+    "localDiagnosticImportDriverTests": 19,
+    "analyze": "pass",
+    "format": "pass",
+    "webPdf": {
+      "run": 39573452141,
+      "passed": 1775,
+      "failed": 0,
+      "skipped": 3
+    },
+    "flutter": {
+      "run": 39573452187,
+      "widgetsPassed": 485,
+      "widgetsSkipped": 12,
+      "nativeTaxTestsPassed": 2,
+      "separateProcessTestsPassed": 2
+    },
+    "mac": {
+      "pullRequestRun": 39573452283,
+      "pushRun": 39573444366,
+      "status": "both candidate Mac runs passed; both retained proofs independently verified",
+      "pushConclusion": "success",
+      "pushProof": {
+        "verification": {
+          "schema": "tax-mobile-application-verification-v2",
+          "source_sha": "767b9abba908cf3963d8bfa5ed63e13f68dc9555",
+          "run_nonce": "39573444366-1",
+          "phases": [
+            "write",
+            "read",
+            "incomplete-write",
+            "incomplete-read",
+            "legacy-write",
+            "legacy-read"
+          ],
+          "pids": [
+            26903,
+            33518,
+            38294,
+            42839,
+            47815,
+            52220
+          ],
+          "same_bundle_sha256": "906a1db1bbe1abb9ddf868c46a0c5d1b1346fb32c96ba08d84e2d0292a283b6f",
+          "complete_pairs_equal": true,
+          "fresh_native_reopen": true,
+          "incomplete_native_error": true,
+          "legacy_record_preserved": true
+        },
+        "verificationSha256": "e6c8e61a5196bc866ed3ae5379ffc00a81d8e90f143f239c5c969b76f27c9218",
+        "frameworkFailureLogPhases": [],
+        "paddingFailureReproduced": false
+      },
+      "pullRequestConclusion": "success",
+      "pullRequestProof": {
+        "verification": {
+          "schema": "tax-mobile-application-verification-v2",
+          "source_sha": "767b9abba908cf3963d8bfa5ed63e13f68dc9555",
+          "run_nonce": "39573452283-1",
+          "phases": [
+            "write",
+            "read",
+            "incomplete-write",
+            "incomplete-read",
+            "legacy-write",
+            "legacy-read"
+          ],
+          "pids": [
+            32216,
+            38899,
+            43187,
+            48657,
+            51783,
+            56748
+          ],
+          "same_bundle_sha256": "bdf11ea35ae66f4aab55b94dbe4bce512727433a17e2177a03f8b7805102814b",
+          "complete_pairs_equal": true,
+          "fresh_native_reopen": true,
+          "incomplete_native_error": true,
+          "legacy_record_preserved": true
+        },
+        "verificationSha256": "ca19dcd0bb1559bbe6d0b53e546a37f4c6e4a44947444d67b8706901ffd424dd",
+        "frameworkFailureLogPhases": [],
+        "paddingFailureReproduced": false
+      },
+      "nativeFrameworkFailureCaptureObserved": false
+    }
+  },
+  "pagination": {
+    "userClarification": "Not sure: manual-vs-audit occurrence unknown",
+    "originalClient": {
+      "schema": "casevant.received-input-review.v1",
+      "applicationVersion": 158,
+      "applicationSource": "361b501ebc12416873db25864732c95af5d0345e",
+      "fixturePreparationCommit": "767b9abba908cf3963d8bfa5ed63e13f68dc9555",
+      "rebuilt": false,
+      "defaultScrollBehavior": "auto",
+      "viewport": {
+        "width": 1520,
+        "height": 687
+      },
+      "offscreenPointer": {
+        "beforeY": 3835.75,
+        "received": {
+          "at": 1792573340086,
+          "event": "click",
+          "trusted": true,
+          "target": "BUTTON",
+          "label": "Load more authorized drafts",
+          "x": 392,
+          "y": 636,
+          "hit": "BUTTON",
+          "focused": true,
+          "active": "BUTTON",
+          "scrollY": 3222.39990234375,
+          "width": 1520,
+          "height": 687,
+          "behavior": "auto"
+        },
+        "requestId": 13,
+        "requestDelayAfterClickMs": 3,
+        "status": 200,
+        "returnedRows": 23,
+        "settledRows": 48
+      },
+      "keyboard": {
+        "focusAfterTab": {
+          "tag": "BUTTON",
+          "text": "Load more authorized drafts"
+        },
+        "commandAt": 1792573395743,
+        "requestId": 15,
+        "cursorDelayMs": 1500,
+        "status": 200,
+        "returnedRows": 23,
+        "settledRows": 48,
+        "rawKeyEventCaptured": false
+      },
+      "historicalMissReproduced": false,
+      "productionCaseWrites": false,
+      "gracefulStop": {
+        "status": "stopped",
+        "caseBytesBefore": "c9fa570aeac39c591d9de30ba72fdf60e175dda39fc267ea352e253bcd7f318e",
+        "caseBytesAfter": "c9fa570aeac39c591d9de30ba72fdf60e175dda39fc267ea352e253bcd7f318e",
+        "caseBytesUnchanged": true,
+        "archiveBytesUnchanged": true,
+        "outboundDenied": 0
+      }
+    },
+    "production": {
+      "rows": 49,
+      "sameTitleDateDestination": true,
+      "sameRenderedText": false,
+      "storedPayloadBytesCompared": false,
+      "caseWritesAttempted": false,
+      "narrow": {
+        "width": 390,
+        "height": 480,
+        "scrollWidth": 367,
+        "tabAttempt": "timed out; focus reached prior row link, not pagination button",
+        "pointerMore": "Loading then49",
+        "productionInputTrace": false,
+        "screenshot": "timed out"
+      },
+      "viewportOverrideReset": true,
+      "observedDefaultAfterReset": {
+        "width": 662,
+        "height": 864
+      },
+      "sameTextCharactersExcludingWhitespace": true,
+      "renderedTextDifference": "Responsive inline badge/date layout changes whitespace; exact row innerText is not claimed equal."
+    }
+  },
+  "artifacts": {
+    "received-input-20261021-inspection.json": {
+      "bytes": 1634,
+      "sha256": "19816d6bfab4bac7593b4b85d2e294e6416fac2ff316e12a6b655d210ff7ff63"
+    },
+    "received-input-20261021-production-inspection.json": {
+      "bytes": 727,
+      "sha256": "50fec25c8fdde3bc020abce8079d4453353e48ce25bab26d097867d1274072c1"
+    },
+    "received-input-20261021-count.png": {
+      "bytes": 89624,
+      "sha256": "67b0f4147a122d01a22b3c6374f36db4eb21d1947e3016efeb84726dbb40bfff"
+    }
+  },
+  "productionInspectionOnly": {
+    "schema": "casevant.production-inspection-only-review.v1",
+    "date": "2026-10-21",
+    "actor": "Maxim Hayan / Personal workspace",
+    "savedIdentity": 29,
+    "savedVersion": "2.5.0",
+    "ownerDisplay": "ERP Value",
+    "catalogueAccessLabel": "Administrator access",
+    "mode": "Inspection-only case",
+    "graph": {
+      "nodes": 94,
+      "links": 181
+    },
+    "sourcePassageObserved": {
+      "sourceId": "public_facility_permit",
+      "package": "us_environmental_desert_water_001",
+      "version": "0.1.0",
+      "disclosure": "fictional register; original contents require inspection; review unresolved"
+    },
+    "controls": {
+      "saveEnabled": false,
+      "reportDisabledInSnapshot": true,
+      "archiveEnabled": false,
+      "perFileEnabled": false,
+      "addPaletteDisabledInSnapshot": 9,
+      "autoLayoutDisabledInSnapshot": true
+    },
+    "materials": {
+      "matching": 40,
+      "readTextExpanded": true,
+      "downloadAttempted": false
+    },
+    "saveOrMutationAttempted": false,
+    "productionWriteTrace": false,
+    "sourceFingerprintExported": false,
+    "backlog": "Inspection-only graph/palette labels still describe dragging/editing/deleting despite protected controls; align instructions with read-only mode without widening authority."
+  },
+  "integration": {
+    "implementationPr": 172,
+    "mergeCommit": "6e5fba02f74e5296e388aed582ae41ef359f88cf",
+    "candidateGates": "all success",
+    "postMergeExactMain": "new runs pending; not represented as candidate evidence"
+  },
+  "open": [
+    "Historical first-pagination miss not reproduced; manual-versus-audit occurrence unknown.",
+    "Padding assertion root cause not reproduced; future genuine failure must retain original rendering stack/geometry.",
+    "Production Tab/key delivery and screenshot capture remain unavailable in this trial.",
+    "Inspection-only relation labels/status and palette helper still describe editing; authority remains protected.",
+    "Remaining historical/variant/tax/account/source/recovery and qualified-review acceptance rows remain separate."
+  ]
+}
