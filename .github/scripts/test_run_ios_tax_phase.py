@@ -754,6 +754,48 @@ class RetainedVerifierTests(unittest.TestCase):
             launch = self.fixture(directory)
             verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
 
+    def delayed_fixture(self, directory):
+        launch = self.fixture(directory)
+        proof = json.loads((directory / "write-discovery.json").read_text())
+        observed = proof["observations"][1]
+        first = proof["backfill_status"]
+        second = {**first, "started_at": phase.utc_now().isoformat()}
+        proof.update(event=observed["event"], origins=["backfill"], observations=[observed],
+                     backfill_status=second, backfill_attempts=[first, second])
+        phase.write_json(directory / "write-discovery.json", proof)
+        phase.write_json(directory / "write-backfill.json", [])
+        phase.write_json(directory / "write-backfill-02.json", [observed["event"]])
+        phase.write_json(directory / "write-backfill-02-status.json", second)
+        phase.write_json(directory / "write-system.log", [])
+        (directory / "write-system-events.jsonl").write_text("")
+        return launch
+
+    def test_retained_verifier_binds_later_discovery_to_its_own_raw_attempt(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")
+        with tempfile.TemporaryDirectory() as temp:
+            directory = pathlib.Path(temp)
+            launch = self.delayed_fixture(directory)
+            verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
+
+    def test_retained_verifier_refuses_tampered_later_attempts(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")
+        for mode in ("raw-missing", "wrong-pid", "changed-status", "too-many"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
+                directory = pathlib.Path(temp)
+                launch = self.delayed_fixture(directory)
+                proof = json.loads((directory / "write-discovery.json").read_text())
+                if mode == "raw-missing":
+                    phase.write_json(directory / "write-backfill-02.json", [])
+                elif mode == "wrong-pid":
+                    phase.write_json(directory / "write-backfill-02.json", [{**proof["event"], "processID": 124}])
+                elif mode == "changed-status":
+                    phase.write_json(directory / "write-backfill-02-status.json", {"status": "timeout"})
+                else:
+                    proof["backfill_attempts"] = [proof["backfill_status"]] * 4
+                    phase.write_json(directory / "write-discovery.json", proof)
+                with self.assertRaises((AssertionError, RuntimeError)):
+                    verifier["verify_discovery"](directory, "write", launch, 123, phase.__dict__)
+
     def test_retained_verifier_rejects_changed_raw_identity_or_missing_provenance(self):
         verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")), run_name="test_verifier")
         for mode in ("raw-pid", "raw-missing", "forged-origin", "wrong-uri", "stale-time"):
