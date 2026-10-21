@@ -1,0 +1,127 @@
+{
+  "schema": "casevant.published-fixture-binding-review.v1",
+  "date": "2026-10-21",
+  "applicationVersion": 149,
+  "sourceCommit": "bcd50f3342413fb5ac8cd55811a519d3c9b5239b",
+  "rawArchiveSha256": "f677057fa72ac542b5a6a40e4c36f61fb01ca179f0d77720c16f3c783f3c1028",
+  "workerEntrySha256": "56a29a51da8ca5f8a6a5dca00ece0061fb72f559def4c3f41c852f3d4cd3c224",
+  "rebuilt": false,
+  "productionBindingsUsed": false,
+  "outboundNetwork": "denied",
+  "runDirectory": ".artifacts\\original-v149-20261020-a\\local-execution-2026-10-21T14-37-16.892Z",
+  "receiptSha256": "c7c3fe9a7547a6fd24bccaa53afdcb921c592298fb3f7d417382eeda87f4ec01",
+  "fixtures": [
+    {
+      "id": "erp-2.2-en",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 erp-2.2-en",
+      "preparation": "independent-source-pinned-manual-position-v1",
+      "draftVersion": "2.2.0",
+      "templateVersion": "2.2.0",
+      "sourceReference": {
+        "format": "casevant-example-source-v1",
+        "caseId": "be_commercial_failed_erp_001",
+        "version": "2.2.0",
+        "fingerprint": "sha256-57f8622ba3f8fa565cf1e26e5c9721d02e8ca1b50238b05f11090bbb9a03a1cb"
+      },
+      "caseId": "qa_original_v149_erp_2_2_en",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 181348,
+      "sha256": "08ac8e69292e4c65469444a47349a7a7eb1ba853bf0a79fbb6ac4d2d9714ed5c"
+    },
+    {
+      "id": "erp-2.5-ru",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 erp-2.5-ru",
+      "preparation": "independent-source-pinned-manual-position-v1",
+      "draftVersion": "2.5.0",
+      "templateVersion": "2.5.0",
+      "sourceReference": {
+        "format": "casevant-example-source-v1",
+        "caseId": "be_commercial_failed_erp_001",
+        "version": "2.5.0",
+        "fingerprint": "sha256-d8db1e768d51da75a0144b30f9821907560387d4ae07f18674096bd85ad92f12"
+      },
+      "caseId": "qa_original_v149_erp_2_5_ru",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 196878,
+      "sha256": "3e02d19abe357405170f4401111e3a701854a543279a48ce7b86b161680fca33"
+    },
+    {
+      "id": "greenfire-2.3-en",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 greenfire-2.3-en",
+      "preparation": "independent-source-pinned-manual-position-v1",
+      "draftVersion": "2.3.0",
+      "templateVersion": "2.3.0",
+      "sourceReference": {
+        "format": "casevant-example-source-v1",
+        "caseId": "greenfire_first_72_hours",
+        "version": "2.3.0",
+        "fingerprint": "sha256-0ec86b0fe429441883cd97d8086d715a5fab01ff1c8da813ed75ff1eb2f4e385"
+      },
+      "caseId": "qa_original_v149_greenfire_2_3_en",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 61944,
+      "sha256": "e90dc09c3af33452ef53beb1969fffdd5071a4267c5b2e2dffb73b15e03577dc"
+    },
+    {
+      "id": "greenfire-2.5-ru",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 greenfire-2.5-ru",
+      "preparation": "independent-source-pinned-manual-position-v1",
+      "draftVersion": "2.5.0",
+      "templateVersion": "2.5.0",
+      "sourceReference": {
+        "format": "casevant-example-source-v1",
+        "caseId": "greenfire_first_72_hours",
+        "version": "2.5.0",
+        "fingerprint": "sha256-86f48b95c937fdcae6399be5d063a8cb91c99255a9d2c3b0aefb8449b5ed008c"
+      },
+      "caseId": "qa_original_v149_greenfire_2_5_ru",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 69915,
+      "sha256": "08b1b8c44d9d65e3ab9c6e1dfeaae5ba01c392759d86097e3c6c71906fdb96b3"
+    },
+    {
+      "id": "canopy-base-en",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 canopy-base-en",
+      "preparation": "independent-source-pinned-manual-position-v1",
+      "draftVersion": "2.0.0",
+      "templateVersion": "2.0.0",
+      "sourceReference": {
+        "format": "casevant-example-source-v1",
+        "caseId": "project_canopy_managed_site_expansion",
+        "version": "2.0.0",
+        "fingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702"
+      },
+      "caseId": "qa_original_v149_canopy_base_en",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 19212,
+      "sha256": "92ec971e1e6982574e4d318018b5b0eaa36e8abdbad063b80a71bd8883174b4c"
+    },
+    {
+      "id": "full-tax-en",
+      "syntheticLabel": "SYNTHETIC original v149 QA \u2014 full-tax-en",
+      "preparation": "bound-tax-unchanged-v1",
+      "draftVersion": "1.2.3",
+      "templateVersion": null,
+      "sourceReference": null,
+      "caseId": "web_tax_contract",
+      "envelopeVersion": null,
+      "kind": "raw-draft",
+      "bytes": 5694,
+      "sha256": "649c27064eaf7acb2c5f7f9d0c003db15e361812bf8a48c3558ab12ae49633fb"
+    }
+  ],
+  "originalWorkerChecks": {
+    "ownerRecovery": 200,
+    "foreignDenial": 404,
+    "exactRawSha256": "8dd54094ed33ee0fee71217dee11723a5bba46a8e7c8c51968f55a4b6fc81c77",
+    "zeroCaseAndAuditWrites": true,
+    "originalPage": 200
+  },
+  "browserImportExport": "pending; no downloaded path or file-chooser result",
+  "priorFilesRetained": true
+}
