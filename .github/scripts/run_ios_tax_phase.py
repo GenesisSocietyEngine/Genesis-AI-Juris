@@ -66,6 +66,23 @@ def utc_now():
     return datetime.datetime.now(datetime.timezone.utc)
 
 
+def flutter_log_predicate(executable, pid=None):
+    """Collect the exact installed Flutter sender, not audio/video log floods.
+
+    Discovery still validates every announcement's complete OS identity and
+    authenticated URI. This narrows collection; it changes no evidence bound.
+    """
+    executable = pathlib.PurePosixPath(str(executable))
+    sender = executable.parent / "Frameworks/Flutter.framework/Flutter"
+    parts = ["eventType == logEvent",
+             f"processImagePath == {json.dumps(str(executable))}",
+             f"senderImagePath == {json.dumps(str(sender))}"]
+    if pid is not None:
+        require(type(pid) is int and pid > 1, "Invalid fresh log PID")
+        parts.append(f"processID == {pid}")
+    return " AND ".join(parts)
+
+
 class JsonLogObjects:
     """Accept Apple's multiline object stream or array, never raw-text URIs."""
     def __init__(self):
@@ -285,7 +302,7 @@ def discover(reader, identity, args, evidence, seconds=60):
     # history query can also precede log persistence. Requery only the exact new
     # PID/path within the existing deadline; every announcement retains all OS
     # identity, freshness and authenticated-URI validation in LogIdentity.
-    predicate = f"processID == {identity.pid} AND processImagePath == {json.dumps(identity.executable)}"
+    predicate = flutter_log_predicate(identity.executable, identity.pid)
     query = ["xcrun", "simctl", "spawn", args.device, "log", "show", "--last", "2m",
              "--style", "json", "--predicate", predicate]
     attempts, next_query = [], 0
@@ -557,7 +574,7 @@ def run(args):
     (evidence / f"{args.phase}-installed-bundle.json").write_bytes(copied)
     executable = installed / "Runner"
     existing_runner(executable)
-    predicate = f'eventType == logEvent AND processImagePath == {json.dumps(str(executable))}'
+    predicate = flutter_log_predicate(executable)
     reader = LogReader(["xcrun", "simctl", "spawn", args.device, "log", "stream", "--style", "json",
                         "--predicate", predicate], evidence / f"{args.phase}-system.log")
     primary_error = None
@@ -576,7 +593,8 @@ def run(args):
         write_json(evidence / f"{args.phase}-vm.json", vm)
         reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl")
         process_matches(identity.pid, executable)
-        launch = {"schema": "tax-ios-system-log-launch-v1", "phase": args.phase, "source_sha": args.source,
+        launch = {"schema": "tax-ios-system-log-launch-v2", "phase": args.phase, "source_sha": args.source,
+                  "log_capture_policy": "flutter-framework-v1", "log_capture_predicate": predicate,
                   "run_nonce": args.nonce, "simulator": args.device, "app_id": APP,
                   "log_reader_pid": reader.process.pid, "pid": identity.pid, "executable": str(executable),
                   "log_reader_started_at": reader.started_at,

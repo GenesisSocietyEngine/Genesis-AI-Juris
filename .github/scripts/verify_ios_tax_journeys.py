@@ -48,6 +48,19 @@ def verify_install(root, phase, source, nonce, simulator, bundle):
 
 
 def verify_discovery(root, phase, launch, pid, discovery_tools):
+    scoped = launch.get("schema") == "tax-ios-system-log-launch-v2"
+    if scoped:
+        assert launch["log_capture_policy"] == "flutter-framework-v1"
+        assert launch["log_capture_predicate"] == discovery_tools["flutter_log_predicate"](launch["executable"])
+
+    def verify_scope(record):
+        if scoped:
+            assert record.get("eventType") == "logEvent", "Flutter capture contains an off-scope event"
+            assert type(record.get("processID")) is int and record["processID"] == pid, "Flutter capture contains an off-scope PID"
+            assert record.get("processImagePath") == launch["executable"], "Flutter capture contains an off-scope executable"
+            sender = str(pathlib.PurePosixPath(launch["executable"]).parent / "Frameworks/Flutter.framework/Flutter")
+            assert record.get("senderImagePath") == sender, "Flutter capture contains an off-scope sender"
+
     assert type(launch["log_reader_pid"]) is int and launch["log_reader_pid"] > 0
     assert (root / f"{phase}-launch.stdout.log").read_text().strip() == f"{launch['app_id']}: {pid}"
     discovery = json.loads((root / f"{phase}-discovery.json").read_text())
@@ -69,6 +82,7 @@ def verify_discovery(root, phase, launch, pid, discovery_tools):
     arrivals = [json.loads(line) for line in event_file.read_text().splitlines()] if event_file.exists() else []
     assert [entry["event"] for entry in arrivals] == stream_records
     for entry in arrivals:
+        verify_scope(entry["event"])
         assert datetime.datetime.fromisoformat(entry["arrival_utc"]).tzinfo is not None
         fresh_identity.observe(entry["event"], "stream")
     records_by_origin = {"stream": stream_records, "backfill": []}
@@ -83,6 +97,10 @@ def verify_discovery(root, phase, launch, pid, discovery_tools):
         prefix = f"{phase}-backfill{suffix}"
         backfill = json.loads((root / f"{prefix}-status.json").read_text())
         assert attempt == backfill
+        if scoped:
+            assert backfill["command"] == ["xcrun", "simctl", "spawn", launch["simulator"], "log", "show",
+                "--last", "2m", "--style", "json", "--predicate",
+                discovery_tools["flutter_log_predicate"](launch["executable"], pid)]
         raw = (root / f"{prefix}.json").read_text()
         assert len(raw.encode("utf-8")) <= 1024 * 1024
         if backfill.get("exit_code") == 0:
@@ -91,6 +109,7 @@ def verify_discovery(root, phase, launch, pid, discovery_tools):
             records = backfill_parser.feed(raw, final=True)
             assert not backfill_parser.array or backfill_parser.closed
             for record in records:
+                verify_scope(record)
                 fresh_identity.observe(record, "backfill")
             records_by_origin["backfill"].extend(records)
     if not any(attempt.get("exit_code") == 0 for attempt in attempts):
@@ -149,7 +168,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert (root / f"{phase}-input-bundle.json").read_bytes() == bundle
         assert (root / f"{phase}-installed-bundle.json").read_bytes() == bundle
         launch = json.loads((root / f"{phase}-launch.json").read_text())
-        assert launch["schema"] == "tax-ios-system-log-launch-v1" and launch["complete"] is True
+        assert launch["schema"] in ("tax-ios-system-log-launch-v1", "tax-ios-system-log-launch-v2") and launch["complete"] is True
         assert launch["phase"] == phase and launch["source_sha"] == source and launch["run_nonce"] == nonce
         assert launch["pid"] == launch["vm_pid"] == receipt["pid"]
         assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
