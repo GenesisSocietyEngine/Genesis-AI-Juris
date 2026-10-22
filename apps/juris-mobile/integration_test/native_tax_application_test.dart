@@ -19,6 +19,7 @@ import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'support/framework_failure_capture.dart';
+import 'support/tax_application_evidence.dart';
 
 const List<String> _phases = <String>[
   'write',
@@ -28,8 +29,8 @@ const List<String> _phases = <String>[
   'legacy-write',
   'legacy-read',
 ];
-const String _schema = 'tax-mobile-application-acceptance-v3';
-const String _importProbePolicy = 'cold-first-isolated-cancel-v1';
+const String _schema = taxApplicationReceiptSchema;
+const String _importProbePolicy = taxImportProbePolicy;
 const String _testName =
     'production application tax journey across process restart';
 const String _blankRateError =
@@ -556,7 +557,7 @@ Future<Map<String, dynamic>> _readProof(
       value['selected_test'] != _testName ||
       value['source_sha'] != source ||
       value['run_nonce'] != nonce ||
-      value['import_probe_policy'] != _importProbePolicy ||
+      !validTaxImportProbe(value, '${value['phase']}') ||
       index is! int ||
       index < 0 ||
       index >= _phases.length ||

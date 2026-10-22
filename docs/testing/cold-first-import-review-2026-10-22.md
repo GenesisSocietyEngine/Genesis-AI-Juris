@@ -18,3 +18,9 @@ The previous six-process tests exercised three Cancel dialogs before legacy Impo
 Portable runner controls: 59 tests pass after updating the synthetic lifecycle receipts to include the required phase-specific v3 fields. Actual Mac simulator/editor results remain pending until source-specific CI executes; local runner fixtures are not native application acceptance. Local Flutter SDK is not available through PATH; hosted pinned Flutter checks will provide compilation/analyzer/runtime evidence. No production padding fix is claimed.
 
 Sites source opening initially encountered automatic approval rejection of the credential handoff. The user explicitly authorized the short-lived hidden-stdin handoff; a fresh credential then opened the existing source through the installed helper. Tokens remain session-only and are not stored in this repository. This authorization does not relax any application or deployment check.
+
+## Candidate self-correction
+
+Both initial271bad6 actual editor runs39726522526/39726545094 complete the application write phase with v3 data, then the host Dart driver rejects it at validate_and_retain because its current/prior receipt checks still require v2. This was an omitted consumer in the instrumentation migration, not an application geometry failure. Neither run reaches legacy Import and neither establishes cold-first acceptance. Preserve both raw artifacts and write-driver-failure.json unchanged.
+
+The amendment shares the current receipt schema/policy validator between integration application and Dart driver and adds three portable Flutter contract tests for current/old schemas, distinct phase proofs, zero-write cancellation and type coercion refusal. Independent Python raw verification continues to support original v2 artifacts. Actual corrected source-specific native checks must run again; do not relabel the original failures or broaden deadlines.
