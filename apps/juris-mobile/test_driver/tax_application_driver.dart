@@ -5,8 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_driver/flutter_driver.dart';
 import 'package:integration_test/common.dart';
 
-import 'tax_driver_guard.dart';
 import '../integration_test/support/tax_application_evidence.dart';
+import 'tax_driver_guard.dart';
 
 const List<String> _phases = <String>[
   'write',
