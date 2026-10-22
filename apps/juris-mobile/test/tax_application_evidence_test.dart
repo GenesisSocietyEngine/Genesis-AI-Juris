@@ -19,10 +19,11 @@ void main() {
   test('application and driver use the same current receipt contract', () {
     expect(validTaxImportProbe(base, 'write'), isTrue);
     expect(validTaxImportProbe(base, 'read'), isTrue);
-    expect(validTaxImportProbe(<String, dynamic>{
+    final Map<String, dynamic> old = <String, dynamic>{
       ...base,
       'schema': 'tax-mobile-application-acceptance-v2',
-    }, 'write'), isFalse);
+    };
+    expect(validTaxImportProbe(old, 'write'), isFalse);
   });
 
   test('cold Import and zero-write Cancel need distinct phase proofs', () {
@@ -40,10 +41,11 @@ void main() {
     expect(validTaxImportProbe(cold, 'incomplete-read'), isFalse);
     expect(validTaxImportProbe(base, 'incomplete-read'), isFalse);
     expect(validTaxImportProbe(base, 'legacy-write'), isFalse);
-    expect(validTaxImportProbe(<String, dynamic>{
+    final Map<String, dynamic> coerced = <String, dynamic>{
       ...cold,
       'legacy_dialog_opens_before_import': true,
-    }, 'legacy-write'), isFalse);
+    };
+    expect(validTaxImportProbe(coerced, 'legacy-write'), isFalse);
   });
 
   test('driver rejects mutated cancellation data and numeric coercion', () {
@@ -54,10 +56,11 @@ void main() {
       <String, dynamic>{'saved_tax_unchanged': false},
       <String, dynamic>{'unverified': true},
     ]) {
-      expect(validTaxImportProbe(<String, dynamic>{
+      final Map<String, dynamic> altered = <String, dynamic>{
         ...base,
         'cancel_probe': <String, dynamic>{...cancel, ...change},
-      }, 'incomplete-read'), isFalse);
+      };
+      expect(validTaxImportProbe(altered, 'incomplete-read'), isFalse);
     }
   });
 }
