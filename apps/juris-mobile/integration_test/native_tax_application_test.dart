@@ -28,7 +28,8 @@ const List<String> _phases = <String>[
   'legacy-write',
   'legacy-read',
 ];
-const String _schema = 'tax-mobile-application-acceptance-v2';
+const String _schema = 'tax-mobile-application-acceptance-v3';
+const String _importProbePolicy = 'cold-first-isolated-cancel-v1';
 const String _testName =
     'production application tax journey across process restart';
 const String _blankRateError =
@@ -88,6 +89,7 @@ void main() {
             : MediaQuery.maybeOf(tester.element(dialogs.first));
         return {
           'phase': phase,
+          'import_probe_policy': _importProbePolicy,
           'checkpoint': _checkpoints.current,
           'device_pixel_ratio': view.devicePixelRatio,
           'physical_width': view.physicalSize.width,
@@ -210,6 +212,7 @@ void main() {
     expect(bridge.command('tax_prepare'), hasLength(1));
 
     Map<String, dynamic>? importedLegacy;
+    Map<String, dynamic>? cancelProbe;
     if (phase == 'write') {
       expect(bridge.calculations, isEmpty);
       await _enter(tester, 'baseline_annual_tax_cost', '250000.00');
@@ -280,11 +283,15 @@ void main() {
       _expectField(tester, 'baseline_tax_rate_bps', '');
     }
 
-    if (phase == 'legacy-write') {
+    if (phase == 'incomplete-read') {
       expect(bridge.calculations, isEmpty);
-      // Bounded targeted reproduction of the keyboard/route-dismissal boundary
-      // from the retained Import failure. These are cancelled synthetic inputs:
-      // no import command or save is allowed before the original journey below.
+      // Keep cancellation in its own OS process. Opening these dialogs before
+      // legacy Import would warm the route and hide a cold-first failure.
+      final int writesBefore = workspaceStore.writeCount;
+      final StudioWorkspaceSnapshot workspaceBefore =
+          await workspaceStore.readSnapshot();
+      final Map<String, dynamic>? taxBefore =
+          await taxStore.read(workspaceBefore.workspace!.draft.caseId);
       for (int round = 1; round <= 3; round++) {
         await _checkpoints.wait('legacy-cancel-probe-$round', () async {
           await _tap(tester, find.text('Import analysis / legacy input'));
@@ -299,6 +306,27 @@ void main() {
           expect(bridge.calculations, isEmpty);
         });
       }
+      await workspaceStore.settleWrites();
+      expect(workspaceStore.writeCount, writesBefore);
+      final StudioWorkspaceSnapshot workspaceAfter =
+          await workspaceStore.readSnapshot();
+      expect(workspaceAfter.originalJson, workspaceBefore.originalJson);
+      expect(await taxStore.read(workspaceBefore.workspace!.draft.caseId),
+          taxBefore);
+      cancelProbe = <String, dynamic>{
+        'rounds': 3,
+        'imports': 0,
+        'calculations': 0,
+        'workspace_writes': 0,
+        'saved_workspace_unchanged': true,
+        'saved_tax_unchanged': true,
+      };
+    }
+    if (phase == 'legacy-write') {
+      expect(bridge.calculations, isEmpty);
+      // First Import dialog in this fresh process: no Cancel warm-up.
+      debugPrint('tax_application import_probe=$_importProbePolicy '
+          'dialog_open=1 phase=$phase source=$source nonce=$runNonce pid=$pid');
       await _tap(tester, find.text('Import analysis / legacy input'));
       final Finder dialog = find.byType(AlertDialog);
       await _tap(
@@ -457,6 +485,9 @@ void main() {
       'previous_pid': previous?['pid'],
       'platform': Platform.operatingSystem,
       'entry_method': 'programmatic_flutter_test',
+      'import_probe_policy': _importProbePolicy,
+      if (cancelProbe != null) 'cancel_probe': cancelProbe,
+      if (phase == 'legacy-write') 'legacy_dialog_opens_before_import': 1,
       'artifact': artifact,
       'scenario': workspace.draft.toJson(),
       'workspace_progress': progress,
@@ -525,6 +556,7 @@ Future<Map<String, dynamic>> _readProof(
       value['selected_test'] != _testName ||
       value['source_sha'] != source ||
       value['run_nonce'] != nonce ||
+      value['import_probe_policy'] != _importProbePolicy ||
       index is! int ||
       index < 0 ||
       index >= _phases.length ||
@@ -637,6 +669,7 @@ final class _ObservedWorkspaceStore implements ConditionalStudioDraftStore {
   _ObservedWorkspaceStore(this._store);
   final ConditionalStudioDraftStore _store;
   final List<Future<void>> _writes = <Future<void>>[];
+  int get writeCount => _writes.length;
   Future<void> settleWrites() async {
     for (int index = 0; index < _writes.length; index++) {
       await _writes[index];
