@@ -31,7 +31,7 @@
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "fflate": "0.7.5",
-    "next": "16.3.8",
+    "next": "16.4.2",
     "pdfmake": "^0.2.20",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -46,17 +46,17 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.34",
+    "braces": "file:vendor/braces",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.3.8",
+    "eslint-config-next": "16.4.2",
     "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "tsx": "4.22.1",
     "typescript": "5.9.3",
     "vinext": "1.0.0-beta.8",
     "vite": "8.2.4",
-    "wrangler": "4.133.0",
-    "braces": "file:vendor/braces"
+    "wrangler": "4.133.0"
   },
   "overrides": {
     "@esbuild-kit/core-utils": {
