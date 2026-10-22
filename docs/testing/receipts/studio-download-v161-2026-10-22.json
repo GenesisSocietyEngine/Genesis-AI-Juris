@@ -1,0 +1,101 @@
+{
+  "schema": "casevant.release-review.v1",
+  "stage": "studio-download-lifetime-and-next-security",
+  "date": "2026-10-22",
+  "runtimeCommit": "50f08c1eb7353591c65d34cc3285f7f8db6ae223",
+  "pullRequests": [
+    181,
+    182
+  ],
+  "applicationInputsSha256": "1e803aa8d03d6df960d209c0b82c74615e44bd24a0856fbf3a4c905b9e916da2",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b47f0580358881919ae5df12bf736330",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 161,
+    "source": {
+      "commit_sha": "50f08c1eb7353591c65d34cc3285f7f8db6ae223"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000d9e482439c7a88f266877bf5",
+      "content_hash": "sha256:fb61fbf1aaa05b00acb64da434b5549d23ed84c173250fd923a934fab51cadd6",
+      "size_bytes": 49408000,
+      "file_count": 577
+    },
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ada5f1eadfc81918ce107e185c97515",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b47f0580358881919ae5df12bf736330",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-22T19:08:41.767326+00:00"
+  },
+  "rawArchive": {
+    "sha256": "098c61d9f852ea8c5edebdff187523171c025eb5111489fb6834cef6a4a7747a",
+    "bytes": 30377406,
+    "representation": "local gzip; distinct from Sites normalized tar"
+  },
+  "checks": {
+    "focused": {
+      "passed": 11,
+      "failed": 0
+    },
+    "exactMain": {
+      "run": 39835427312,
+      "web": 120022354638,
+      "pdf": 120022354883,
+      "tests": 1789,
+      "passed": 1786,
+      "failed": 0,
+      "skipped": 3
+    },
+    "dependencyAudit": {
+      "full": 0,
+      "production": 0
+    },
+    "assets": {
+      "custom": {
+        "verified": 186,
+        "total": 186
+      },
+      "sites": {
+        "verified": 186,
+        "total": 186
+      }
+    },
+    "production": {
+      "baselineRows": 49,
+      "postReleaseRows": 49,
+      "metadataExact": true,
+      "metadataSha256": "beeef923d49b8a6a143a9167caf7e3ab4f66a4912f975167480416fb41dc1f4f",
+      "browserHydrated": true,
+      "liveScriptsInCurrentManifest": true,
+      "more": "one normal activation:25 to49",
+      "syntheticCase45": "Saved to workspace;14nodes/13links;authorized JSON export control activated;no visible refusal or console error",
+      "caseWrites": 0,
+      "browserDownloadedBytes": "unconfirmed",
+      "screenshot": ".artifacts/download-v161-production-context-20261022.jpg",
+      "narrowAcceptance": "not established:requested390x480 fixture override measured1520x635;later production viewport4608x2260/dpr0.8333"
+    }
+  },
+  "scope": "Bounded JSON/recovery download transport and exact Next16.4.2/lint pins. No case/schema/template/authority/audience/binding change.",
+  "nativeInvestigation": {
+    "pullRequest": 180,
+    "head": "74f4b56407f4741c2eefbd08186bc769a19c555a",
+    "integrated": false,
+    "flutter": "39832984042:success",
+    "smoke": "39832983997:success",
+    "editor": "39832984188:failure",
+    "boundary": "write passes;read fresh system-log VM discovery times out before Import;no cold-first or padding-cause pass"
+  }
+}
