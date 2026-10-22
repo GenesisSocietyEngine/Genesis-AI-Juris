@@ -25,7 +25,7 @@ function visit(node: ts.Node) {
 }
 visit(source); assert.ok(handler); assert.ok(playHandler); assert.ok(boundaryEffect);
 const bundle = await build({
-  stdin: { contents: `import {normalizeStudioDraft,caseFingerprint,casePublicationFingerprint} from './case-integrity'; import {readStudioAggregate} from './studio-aggregate'; import {caseTypeReference} from './case-type-reference'; export default async function(context){const {studioCanDuplicate,draft,locale,showSessionNotice,studioServerFingerprint,studioServerPublicationFingerprint,studioReportAuthority,studioPrivate}=context; ${handler.getText(source)}; return await exportDraft();}`, loader: "ts", resolveDir: resolve("app") },
+  stdin: { contents: `import {normalizeStudioDraft,caseFingerprint,casePublicationFingerprint} from './case-integrity'; import {readStudioAggregate} from './studio-aggregate'; import {caseTypeReference} from './case-type-reference'; import {startReportDownload} from './report-download'; export default async function(context){const {studioCanDuplicate,draft,locale,showSessionNotice,studioServerFingerprint,studioServerPublicationFingerprint,studioReportAuthority,studioPrivate}=context; ${handler.getText(source)}; return await exportDraft();}`, loader: "ts", resolveDir: resolve("app") },
   bundle: true, write: false, platform: "node", format: "esm", packages: "external",
 });
 mkdirSync(".artifacts/studio-private-exports", { recursive: true });
@@ -69,6 +69,8 @@ test("actual parent boundary preserves local drafts, stops interrupted private r
 
 test("actual private JSON handler denies stale cached duplication permission and retains local input", async () => {
   const oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document"), oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  let release!: () => void, attached = 0, removed = 0;
   const files: Blob[] = [], blobs = new Map<string, Blob>(); let signedIn = true, sequence = 0;
   const authority = new StudioSessionAuthority(async path => !signedIn ? Response.json({}, { status: 401 }) : Response.json(path === "/api/me"
     ? { authenticated: true, registered: true, profile: { email: "owner@example.test" }, capabilities: { studioAI: false } }
@@ -76,7 +78,8 @@ test("actual private JSON handler denies stale cached duplication permission and
   await authority.refresh(false, 1); const scope = authority.getSnapshot().scope;
   URL.createObjectURL = value => { const url = "blob:json-" + ++sequence; blobs.set(url, value as Blob); return url; };
   URL.revokeObjectURL = url => { blobs.delete(url); };
-  Object.defineProperty(globalThis, "document", { configurable: true, value: { createElement() { return { href: "", click(this: { href: string }) { files.push(blobs.get(this.href)!); } }; } } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { body: { appendChild() { attached++; } }, createElement() { return { href: "", remove() { removed++; }, click(this: { href: string }) { files.push(blobs.get(this.href)!); } }; } } });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { setTimeout(callback: () => void, delay: number) { assert.equal(delay, 60_000); release = callback; } } });
   const draft = { ...buildCanopyPackage("base").draft, protection: { kind: "case-protection-v1" as const, copyProtected: false, copyPolicy: "fork_allowed" as const, parentCode: null, currentCode: "sha256-" + "a".repeat(64), seal: "hmac-sha256-" + "b".repeat(64) } };
   const before = JSON.stringify(draft), notices: string[] = [];
   const context = () => ({ studioCanDuplicate: true, draft, locale: "en", showSessionNotice: (notice: string) => notices.push(notice), studioServerFingerprint: caseFingerprint(draft), studioServerPublicationFingerprint: casePublicationFingerprint(draft), studioReportAuthority: authority.reportAuthority(true, scope, 1), studioPrivate: true });
@@ -85,6 +88,9 @@ test("actual private JSON handler denies stale cached duplication permission and
     assert.equal(files.length, 0); assert.equal(JSON.stringify(draft), before); assert.match(notices.at(-1)!, /verified access/);
     signedIn = true; await authority.refresh(true, 1); await exportJson(context());
     assert.equal(files.length, 1); assert.equal(JSON.parse(await files[0].text()).case.visibility, "private");
+    assert.equal(blobs.size, 1, "the exact JSON must remain available after the event handler returns");
+    assert.equal(attached, 1); assert.equal(removed, 1);
+    release(); assert.equal(blobs.size, 0, "release retained bytes after the bounded browser handoff");
     const old = context(); authority.sessionBoundary("revoke"); await authority.refresh(true, 1); await exportJson(old);
     assert.equal(files.length, 1, "same-account recovery cannot renew a captured old export callback");
     assert.equal(JSON.stringify(draft), before);
@@ -100,5 +106,6 @@ test("actual private JSON handler denies stale cached duplication permission and
   } finally {
     URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
     if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
   }
 });

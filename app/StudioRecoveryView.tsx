@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { startReportDownload } from "./report-download";
 
 export type StudioRecovery = { scope: string | null; reason: string; rawText?: string; canExport: boolean; filename: string };
 
@@ -11,12 +12,7 @@ export default function StudioRecoveryView({ recovery, locale, onReturn }: { rec
   const unsupportedFields = ["The draft contains fields this application cannot preserve while editing.", "The Studio draft contains unsupported fields.", "The Studio envelope contains unsupported fields."].includes(recovery.reason);
   function download() {
     if (!recovery.canExport || recovery.rawText === undefined) return;
-    const url = URL.createObjectURL(new Blob([recovery.rawText], { type: "application/json;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = recovery.filename;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    startReportDownload(new Blob([recovery.rawText], { type: "application/json;charset=utf-8" }), recovery.filename);
   }
   return <main className="studio-entry page-width" aria-labelledby="studio-recovery-title">
     <header className="workspace-page-header">
