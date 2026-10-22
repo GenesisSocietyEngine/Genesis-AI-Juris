@@ -44,6 +44,7 @@ import { useInterfaceLocale, useWorkspaceLocation } from "./use-interface-locale
 import { workspaceSignInPath, workspaceDestination } from "./workspace-navigation";
 import { createStudioAuthContinuation, readStudioAuthContinuationState, writeStudioAuthContinuation, LEGACY_STUDIO_AUTH_CONTINUATION_KEY, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
 import ReportErrorBoundary from "./ReportErrorBoundary";
+import { startReportDownload } from "./report-download";
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { reportGenerationErrorMessage } from "./report-generation-error";
 import { currentStudioSaveMatches, readStudioSaveResponse, savedStudioPath, verifiedStudioSaveReceipt } from "./studio-save-receipt";
@@ -1777,10 +1778,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     let rawText: string;
     try { rawText = buildStudioCustomCaseExport(normalized, { exportedAt, visibility: studioPrivate ? "private" : "restricted" }).rawText; }
     catch (error) { showSessionNotice(error instanceof Error ? error.message : "This case could not be exported without changing its data."); return; }
-    const blob = new Blob([rawText], { type: "application/json" }); const url = URL.createObjectURL(blob);
-    const link = document.createElement("a"); link.href = url;
-    link.download = `${normalized.caseId}-v${normalized.version}.juris-case.json`;
-    link.click(); URL.revokeObjectURL(url);
+    startReportDownload(new Blob([rawText], { type: "application/json" }), `${normalized.caseId}-v${normalized.version}.juris-case.json`);
   }
   function importDraft(file: File, loaded?: (draft: StudioDraft) => void) {
     cancelCategoryDemo();
