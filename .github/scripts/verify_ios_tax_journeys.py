@@ -145,7 +145,9 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
     assert "deadline label=tax-prepare event=exited code=0" in prepare_log
     for index, phase in enumerate(phases):
         receipt = json.loads((root / f"{phase}.json").read_text())
-        assert receipt["schema"] == "tax-mobile-application-acceptance-v2"
+        assert receipt["schema"] in ("tax-mobile-application-acceptance-v2", "tax-mobile-application-acceptance-v3")
+        if receipt["schema"] == "tax-mobile-application-acceptance-v3":
+            discovery_tools["validate_import_probe"](receipt, phase)
         assert receipt["source_sha"] == source and receipt["run_nonce"] == nonce
         assert receipt["phase"] == phase and receipt["platform"] == "ios"
         assert receipt["phase_index"] == index and receipt["completed_phase"] == phase
@@ -197,6 +199,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         receipts[phase] = receipt
 
     assert len({receipt["pid"] for receipt in receipts.values()}) == len(phases)
+    assert len({receipt["schema"] for receipt in receipts.values()}) == 1
 
     def calculations(phase: str) -> list:
         return [call for call in receipts[phase]["native_calls"] if call["request"]["command"] == "tax_calculate"]
@@ -233,7 +236,18 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert artifact["request"]["input"]["override_as_of"] == "2026-09-30"
         assert legacy["status"]["draft"]["request"]["input"]["override_owner"] is None
         assert legacy["status"]["draft"]["request"]["input"]["override_as_of"] is None
+    probe_proof = {}
+    if receipts["legacy-write"]["schema"] == "tax-mobile-application-acceptance-v3":
+        legacy_log = (root / "legacy-write.log").read_text()
+        assert f"import_probe=cold-first-isolated-cancel-v1 dialog_open=1 phase=legacy-write source={source} nonce={nonce} pid={receipts['legacy-write']['pid']}" in legacy_log
+        assert "checkpoint=legacy-cancel-probe-" not in legacy_log
+        for round_number in range(1, 4):
+            cancel_log = (root / "incomplete-read.log").read_text()
+            assert re.search(rf"checkpoint=legacy-cancel-probe-{round_number} sequence=[0-9]+ state=end phase=incomplete-read source={source}", cancel_log)
+        probe_proof = {"import_probe_policy": "cold-first-isolated-cancel-v1",
+                       "cold_first_import": True, "cancel_in_separate_process": True}
     return {"schema": "tax-mobile-application-verification-v2", "source_sha": source, "run_nonce": nonce,
+            **probe_proof,
             "phases": list(phases), "pids": [receipts[p]["pid"] for p in phases],
             "same_bundle_sha256": hashlib.sha256(bundle).hexdigest(),
             "complete_pairs_equal": True, "fresh_native_reopen": True,

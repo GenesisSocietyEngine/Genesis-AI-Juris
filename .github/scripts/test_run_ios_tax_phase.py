@@ -154,7 +154,8 @@ class IdentityTests(unittest.TestCase):
                     phase.launch_pid(result)
 
     def test_receipt_must_match_fresh_phase_source_nonce_pid(self):
-        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": "write",
+        receipt = {"schema": "tax-mobile-application-acceptance-v3", "phase": "write",
+                   "import_probe_policy": "cold-first-isolated-cancel-v1",
                    "completed_phase": "write", "source_sha": "a" * 40,
                    "run_nonce": "12-1", "pid": 123, "selected_test": phase.TEST}
         phase.validate_receipt(receipt, "write", "a" * 40, "12-1", 123)
@@ -163,6 +164,23 @@ class IdentityTests(unittest.TestCase):
                          ("selected_test", "not selected")):
             with self.subTest(key=key), self.assertRaises(RuntimeError):
                 phase.validate_receipt({**receipt, key: bad}, "write", "a" * 40, "12-1", 123)
+
+    def test_cold_import_and_cancel_must_belong_to_distinct_process_phases(self):
+        policy = {"import_probe_policy": "cold-first-isolated-cancel-v1"}
+        cancel = {"rounds": 3, "imports": 0, "calculations": 0, "workspace_writes": 0,
+                  "saved_workspace_unchanged": True, "saved_tax_unchanged": True}
+        phase.validate_import_probe({**policy, "cancel_probe": cancel}, "incomplete-read")
+        phase.validate_import_probe({**policy, "legacy_dialog_opens_before_import": 1}, "legacy-write")
+        for record, name in ((policy, "incomplete-read"), (policy, "legacy-write"),
+                             ({**policy, "legacy_dialog_opens_before_import": True}, "legacy-write"),
+                             ({**policy, "legacy_dialog_opens_before_import": 4}, "legacy-write"),
+                             ({**policy, "cancel_probe": cancel, "legacy_dialog_opens_before_import": 1}, "legacy-write"),
+                             ({**policy, "cancel_probe": {**cancel, "workspace_writes": 1}}, "incomplete-read"),
+                             ({**policy, "cancel_probe": {**cancel, "imports": False}}, "incomplete-read"),
+                             ({**policy, "cancel_probe": {**cancel, "saved_tax_unchanged": False}}, "incomplete-read"),
+                             ({**policy, "cancel_probe": cancel}, "write")):
+            with self.subTest(record=record, name=name), self.assertRaises(RuntimeError):
+                phase.validate_import_probe(record, name)
 
     def test_manifest_detects_changed_assets_and_symlink_target(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -400,10 +418,18 @@ class PhaseLifecycleTests(unittest.TestCase):
                     if driver_mode in ("failed", "failed-probe"):
                         raise subprocess.CalledProcessError(2, command)
                     if driver_mode != "missing":
-                        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": phase_name,
+                        receipt = {"schema": "tax-mobile-application-acceptance-v3", "phase": phase_name,
+                                   "import_probe_policy": "cold-first-isolated-cancel-v1",
                                    "completed_phase": phase_name, "source_sha": args.source,
                                    "run_nonce": args.nonce, "pid": 124 if driver_mode == "wrong-pid" else 123,
                                    "selected_test": phase.TEST}
+                        if phase_name == "incomplete-read":
+                            receipt["cancel_probe"] = {
+                                "rounds": 3, "imports": 0, "calculations": 0, "workspace_writes": 0,
+                                "saved_workspace_unchanged": True, "saved_tax_unchanged": True,
+                            }
+                        if phase_name == "legacy-write":
+                            receipt["legacy_dialog_opens_before_import"] = 1
                         phase.write_json(evidence / f"{phase_name}.json", receipt)
                 return subprocess.CompletedProcess(command, 0)
 
