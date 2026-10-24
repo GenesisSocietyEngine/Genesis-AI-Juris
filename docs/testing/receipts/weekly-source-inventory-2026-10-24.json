@@ -1,0 +1,2243 @@
+{
+  "schema": "casevant.source-inventory.v1",
+  "date": "2026-10-24",
+  "preparedFromCommit": "b29d5ced5672082e3b3e6d6a4959eba9563a8fe5",
+  "equivalentRuntimeCommit": "3772c0c8da9a8541774733f56ed063c7870683fa",
+  "applicationInputsSha256": "bcce1d69c096666178912dac8ce68d7c3e49e0e267ca479f58b873af5e2ed495",
+  "scope": "local source projection, EN, all visible registry packages; no browser/persistence/domain acceptance",
+  "rows": [
+    {
+      "id": "canopy:base",
+      "family": "canopy",
+      "category": "general_advisory",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "project_canopy_managed_site_expansion",
+        "version": "2.0.0",
+        "fingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702"
+      },
+      "nodes": 14,
+      "links": 13,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 9,
+      "retainedReferenceBodies": 6,
+      "bodies": [
+        {
+          "id": "working:commissioning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:5cc3dd835687308c3747e2210d6087a35adedb3a3b3abb947b8602dd43beca2b",
+          "nodeIds": [
+            "crop",
+            "commissioning",
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D01:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+          "nodeIds": [
+            "mandate",
+            "clearance"
+          ]
+        },
+        {
+          "id": "canopy:D02:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7f629238b5cedd00526f3e0f7894dc62d1516f6ed2c04979e46c3e217d6e7f2e",
+          "nodeIds": [
+            "pilot"
+          ]
+        },
+        {
+          "id": "canopy:D03:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:8b36f89a1f83ceaee82bf4351bebe7fc69a72e9c9468fc1ceaf68cc0dc3586f9",
+          "nodeIds": [
+            "demand"
+          ]
+        },
+        {
+          "id": "canopy:D03:v2",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:7a507f4aaf873d317f733a0687a00fa87d7e6d5624decc66b77e2c3453c0ffba",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D04:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7d063ee3279d34d9d1a2a9cd88ec428863d5339108b76daaba0a15fe2ce0a343",
+          "nodeIds": [
+            "crop"
+          ]
+        },
+        {
+          "id": "canopy:D05:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:479515a274aeb6fe866ca358f316058885a8ed4fb8644d552478f8de49a7c664",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:1f76e97c3fa730f45cba143815a64b3431c1daa0c1382e853feda7f74e8295e9",
+          "nodeIds": [
+            "clearance",
+            "commissioning"
+          ]
+        },
+        {
+          "id": "canopy:D06:v2",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:74274942ba6e94a7325d31992503933868146cba5c0153e582b4e2a2f6276e20",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:e73a1ce8b3b97de4db26e7aea54e04c301c3a0a41e603df160c0fba219172c94",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D08:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a4ccf779d5044c153a11483c1b04edccd7b8939bbc697ab53272b1bdee88beb2",
+          "nodeIds": [
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D09:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:54df667bce70d99822137ce909acae04214000532e588ad9a7f9fa0ba44c2c9b",
+          "nodeIds": [
+            "cold-chain"
+          ]
+        },
+        {
+          "id": "canopy:D08:v2",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:7bb98729712e84d0b99d98be404f9fe2dde5e197cf0be2c8ee4e2bc18cb0f603",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v3",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:9c3218dcb3a7195f4773217f17796d28e4c69235f661dce00a83286b0702f755",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v4",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a78fc169d2656d73ad01bf721a2e21da01be50c741e1ac4e7ff7409312f9e441",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:884cb0bc84d629e2da1cc5d8fc94a4199933a08ebaa5f19ff658d7a5951c0903",
+          "nodeIds": [
+            "economics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "canopy:upside",
+      "family": "canopy",
+      "category": "general_advisory",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "project_canopy_managed_site_expansion_upside",
+        "version": "2.5.0",
+        "fingerprint": "sha256-ccf50ea39dc9a9f1565100c5fd3ee3e6accefb327547d418ded96bd20bf68a9c"
+      },
+      "nodes": 14,
+      "links": 13,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 9,
+      "retainedReferenceBodies": 6,
+      "bodies": [
+        {
+          "id": "working:commissioning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:05d2e3ffe31ce25e9390b6f7b15f3721cf749a9e7b05b50e6cd25864a60c0b0b",
+          "nodeIds": [
+            "crop",
+            "commissioning",
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D01:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+          "nodeIds": [
+            "mandate",
+            "clearance"
+          ]
+        },
+        {
+          "id": "canopy:D02:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7f629238b5cedd00526f3e0f7894dc62d1516f6ed2c04979e46c3e217d6e7f2e",
+          "nodeIds": [
+            "pilot"
+          ]
+        },
+        {
+          "id": "canopy:D03:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:8b36f89a1f83ceaee82bf4351bebe7fc69a72e9c9468fc1ceaf68cc0dc3586f9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D03:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7a507f4aaf873d317f733a0687a00fa87d7e6d5624decc66b77e2c3453c0ffba",
+          "nodeIds": [
+            "demand"
+          ]
+        },
+        {
+          "id": "canopy:D04:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7d063ee3279d34d9d1a2a9cd88ec428863d5339108b76daaba0a15fe2ce0a343",
+          "nodeIds": [
+            "crop"
+          ]
+        },
+        {
+          "id": "canopy:D05:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:479515a274aeb6fe866ca358f316058885a8ed4fb8644d552478f8de49a7c664",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:1f76e97c3fa730f45cba143815a64b3431c1daa0c1382e853feda7f74e8295e9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:74274942ba6e94a7325d31992503933868146cba5c0153e582b4e2a2f6276e20",
+          "nodeIds": [
+            "clearance",
+            "commissioning"
+          ]
+        },
+        {
+          "id": "canopy:D07:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:e73a1ce8b3b97de4db26e7aea54e04c301c3a0a41e603df160c0fba219172c94",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D08:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a4ccf779d5044c153a11483c1b04edccd7b8939bbc697ab53272b1bdee88beb2",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D09:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:54df667bce70d99822137ce909acae04214000532e588ad9a7f9fa0ba44c2c9b",
+          "nodeIds": [
+            "cold-chain"
+          ]
+        },
+        {
+          "id": "canopy:D08:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7bb98729712e84d0b99d98be404f9fe2dde5e197cf0be2c8ee4e2bc18cb0f603",
+          "nodeIds": [
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D06:v3",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:9c3218dcb3a7195f4773217f17796d28e4c69235f661dce00a83286b0702f755",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v4",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a78fc169d2656d73ad01bf721a2e21da01be50c741e1ac4e7ff7409312f9e441",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:884cb0bc84d629e2da1cc5d8fc94a4199933a08ebaa5f19ff658d7a5951c0903",
+          "nodeIds": [
+            "economics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "canopy:hard_stop",
+      "family": "canopy",
+      "category": "general_advisory",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "project_canopy_managed_site_expansion_hard_stop",
+        "version": "2.6.0",
+        "fingerprint": "sha256-45cd82b379929e740c0318e2658bc30d908a048e6750620d0563b1f3e8418387"
+      },
+      "nodes": 14,
+      "links": 13,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 9,
+      "retainedReferenceBodies": 6,
+      "bodies": [
+        {
+          "id": "working:commissioning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:08e862c0224942b0b9ae5a036034c5fa5cd6548e333691a9fc2ba4cfbf7f8aa5",
+          "nodeIds": [
+            "crop",
+            "commissioning",
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D01:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+          "nodeIds": [
+            "mandate",
+            "clearance"
+          ]
+        },
+        {
+          "id": "canopy:D02:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7f629238b5cedd00526f3e0f7894dc62d1516f6ed2c04979e46c3e217d6e7f2e",
+          "nodeIds": [
+            "pilot"
+          ]
+        },
+        {
+          "id": "canopy:D03:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:8b36f89a1f83ceaee82bf4351bebe7fc69a72e9c9468fc1ceaf68cc0dc3586f9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D03:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7a507f4aaf873d317f733a0687a00fa87d7e6d5624decc66b77e2c3453c0ffba",
+          "nodeIds": [
+            "demand"
+          ]
+        },
+        {
+          "id": "canopy:D04:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7d063ee3279d34d9d1a2a9cd88ec428863d5339108b76daaba0a15fe2ce0a343",
+          "nodeIds": [
+            "crop"
+          ]
+        },
+        {
+          "id": "canopy:D05:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:479515a274aeb6fe866ca358f316058885a8ed4fb8644d552478f8de49a7c664",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:1f76e97c3fa730f45cba143815a64b3431c1daa0c1382e853feda7f74e8295e9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v2",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:74274942ba6e94a7325d31992503933868146cba5c0153e582b4e2a2f6276e20",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:e73a1ce8b3b97de4db26e7aea54e04c301c3a0a41e603df160c0fba219172c94",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D08:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a4ccf779d5044c153a11483c1b04edccd7b8939bbc697ab53272b1bdee88beb2",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D09:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:54df667bce70d99822137ce909acae04214000532e588ad9a7f9fa0ba44c2c9b",
+          "nodeIds": [
+            "cold-chain"
+          ]
+        },
+        {
+          "id": "canopy:D08:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7bb98729712e84d0b99d98be404f9fe2dde5e197cf0be2c8ee4e2bc18cb0f603",
+          "nodeIds": [
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D06:v3",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9c3218dcb3a7195f4773217f17796d28e4c69235f661dce00a83286b0702f755",
+          "nodeIds": [
+            "clearance",
+            "commissioning"
+          ]
+        },
+        {
+          "id": "canopy:D06:v4",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a78fc169d2656d73ad01bf721a2e21da01be50c741e1ac4e7ff7409312f9e441",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:884cb0bc84d629e2da1cc5d8fc94a4199933a08ebaa5f19ff658d7a5951c0903",
+          "nodeIds": [
+            "economics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "canopy:downside",
+      "family": "canopy",
+      "category": "general_advisory",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "project_canopy_managed_site_expansion_downside",
+        "version": "2.4.0",
+        "fingerprint": "sha256-e4a58657e7e214a789c20e4f1f3f02e8ab6a3b51944416a3f533124c3d6c6047"
+      },
+      "nodes": 14,
+      "links": 13,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 9,
+      "retainedReferenceBodies": 6,
+      "bodies": [
+        {
+          "id": "working:commissioning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:05d2e3ffe31ce25e9390b6f7b15f3721cf749a9e7b05b50e6cd25864a60c0b0b",
+          "nodeIds": [
+            "crop",
+            "commissioning",
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D01:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+          "nodeIds": [
+            "mandate",
+            "clearance"
+          ]
+        },
+        {
+          "id": "canopy:D02:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7f629238b5cedd00526f3e0f7894dc62d1516f6ed2c04979e46c3e217d6e7f2e",
+          "nodeIds": [
+            "pilot"
+          ]
+        },
+        {
+          "id": "canopy:D03:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:8b36f89a1f83ceaee82bf4351bebe7fc69a72e9c9468fc1ceaf68cc0dc3586f9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D03:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7a507f4aaf873d317f733a0687a00fa87d7e6d5624decc66b77e2c3453c0ffba",
+          "nodeIds": [
+            "demand"
+          ]
+        },
+        {
+          "id": "canopy:D04:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7d063ee3279d34d9d1a2a9cd88ec428863d5339108b76daaba0a15fe2ce0a343",
+          "nodeIds": [
+            "crop"
+          ]
+        },
+        {
+          "id": "canopy:D05:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:479515a274aeb6fe866ca358f316058885a8ed4fb8644d552478f8de49a7c664",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:1f76e97c3fa730f45cba143815a64b3431c1daa0c1382e853feda7f74e8295e9",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:74274942ba6e94a7325d31992503933868146cba5c0153e582b4e2a2f6276e20",
+          "nodeIds": [
+            "clearance",
+            "commissioning"
+          ]
+        },
+        {
+          "id": "canopy:D07:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:e73a1ce8b3b97de4db26e7aea54e04c301c3a0a41e603df160c0fba219172c94",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D08:v1",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a4ccf779d5044c153a11483c1b04edccd7b8939bbc697ab53272b1bdee88beb2",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D09:v1",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:54df667bce70d99822137ce909acae04214000532e588ad9a7f9fa0ba44c2c9b",
+          "nodeIds": [
+            "cold-chain"
+          ]
+        },
+        {
+          "id": "canopy:D08:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7bb98729712e84d0b99d98be404f9fe2dde5e197cf0be2c8ee4e2bc18cb0f603",
+          "nodeIds": [
+            "leadership"
+          ]
+        },
+        {
+          "id": "canopy:D06:v3",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:9c3218dcb3a7195f4773217f17796d28e4c69235f661dce00a83286b0702f755",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D06:v4",
+          "kind": "reference",
+          "selected": false,
+          "sha256": "sha256:a78fc169d2656d73ad01bf721a2e21da01be50c741e1ac4e7ff7409312f9e441",
+          "nodeIds": []
+        },
+        {
+          "id": "canopy:D07:v2",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:884cb0bc84d629e2da1cc5d8fc94a4199933a08ebaa5f19ff658d7a5951c0903",
+          "nodeIds": [
+            "demand",
+            "economics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "converted:be_commercial_failed_erp_001",
+      "family": "converted",
+      "category": "litigation_strategy",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "be_commercial_failed_erp_001",
+        "version": "2.5.0",
+        "fingerprint": "sha256-7baf302420d47ed07eaed2a646ab3f2f3533a663d546fb141d9ff1de1ae0f59c"
+      },
+      "nodes": 196,
+      "links": 321,
+      "records": 6,
+      "missingOriginals": 5,
+      "selectedReferenceBodies": 31,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence-erp_implementation_contract",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:040a306b2dda0b3915179e1f10b91888b1ad5697e49bd6d7d0429d16dd0502ab",
+          "nodeIds": [
+            "brief",
+            "fact-contract_in_force",
+            "evidence-erp_implementation_contract",
+            "evidence-change_request_register",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-change_request_register",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:6d31ccb83988d031bc2d9ea337934e55bbaa1673cb2ad93a4b749d3655c88a20",
+          "nodeIds": [
+            "fact-scope_change_responsibility",
+            "evidence-erp_implementation_contract",
+            "evidence-change_request_register",
+            "evidence-project_email_correspondence",
+            "action-request-documents",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-project_email_correspondence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:ca43b6a4728a86ac051f1d09eb7d731a62842074338a5efa4396e0a89052bd08",
+          "nodeIds": [
+            "fact-go_live_failure",
+            "fact-supplier_delay_notice",
+            "evidence-change_request_register",
+            "evidence-project_email_correspondence",
+            "evidence-acceptance_record",
+            "action-request-documents",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-acceptance_record",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:7ac335b92975ad2d9daa989f31829cdea13f27cc6349645696bc3933966a5f00",
+          "nodeIds": [
+            "fact-acceptance_status",
+            "evidence-project_email_correspondence",
+            "evidence-acceptance_record",
+            "evidence-independent_expert_report",
+            "action-request-documents",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-independent_expert_report",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:5b1a208080308dc7169677a5c4887e9b91de930d5646ae53cee2a9d66217b047",
+          "nodeIds": [
+            "fact-material_supplier_breach",
+            "fact-loss_causation",
+            "evidence-acceptance_record",
+            "evidence-independent_expert_report",
+            "action-review-expert-report",
+            "inbox-opening_request",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:inbox-opening_request",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:a72b115ef24a0a8672a615a1d8b28adda6c0487eb048fa18ff6da70c66c76a11",
+          "nodeIds": [
+            "evidence-independent_expert_report",
+            "inbox-opening_request"
+          ]
+        },
+        {
+          "id": "message:SIM-opening_request",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:6ad902ce353cd25b66b4a886289b836e610237c9dc724504181e88e29c665755",
+          "nodeIds": [
+            "inbox-opening_request"
+          ]
+        },
+        {
+          "id": "message:SIM-cfo_pressure",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:93540f5dec99d255835aca92c1d4fe481a1d2b722f6dae5383fb5747623df6a2",
+          "nodeIds": [
+            "inbox-cfo_pressure"
+          ]
+        },
+        {
+          "id": "message:SIM-preservation_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a38bcaa59d8e3cbf90aa0e3ec8c54d12973405cb3e6f0eb5d479bfb5902133cf",
+          "nodeIds": [
+            "inbox-preservation_required"
+          ]
+        },
+        {
+          "id": "message:SIM-junior_review_in_progress",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:ec79020160bb10d751e78cfe96ee101339ce387d066caa019f164b21001ebe04",
+          "nodeIds": [
+            "inbox-junior_review_in_progress"
+          ]
+        },
+        {
+          "id": "message:SIM-junior_findings_ready",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:67ff3eedfa47311956b08b25f0a28559a774cf16ba64757e9d8c1689723e78d6",
+          "nodeIds": [
+            "inbox-junior_findings_ready"
+          ]
+        },
+        {
+          "id": "message:SIM-settlement_offer",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:b8079f41260a1d79e41524d2083c19a7c5a60c2a8883fe37dcb5bf8dea028761",
+          "nodeIds": [
+            "inbox-settlement_offer"
+          ]
+        },
+        {
+          "id": "message:SIM-expert_assignment",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a60df82f637b43aa8ff36747da41a73519beb6dff716425fb0fdbbf917923413",
+          "nodeIds": [
+            "inbox-expert_assignment"
+          ]
+        },
+        {
+          "id": "message:SIM-expert_report_ready",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:f9f3530b8f56462fb7366b868d3ed64735f1ac57671e02191a1ee470097feeec",
+          "nodeIds": [
+            "inbox-expert_report_ready"
+          ]
+        },
+        {
+          "id": "message:SIM-proceedings_commenced",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:2e1f97219c811b550fef3b78e6b3993fe9f515932f222a397caf84bb37a64548",
+          "nodeIds": [
+            "inbox-proceedings_commenced"
+          ]
+        },
+        {
+          "id": "message:SIM-statement_filed",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a68af1884dd6ddc0731885f28ffb98e6435619aa540a0753ff87a90c8c322e29",
+          "nodeIds": [
+            "inbox-statement_filed"
+          ]
+        },
+        {
+          "id": "message:SIM-hearing_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:614a5b72816a4124e81accedf8d4a2a631d1f44860e7264364b9443a5ac9793b",
+          "nodeIds": [
+            "inbox-hearing_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-hearing_reschedule_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:5ac3d981cd9eabea539b4e8cba1002debea97278a63bcf6c4f29a1b0dee64f02",
+          "nodeIds": [
+            "inbox-hearing_reschedule_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-hearing_window_open",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:901269910db10199ae477dd96342a60328c63060cd7fa9483d92c95660fd82db",
+          "nodeIds": [
+            "inbox-hearing_window_open"
+          ]
+        },
+        {
+          "id": "message:SIM-first_instance_judgment",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:dc423ead10888d14376b3dda89fee55d647e636d6f77bdbf3503cb773aa07172",
+          "nodeIds": [
+            "inbox-first_instance_judgment"
+          ]
+        },
+        {
+          "id": "message:SIM-appeal_advice_request",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:4d6514b0fc7d36f9ebf699d9de4b01aebb1a4a6aeefb30100c2558ca74dee01a",
+          "nodeIds": [
+            "inbox-appeal_advice_request"
+          ]
+        },
+        {
+          "id": "message:SIM-appeal_instructions",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:5d1b1843128a9f3a47b6500405d9c7761f492306d9b8b417cb9e442610fac9df",
+          "nodeIds": [
+            "inbox-appeal_instructions"
+          ]
+        },
+        {
+          "id": "message:SIM-appeal_filed_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:eec59408cfe38e0fa83532625b49d2db39fee68cae1f05ecf366580374e31e18",
+          "nodeIds": [
+            "inbox-appeal_filed_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-cassation_assessment_request",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:cd1126c2a13fe2e425c9d383f3ba74605c5791ca0a30827d88b92e80aa16b748",
+          "nodeIds": [
+            "inbox-cassation_assessment_request"
+          ]
+        },
+        {
+          "id": "message:SIM-cassation_instructions",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:1ca277cf8181b2de0e13b1c98dbc74b72214f71cc4a5ce36ea28edf4b139c5f9",
+          "nodeIds": [
+            "inbox-cassation_instructions"
+          ]
+        },
+        {
+          "id": "message:SIM-cassation_filed_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a4d37a3cc9a1fc007a67c587ec7cc1edcae2253b825f13eb6142f8613e62ae8e",
+          "nodeIds": [
+            "inbox-cassation_filed_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-counterparty_cassation_challenge",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:e3ce4cbd0e0d3c172c880f37bd2514b742d2357fdc936f602e63756bd20f3e51",
+          "nodeIds": [
+            "inbox-counterparty_cassation_challenge"
+          ]
+        },
+        {
+          "id": "message:SIM-limited_review_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:413a3b7e1859c1bcf066ea51924f81f213b37f89100b9161e5257c9f5acb93d1",
+          "nodeIds": [
+            "inbox-limited_review_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-remittal_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:65a2f0f04ee3dcfee1da8120504bb75f010e1f3c90e22c4c994f080e1227d230",
+          "nodeIds": [
+            "inbox-remittal_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-partner_brief_overdue",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:9aaa33889426fba44ab63f32b48010c44e47872e9fe95a630e32a185e9a123c0",
+          "nodeIds": [
+            "inbox-partner_brief_overdue"
+          ]
+        },
+        {
+          "id": "message:SIM-preservation_missed_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:73e69768b0b97428ead2df871760a431a26979bb7f868cc8cea65c53792aac83",
+          "nodeIds": [
+            "inbox-preservation_missed_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-settlement_expired_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:1746c58d907df5424e7d46296103b2a29e58233ca129ad4094fc950db0fccc76",
+          "nodeIds": [
+            "inbox-settlement_expired_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-procedural_default_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:50d6d8b75a3b0665743f0cab84b4ff000ce57796dfd1ab4f5692bc313555076f",
+          "nodeIds": [
+            "inbox-procedural_default_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-hearing_missed_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:c8b23e8053b9152d07680dbaf1e38f5139c4f8fdd4daa351a4a2d4f8fa3afa1e",
+          "nodeIds": [
+            "inbox-hearing_missed_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-appeal_deadline_expired_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:0540ddb57f2f7b0cbe9091ca1f70f0eccd16f019a3abf92876ac07cca0dd4f46",
+          "nodeIds": [
+            "inbox-appeal_deadline_expired_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-cassation_deadline_expired_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:b9a1b32fb8776414cf3d962d05e98840342b89b64b52f7fb8a63250f8fac564b",
+          "nodeIds": [
+            "inbox-cassation_deadline_expired_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-matter_closed_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:56ad6919c61de318f24e602ef008e3be8c08c49bcc973c11eb4e52c09a11c812",
+          "nodeIds": [
+            "inbox-matter_closed_notice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "converted:be_commercial_logistics_001",
+      "family": "converted",
+      "category": "litigation_strategy",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "be_commercial_logistics_001",
+        "version": "2.5.0",
+        "fingerprint": "sha256-ccc8e857b18fd20aec5215cba5b001cdb2862efa43f9f4e06739cf246c640bcb"
+      },
+      "nodes": 34,
+      "links": 59,
+      "records": 5,
+      "missingOriginals": 5,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence-master_services_agreement",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:bd6861f73d335ab26db017466d57031b8fe282bbaee4592057af113aef0a3fdb",
+          "nodeIds": [
+            "brief",
+            "fact-terms_incorporated",
+            "fact-surcharges_contractual",
+            "evidence-master_services_agreement",
+            "evidence-invoice_ledger",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-invoice_ledger",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:e3aef216d2af8454168ce1953a084fe51707c10dce9fa8a08de3cc7fc8b5fabc",
+          "nodeIds": [
+            "fact-invoices_unpaid",
+            "evidence-master_services_agreement",
+            "evidence-invoice_ledger",
+            "evidence-proof_of_delivery_bundle",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-proof_of_delivery_bundle",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:59cf8af77da2ddf4803aaa6e56de6e8e6955952c3dabbcd9029407ddf318afd5",
+          "nodeIds": [
+            "fact-services_performed",
+            "evidence-invoice_ledger",
+            "evidence-proof_of_delivery_bundle",
+            "evidence-detention_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-detention_records",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:170d5db77c9544da7731b7be93f2b84117ec02649af2c292dd3778e2c5f53e38",
+          "nodeIds": [
+            "fact-services_performed",
+            "fact-surcharges_contractual",
+            "evidence-proof_of_delivery_bundle",
+            "evidence-detention_records",
+            "evidence-orbis_complaints",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-orbis_complaints",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:5913ffe785d64fe943970c8723f3b69cd7301c74e6c788bb8b9017ea79d288aa",
+          "nodeIds": [
+            "fact-service_failures",
+            "evidence-detention_records",
+            "evidence-orbis_complaints",
+            "review-question-evidence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "converted:greenfire_first_72_hours",
+      "family": "converted",
+      "category": "investigation",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "greenfire_first_72_hours",
+        "version": "2.5.0",
+        "fingerprint": "sha256-e70a0e7ba866801dd6bc1cab6555e081d59b8e9c04fc14f892487a79c807d0a0"
+      },
+      "nodes": 65,
+      "links": 117,
+      "records": 10,
+      "missingOriginals": 7,
+      "selectedReferenceBodies": 7,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence-site_cctv",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:07dd9bd240ac7cd69e7cb1fa2e3687a22236fdb5f70ba154d066adf10ff57b91",
+          "nodeIds": [
+            "brief",
+            "fact-torch_used_near_storage",
+            "evidence-site_cctv",
+            "evidence-dangerous_goods_manifest",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-dangerous_goods_manifest",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:623df159ba269f6b0547e84f2335766ec712e40e88aaf6b4eaaf59261936202e",
+          "nodeIds": [
+            "fact-materials_outside_permit_zone",
+            "evidence-site_cctv",
+            "evidence-dangerous_goods_manifest",
+            "evidence-permit_site_plan",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-permit_site_plan",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:63f68aa43bcfeb69ec29dbef3c4fe96532a80ae7b74a7278cc17239ba4de1ffc",
+          "nodeIds": [
+            "fact-materials_outside_permit_zone",
+            "evidence-dangerous_goods_manifest",
+            "evidence-permit_site_plan",
+            "evidence-safety_coordinator_email",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-safety_coordinator_email",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:018b0b167c9ab826a822002f488b3be5a0d7c8bf90164689400d2eaa4b37486c",
+          "nodeIds": [
+            "fact-safety_warning_not_escalated",
+            "evidence-permit_site_plan",
+            "evidence-safety_coordinator_email",
+            "evidence-insurance_policy_bundle",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-insurance_policy_bundle",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:8509a299316a3b21bf84a6783129f2e4e52c9b22dd752ea6bb7f15f790cb498b",
+          "nodeIds": [
+            "fact-policy_notice_window",
+            "evidence-safety_coordinator_email",
+            "evidence-insurance_policy_bundle",
+            "evidence-fire_service_runoff_map",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-fire_service_runoff_map",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:1737923e19f2082d998a6ec1968810d35fed841fe089374ac4c0cb4f74578ec7",
+          "nodeIds": [
+            "evidence-insurance_policy_bundle",
+            "evidence-fire_service_runoff_map",
+            "evidence-expert_preliminary_assessment",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-expert_preliminary_assessment",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:5fd0dd52b7cd8d979439b6824fd2eef6fc4a989c7c3d8832935c2ab4c5d72843",
+          "nodeIds": [
+            "fact-torch_used_near_storage",
+            "fact-materials_outside_permit_zone",
+            "fact-director_lacked_specific_operational_knowledge",
+            "evidence-fire_service_runoff_map",
+            "evidence-expert_preliminary_assessment",
+            "action-review_preliminary_fire_assessment",
+            "inbox-managing_director_emergency_call",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:inbox-managing_director_emergency_call",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:a5d0e8cfd5f89c818b59beefaeda61020d8b278b97c6e4b3a49532cb40995e42",
+          "nodeIds": [
+            "evidence-expert_preliminary_assessment",
+            "inbox-managing_director_emergency_call",
+            "inbox-legal_hold_required"
+          ]
+        },
+        {
+          "id": "working:inbox-legal_hold_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:d080f1708491680f65da2175e6f4fe64698f05e3fe43978f1c8efd7ed56bb178",
+          "nodeIds": [
+            "inbox-managing_director_emergency_call",
+            "inbox-legal_hold_required",
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "working:inbox-insurance_notice_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:db2d511f7832f428512cedeb01a9f8646c66121a2acacc998be528dd0f7b1ff3",
+          "nodeIds": [
+            "inbox-legal_hold_required",
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "message:SIM-managing_director_emergency_call",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:3ef8a91b0dd692aebba5d13381dfae668904124d85568e7c2e914d0c3d7b1502",
+          "nodeIds": [
+            "inbox-managing_director_emergency_call"
+          ]
+        },
+        {
+          "id": "message:SIM-legal_hold_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:cf460994dea565c4f3510aea4af02520be2a182641d784a21ec51e15d6a35b12",
+          "nodeIds": [
+            "inbox-legal_hold_required"
+          ]
+        },
+        {
+          "id": "message:SIM-insurance_notice_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:ff7aad7642c63859953f8d7d1c35f936943d55a777364c16727029267df1eb2b",
+          "nodeIds": [
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "message:SIM-separate_counsel_decision",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:ec42e698015f1e2fa7c10b1a124608319da15c696b6ce6f9e53fc56de103c18b",
+          "nodeIds": [
+            "inbox-separate_counsel_decision"
+          ]
+        },
+        {
+          "id": "message:SIM-regulator_document_request",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:aae4dd1e6b076cddfa0a02c17ddfeb6d70a1d4e9a661f7730a1a733ba8b5a284",
+          "nodeIds": [
+            "inbox-regulator_document_request"
+          ]
+        },
+        {
+          "id": "message:SIM-expert_report_ready",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:b510af6d1abc1c72693823d72f7a78e39e11dc31cb6a4e6ea7356ed1d2a2fce2",
+          "nodeIds": [
+            "inbox-expert_report_ready"
+          ]
+        },
+        {
+          "id": "message:SIM-seventy_two_hour_handoff",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:63eaf9c82f9d3d9a6f26b1efaef22bf3234ca3f2d7e9c8b15a1fa38171ab0492",
+          "nodeIds": [
+            "inbox-seventy_two_hour_handoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "converted:nl_food_safety_goldenshell_001",
+      "family": "converted",
+      "category": "compliance",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "nl_food_safety_goldenshell_001",
+        "version": "2.5.0",
+        "fingerprint": "sha256-763ff1d020f99eeb7fc72410e73ba41c911a483fe83d3b88c250861d6a4fc920"
+      },
+      "nodes": 81,
+      "links": 156,
+      "records": 18,
+      "missingOriginals": 13,
+      "selectedReferenceBodies": 10,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence-farm_blocking_decisions",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:359a6cfa129836d7364e2bd7fb1db88ce85bda2afa1c002f737c11044f847603",
+          "nodeIds": [
+            "brief",
+            "fact-common_source_with_farm_specific_variation",
+            "evidence-farm_blocking_decisions",
+            "evidence-reference_sample_chain_of_custody",
+            "action-obtain_blocking_decisions",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-reference_sample_chain_of_custody",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:8cf0837e0b42a2f460a274e6d3e696efaa408dccdb35bc10efb8b56c6e610de2",
+          "nodeIds": [
+            "fact-unauthorised_active_ingredient_present",
+            "fact-common_source_with_farm_specific_variation",
+            "evidence-farm_blocking_decisions",
+            "evidence-reference_sample_chain_of_custody",
+            "evidence-treatment_work_orders",
+            "action-preserve_reference_samples",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-treatment_work_orders",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:cfe1422695517f121f054f7e93df145e259020f5f0f12efa0db85d21d0b378a5",
+          "nodeIds": [
+            "fact-common_source_with_farm_specific_variation",
+            "evidence-reference_sample_chain_of_custody",
+            "evidence-treatment_work_orders",
+            "evidence-general_terms_archives",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-general_terms_archives",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:e76075e89b8e13158f971e9ff9a07533339b2a5d5d6f8101236cab9a5f4adc38",
+          "nodeIds": [
+            "evidence-treatment_work_orders",
+            "evidence-general_terms_archives",
+            "evidence-product_safety_sheet_versions",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-product_safety_sheet_versions",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:9b427bd1b127c9d1195a4b4c46d6780889755987358f0cfd47953da2845d2c83",
+          "nodeIds": [
+            "fact-safety_sheet_omitted_ingredient",
+            "evidence-general_terms_archives",
+            "evidence-product_safety_sheet_versions",
+            "evidence-registration_warning_email",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-registration_warning_email",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:abe01a974874ba4601d69f3469150c3020a5be94a61dcdd611d51592106d8075",
+          "nodeIds": [
+            "fact-contractor_knew_product_composition",
+            "fact-registration_warning_forwarded",
+            "evidence-product_safety_sheet_versions",
+            "evidence-registration_warning_email",
+            "evidence-supplier_invoices_and_batch_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-supplier_invoices_and_batch_records",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:105f402127905d5309e28a2025b919230c8224f235e01b5a6e899b59861198d6",
+          "nodeIds": [
+            "fact-unauthorised_active_ingredient_present",
+            "fact-contractor_knew_product_composition",
+            "evidence-registration_warning_email",
+            "evidence-supplier_invoices_and_batch_records",
+            "evidence-contractor_internal_messages",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-contractor_internal_messages",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:b7191ecb183ed38f0ca5f53808b6c058474bd9caa425e6901f9294ba32f8e14d",
+          "nodeIds": [
+            "fact-contractor_knew_product_composition",
+            "fact-containers_removed_during_inspection",
+            "evidence-supplier_invoices_and_batch_records",
+            "evidence-contractor_internal_messages",
+            "evidence-retailer_recall_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-retailer_recall_records",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:f0e23b1c7f094a922960b6d8efc84704221f20948032503d5d7895ad7f5d737f",
+          "nodeIds": [
+            "evidence-contractor_internal_messages",
+            "evidence-retailer_recall_records",
+            "evidence-farm_specific_loss_schedules",
+            "action-coordinate_recall_response",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-farm_specific_loss_schedules",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:3e6b959195f6acf6f413359d4b44a77dc4078418214bc6651f6cf323c9ea6db4",
+          "nodeIds": [
+            "fact-quality_control_differences",
+            "evidence-retailer_recall_records",
+            "evidence-farm_specific_loss_schedules",
+            "evidence-insurance_policy_bundle",
+            "action-map_common_and_individual_losses",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-insurance_policy_bundle",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:c938f51603e0e2232849a0e8b2a1f13574115c573940e491bc606fbbdb201df8",
+          "nodeIds": [
+            "evidence-farm_specific_loss_schedules",
+            "evidence-insurance_policy_bundle",
+            "evidence-regulator_signal_timeline",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-regulator_signal_timeline",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:0bb05cc94e06fd2596370252e82ce770af19b8126837d84c2391bfaf7299ad59",
+          "nodeIds": [
+            "fact-regulator_received_earlier_signal",
+            "evidence-insurance_policy_bundle",
+            "evidence-regulator_signal_timeline",
+            "evidence-preliminary_residue_assessment_report",
+            "action-prioritise_regulator_claim",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-preliminary_residue_assessment_report",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:2ce049095338024e2e5fb6b825679fd11adaf597c9e5d158d53baa03aa546032",
+          "nodeIds": [
+            "fact-unauthorised_active_ingredient_present",
+            "fact-common_source_with_farm_specific_variation",
+            "fact-quality_control_differences",
+            "evidence-regulator_signal_timeline",
+            "evidence-preliminary_residue_assessment_report",
+            "action-review_preliminary_residue_assessment",
+            "inbox-cooperative_emergency_call",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:inbox-cooperative_emergency_call",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:1ff971c0e67d197f6d5788128c8988d149faa2ed2cda7fb07a52b6c6348152ce",
+          "nodeIds": [
+            "evidence-preliminary_residue_assessment_report",
+            "inbox-cooperative_emergency_call",
+            "inbox-coordinated_legal_hold_required"
+          ]
+        },
+        {
+          "id": "working:inbox-coordinated_legal_hold_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:7fb6752f922e5c0f813fb6e021a5ef4ffffebbeff359e5d731135c49ed935f15",
+          "nodeIds": [
+            "inbox-cooperative_emergency_call",
+            "inbox-coordinated_legal_hold_required",
+            "inbox-sample_preservation_required"
+          ]
+        },
+        {
+          "id": "working:inbox-sample_preservation_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:df514b1e8e078d64a3d4b1658cdb914e93118864ffb1d78a6ebe8e6d4453e193",
+          "nodeIds": [
+            "inbox-coordinated_legal_hold_required",
+            "inbox-sample_preservation_required",
+            "inbox-contractor_notice_required"
+          ]
+        },
+        {
+          "id": "working:inbox-contractor_notice_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:e3d97c682279e2106f9ab98593a580cf7fd03f14152b0798f0fd64f3f5a8c551",
+          "nodeIds": [
+            "inbox-sample_preservation_required",
+            "inbox-contractor_notice_required",
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "working:inbox-insurance_notice_required",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:9628d5c48e6479a42b104a80c90bdfcb20ee0ebd4805fcdfebecd64a6bdc3148",
+          "nodeIds": [
+            "inbox-contractor_notice_required",
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "message:SIM-cooperative_emergency_call",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:0a3c624c7174fdbc3b2728541d9aa126145ec85a80575e9d9334f8b5aeb93028",
+          "nodeIds": [
+            "inbox-cooperative_emergency_call"
+          ]
+        },
+        {
+          "id": "message:SIM-coordinated_legal_hold_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:04547157a573b01902ec189f662c9b49bc7be9677a91a07afe231aa45c7fb911",
+          "nodeIds": [
+            "inbox-coordinated_legal_hold_required"
+          ]
+        },
+        {
+          "id": "message:SIM-sample_preservation_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:0c8dab29a40e4e0e62972ed2d02ab48e4368c9133ee3618fc33fe15e00a2fd9a",
+          "nodeIds": [
+            "inbox-sample_preservation_required"
+          ]
+        },
+        {
+          "id": "message:SIM-contractor_notice_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:574581bd567d38e2593ef51e7bca600a6cc2f3843ddc5e11de0aadfd1e2c1eba",
+          "nodeIds": [
+            "inbox-contractor_notice_required"
+          ]
+        },
+        {
+          "id": "message:SIM-insurance_notice_required",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:556132e86abbf010db709b99f13f998cd3f6b35610f09189c16b57a17600d742",
+          "nodeIds": [
+            "inbox-insurance_notice_required"
+          ]
+        },
+        {
+          "id": "message:SIM-group_claim_strategy",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:7a813829d1db543c2f76706cf26cdaaaa281237509714f87728d2395c70b8e6b",
+          "nodeIds": [
+            "inbox-group_claim_strategy"
+          ]
+        },
+        {
+          "id": "message:SIM-retailer_recall_demand",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a3478d6a3160c985a9ba780515ebae26ffaca7ac02efd72d8348685ccc07f1bf",
+          "nodeIds": [
+            "inbox-retailer_recall_demand"
+          ]
+        },
+        {
+          "id": "message:SIM-contractor_denial",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:a1bae84f9b1f14f7e5f81da528a7fa84b58d3b8ee675cf7e605fc9c0d1412363",
+          "nodeIds": [
+            "inbox-contractor_denial"
+          ]
+        },
+        {
+          "id": "message:SIM-residue_assessment_ready",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:b0c7ba75ab04c70eafa40d4d2616925fff84c8aefcf075a571c87fb7e3bc400b",
+          "nodeIds": [
+            "inbox-residue_assessment_ready"
+          ]
+        },
+        {
+          "id": "message:SIM-seventy_two_hour_handoff",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:8ce480f1152ca599003b23fa34bbd466855a2b5a2f59bd23e1b9dcaba9b7bb50",
+          "nodeIds": [
+            "inbox-seventy_two_hour_handoff"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "converted:us_environmental_desert_water_001",
+      "family": "converted",
+      "category": "litigation_strategy",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "us_environmental_desert_water_001",
+        "version": "2.5.0",
+        "fingerprint": "sha256-fc693e81828646170ce80677fb16ac417b9eb51f5ee326b2d3484cadf996107d"
+      },
+      "nodes": 94,
+      "links": 181,
+      "records": 17,
+      "missingOriginals": 13,
+      "selectedReferenceBodies": 10,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence-public_facility_permit",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:0df061105c472ca4a5f4d8f6e080918a45db845056fd6f91788c0975a7ceaac3",
+          "nodeIds": [
+            "brief",
+            "evidence-public_facility_permit",
+            "evidence-community_well_register",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-community_well_register",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:42119aecf287ab61f8deda1ab5af37fd817ed8b07481b1a3259ac5bc738a39b3",
+          "nodeIds": [
+            "fact-community_reports_shared_exposure",
+            "evidence-public_facility_permit",
+            "evidence-community_well_register",
+            "evidence-resident_exposure_interviews",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-resident_exposure_interviews",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:5b34b8c8990a82679a08d334e1cb18896af358ad2281345b23e736e5662b5afb",
+          "nodeIds": [
+            "fact-community_reports_shared_exposure",
+            "fact-exposure_periods_match_affected_wells",
+            "evidence-community_well_register",
+            "evidence-resident_exposure_interviews",
+            "evidence-well_exposure_timeline",
+            "action-interview_affected_residents",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-well_exposure_timeline",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:1b7c5105bdeb437bb1bbf74a86f731d669703f25a009dff9345d4afe6c65dcd0",
+          "nodeIds": [
+            "fact-exposure_periods_match_affected_wells",
+            "evidence-resident_exposure_interviews",
+            "evidence-well_exposure_timeline",
+            "evidence-sampling_chain_record",
+            "action-map_wells_and_exposure_periods",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-sampling_chain_record",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:3e65a73dc4239c10d2e6e5ce54a28f39f0825fa1a4aca63ed60638d5c2f5301e",
+          "nodeIds": [
+            "fact-sampling_chain_is_defensible",
+            "evidence-well_exposure_timeline",
+            "evidence-sampling_chain_record",
+            "evidence-independent_lab_results",
+            "action-commission_defensible_sampling",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-independent_lab_results",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:acc3a28ea911bcd174ac797fc470f252af86947f8fd333661f5eb2193dd234fb",
+          "nodeIds": [
+            "fact-chromium_detected_in_residential_wells",
+            "evidence-sampling_chain_record",
+            "evidence-independent_lab_results",
+            "evidence-regulatory_monitoring_records",
+            "action-commission_defensible_sampling",
+            "action-rely_on_unverified_samples",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-regulatory_monitoring_records",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:2ca8593a6d3c057630af413275f212fac3b5f1ecf476116f66d170695184f029",
+          "nodeIds": [
+            "fact-facility_used_chromium_treatment",
+            "fact-operator_received_prior_contamination_notice",
+            "evidence-independent_lab_results",
+            "evidence-regulatory_monitoring_records",
+            "evidence-cooling_treatment_logs",
+            "action-obtain_regulatory_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-cooling_treatment_logs",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:c00af934549f0da0166239e58d8ad99dd0c64f5df4fb7312a0b74525f6234985",
+          "nodeIds": [
+            "fact-facility_used_chromium_treatment",
+            "evidence-regulatory_monitoring_records",
+            "evidence-cooling_treatment_logs",
+            "evidence-disposal_and_compressor_records",
+            "action-obtain_cooling_and_disposal_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-disposal_and_compressor_records",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:b35f68106e2688d6af493943de2723cd94683715c7e17ec8caeaae495b3897a8",
+          "nodeIds": [
+            "fact-groundwater_plume_links_facility_to_wells",
+            "evidence-cooling_treatment_logs",
+            "evidence-disposal_and_compressor_records",
+            "evidence-hydrogeology_source_assessment",
+            "action-obtain_cooling_and_disposal_records",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-hydrogeology_source_assessment",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:6721488c33cc217105812d93d2e6b024d8e12860ff4635b50315ce2df8208a0f",
+          "nodeIds": [
+            "fact-groundwater_plume_links_facility_to_wells",
+            "evidence-disposal_and_compressor_records",
+            "evidence-hydrogeology_source_assessment",
+            "evidence-alternative_source_assessment",
+            "action-review_hydrological_source_assessment",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-alternative_source_assessment",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:b99075433063238af782cf9b572ae6e07e820d5d33c929225ed2e5863126f90c",
+          "nodeIds": [
+            "fact-no_alternative_source_explains_plume",
+            "evidence-hydrogeology_source_assessment",
+            "evidence-alternative_source_assessment",
+            "evidence-internal_notice_correspondence",
+            "action-test_alternative_source_defence",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-internal_notice_correspondence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:70befd079b6c342cafd548f120041e1867a3b2ec0798bed6426ee696e68c3574",
+          "nodeIds": [
+            "fact-operator_received_prior_contamination_notice",
+            "evidence-alternative_source_assessment",
+            "evidence-internal_notice_correspondence",
+            "evidence-limitation_protection_filing",
+            "action-investigate_corporate_notice",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:evidence-limitation_protection_filing",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:b1fe7dc50eb8b2394262e4263ea21319cc12b4bd3367fc497b84a9b4b58eb6fa",
+          "nodeIds": [
+            "fact-limitation_period_is_protected",
+            "evidence-internal_notice_correspondence",
+            "evidence-limitation_protection_filing",
+            "action-protect_limitation_period",
+            "inbox-community_intake_request",
+            "review-question-evidence"
+          ]
+        },
+        {
+          "id": "working:inbox-community_intake_request",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:35dd1544965acb34ba2de74491479f8f9b2a1d0e3ab1dd7d8e302648bc0e16ac",
+          "nodeIds": [
+            "evidence-limitation_protection_filing",
+            "inbox-community_intake_request",
+            "inbox-sampling_chain_warning"
+          ]
+        },
+        {
+          "id": "working:inbox-sampling_chain_warning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:159a05808afcbe1d9537b31e753d6ec88481c82e7b4e25321deaf02a6d1bce95",
+          "nodeIds": [
+            "inbox-community_intake_request",
+            "inbox-sampling_chain_warning",
+            "inbox-plant_record_preservation_warning"
+          ]
+        },
+        {
+          "id": "working:inbox-plant_record_preservation_warning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:dc3a41590885abba2a92347469347289833d6cdcf4506239ab3e726be37890f9",
+          "nodeIds": [
+            "inbox-sampling_chain_warning",
+            "inbox-plant_record_preservation_warning",
+            "inbox-limitation_review_warning"
+          ]
+        },
+        {
+          "id": "working:inbox-limitation_review_warning",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:650ca719d6ceacb02de2b12aec5c5126bb56ade2cd3e7ab6c20b4a0989ab65b2",
+          "nodeIds": [
+            "inbox-plant_record_preservation_warning",
+            "inbox-limitation_review_warning"
+          ]
+        },
+        {
+          "id": "message:SIM-community_intake_request",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:3a2f84cff13f27e83a9274c1688c80ac086c2ab115012da25e752a2771088b29",
+          "nodeIds": [
+            "inbox-community_intake_request"
+          ]
+        },
+        {
+          "id": "message:SIM-sampling_chain_warning",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:2b5d5a69b083c3fd8cd3e5b44af8e3f19c58f7f22252fba0d430fa0bf2f75bba",
+          "nodeIds": [
+            "inbox-sampling_chain_warning"
+          ]
+        },
+        {
+          "id": "message:SIM-plant_record_preservation_warning",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:5b22008b1db996d0a65f62a5e6e8323bf08ed27ae38435e5380d68f0dcd1542b",
+          "nodeIds": [
+            "inbox-plant_record_preservation_warning"
+          ]
+        },
+        {
+          "id": "message:SIM-limitation_review_warning",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:4b48001875127f4d69776c61295caefd1ff33dede9e5611d0ff9ce66a0c88cc0",
+          "nodeIds": [
+            "inbox-limitation_review_warning"
+          ]
+        },
+        {
+          "id": "message:SIM-operator_source_denial",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:e6a5c5cabed35697100337ae2a2bd47df8c8a5e5d3b02bbd8d025e138b8d6913",
+          "nodeIds": [
+            "inbox-operator_source_denial"
+          ]
+        },
+        {
+          "id": "message:SIM-hydrogeology_assessment_ready",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:3ab66c3e6efc26ce031fadd0c3a75b7d271d6ea24e5da3d61c3f294d5f7214cf",
+          "nodeIds": [
+            "inbox-hydrogeology_assessment_ready"
+          ]
+        },
+        {
+          "id": "message:SIM-claim_window_instruction",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:37f6127ad4fb337c92b3acc3faff7e6fb1315232d4d83410b144dc198b084b7b",
+          "nodeIds": [
+            "inbox-claim_window_instruction"
+          ]
+        },
+        {
+          "id": "message:SIM-adverse_judgment_notice",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:f7612ac0cfbf96a4263fcca298ad358db43fff1da0b91791431f4ed502d506b3",
+          "nodeIds": [
+            "inbox-adverse_judgment_notice"
+          ]
+        },
+        {
+          "id": "message:SIM-appeal_hearing_instruction",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:3af152e53038779175bc46c18c000c1cb83ffd1c02caf9619f052f47cf6105cd",
+          "nodeIds": [
+            "inbox-appeal_hearing_instruction"
+          ]
+        },
+        {
+          "id": "message:SIM-matter_closure_report",
+          "kind": "reference",
+          "selected": true,
+          "sha256": "sha256:b2610c4aa6ef712d88ef82cd496f6251f229339b8ad1548ea7f5a3716ffef95b",
+          "nodeIds": [
+            "inbox-matter_closure_report"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:general_advisory",
+      "family": "category",
+      "category": "general_advisory",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_general_advisory",
+        "version": "1.1.0",
+        "fingerprint": "sha256-ea8fbb99e1964ecb640a60cb476f6175193cd9f05bdac4e582b541e98411aa04"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:c13abc4458db318ae12f2fc3ebb26442a90c2e617764d0d68a5186fce4ee43ea",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:litigation_strategy",
+      "family": "category",
+      "category": "litigation_strategy",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_litigation_strategy",
+        "version": "1.1.0",
+        "fingerprint": "sha256-a84d632d31a27ef95ed64751851303cda54f3d1323fee1d18bf1b3472af4a98b"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:45c6c807445dd99e4b180e6be07d846fad96223696079ed48c1f0a71e5728a33",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:contract_review",
+      "family": "category",
+      "category": "contract_review",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_contract_review",
+        "version": "1.1.0",
+        "fingerprint": "sha256-4d07c244523bc949a4435dd96d955427a3ce8240e83eb35f5fa21552c9374069"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:19e7ef47b08ae361387a31a9565801ccb594884df623e4a0cea98257aed17821",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:tax_planning",
+      "family": "category",
+      "category": "tax_planning",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_tax_planning",
+        "version": "1.1.0",
+        "fingerprint": "sha256-de9cbd3f3f507244752a3af99cf4bb04f8c1471bc6c0979bf78f8ef431ac7def"
+      },
+      "nodes": 12,
+      "links": 11,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:6142ffa6bd54a6b097524578b5a1c0c52ba8f94c63261fc77020c910d7d1f9de",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:compliance",
+      "family": "category",
+      "category": "compliance",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_compliance",
+        "version": "1.1.0",
+        "fingerprint": "sha256-6893c9af057c0ec5b6e2bf5f5ab8d871436560236e97339b80da6f56b85d5310"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:e680878a1781aaee206fed4f513f6fdc3860f1b47e373c7fadfff6b8fd3f4975",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:tax_compliance",
+      "family": "category",
+      "category": "tax_compliance",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_tax_compliance",
+        "version": "1.1.0",
+        "fingerprint": "sha256-e2a889c8efd3313de2512df830da31fe6448d3e13ae4bbc1a23f19189fd434d5"
+      },
+      "nodes": 12,
+      "links": 11,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:6edcd8dd55b50260c5de10bd6d5174110b902e5331c813b922d5484b170632a7",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:erp_incident",
+      "family": "category",
+      "category": "erp_incident",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_erp_incident",
+        "version": "1.1.0",
+        "fingerprint": "sha256-a487659380011890ed7266e5fa1a802b9eb77410c7b84bf605cd3f071cafaefd"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:4cb3fc0798945d26c0208fac7f83eb20bb57768478ea5f00a2041ae27b39dcfa",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:investigation",
+      "family": "category",
+      "category": "investigation",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_investigation",
+        "version": "1.1.0",
+        "fingerprint": "sha256-0754814e2d13bdd3a91ddcc10941d3810a3e6e5733e57c9afc0a1e104e56ce22"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:ca03487261a67670fbf8c6ad79725d58596b943066522035f72f3be779b40df1",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "category:training_simulation",
+      "family": "category",
+      "category": "training_simulation",
+      "source": {
+        "format": "casevant-example-source-v1",
+        "caseId": "demo_training_simulation",
+        "version": "1.1.0",
+        "fingerprint": "sha256-c50f1c44f1125270b5f93bfd1bc4895ddf74777725a8bc746dfb99fe90aa9a4b"
+      },
+      "nodes": 9,
+      "links": 8,
+      "records": 1,
+      "missingOriginals": 0,
+      "selectedReferenceBodies": 0,
+      "retainedReferenceBodies": 0,
+      "bodies": [
+        {
+          "id": "working:evidence",
+          "kind": "working",
+          "selected": true,
+          "sha256": "sha256:6b4d7007b171f985810bd75cd9e7f5978caf7b9a253265d53a466858ecf725d7",
+          "nodeIds": [
+            "fact-2",
+            "evidence",
+            "deadline"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "packages": 18,
+    "convertedMissingOriginals": 43
+  }
+}

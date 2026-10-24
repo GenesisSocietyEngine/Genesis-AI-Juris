@@ -15,3 +15,7 @@ Advance existing fast-uri and Miniflare/undici overrides and add a pinned zod4.6
 ## Review and acceptance boundary
 
 Source installation/diff review, strict types and both fresh audits establish the local checkpoint; exact CI/source/build/archive/Sites receipts establish any later rollout. No new Site or environment mutation. Keep every prior saved case, synthetic case and original compatibility artifact. This security amendment does not close actual browser download-byte acceptance, native cold-first/padding investigation or human/operator commercial-readiness gates.
+
+## Resolved24October — v162
+
+PR185 merges at3772c0c8da9a8541774733f56ed063c7870683fa. Candidate40066218290 and exact-main40066950229 succeed:1790pass/0fail/3inherited skips, packaged checks, unchanged PDF locks and both dependency audits0. [The native Sites receipt](receipts/weekly-v162-2026-10-24.json) records actual public162 publication with existing environment42; both origins187/187assets pass. The failed4107902 source is not published. Download-byte, human/operator and native cause limits remain separate; successful publication does not certify general commercial readiness.

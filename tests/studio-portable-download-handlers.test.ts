@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
+import { buildCanopyPackage } from "../app/canopy-fixture";
+import { deviceDraftEnvelope } from "../app/studio-device-storage";
+import { readStudioArchiveBackup, type ArchivedStudioDraft } from "../app/studio-draft-archive";
 
 // Actual handlers and transport; modeled DOM delivery is not browser file proof.
 function handler(file: string, name: string) {
@@ -58,15 +61,19 @@ test("Markdown handoff refuses stale authority and reports a thrown delivery err
   }
 });
 
-test("device recovery retains its complete envelope, original text and history without mutating the entry", async () => {
-  const entry = { id: "synthetic-archive", scope: "synthetic-owner", rawText: '\ufeff {"future":900719925474099312345}\r\n',
-    draft: { title: "Учебный", futureCarrier: { preserved: true }, editHistory: [{ action: "node_added" }] }, prompt: "synthetic prompt" };
+test("device recovery retains a valid complete envelope and original device bytes without mutating the entry", async () => {
+  const scope = "f".repeat(64), draft = buildCanopyPackage("base").draft;
+  const entry: ArchivedStudioDraft = { id: "synthetic-archive", title: draft.title, createdAt: "2026-10-24T00:00:00.000Z", draft,
+    original: JSON.stringify(deviceDraftEnvelope(scope, draft), null, 2).replace(/\n/g, "\r\n"), prompt: "synthetic prompt" };
   const before = JSON.stringify(entry), errors: boolean[] = [];
   const f = fixture("StudioDraftArchive.tsx", "exportEntry", { setExportError: (value: boolean) => errors.push(value) });
   await f.run(entry); assert.equal(JSON.stringify(entry), before); assert.deepEqual(errors, [false]);
   assert.deepEqual(f.clicks, ["studio-recovery-synthetic-archive.json"]); assert.equal(f.blobs.size, 1);
   const blob = [...f.blobs.values()][0]; assert.equal(blob.type, "application/json");
   assert.equal(await blob.text(), JSON.stringify({ format: "genesis-juris-archive-backup", schemaVersion: 1, entry }));
+  const recovered = readStudioArchiveBackup(await blob.text(), scope);
+  assert.equal(recovered.original, entry.original); assert.equal(recovered.prompt, entry.prompt);
+  assert.equal(recovered.draft.caseId, draft.caseId); assert.equal(recovered.draft.version, draft.version);
   assert.deepEqual(f.counts(), { attached: 1, removed: 1 });
   f.releases.forEach(release => release()); assert.equal(f.blobs.size, 0);
 });

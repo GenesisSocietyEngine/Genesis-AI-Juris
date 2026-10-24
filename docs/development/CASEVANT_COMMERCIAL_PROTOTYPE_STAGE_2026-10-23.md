@@ -2,6 +2,8 @@
 
 This is the current execution order. Use the canonical product invariants, the [weekly audit](../testing/weekly-quality-ux-audit-2026-10-23.md), and the 22 October continuation for retained receipts and exact compatibility contracts. Older delivery notes are history, not a queue to repeat. No new recurring automation is created by this weekly review.
 
+**Delivered24October: public v162**, runtime3772c0c8da9a8541774733f56ed063c7870683fa, [native source/archive/deployment receipt](../testing/receipts/weekly-v162-2026-10-24.json). PR184's two remaining portable-file handoffs and PR185's three patched tooling dependencies are integrated and deployed through the existing Site, unchanged public audience/environment42/storage. Candidate and exact-main web/PDF1790pass/0fail/3inherited skips; both audits0; both origins187/187assets. Fresh49-row catalogue metadata equality and ordinary synthetic45 Saved/Markdown handoff pass their scopes, with no production case writes. Actual downloaded file bytes and broader demonstration acceptance remain open. The release hold below is retained history, resolved by this receipt. Next active work is slice2, followed by the bounded UX feedback work in slice3; do not reimplement the delivered transport.
+
 **24 October release hold:** PR184 is integrated at4107902; candidate web/PDF passes1790/0/3, but exact-main40065587742 fails newly reported dependency findings after its tests/build/PDF pass. Apply the [separate targeted security amendment](../testing/weekly-dependency-security-review-2026-10-24.md), then require fresh candidate and exact-main gates. The earlier zero-audit observation is dated; no threshold suppression or forced Cloudflare downgrade. Public161 remains the baseline until a later explicit native rollout receipt.
 
 ## Product decision and readiness boundary
@@ -20,7 +22,7 @@ The web demonstration is a product acceptance gate, not permission to bypass rep
 
 ## Ordered implementation slices
 
-### 1. Complete portable-file handoff — application / QA
+### 1. Portable-file handoff — delivered; preserve the contract
 
 Outcome: every regular Studio portability/recovery action uses the established attached-anchor, deferred-revocation transport; a thrown handoff leaves the case/archive intact and tells the user how to retry. The weekly audit found immediate revocation in canonical Markdown and earlier-device-draft backup after v161 corrected Studio JSON and owner raw recovery.
 
@@ -28,7 +30,7 @@ Amend those two actual handlers, retain exact Markdown, filename normalization, 
 
 Acceptance: before/after actual-handler regression; exact bytes and complete envelope; delayed cleanup; thrown DOM delivery cleanup/error/no completion; denied/stale/unmounted Markdown authority; existing report and recovery controls; strict types and targeted lint; required web/PDF/packaged gates and audits. Perform actual browser JSON/MD/PDF/ZIP/per-file downloads when supported and inspect returned paths/bytes. A timeout remains unconfirmed; do not bypass browser restrictions or scan download directories. No serializer, template, persistence, approval, schema, audience or binding change.
 
-Review checkpoint: implementation and local handler controls are recorded in the weekly audit. Candidate CI, exact-main build and runtime publication must receive their own source/version/archive/deployment receipt. Do not label this plan's merged Markdown as a release receipt.
+Review checkpoint: [the v162 receipt](../testing/receipts/weekly-v162-2026-10-24.json) records the passed candidate/exact-main and actual runtime publication. Local handler controls and their limits remain in the weekly audit. Downloaded bytes are not yet observed; a client callback or Markdown status string must not close that acceptance row. Reuse this runtime receipt for QA/documentation-only follow-up with identical application/hosting inputs.
 
 ### 2. Complete a repeatable demonstration acceptance packet — product / QA
 
@@ -42,6 +44,8 @@ Resolve downloads before more authoring controls. If supported browser tooling c
 
 First bounded issue: in Sources, a previous download notice masks the matching-material count after search/filter changes. Keep a persistent result count distinct from operation status; preserve loading/error/access semantics and screen-reader announcements. Test empty, one, many, retained-version and missing-original filters; do not change archive contents or imply filtered export when “Download all” includes retained versions. Review the potentially ambiguous “Unassigned evidence” definition before changing it: self membership is not an attachment to a second node.
 
+Next independent presentation amendment: canonical Markdown currently defaults to “Final reviewed”, reports “Markdown downloaded.” on browser handoff, and prints retained Training-effect terminology in its human-readable narrative. Distinguish document presentation from independently recorded approval and request/handoff from an actual saved file. Keep complete canonical payloads, source identities, old files and fingerprints recoverable; never strip historical carriers to tidy wording. Any narrative/renderer change needs explicit version/fixture review. During a supervised demonstration, explain these existing labels; do not present them as professional approval or completed download evidence.
+
 Then verify Review's actionable gap count, exact destination/focus, return to search/page depth and no lost edits across five main sections. Use a consistent primary action plus optional advanced details; keep professional workflow and deliberate Training distinct. Keep brighter accents limited to action/status hierarchy after contrast and visual inspection; a broad theme refresh is not a readiness gate.
 
 Narrow acceptance uses measured CSS width/height, not requested tool dimensions. The23October profile scales390×480 requests to585×720;260×320 gives an actual390×480 with367px content/scroll widths. Reset overrides. DOM/focus evidence is separate from screenshots; failed captures cannot be claimed visual passes.
@@ -51,6 +55,8 @@ Narrow acceptance uses measured CSS width/height, not requested tool dimensions.
 Measure finding an authorization, evidence gap, owner and next action in ERP and GreenFire before renderer changes. Record participant, task, start/end, correctness and assistance; at least five consented evaluators before assessing the proposed30-second/80% goals. These are hypotheses, not measured results or commercial promises. Collect baseline page counts for the selected report mode; only then propose an explicit concise-output target. Preserve full-record availability and omitted-material disclosures.
 
 Keep43 missing-original disclosures. Inventory original bodies before acquisition or synthetic authorship. New synthetic passages must be explicitly labelled, versioned, section-addressable and hashed with unaccepted premises. Preserve frozen2.2/2.3/2.4/2.5 factories, unknown-version recovery and original saved bytes; no current-source substitution. Do not claim domain approval from a connected reference or template match.
+
+The24October local source inventory reconfirms18public packages: Canopy's four variants each provide9selected/6retained fictional reference bodies; converted ERP/Logistics/GreenFire/GoldenShell/Desert retain5/5/7/13/13 missing original documents, respectively. The nine category starters provide working records rather than standalone source packets. Retained fictional message counts are not original-document completeness. Prefer Canopy for the first bounded demonstration; qualifying the converted packages requires their missing-evidence disclosures and domain review, not invented bodies.
 
 ### 5. Diagnose native reliability independently — application / platform QA
 
