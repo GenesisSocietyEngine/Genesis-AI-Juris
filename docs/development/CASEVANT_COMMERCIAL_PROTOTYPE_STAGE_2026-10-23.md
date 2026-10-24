@@ -2,6 +2,8 @@
 
 This is the current execution order. Use the canonical product invariants, the [weekly audit](../testing/weekly-quality-ux-audit-2026-10-23.md), and the 22 October continuation for retained receipts and exact compatibility contracts. Older delivery notes are history, not a queue to repeat. No new recurring automation is created by this weekly review.
 
+**24 October release hold:** PR184 is integrated at4107902; candidate web/PDF passes1790/0/3, but exact-main40065587742 fails newly reported dependency findings after its tests/build/PDF pass. Apply the [separate targeted security amendment](../testing/weekly-dependency-security-review-2026-10-24.md), then require fresh candidate and exact-main gates. The earlier zero-audit observation is dated; no threshold suppression or forced Cloudflare downgrade. Public161 remains the baseline until a later explicit native rollout receipt.
+
 ## Product decision and readiness boundary
 
 Lead with one demonstrable promise: a professional can inspect a decision's sources, distinguish missing support, compare alternatives, return to the saved case and obtain a qualified output. Nine categories remain available; breadth is not nine independently validated domain solutions. Prioritize Canopy's bounded worked example and GreenFire's evidence/chronology journey before adding features or redesigning the renderer.
