@@ -592,6 +592,7 @@ test("actual PDF parent and helper reject a stale active tab, recheck after rend
 
 test("actual Markdown download and clipboard callbacks share protected-output authority", async () => {
   const oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document"), oldNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
   const oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
   let downloads = 0, copies = 0, signedIn = true;
   const authority = new StudioSessionAuthority(async path => !signedIn ? Response.json({}, { status: 401 }) : Response.json(path === "/api/me"
@@ -600,7 +601,8 @@ test("actual Markdown download and clipboard callbacks share protected-output au
   await authority.refresh(false, 1); const scope = authority.getSnapshot().scope;
   fixtureGlobal.__reportHooks = hookRuntime();
   URL.createObjectURL = () => "blob:markdown"; URL.revokeObjectURL = () => {};
-  Object.defineProperty(globalThis, "document", { configurable: true, value: { createElement() { return { href: "", click() { downloads++; } }; } } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { body: { appendChild() {} }, createElement() { return { href: "", remove() {}, click() { downloads++; } }; } } });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { setTimeout() {} } });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: { clipboard: { async writeText() { copies++; } } } });
   const draft = buildCanopyPackage("base").draft;
   const render = () => {
@@ -625,6 +627,7 @@ test("actual Markdown download and clipboard callbacks share protected-output au
     URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
     if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
     if (oldNavigator) Object.defineProperty(globalThis, "navigator", oldNavigator); else Reflect.deleteProperty(globalThis, "navigator");
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
   }
 });
 

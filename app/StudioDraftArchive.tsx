@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { deleteArchivedStudioDraft, readStudioArchive, readStudioArchiveBackup, type ArchivedStudioDraft, STUDIO_ARCHIVE_LIMIT, STUDIO_ARCHIVE_BYTES } from "./studio-draft-archive";
+import { startReportDownload } from "./report-download";
 
 export default function StudioDraftArchive({ scope, locale, context, restore }: {
   scope: string; locale: "en" | "ru"; context: string; restore: (entry: ArchivedStudioDraft) => void;
@@ -11,15 +12,18 @@ export default function StudioDraftArchive({ scope, locale, context, restore }: 
   const importAttempt = useRef(0);
   const liveContext = useRef(context); liveContext.current = context;
   const [importError, setImportError] = useState(false);
+  const [exportError, setExportError] = useState(false);
   useEffect(() => () => { importAttempt.current++; }, [scope, context]);
   function read(): { entries: ArchivedStudioDraft[]; error: boolean } {
     try { return { entries: readStudioArchive(window.localStorage, scope), error: false }; }
     catch { return { entries: [], error: true }; }
   }
   function exportEntry(entry: ArchivedStudioDraft) {
-    const raw = JSON.stringify({ format: "genesis-juris-archive-backup", schemaVersion: 1, entry });
-    const url = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
-    const link = document.createElement("a"); link.href = url; link.download = `studio-recovery-${entry.id}.json`; link.click(); URL.revokeObjectURL(url);
+    setExportError(false);
+    try {
+      const raw = JSON.stringify({ format: "genesis-juris-archive-backup", schemaVersion: 1, entry });
+      startReportDownload(new Blob([raw], { type: "application/json" }), `studio-recovery-${entry.id}.json`);
+    } catch { setExportError(true); }
   }
   return <section className="learning-note" aria-labelledby="studio-archive-title">
     <h2 id="studio-archive-title">{en ? "Earlier device drafts" : "Предыдущие черновики устройства"}</h2>
@@ -36,6 +40,7 @@ export default function StudioDraftArchive({ scope, locale, context, restore }: 
           }}>{en ? "Delete earlier draft" : "Удалить предыдущий черновик"}<span className="visually-hidden"> — {entry.title}</span></button></div>
       </li>)}</ul>
     </>}
+    {exportError && <p role="alert">{en ? "The recovery file could not be handed to your browser. Your earlier draft is unchanged; retry the export." : "Не удалось передать файл восстановления браузеру. Предыдущий черновик не изменён; повторите экспорт."}</p>}
     <button type="button" className="secondary-cta" onClick={() => setResult(read())}>{en ? "Refresh earlier drafts" : "Обновить список"}</button>
     <label className="studio-field"><span>{en ? "Import recovery data as an unsaved copy" : "Импорт данных восстановления как несохранённой копии"}</span><input type="file" accept="application/json,.json" onChange={async event => {
       const file = event.currentTarget.files?.[0]; event.currentTarget.value = "";

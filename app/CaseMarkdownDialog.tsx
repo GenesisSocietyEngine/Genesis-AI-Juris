@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildCaseMarkdown, type CaseMarkdownLanguage, type CaseMarkdownStatus } from "./case-markdown";
 import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "./case-markdown-filename";
+import { startReportDownload } from "./report-download";
 import type { StudioDraft } from "./types";
 
 export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAuthority,close,completed}:{locale:"en"|"ru";draft:StudioDraft;canExport?:boolean;verifyAuthority?:()=>Promise<()=>boolean>;close:()=>void;completed:()=>void}){
@@ -43,14 +44,10 @@ export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAu
     let current:()=>boolean;
     try{current=await verifyExport();if(!current())return;}
     catch{setError(locale==="en"?"Export needs verified access. Sign in and refresh access.":"Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ.");return;}
-    const url=URL.createObjectURL(new Blob([markdown],{type:"text/markdown;charset=utf-8"}));
-    const link=document.createElement("a");
-    link.href=url;
     const safeFilename=normalizeCaseMarkdownFilename(filename,caseMarkdownFilename(draft,status,openedAt));
     setFilename(safeFilename);
-    link.download=safeFilename;
-    link.click();
-    URL.revokeObjectURL(url);
+    try{startReportDownload(new Blob([markdown],{type:"text/markdown;charset=utf-8"}),safeFilename);}
+    catch{setError(locale==="en"?"The file could not be handed to your browser. Your case is still open; retry the download.":"Не удалось передать файл браузеру. Кейс остаётся открыт; повторите скачивание.");return;}
     completed();
   }
 
