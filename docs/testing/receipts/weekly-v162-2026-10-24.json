@@ -1,0 +1,114 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-10-24",
+  "stage": "weekly-quality-commercial-prototype",
+  "runtimeCommit": "3772c0c8da9a8541774733f56ed063c7870683fa",
+  "pullRequests": [
+    184,
+    185
+  ],
+  "applicationInputsSha256": "bcce1d69c096666178912dac8ce68d7c3e49e0e267ca479f58b873af5e2ed495",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_00b130793318819183fce63dcdc606db",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 162,
+    "source": {
+      "commit_sha": "3772c0c8da9a8541774733f56ed063c7870683fa"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000001ff88246825611d9305e1ad5",
+      "content_hash": "sha256:0b37c84b06f107d5498d6159d056a3d6af370cfc2c5c2bd04957e265114ee26a",
+      "size_bytes": 49428480,
+      "file_count": 578
+    }
+  },
+  "deployment": {
+    "id": "appgdep_6adc477007f48191b8e16b6baaae7afb",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_00b130793318819183fce63dcdc606db",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-24T05:52:08.104550+00:00"
+  },
+  "rawArchive": {
+    "sha256": "85c3633237c69a06b8a442bd00a45e67569074a504e2c81867fa93f18af22310",
+    "bytes": 30377733,
+    "representation": "local gzip; distinct from provider-normalized tar"
+  },
+  "checks": {
+    "focusedHandler": 15,
+    "preservation": 192,
+    "overlappingCohortsNotAdditive": true,
+    "candidate": {
+      "source": "b29d5ced5672082e3b3e6d6a4959eba9563a8fe5",
+      "run": 40066218290,
+      "status": "success"
+    },
+    "exactMain": {
+      "run": 40066950229,
+      "web": 120792102902,
+      "pdf": 120792103275,
+      "total": 1793,
+      "passed": 1790,
+      "failed": 0,
+      "skipped": 3
+    },
+    "dependencyAudit": {
+      "full": 0,
+      "production": 0
+    },
+    "assets": {
+      "custom": {
+        "verified": 187,
+        "total": 187
+      },
+      "sites": {
+        "verified": 187,
+        "total": 187
+      },
+      "current": 135,
+      "previousManifest": 135,
+      "retainedDistinct": 52
+    },
+    "production": {
+      "baselineRows": 49,
+      "afterRows": 49,
+      "metadataExact": true,
+      "metadataSha256": "3cf8c05e55204f3ba0aa5e7d5496fbca413c778b4254fa6cf98e4f2435ec0c1b",
+      "caseWrites": 0,
+      "supportedSyntheticCase": 45,
+      "state": "Saved to workspace;14nodes/13links;live Markdown normal activation and client completion notice;no visible or console error",
+      "liveScriptsInCurrentManifest": 4,
+      "uiMarkdownCharacters": 20449,
+      "uiMarkdownSha256": "f3a7cf73af54884e7d805e3b7e9843cc0a3f07aed99fa721593ad30d021937d4",
+      "actualDownloadedBytes": "unconfirmed; UI text hash is not a downloaded-file hash",
+      "screenshot": ".artifacts/weekly-v162-production-md-20261024.jpg"
+    }
+  },
+  "sourceInventory": {
+    "packages": 18,
+    "convertedMissingOriginals": 43,
+    "scope": "local source projection; not all-package browser or domain acceptance"
+  },
+  "readiness": {
+    "syntheticWebDemonstration": "not yet accepted: actual output/reimport packet and human validation remain open",
+    "customerDataPilot": "operator/qualified review and consent required",
+    "native": "PR180 remains unmerged; cold-first/padding cause unconfirmed"
+  },
+  "packaging": {
+    "exactVerifiedCiDist": true,
+    "preliminaryArchiveRetained": true,
+    "initialReceiptParseFailure": "helper printed archive path before JSON; repeat into new archive and retain complete final receipt",
+    "extraSiteCreated": false
+  },
+  "scope": "Two remaining Studio portable-file handoffs and three patched transitive tooling packages; no case/schema/template/authority/approval/audience/binding mutation."
+}
