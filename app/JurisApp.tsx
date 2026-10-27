@@ -3777,6 +3777,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
         setCaseReportStatus(locale === "en" ? "PDF download started." : "Скачивание PDF началось.");
       }}
     /></Suspense></ReportErrorBoundary>}
-    {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog key={reportAuthority.epoch} locale={locale} draft={draft} canExport={canDuplicate && reportAuthority.allowed} verifyAuthority={reportAuthority.verify} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}
+    {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog key={reportAuthority.epoch} locale={locale} draft={draft} canExport={canDuplicate && reportAuthority.allowed} verifyAuthority={reportAuthority.verify} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown download requested. Check your browser downloads." : "Запрос на скачивание Markdown отправлен. Проверьте загрузки браузера.")}/></Suspense>}
   </main>;
 }

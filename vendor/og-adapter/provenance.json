@@ -1,0 +1,32 @@
+{
+  "upstream": "@vercel/og@1.0.3",
+  "harfbuzz": "harfbuzzjs@0.10.0",
+  "backport": 1,
+  "hashes": {
+    "dist/hb-callback-iiiii.wasm": "aa17b14da125e32aacc340577f4f760834711e730f10f5c39e48bfc28b72fca2",
+    "dist/hb-callback-ippiip.wasm": "226ad702b6f0838fcad23f930e823cf81de9cfb4deaaeabc4ee41668d4101903",
+    "dist/hb-callback-ippiipp.wasm": "09a91b011745b995ee5d501df42259e2e137cbbc37bc4c144acecec0a9b883d6",
+    "dist/hb-callback-ippip.wasm": "aa17b14da125e32aacc340577f4f760834711e730f10f5c39e48bfc28b72fca2",
+    "dist/hb-callback-ippipip.wasm": "09a91b011745b995ee5d501df42259e2e137cbbc37bc4c144acecec0a9b883d6",
+    "dist/hb-callback-ippipp.wasm": "226ad702b6f0838fcad23f930e823cf81de9cfb4deaaeabc4ee41668d4101903",
+    "dist/hb-callback-ippippp.wasm": "09a91b011745b995ee5d501df42259e2e137cbbc37bc4c144acecec0a9b883d6",
+    "dist/hb-callback-ipppipp.wasm": "09a91b011745b995ee5d501df42259e2e137cbbc37bc4c144acecec0a9b883d6",
+    "dist/hb-callback-ipppp.wasm": "aa17b14da125e32aacc340577f4f760834711e730f10f5c39e48bfc28b72fca2",
+    "dist/hb-callback-vi.wasm": "dd91fd244d727ca8fe4ae6cd1e3ba6385d4655ec0997bee9f61d98712daca939",
+    "dist/hb-callback-viiiffffffi.wasm": "f31e99256848d04407cbe370abcca1a0fa674788d827575c6e6b39ba50acdc5c",
+    "dist/hb-callback-viiiffffi.wasm": "cfaf1ce5afa655c08211e40063aaef9057419477395ce9eec21deb6406221a56",
+    "dist/hb-callback-viiiffi.wasm": "f8db20e602de57a7e2db9bbec79818dc84641fcade04320ff20e4efe35313f3c",
+    "dist/hb-callback-viiii.wasm": "ba91fb0d020dad1faf352b10ebfde147a0311d56cbd4da234246a82aae5fa597",
+    "dist/index.node.js": "03d5701747babd30158b3842ffda14cd27e2abd92a73db31efea2eaa4f5b681f",
+    "dist/index.edge.js": "1384853c94b9b568c6834319a48e7df3060b548ea474b551d2e874ff731a39b8",
+    "dist/Geist-Regular.ttf": "bde046ddd9f20be35b0bd56cc79eb752b967fb6661a3fe76cb067bb09f871d76",
+    "dist/resvg.wasm": "9c1f8f54b842fcda3b72b06eba94a20b907958c443d73178da32b21ccb57b9bb",
+    "dist/yoga.wasm": "7ba9c9483c8c38a468e9aef4a95ed72fad8a43594be8e5123eb3bdb6479edf5b",
+    "dist/index.node.d.ts": "4944565f853a8aa9bad2fd69068bb413cd31b09f5c0c1e7881a6d6e31d8e132b",
+    "dist/index.edge.d.ts": "f4a9e57aa696c97c66f7549e05499f53afc014c0128329e1c689bc2bacfdc7e5",
+    "dist/types.d.ts": "00c5533cc08969a7cd06012669fc63db9f9bcd6abafd868904997eb930cdc1b2",
+    "LICENSE": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+    "HarfBuzz-LICENSE": "c85596583d1b7e4cfb4f21165ce0988aabd72e80a8c3a2ab6aaeedc1965e8288",
+    "dist/hb.wasm": "d2ab975172d6103e7624e8f7f03fea2316eca6fe562e1b80fc7f7058b283a6d0"
+  }
+}

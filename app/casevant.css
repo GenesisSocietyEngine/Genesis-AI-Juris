@@ -99,6 +99,16 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .entry-create-actions > .primary-cta { min-width: 11rem; }
 .entry-import { min-height: 44px; color: var(--workspace-accent); }
 .studio-entry-start .entry-saving-note { font-size: .875rem; line-height: 1.6; margin: 1.25rem 0 0; color: var(--workspace-muted); }
+@media (min-width: 801px) {
+  .studio-entry-start { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto auto auto; row-gap: 1rem; }
+  .studio-entry-intro, .studio-entry-demo { display: grid; grid-row: 1 / span 5; grid-template-columns: minmax(0, 1fr); grid-template-rows: subgrid; align-items: start; justify-content: stretch; }
+  .studio-entry-intro { grid-column: 1; }
+  .studio-entry-demo { grid-column: 2; }
+  .studio-entry-demo > .workspace-eyebrow { min-height: 40px; display: flex; align-items: center; }
+  .studio-entry-start h2, .studio-entry-start p, .studio-entry-start .entry-saving-note,
+  .studio-entry-demo > .secondary-cta + small { margin: 0; }
+  .studio-entry-demo > .secondary-cta { justify-self: start; }
+}
 .first-case-guide { margin-block: 1rem; padding: 1.25rem; border: 1px solid var(--workspace-border); border-radius: 12px; background: var(--workspace-subtle); }
 .first-case-saved { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem 1.5rem; padding: .75rem 1rem; border-inline-start: 4px solid var(--workspace-accent); }
 .first-case-saved p { flex: 1 1 15rem; min-width: 0; margin: 0; font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
