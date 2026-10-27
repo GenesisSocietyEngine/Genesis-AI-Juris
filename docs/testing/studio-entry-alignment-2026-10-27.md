@@ -1,0 +1,11 @@
+# Studio entry panel alignment — 27 October 2026
+
+User outcome: align the paired Create/Examples panels shown in the supplied screenshot. Their different icon/eyebrow heights, heading margins and independent description flows previously placed headings and primary actions at different vertical positions.
+
+The bounded CSS amendment uses equal-width columns and five shared content-sized rows above800px: icon/eyebrow, heading, description, actions and supporting note. Both panels retain equal padding, independent backgrounds and accents. The example action aligns with Create; Import remains below Create in the same action group. Explicit minmax columns and stretch override the old flex alignment. Shared rows grow with wrapped English/Russian text rather than using fixed heading/description heights. Existing narrow stacked ordering and controls are untouched. No handlers, wording, saved data, recovery, evidence, report output or authority contracts change.
+
+Base: draft PR187 checkpoint e43718cf2633348560b4c17eb2d32727fe120b84; canonical main8eaf3dc remains separate, public162 remains the recorded production baseline. This is an independently reviewable UI commit on the existing draft, not a rollout receipt.
+
+After-step review: existing `tests/studio-guided-wizard.test.ts`6pass/0fail, including bilingual entry actions and existing narrow-layout declarations. esbuild parses the final stylesheet with0warnings; git diff whitespace check passes. These are static/component checks, not rendered pixel or touch acceptance. Supported browser URL-policy verification remains unavailable from the preceding retry; no new browser observation is claimed here. Before release, inspect both panels at desktop, the800/801px breakpoint, actual390px narrow width and long Russian copy, including keyboard focus and unchanged Create/Import/Browse destinations.
+
+Publication is held by the independently demonstrated SVG-adapter failure described in [the current review](material-results-feedback-review-2026-10-27.md). Do not bypass it to publish this CSS, claim v163, or overwrite cases. Resume the [bounded repair and exact-main release gates](../development/CASEVANT_COMMERCIAL_PROTOTYPE_STAGE_2026-10-23.md#immediate-bounded-repair-instructions), then include this alignment slice in fresh visual acceptance and the existing Sites rollout.
