@@ -2,6 +2,8 @@
 
 This is the current execution order. Use the canonical product invariants, the [weekly audit](../testing/weekly-quality-ux-audit-2026-10-23.md), and the 22 October continuation for retained receipts and exact compatibility contracts. Older delivery notes are history, not a queue to repeat. No new recurring automation is created by this weekly review.
 
+**27 October backport candidate:** [the adapter repair review](../testing/adapter-backport-review-2026-10-27.md) supersedes the failed unmodified1.0.3 experiment with reproducible1.0.3+casevant.1. Plain Node and isolated Worker rendering pass with shaping retained and runtime WASM compilation prohibited; all28focused checks pass and both audits report0. Complete candidate and exact-main release gates and the existing Sites rollout before claiming delivery. Do not reapply the rejected experiment or infer live visual/download acceptance from these tests. Keep the backport generator/source archives/hash receipts and active tests until a verified upstream replacement passes them.
+
 **27 October retry — release remains blocked:** the scoped @vercel/og1.0.3 experiment patches embedded Satori and produces0full/production audit findings, but actual plain-Node Vinext rendering fails in bundled HarfBuzz (`Dynamic require of "fs" is not supported`). Four adapter checks yield3pass/1fail;15materials checks pass again. Preserve the failing test, draft PR187 and public162. See the [exact review and evidence boundaries](../testing/material-results-feedback-review-2026-10-27.md#retry-adapter-compatibility-rejects-the-clean-audit-candidate).
 
 ### Immediate bounded repair instructions

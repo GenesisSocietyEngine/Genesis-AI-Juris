@@ -1,0 +1,23 @@
+{
+  "name": "@vercel/og",
+  "version": "1.0.3+casevant.1",
+  "private": true,
+  "type": "module",
+  "license": "MPL-2.0",
+  "main": "./dist/index.node.js",
+  "types": "./dist/index.node.d.ts",
+  "exports": {
+    ".": {
+      "edge": "./dist/index.edge.js",
+      "edge-light": "./dist/index.edge.js",
+      "browser": "./dist/index.edge.js",
+      "worker": "./dist/index.edge.js",
+      "workerd": "./dist/index.edge.js",
+      "default": "./dist/index.node.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": { "@resvg/resvg-wasm": "2.4.1", "satori": "0.33.5", "harfbuzzjs": "0.10.0", "fflate": "0.7.5" },
+  "optionalDependencies": { "sharp": "^0.35.3" },
+  "engines": { "node": ">=22" }
+}

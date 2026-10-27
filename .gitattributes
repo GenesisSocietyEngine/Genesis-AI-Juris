@@ -6,5 +6,6 @@
 *.ttf binary
 *.zip binary
 *.gz binary
+*.tgz binary
 *.wasm binary
 apps/juris-mobile/assets/fonts/licenses/*.txt binary

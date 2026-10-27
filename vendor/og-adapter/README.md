@@ -1,0 +1,9 @@
+# CaseVant OG adapter backport 1
+
+Modified distribution of @vercel/og1.0.3 (MPL-2.0); original sources are available in the integrity-pinned npm archives under upstream/. LICENSE and HarfBuzz-LICENSE retain the upstream notices. This package is private and is not an upstream Vercel release.
+
+Run `node vendor/og-adapter/rebuild.mjs` to regenerate, or append `--verify` to verify all25 generated files and provenance.json byte-for-byte without writes. The generator verifies both archives' registry SHA512 integrity, tar checksums/entry types and exact replacement anchors. No installed node_modules file is patched. Root npm overrides resolve Vinext's adapter to this versioned package; Vinext/Next are unchanged.
+
+Changes: Node imports the actual CommonJS harfbuzzjs0.10.0 package through ESM interop. Edge initializes the same HarfBuzz engine using a statically imported compiled WASM module, without relying on filesystem or browser location. Its14 callback signatures use deployment-compiled import/export wrappers rather than Emscripten runtime code generation. HarfBuzz shaping and callbacks are retained. Both distributions use the public pinned fflate0.7.5 browser inflateSync entry instead of embedded0.7.3 and its Node-only loader. Satori0.33.5 escaping changes and the public ImageResponse contract remain.
+
+The existing test suite executes plain Node rendering, real isolated Worker rendering with runtime WASM compilation still blocked, actual Vinext font inlining, XML/private-style checks, callback ABI checks and exact regeneration. The Worker fixture has no database, storage or production credentials. This is adapter compatibility evidence, not live case/download acceptance. Remove this backport only after an upstream replacement passes these same gates; never silently downgrade Satori or replace the renderer with a blank image.
