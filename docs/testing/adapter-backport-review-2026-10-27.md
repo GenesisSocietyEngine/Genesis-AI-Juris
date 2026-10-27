@@ -1,5 +1,13 @@
 # SVG adapter backport review — 27 October 2026
 
+## Delivered: public Sites v163
+
+The [native source/archive/deployment receipt](receipts/adapter-v163-2026-10-27.json) supersedes pending release wording below. PR187 is merged at d4ff9b6960c3869820cc976cadefdd2e4d486527. Candidate40575514564 and exact-main40577008550 pass web/PDF:1801pass/0fail/3inherited skips, packaged browser/Worker and tax-history gates, unchanged PDF locks and both0finding audits. The exact-main artifact's SHA/tree and full release identity match the checkout; no same-source rebuild or candidate artifact substitution. Input hashcee0d8c57c728ec36a6c1693d95bfa91b84e2edf79a09ad5c999f8a62a55432e, unchanged hosting20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe.
+
+Sites v163 deployment appgdep_6ae10a66a1148191945c8f96348dc288 succeeds27October20:33:04UTC. Public audience, environment42/13entries and DB/R2 bindings remain unchanged. Both custom/native origins verify187/187assets:135current plus52distinct retained v162 files. Both public Worker release endpoints match all three expected identity fields; both home pages return200. The previous archive is hash/safety inspected and not executed. No production case writes are performed; no fresh catalogue or full saved-byte equality is inferred.
+
+The release includes the persistent materials-count/read-state feedback, truthful Markdown handoff and entry-panel alignment. All explicit browser/download/source/historical/readiness limitations below remain open. Rust, Android and Flutter exact-source workflows pass; both iOS workflows remain in progress at receipt under the user's standing web-only rollout authorization. No native acceptance is claimed. Source synchronization of this documentation does not require another runtime deployment.
+
 Purpose: remove the dependency-security hold without accepting the demonstrated rendering regression or changing Vinext/Next, cases, persistence, recovery, authority, hosting bindings or report renderers. Supersedes the blocked1.0.3 experiment in [the earlier review](material-results-feedback-review-2026-10-27.md), retaining its failed evidence.
 
 Fresh source: canonical main8eaf3dc1a0e75f6ce97b44628944914834d95d23; task base b14d2929b5505c46965150c606b809fe83259990, draft PR187. Native Sites state remains active/public/owner/latest162. Supported1.1.2 source opening returns b14d292. First restricted-network opening fails to connect; supported escalated retry succeeds. No source/archive receipt is inferred from the failed opening.
