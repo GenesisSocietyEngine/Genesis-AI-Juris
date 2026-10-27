@@ -1,5 +1,7 @@
 # Studio entry panel alignment — 27 October 2026
 
+Delivered in public v163 from merged d4ff9b6 after exact-main web/PDF gates; see the [native receipt](receipts/adapter-v163-2026-10-27.json). Both origins verify every expected current/retained asset and Worker identity. The source-level6checks remain distinct from rendered desktop/narrow/keyboard visual acceptance, which is still pending in a policy-capable browser. Historical hold wording below records the initial checkpoint.
+
 User outcome: align the paired Create/Examples panels shown in the supplied screenshot. Their different icon/eyebrow heights, heading margins and independent description flows previously placed headings and primary actions at different vertical positions.
 
 The bounded CSS amendment uses equal-width columns and five shared content-sized rows above800px: icon/eyebrow, heading, description, actions and supporting note. Both panels retain equal padding, independent backgrounds and accents. The example action aligns with Create; Import remains below Create in the same action group. Explicit minmax columns and stretch override the old flex alignment. Shared rows grow with wrapped English/Russian text rather than using fixed heading/description heights. Existing narrow stacked ordering and controls are untouched. No handlers, wording, saved data, recovery, evidence, report output or authority contracts change.

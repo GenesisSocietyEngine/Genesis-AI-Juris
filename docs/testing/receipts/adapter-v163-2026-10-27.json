@@ -1,0 +1,149 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-10-27",
+  "stage": "svg-adapter-studio-feedback-alignment",
+  "runtimeCommit": "d4ff9b6960c3869820cc976cadefdd2e4d486527",
+  "pullRequests": [
+    187
+  ],
+  "applicationInputsSha256": "cee0d8c57c728ec36a6c1693d95bfa91b84e2edf79a09ad5c999f8a62a55432e",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5e35406250248191bae804ee00f20971",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 163,
+    "source": {
+      "commit_sha": "d4ff9b6960c3869820cc976cadefdd2e4d486527"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000414081f4a8f2fe572db4618a",
+      "content_hash": "sha256:e497d9d5ada9c8403b114c949e64e522b0b68dcc5e43ee310d35f22ee3ab9c5f",
+      "size_bytes": 49448960,
+      "file_count": 578
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae10a66a1148191945c8f96348dc288",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5e35406250248191bae804ee00f20971",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-10-27T20:33:04.088378+00:00"
+  },
+  "sourceHelper": {
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\PROJECTS\\Genesis-AI-Juris\\.artifacts\\casevant-live-migration-20261012",
+      "commit_sha": "d4ff9b6960c3869820cc976cadefdd2e4d486527"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\PROJECTS\\Genesis-AI-Juris\\.artifacts\\casevant-live-migration-20261012",
+      "commit_sha": "d4ff9b6960c3869820cc976cadefdd2e4d486527",
+      "archive": "C:/PROJECTS/Genesis-AI-Juris/.artifacts/casevant-og-adapter-d4ff9b6-20261027.tar"
+    },
+    "commands": [],
+    "verifiedBuildUsed": true
+  },
+  "rawArchive": {
+    "sha256": "e8eebad74740309df022a73459e3e8bc2876d9904c0fb384f4285ccd483f9ed2",
+    "bytes": 30379782,
+    "representation": "local gzip; distinct from provider-normalized tar"
+  },
+  "checks": {
+    "candidate": {
+      "source": "f8abd0023e40a73d779557142ca3e3c8b4fddbae",
+      "run": 40575514564,
+      "status": "success",
+      "webJob": 122440767521,
+      "pdfJob": 122440768063
+    },
+    "exactMain": {
+      "source": "d4ff9b6960c3869820cc976cadefdd2e4d486527",
+      "tree": "6b5728e6620033e04d05a871c26b146b29f8187d",
+      "run": 40577008550,
+      "status": "success",
+      "webJob": 122446026780,
+      "pdfJob": 122446027258,
+      "artifact": "verified-web-build-d4ff9b6960c3869820cc976cadefdd2e4d486527-40577008550"
+    },
+    "tests": {
+      "total": 1804,
+      "passed": 1801,
+      "failed": 0,
+      "inheritedSkips": 3
+    },
+    "focused": {
+      "passed": 28,
+      "adapter": 7,
+      "materials": 15,
+      "entryWorkflow": 6,
+      "overlapsCompleteSuite": true
+    },
+    "audits": {
+      "full": 0,
+      "production": 0
+    },
+    "pdfLocks": "unchanged; 47 reports, bilingual Base/Medium and tax outputs passed",
+    "workerAdapter": "actual isolated synthetic Worker PNG, compiled HarfBuzz/Yoga/resvg/callback modules; dynamic compilation remains prohibited"
+  },
+  "assets": {
+    "previousLiveCommit": "3772c0c8da9a8541774733f56ed063c7870683fa",
+    "previousArchiveExecuted": false,
+    "previousCurrentManifest": 135,
+    "currentManifest": 135,
+    "distinctRetained": 52,
+    "total": 187,
+    "origins": [
+      {
+        "origin": "https://casevant.pro",
+        "verified": 187,
+        "passed": true
+      },
+      {
+        "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+        "verified": 187,
+        "passed": true
+      }
+    ],
+    "workerReleaseIdentity": "both origins matched runtime/application/hosting hashes; public home HTTP200"
+  },
+  "preservation": {
+    "productionCaseWritesPerformed": false,
+    "dbMigrationAndWorkerPathsChanged": false,
+    "environmentRevision": 42,
+    "environmentEntries": 13,
+    "audience": "public",
+    "bindings": "DB and DOSSIER_DOCUMENTS unchanged",
+    "freshCatalogueOrSavedByteEqualityClaimed": false
+  },
+  "native": {
+    "rust": "passed",
+    "android": "passed",
+    "flutter": "passed",
+    "iosNative": {
+      "run": 40577008279,
+      "status": "in_progress at receipt"
+    },
+    "iosTax": {
+      "run": 40577008566,
+      "status": "in_progress at receipt"
+    },
+    "webOnlyAuthorization": "standing user authorization; no native readiness claimed"
+  },
+  "limits": [
+    "No fresh authenticated production browser, narrow visual or downloaded-file-byte acceptance; last supported capture ended on browser URL policy.",
+    "Isolated adapter/component/handler evidence is separate from production browser observations.",
+    "Historical application/account/recovery acceptance, 43 missing originals, measured retrieval, operator/qualified commercial readiness and native cold-first/padding remain open."
+  ]
+}
