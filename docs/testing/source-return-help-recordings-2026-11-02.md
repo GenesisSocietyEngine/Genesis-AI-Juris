@@ -1,5 +1,8 @@
 # Source return and Help recordings — implementation review
 
+**Current outcome — public v167:** exact-source reveal/return and Help recordings are delivered. The production-only player failure is independently corrected after PR195/196. See the [current native receipt](receipts/help-seeking-v167-2026-11-02.json); earlier candidate notes below are retained history. Browser, local/fixture, HTTP and CI evidence remain distinct.
+
+
 ## Before review and scope
 
 Clean canonical main90babba30e389ff662303c316de68650eb8168fe and public Sites165/runtime a0d2c01e9c92f6f67d34de25f7048d2a73f9da86 are freshly verified before editing. Both public runtime endpoints match application4f59744f7284af44fae0038a9904c5c8ee495f91d6663bb8e430717b621ae2aa and unchanged hosting20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe. The supported source helper opens canonical90babba. Current task owns branch codex/source-return-help-recordings-20261102; no other dirty work was present.
@@ -65,3 +68,19 @@ Correction acceptance: first cold chapter click must reach 32/48 on the actual d
 Final journey review also checked ordinary Play before choosing a chapter. v166 playback advances, but its native seekable range remains [0,0]. A separate follow-through slice prepares the same bounded local media on the explicit native Play action, then resumes that user-requested playback. It does not fetch on page load or autoplay. Metadata from the original stream cannot consume the pending blob position. Chapter selection deliberately pauses playback; its notice now matches the actual paused/playing state. Actual local Chrome cold native Play click reaches a playing blob URL with seekable [0,48]; a later chapter click reaches 32 and pauses. An initial cold Space action had no effect while the player controls were below the narrow viewport; the visible Play click is the acceptance evidence, not an inferred keyboard product defect.
 
 Review found and corrected a browser fetch receiver issue before integration: use a closure around window fetch rather than invoking its detached reference as an injected object method. The first amended local browser click reaches 32/48, paused, using a blob URL. Seven focused tests pass, including full-200/no-range input, deduplication/reuse, abort/disposal, stale completion, error/type/size/path refusal and retry. These injected loader tests are distinct from actual browser evidence. Exact candidate/main gates and a subsequent native receipt are required before marking the production correction delivered.
+
+
+## Delivered production chapter correction — v167
+
+PR195 and PR196 are normally integrated; runtime 7f6dd9ff05284e60686d7c4199a1ab332b148536 succeeds through the existing Sites project. Candidate/exact-main 1834 pass / 0 fail / 3 inherited skips plus 2 HTML passes, strict types/lint, historical inputs/contracts, packaged browser/Worker/tax, complete unchanged PDF visual gates and 0-finding full/production dependency audits pass. Exact-main CI archive digest, source/tree and all 579 source receipts match before adoption. Both origins 189/189 current/retained assets and exact runtime identities pass. Only v166 current assets are retained.
+
+Fresh production browser observations in the [native receipt](receipts/help-seeking-v167-2026-11-02.json) confirm cold first chapter 32/48 paused, later selection, captions and native Play/Pause. The full-response hosting behavior remains unchanged; the selected bounded public file becomes a browser-local seekable URL. EN/RU labels/captions, narrow layout and source-return keyboard observations remain separately identified from loader fixtures. A public-file byte check is not disk-delivery acceptance. The v166 zero-position failure is retained, not rewritten into a pass.
+
+The separately recorded v166 source observation confirms D01 v1 Mandate opens with zero collapsed ancestors; Enter → Tab → Enter returns visible focus to the original citing button. That source code is unchanged by the final media-only refinements; do not relabel the observation as a fresh v167 source test. No case save/replacement/deletion was performed; session traffic is not a zero-write handler test. Existing/synthetic work, source identities/bytes, missing-original disclosures, full carriers, recovery, ERP complete Full export and report locks remain preserved. Environment 42/all 13 entries, audience and DB/DOSSIER_DOCUMENTS stay unchanged. S03 authority/output, legitimate owner recovery, isolated same-tab identity/cancellation, original artifact/historical pagination, native and operator/commercial rows remain open. Documentation closure leaves application/hosting inputs unchanged.
+
+
+### Final UI and React review
+
+The React checklist finds no additional material issue: stable recording keys, owned effect/listener cleanup, event-triggered bounded media fetch, transient refs, native controls, labelled tracks/status messages, text fallback and separate-tab Help navigation. Actual cold native Play is a visible click; loaded-player Space pause is observed separately. Initial failed cold Space delivery is not converted into a product keyboard defect.
+
+Minor follow-on investigation: screenshots paused at exact cue boundaries show adjacent descriptive caption text together. Captions load and the transcripts remain readable; cross-browser cue-transition/fullscreen readability still needs evaluation before changing cue timing or recordings. Do not label this screenshot observation as a verified codec or browser cause, or replace immutable recording hashes without a versioned asset update. This is separate from the corrected seekability failure and from the remaining S03 authenticated acceptance.
