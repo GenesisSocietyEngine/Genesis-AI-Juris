@@ -1,0 +1,593 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-02",
+  "stage": "compact-template-demo-catalogues",
+  "runtimeCommit": "4a5848c7b614daf50696922619cc16c51597e46b",
+  "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    200,
+    201
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ac9ac04377048191a4138b46efe7effa",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 169,
+    "source": {
+      "commit_sha": "4a5848c7b614daf50696922619cc16c51597e46b"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000009c3881f4822ee477d35efb8b",
+      "content_hash": "sha256:e70c2b35e72e861be3b927f9f418c206e0d40e1779bb1d52ec5580bcc1011d01",
+      "size_bytes": 50657280,
+      "file_count": 595
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae8fc6bce548191a46837e58a4c9a29",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ac9ac04377048191a4138b46efe7effa",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-02T21:11:37.931839+00:00"
+  },
+  "sourceHelper": {
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "4a5848c7b614daf50696922619cc16c51597e46b"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "4a5848c7b614daf50696922619cc16c51597e46b",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-compact-catalogues-4a5848c-20261102.tar"
+    }
+  },
+  "localArchive": {
+    "path": "C:/Users/User/Documents/ChatGPT/software/casevant-compact-catalogues-4a5848c-20261102.tar",
+    "sha256": "293d6ea4eb7873c2bd9dba47c2c72ac58bb84c9138f1d0d93eb7420cfe19e8fe",
+    "bytes": 31354649,
+    "note": "Compressed local upload digest/bytes are separate from Sites normalized archive_storage digest/bytes; exact contained source identity and595files verified."
+  },
+  "candidate": {
+    "sha": "ab590cf26f60430739ecc6b47a60d75c3b3ca472",
+    "runId": 41518957089,
+    "totals": {
+      "tests": 1842,
+      "pass": 1839,
+      "fail": 0,
+      "skipped": 3
+    },
+    "renderedHtmlPassed": 2
+  },
+  "mainAcceptance": {
+    "runId": 41522763661,
+    "tests": 1842,
+    "pass": 1839,
+    "fail": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "artifact": {
+      "runId": 41522763661,
+      "artifactId": 13178941651,
+      "artifactName": "verified-web-build-4a5848c7b614daf50696922619cc16c51597e46b-41522763661",
+      "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-4a5848c.zip",
+      "sha256": "ae4fee8d30831d60802fa0d901a3ed4edef41f1b18f106d7ca4747f8e6fa3491",
+      "bytes": 31203430,
+      "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-4a5848c",
+      "entries": 543
+    },
+    "sourceInputsVerified": 579,
+    "completeSourceReceiptVerified": true,
+    "typesLintHistoryContractsPackagedWorkerPdf": "passed",
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0
+  },
+  "publicAssets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 189,
+      "verifiedCount": 189,
+      "expectedBuild": {
+        "sourceCommit": "4a5848c7b614daf50696922619cc16c51597e46b",
+        "previousSourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 52
+      },
+      "passed": true,
+      "receiptSha256": "e9111696fc33d258213eb4c8ee5419e96cd58b0750d35d531237e1d303157edc"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 189,
+      "verifiedCount": 189,
+      "expectedBuild": {
+        "sourceCommit": "4a5848c7b614daf50696922619cc16c51597e46b",
+        "previousSourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 52
+      },
+      "passed": true,
+      "receiptSha256": "0f9a4d8ed7351c75536a64c1c7cac34d079dfab6be926c3b5a75c78677fed3b1"
+    }
+  ],
+  "publicRuntime": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "4a5848c7b614daf50696922619cc16c51597e46b",
+        "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "4a5848c7b614daf50696922619cc16c51597e46b",
+        "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "productionBrowser": {
+    "runtime": "4a5848c7b614daf50696922619cc16c51597e46b",
+    "version": 169,
+    "demo": {
+      "wide": {
+        "height": 688,
+        "listHeight": 3087.5625,
+        "listWidth": 1195.2000732421875,
+        "open": 0,
+        "overflow": false,
+        "rows": [
+          {
+            "action": "Open example case: Project Canopy",
+            "meta": "Fictional Gulf market \u00b7 Advisory decision",
+            "title": "Project Canopy"
+          },
+          {
+            "action": "Open example case: Failed ERP Implementation",
+            "meta": "BE \u00b7 Commercial \u00b7 Litigation strategy",
+            "title": "Failed ERP Implementation"
+          },
+          {
+            "action": "Open example case: Unpaid Logistics Invoices",
+            "meta": "BE \u00b7 Commercial \u00b7 Litigation strategy",
+            "title": "Unpaid Logistics Invoices"
+          },
+          {
+            "action": "Open example case: GreenFire \u2014 The First 72 Hours",
+            "meta": "NL \u00b7 Corporate / Regulatory \u00b7 Investigation",
+            "title": "GreenFire \u2014 The First 72 Hours"
+          },
+          {
+            "action": "Open example case: GoldenShell \u2014 Recall at Dawn",
+            "meta": "NL \u00b7 Food safety \u00b7 Compliance assessment",
+            "title": "GoldenShell \u2014 Recall at Dawn"
+          },
+          {
+            "action": "Open example case: Desert Water",
+            "meta": "US \u00b7 Environmental \u00b7 Litigation strategy",
+            "title": "Desert Water"
+          },
+          {
+            "action": "Open example case: Harbor \u2014 approve a supplier pilot?",
+            "meta": "Advisory decision \u00b7 Fictional example",
+            "title": "Harbor \u2014 approve a supplier pilot?"
+          },
+          {
+            "action": "Open example case: Northline \u2014 disputed delivery invoices",
+            "meta": "Litigation strategy \u00b7 Fictional example",
+            "title": "Northline \u2014 disputed delivery invoices"
+          },
+          {
+            "action": "Open example case: Cloudbridge \u2014 SaaS renewal review",
+            "meta": "Contract review \u00b7 Fictional example",
+            "title": "Cloudbridge \u2014 SaaS renewal review"
+          },
+          {
+            "action": "Open example case: Orchard \u2014 compare investment economics",
+            "meta": "Tax planning \u00b7 Fictional example",
+            "title": "Orchard \u2014 compare investment economics"
+          },
+          {
+            "action": "Open example case: Clearpath \u2014 vendor-control gaps",
+            "meta": "Compliance assessment \u00b7 Fictional example",
+            "title": "Clearpath \u2014 vendor-control gaps"
+          },
+          {
+            "action": "Open example case: Meridian \u2014 cross-border reporting readiness",
+            "meta": "Tax & compliance \u00b7 Fictional example",
+            "title": "Meridian \u2014 cross-border reporting readiness"
+          },
+          {
+            "action": "Open example case: Atlas \u2014 duplicate invoice postings",
+            "meta": "ERP incident & solution \u00b7 Fictional example",
+            "title": "Atlas \u2014 duplicate invoice postings"
+          },
+          {
+            "action": "Open example case: Beacon \u2014 disputed expense approvals",
+            "meta": "Investigation \u00b7 Fictional example",
+            "title": "Beacon \u2014 disputed expense approvals"
+          },
+          {
+            "action": "Open example case: Signal \u2014 the first incident decision",
+            "meta": "Training simulation \u00b7 Fictional example",
+            "title": "Signal \u2014 the first incident decision"
+          }
+        ],
+        "width": 1522
+      },
+      "metadataUnchanged": true,
+      "keyboardDisclosure": {
+        "focus": "About this example \u2014 Project Canopy",
+        "open": true,
+        "primaryDisabled": false,
+        "primaryVisible": true
+      },
+      "walkthrough": {
+        "dossierLabel": "Source dossier & expected output9 documents",
+        "scenarioRadios": [
+          {
+            "checked": true,
+            "value": "base"
+          },
+          {
+            "checked": false,
+            "value": "upside"
+          },
+          {
+            "checked": false,
+            "value": "hard_stop"
+          },
+          {
+            "checked": false,
+            "value": "downside"
+          }
+        ]
+      },
+      "advisoryFilteredRows": 2,
+      "narrowEn": {
+        "height": 480,
+        "minActionHeight": 46.5,
+        "overflow": false,
+        "rows": 2,
+        "width": 390
+      },
+      "narrowRu": {
+        "height": 480,
+        "minActionHeight": 46.5,
+        "overflow": false,
+        "rows": 15,
+        "width": 390
+      },
+      "ruExpanded": {
+        "focus": "\u041e \u043f\u0440\u0438\u043c\u0435\u0440\u0435 \u2014 Project Canopy",
+        "open": true,
+        "overflow": false
+      }
+    },
+    "templates": {
+      "wide": {
+        "actions": 18,
+        "height": 632,
+        "listHeight": 1415.4000244140625,
+        "listWidth": 1195.2000732421875,
+        "open": 0,
+        "overflow": false,
+        "rows": 9,
+        "width": 1522
+      },
+      "enTaxSearchRows": 2,
+      "emptySearchRows": 0,
+      "keyboardClearRows": 9,
+      "keyboardDisclosure": {
+        "focus": "About this template \u2014 Advisory decision",
+        "intakeQuestions": 4,
+        "open": true,
+        "visibleDirectActions": 2
+      },
+      "narrowRu": {
+        "actions": 18,
+        "height": 480,
+        "minActionHeight": 46.5,
+        "overflow": false,
+        "rows": 9,
+        "width": 390
+      },
+      "ruTaxSearchRows": 2,
+      "ruExpanded": {
+        "expanded": true,
+        "focus": "\u041e \u0448\u0430\u0431\u043b\u043e\u043d\u0435 \u2014 \u041d\u0430\u043b\u043e\u0433\u043e\u0432\u043e\u0435 \u043f\u043b\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435",
+        "overflow": false
+      },
+      "narrowEn": {
+        "height": 480,
+        "minActionHeight": 46.5,
+        "overflow": false,
+        "rows": 9,
+        "width": 390
+      }
+    },
+    "productionCasesOpenedOrMutated": false,
+    "viewportReset": true,
+    "scope": "Fresh Chrome catalogue-only production observations; local opening/cancellation and handler evidence remain separate."
+  },
+  "productionBrowserReceiptSha256": "77de75e5d2ac470e1f0ea0e2d9bb48b1a1317d1709e3f38cf7c1bfa3478886e7",
+  "localBrowser": {
+    "before": {
+      "demo": {
+        "height": 688,
+        "listHeight": 4238.10009765625,
+        "listWidth": 1195.2000732421875,
+        "rows": [
+          {
+            "height": 492.3500061035156,
+            "title": "Project Canopy"
+          },
+          {
+            "height": 492.3500061035156,
+            "title": "Failed ERP Implementation"
+          },
+          {
+            "height": 507.8500061035156,
+            "title": "Unpaid Logistics Invoices"
+          },
+          {
+            "height": 507.8500061035156,
+            "title": "GreenFire \u2014 The First 72 Hours"
+          },
+          {
+            "height": 533.4500122070312,
+            "title": "GoldenShell \u2014 Recall at Dawn"
+          },
+          {
+            "height": 533.4500122070312,
+            "title": "Desert Water"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Harbor \u2014 approve a supplier pilot?"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Northline \u2014 disputed delivery invoices"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Cloudbridge \u2014 SaaS renewal review"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Orchard \u2014 compare investment economics"
+          },
+          {
+            "height": 528.25,
+            "title": "Clearpath \u2014 vendor-control gaps"
+          },
+          {
+            "height": 528.25,
+            "title": "Meridian \u2014 cross-border reporting readiness"
+          },
+          {
+            "height": 528.25,
+            "title": "Atlas \u2014 duplicate invoice postings"
+          },
+          {
+            "height": 528.25,
+            "title": "Beacon \u2014 disputed expense approvals"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Signal \u2014 the first incident decision"
+          }
+        ],
+        "width": 1522
+      },
+      "templates": {
+        "height": 688,
+        "listHeight": 1876.4625244140625,
+        "listWidth": 1195.2000732421875,
+        "rows": 9,
+        "width": 1522
+      }
+    },
+    "after": {
+      "demo": {
+        "height": 632,
+        "listHeight": 3087.5625,
+        "listWidth": 1195.2000732421875,
+        "overflow": false,
+        "rows": 15,
+        "width": 1522
+      },
+      "templates": {
+        "height": 632,
+        "listHeight": 1415.4000244140625,
+        "listWidth": 1195.2000732421875,
+        "overflow": false,
+        "rows": 9,
+        "width": 1522
+      }
+    },
+    "localTabs": {
+      "starter": "178222777",
+      "canopy": "178222780"
+    },
+    "checks": [
+      "EN Canopy About Enter: focused summary and full description visible; direct action remains visible",
+      "Canopy walkthrough lazily loads nine-doc/four-variant flow",
+      "EN Advisory category: two rows",
+      "RU Templates search: two tax rows, Enter expands complete intake",
+      "RU empty search: zero, keyboard Clear restores nine; pointer Clear during viewport reset unconfirmed",
+      "390x480 EN Demo and RU Demo/Templates: no horizontal overflow; measured actions >=46.5px",
+      "local empty starter opens via direct action",
+      "local Canopy opens direct from closed About: 14 records",
+      "local leave confirmation Stay here preserves Canopy; DOM capture missed native dialog, AX capture identified it; search-return not claimed"
+    ]
+  },
+  "configuration": {
+    "before": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "latest_version_number": 168,
+      "current_user_role": "owner",
+      "current_live_url": "https://casevant.pro",
+      "status": "active"
+    },
+    "after": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "latest_version_number": 169,
+      "current_user_role": "owner",
+      "current_live_url": "https://casevant.pro",
+      "status": "active"
+    },
+    "environment": {
+      "revision": 42,
+      "count": 13,
+      "entries": [
+        {
+          "key": "GENESIS-JURIS-Production",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_ADMIN_EMAILS",
+          "is_secret": true
+        },
+        {
+          "key": "GENESIS_AI_DAILY_REQUEST_LIMIT",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_DEPLOYMENT_VERSION",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_INVITATION_FROM_EMAIL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_INVITATION_MAIL_ENABLED",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_OPENAI_MODEL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_PUBLIC_ORIGIN",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_RESET_FROM_EMAIL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_WEB_COMMIT",
+          "is_secret": false
+        },
+        {
+          "key": "OPENAI_API_KEY",
+          "is_secret": true
+        },
+        {
+          "key": "OPEN_API_KEY",
+          "is_secret": true
+        },
+        {
+          "key": "RESEND_API_KEY",
+          "is_secret": true
+        }
+      ],
+      "returnedEntryRepresentationsUnchanged": true
+    },
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ],
+    "hostingInputsUnchanged": true
+  },
+  "nativeWorkflows": {
+    "observation": "Successful pre-rollout main workflow inventory; refresh after rollout failed with api.github.com connection error. No native completion inferred.",
+    "headSha": "4a5848c7b614daf50696922619cc16c51597e46b",
+    "runs": [
+      {
+        "databaseId": 41522763845,
+        "name": "Android Native FFI",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "databaseId": 41522763887,
+        "name": "Rust CI",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "databaseId": 41522763661,
+        "name": "Root Web and PDF",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "databaseId": 41522764179,
+        "name": "iOS Tax Application",
+        "status": "queued",
+        "conclusion": ""
+      },
+      {
+        "databaseId": 41522763972,
+        "name": "iOS Native FFI",
+        "status": "in_progress",
+        "conclusion": ""
+      },
+      {
+        "databaseId": 41522763674,
+        "name": "Flutter Mobile UI",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "recovery": {
+    "previousHold": "compact-catalogues-release-hold-2026-11-02.json",
+    "result": "Sites and GitHub access recovered through normal connectivity; supported helper opening/packaging and native save/deploy succeeded. No DNS, VPN, security or application settings were changed. Later GitHub refresh failure remains separate from successful production verification.",
+    "priorFailuresRetained": true
+  },
+  "checks": {
+    "focusedPassed": 46,
+    "productionCaseOpenedSavedReplacedDeletedOrBulkEdited": false,
+    "sourceFactoryCarrierPersistenceAuthorityReportRecordingChanges": false,
+    "viewportReset": true
+  },
+  "acceptanceLimits": [
+    "Equal-width list heights are UI density, not measured retrieval speed, coverage, review or commercial ROI.",
+    "Fresh production observations are catalogue-only; no production case opening, cancellation, save/reopen/amend or download bytes are claimed. Existing local/handler proof stays separate.",
+    "Keep S03 authenticated A/B saves/outputs, legitimate unsupported-owner recovery, same-tab identity/timing, historical/original-body, 43 missing-original, native and commercial/operator limits explicit.",
+    "Mac workflows were queued/in progress in the last successful inventory; web-only rollout is authorized, and no native completion is inferred.",
+    "PR attachment tool has the existing100-item cap; ordinary repository links remain usable and no older attachment is removed."
+  ],
+  "publishingNote": "Exact current-main CI ZIP digest/source/tree/all579inputs verified before adoption. Only v168 current-manifest assets retained (137previous,52retained,189total). Documentation-only closure adds no runtime input changes and needs no duplicate deployment."
+}
