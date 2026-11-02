@@ -9,9 +9,11 @@ import { buildCanopyPackage } from "../app/canopy-fixture";
 import { studioReviewAction } from "../app/studio-review-action";
 
 const source=ts.createSourceFile("JurisApp.tsx",readFileSync("app/JurisApp.tsx","utf8"),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-let memoryFactory="", returnExpression="", cardCallback="";
+let memoryFactory="", returnExpression="", cardCallback="", focusExpression="", focusEffect="";
 function visit(node:ts.Node){
   if(ts.isVariableDeclaration(node)&&node.name.getText(source)==="materialReadingMemory")memoryFactory=node.initializer!.getText(source);
+  if(ts.isVariableDeclaration(node)&&node.name.getText(source)==="actionFocusId")focusExpression=node.initializer!.getText(source);
+  if(ts.isCallExpression(node)&&node.expression.getText(source)==="useEffect"&&node.arguments[0]?.getText(source).includes("focusActionTarget(actionFocusId)"))focusEffect=node.arguments[0].getText(source);
   if(ts.isJsxExpression(node)&&node.expression?.getText(source).startsWith("actionTarget && actionTarget.step"))returnExpression=node.expression.getText(source);
   if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(source)==="StudioPackageValidationCard"){
     const attribute=node.attributes.properties.find(p=>ts.isJsxAttribute(p)&&p.name.getText(source)==="onOpen") as ts.JsxAttribute;
@@ -58,4 +60,20 @@ test("actual completeness-card correction callback includes the exact Review ide
   const open=new Function("draft","studioReviewAction","openStudioAction",compile(`return (${cardCallback});`))(draft,studioReviewAction,(target:unknown)=>opened.push(target));
   const check={id:"orphan",level:"warn" as const,text:"Synthetic detached evidence",nodeIds:[draft.nodes[2].id]};
   open(check);assert.deepEqual(opened,[{...studioReviewAction(draft,check),reviewId:"orphan"}]);assert.equal(JSON.stringify(draft),before);
+});
+
+
+test("actual focus effect falls back when asynchronous checks remove a returned finding, without retargeting fields",()=>{
+  assert.ok(focusExpression&&focusEffect);
+  const id=new Function("actionTarget","checks",compile(`return (${focusExpression});`));
+  const target={step:5,id:"action-orphan"};
+  assert.equal(id(target,[{id:"orphan",level:"warn"}]),"action-orphan");
+  assert.equal(id(target,[{id:"orphan",level:"ok"}]),"studio-next-actions");
+  assert.equal(id({step:3,id:"studio-source-urls"},[]),"studio-source-urls");
+  assert.equal(id({step:4,id:"studio-node-evidence"},[]),"studio-node-evidence");
+  const calls:string[]=[];
+  class Observer {observe() {} disconnect() {}}
+  const effect=new Function("actionFocusId","focusActionTarget","MutationObserver","requestAnimationFrame","cancelAnimationFrame","document",compile(`return (${focusEffect})();`));
+  const cleanup=effect(id(target,[]),(value:string)=>{calls.push(value);return true;},Observer,(run:()=>void)=>{run();return 1;},()=>{},{body:{}});
+  assert.deepEqual(calls,["studio-next-actions"]);cleanup();
 });

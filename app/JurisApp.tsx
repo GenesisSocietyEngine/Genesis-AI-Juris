@@ -2475,6 +2475,9 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const derivationsSettled = studioDerivations.source === draft;
   const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
   const [actionTarget, setActionTarget] = useState<StudioActionTarget | null>(null);
+  const actionFocusId = actionTarget?.step === 5 && actionTarget.id.startsWith("action-")
+    && !checks.some(check => check.level === "warn" && `action-${check.id}` === actionTarget.id)
+    ? "studio-next-actions" : actionTarget?.id;
   const caseSettingsAction = visibleStep === 3 && actionTarget?.step === 3
     && ["studio-title", "studio-publishable-context", "studio-legal-date", "studio-source-urls", "studio-privacy"].includes(actionTarget.id);
   const [actionNotice, setActionNotice] = useState("");
@@ -2482,14 +2485,14 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   function redoStudioEdit() { setActionNotice(""); redoDraft(); }
 
   useEffect(() => {
-    if (!actionTarget) return;
+    if (!actionFocusId) return;
     let frame = 0;
-    const focus = () => { if (focusActionTarget(actionTarget.id)) observer.disconnect(); };
+    const focus = () => { if (focusActionTarget(actionFocusId)) observer.disconnect(); };
     const observer = new MutationObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(focus); });
     observer.observe(document.body, { childList: true, subtree: true });
     frame = requestAnimationFrame(focus);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, [actionTarget]);
+  }, [actionTarget, actionFocusId]);
   const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-");
   const promptPlan = useMemo<StudioPromptPlan>(() => canonicalPrompt
     ? { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }
