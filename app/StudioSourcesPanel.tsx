@@ -26,7 +26,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
   const [notice, setNotice] = useState("");
   const [technicalOpen, setTechnicalOpen] = useState(false);
   const [sourceReturn, setSourceReturn] = useState<{ context: SourceReadingContext; id: string; trigger: HTMLButtonElement; title: string } | null>(null);
-  const sourceContext = { draft, locale, epoch: packetAuthority?.epoch, allowed: packetAuthority?.allowed };
+  const sourceContext = { draft, locale, epoch: packetAuthority?.epoch, copyAllowed: packetAuthority?.allowed };
   const activeReturn = sourceReturn && sameSourceReadingContext(sourceReturn.context, sourceContext) ? sourceReturn : null;
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const records = [...model.facts, ...model.evidence];
@@ -43,7 +43,6 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
     return model.facts.filter(fact => connected.has(fact.id));
   }
   function jump(document: string, version: number, section: string, trigger: HTMLButtonElement, title: string) {
-    if (packetAuthority?.allowed === false) return;
     const id = studioSourceFragmentId(document, version, section);
     const opened = root.current && openStudioSourceFragment(root.current, id);
     setSourceReturn(opened ? { context: sourceContext, id, trigger, title } : null);

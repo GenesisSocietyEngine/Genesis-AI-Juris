@@ -91,9 +91,11 @@ export function openStudioSourceFragment(root: Pick<HTMLElement, "querySelector"
   return true;
 }
 
-export type SourceReadingContext = { draft: object; locale: string; epoch?: number; allowed?: boolean };
+export type SourceReadingContext = { draft: object; locale: string; epoch?: number; copyAllowed?: boolean };
 /** Ephemeral navigation only; never restores a target into another case or authority context. */
 export function sameSourceReadingContext(before: SourceReadingContext, current: SourceReadingContext) {
-  return current.allowed !== false && before.draft === current.draft && before.locale === current.locale
-    && before.epoch === current.epoch && before.allowed === current.allowed;
+  // Export availability invalidates a prior scope; it does not grant or deny
+  // reading an already-rendered reference. The existing parent owns read access.
+  return before.draft === current.draft && before.locale === current.locale
+    && before.epoch === current.epoch && before.copyAllowed === current.copyAllowed;
 }

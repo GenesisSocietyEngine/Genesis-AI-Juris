@@ -172,13 +172,15 @@ test("exact passage navigation opens every containing disclosure before focusing
   assert.ok(focused);
 });
 
-test("a source return cannot cross a draft, language, epoch or access change", () => {
-  const draft=buildCanopyPackage('base').draft, before={draft,locale:'en',epoch:3,allowed:true};
+test("source return preserves read-only navigation but cannot cross a draft, language, epoch or export-context change", () => {
+  const draft=buildCanopyPackage('base').draft, before={draft,locale:'en',epoch:3,copyAllowed:true};
   assert.ok(sameSourceReadingContext(before,{...before}));
-  for(const change of [{draft:structuredClone(draft)},{locale:'ru'},{epoch:4},{allowed:false},{allowed:undefined}]) {
+  for(const change of [{draft:structuredClone(draft)},{locale:'ru'},{epoch:4},{copyAllowed:false},{copyAllowed:undefined}]) {
     assert.equal(sameSourceReadingContext(before,{...before,...change}),false);
   }
-  assert.equal(sameSourceReadingContext({...before,allowed:false},{...before,allowed:false}),false);
+  const readOnly={...before,copyAllowed:false};
+  assert.ok(sameSourceReadingContext(readOnly,{...readOnly}),'already-visible source inspection is independent of export permission');
+  assert.equal(sameSourceReadingContext(readOnly,{...readOnly,epoch:4}),false);
 });
 
 const require = createRequire(import.meta.url);
