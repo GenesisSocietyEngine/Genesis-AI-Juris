@@ -1,0 +1,284 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-02",
+  "stage": "loaded-passage-search-local-review-simplification",
+  "runtimeCommit": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+  "applicationInputsSha256": "4f59744f7284af44fae0038a9904c5c8ee495f91d6663bb8e430717b621ae2aa",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    192
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_fb05511c74008191b717ca161bde6b0d",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 165,
+    "source": {
+      "commit_sha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000954c8246942fadce8867abf9",
+      "content_hash": "sha256:1097066e104b9a8d5a243a086650e1d7d39a635215e2d63270725bc0d7484625",
+      "size_bytes": 49510400,
+      "file_count": 584
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae896dee1fc8191b5e1d93cdb99c12a",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_fb05511c74008191b717ca161bde6b0d",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-02T13:58:15.513421+00:00"
+  },
+  "sourceHelper": {
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-workflow-a0d2c01-20261102.tar"
+    }
+  },
+  "localArchive": {
+    "path": "C:/Users/User/Documents/ChatGPT/software/casevant-workflow-a0d2c01-20261102.tar",
+    "sha256": "190e2df886f4ee69f00d8be16f391036bc08fc365dc9945ebb8388c37621db07",
+    "bytes": 30391420
+  },
+  "exactMainBuild": {
+    "runId": 41455957744,
+    "artifactId": 13146769152,
+    "artifactName": "verified-web-build-a0d2c01e9c92f6f67d34de25f7048d2a73f9da86-41455957744",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-a0d2c01.zip",
+    "sha256": "84cb813556fc770a80e8870f23d59cea80546c6bd1039c11056693adc7c8be48",
+    "bytes": 30242475,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-a0d2c01",
+    "entries": 528,
+    "sourceInputsVerified": 562,
+    "tree": "454f7998ada213a7765ba98f97539e0b8b0f2f77",
+    "completeSourceReceiptVerified": true
+  },
+  "candidate": {
+    "sha": "100ce81751442d33d9322c48f8f75148c678b7f3",
+    "runId": 41454481444,
+    "tests": {
+      "passed": 1825,
+      "failed": 0,
+      "skipped": 3
+    },
+    "renderedHtml": {
+      "passed": 2,
+      "failed": 0
+    },
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0,
+    "webPdfPackagedWorker": "passed"
+  },
+  "mainAcceptance": {
+    "runId": 41455957744,
+    "tests": {
+      "passed": 1825,
+      "failed": 0,
+      "skipped": 3
+    },
+    "renderedHtml": {
+      "passed": 2,
+      "failed": 0
+    },
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0,
+    "webPdfPackagedWorker": "passed"
+  },
+  "clientRetention": {
+    "policy": "immediately-previous-current-manifest-only",
+    "previousSourceCommit": "86454a74da4296343e809ac592bd599e2be7e3d5",
+    "previousCurrentManifestAssets": 135,
+    "currentAssets": 136,
+    "newlyRetainedAssets": 56,
+    "totalAssets": 192
+  },
+  "publicAssets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 192,
+      "verifiedCount": 192,
+      "passed": true,
+      "receiptSha256": "79ee6c5e416f93a60967cfe1a931022676aeab08a639b58d5e9946bd0c683c9e"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 192,
+      "verifiedCount": 192,
+      "passed": true,
+      "receiptSha256": "0be8eb7114182119b7760ea7309065daf6c59393c523fdb95b1f2a10a5a92823"
+    }
+  ],
+  "publicRuntime": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+        "applicationInputsSha256": "4f59744f7284af44fae0038a9904c5c8ee495f91d6663bb8e430717b621ae2aa",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+        "applicationInputsSha256": "4f59744f7284af44fae0038a9904c5c8ee495f91d6663bb8e430717b621ae2aa",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "productionBrowser": {
+    "evidenceClass": "actual signed-out production browser and exact returned-file bytes; not authenticated save or original-file acceptance",
+    "date": "2026-11-02",
+    "version": 165,
+    "origin": "https://casevant.pro",
+    "case": "Project Canopy — Managed-site expansion gate",
+    "source": "project_canopy_managed_site_expansion@2.0.0",
+    "query": "450 packs",
+    "matchingMaterials": 2,
+    "retainedVersions": true,
+    "filter": "reference",
+    "exactFocusedPassage": {
+      "tag": "MARK",
+      "text": "450 packs",
+      "viewportTop": 348.75
+    },
+    "sourceReturn": {
+      "queryPreserved": true,
+      "filterPreserved": true,
+      "historyPreserved": true,
+      "focusedButton": "N02 · Is this within the committee mandate?",
+      "viewportTop": 338
+    },
+    "zip": {
+      "path": "C:/Users/User/Downloads/example_work_1900b067d78e4965b4949fc01d920262-materials.zip",
+      "sha256": "4abe6dbf90e6f7252aa2d4dd4963b76db5c08a9a715695accca6a4af8a9831bc",
+      "bytes": 12147,
+      "entryCount": 16,
+      "referenceVersions": 15,
+      "workingRecords": 1,
+      "allEntryHashesVerified": true
+    },
+    "text": {
+      "path": "C:/Users/User/Downloads/002-canopy_D01_v1 (3).txt",
+      "sha256": "9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+      "bytes": 1225,
+      "id": "canopy:D01:v1",
+      "matchesArchiveAndManifest": true
+    },
+    "productionPersistenceWrites": 0,
+    "limits": [
+      "Signed-out public fictional example; authenticated/sealed JSON and all other cases/variants remain separate acceptance.",
+      "No claim of original binary source files or evidence/professional acceptance."
+    ]
+  },
+  "configuration": {
+    "before": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "latest_version_number": 164,
+      "current_user_role": "owner",
+      "access_mode": "public",
+      "current_live_url": "https://casevant.pro"
+    },
+    "after": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "latest_version_number": 165,
+      "access_mode": "public",
+      "current_live_url": "https://casevant.pro"
+    },
+    "environmentRevision": 42,
+    "environmentEntryCount": 13,
+    "environmentEntriesUnchanged": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ],
+    "bindingsAndAudienceChanged": false
+  },
+  "nativeWorkflows": [
+    {
+      "conclusion": "",
+      "databaseId": 41455957662,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "iOS Tax Application",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41455957651,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41455958081,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41455957865,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41455957687,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41455957744,
+      "headSha": "a0d2c01e9c92f6f67d34de25f7048d2a73f9da86",
+      "name": "Root Web and PDF",
+      "status": "completed"
+    }
+  ],
+  "localEvidence": {
+    "focusedTests": {
+      "passed": 52,
+      "failed": 0
+    },
+    "greenFire": "20→24 first activation; exact N22 return with24 retained and visible focus;7 missing originals and0individual text-download controls",
+    "materialZipSha256": "9617ba112866103b7c396b80376737ef4574fcea2d7b77e6775ea9b05b2448fa",
+    "documentTextSha256": "9a78232b5d50b7fdf545a9ccedb00e41de76d679ba4b1a6aab6189b2cc60a49b",
+    "markdownSha256": "ba1f1400201adab28f2232ab08d331b6e28f11d29304896fedb3d8014286aa51"
+  },
+  "acceptanceLimits": [
+    "Authenticated A/B save/reopen/amend, sealed JSON, same-tab identity/cancellation and legitimate unsupported-owner recovery remain separate pending acceptance.",
+    "Native starter-dialog cancellation is unconfirmed after input timeout; no authority or confirmation guard was bypassed.",
+    "Local browser/component/handler evidence is not production browser evidence; exact observations are identified separately.",
+    "Historical My cases pagination miss remains unresolved; the successful GreenFire materials-list check is a different flow.",
+    "Original old application artifact compatibility,43missing original bodies, governed edit merging, measured report retrieval and operator/domain/commercial readiness remain independent work.",
+    "No production case writes or disposal, provider calls, analytics, pricing or outreach; preserve all existing and synthetic cases/tabs and full report/source/carrier locks."
+  ],
+  "publishingNote": "Adopted the verified exact-main CI build rather than rebuilding it locally; source helper packages outside checkout. Documentation-only closure with unchanged application/hosting inputs does not require another runtime rollout."
+}
