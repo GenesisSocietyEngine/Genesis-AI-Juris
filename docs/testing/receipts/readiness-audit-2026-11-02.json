@@ -1,0 +1,127 @@
+{
+  "schema": "casevant.readiness-audit.v1",
+  "date": "2026-11-02",
+  "scope": "documentation/source/public identity/primary-source benchmark; no runtime amendment",
+  "identity": {
+    "checkedAt": "2026-11-02T10:40:39.627Z",
+    "local": {
+      "sourceCommit": "db05efb3a5df3d6fe7ac4a06f5ac5ec352d0b541",
+      "applicationInputsSha256": "cee0d8c57c728ec36a6c1693d95bfa91b84e2edf79a09ad5c999f8a62a55432e",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+      "inputFiles": 554
+    },
+    "responses": [
+      {
+        "origin": "https://casevant.pro",
+        "status": 200,
+        "release": {
+          "schema": "casevant.studio-release.v1",
+          "sourceCommit": "d4ff9b6960c3869820cc976cadefdd2e4d486527",
+          "applicationInputsSha256": "cee0d8c57c728ec36a6c1693d95bfa91b84e2edf79a09ad5c999f8a62a55432e",
+          "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+        }
+      },
+      {
+        "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+        "status": 200,
+        "release": {
+          "schema": "casevant.studio-release.v1",
+          "sourceCommit": "d4ff9b6960c3869820cc976cadefdd2e4d486527",
+          "applicationInputsSha256": "cee0d8c57c728ec36a6c1693d95bfa91b84e2edf79a09ad5c999f8a62a55432e",
+          "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+        }
+      }
+    ]
+  },
+  "site": {
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version": 163,
+    "audience": "public",
+    "status": "active"
+  },
+  "freshAudits": {
+    "full": {
+      "exit": 1,
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 16,
+        "high": 0,
+        "critical": 0,
+        "total": 16
+      },
+      "advisories": [
+        "https://github.com/advisories/GHSA-g3hv-75wg-m249"
+      ]
+    },
+    "production": {
+      "exit": 0,
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    "lockOnly": true,
+    "dependenciesInstalled": false,
+    "exploitationEstablished": false
+  },
+  "retrievedHistoricalCI": {
+    "source": "db05efb3a5df3d6fe7ac4a06f5ac5ec352d0b541",
+    "executed": "2026-10-27",
+    "webPDF": {
+      "run": 40579612594,
+      "status": "success"
+    },
+    "rust": {
+      "run": 40579612665,
+      "status": "success"
+    },
+    "flutter": {
+      "run": 40579612639,
+      "status": "success"
+    },
+    "android": {
+      "run": 40579612621,
+      "status": "success"
+    },
+    "iosNative": {
+      "run": 40579612725,
+      "status": "success"
+    },
+    "iosTax": {
+      "run": 40579612596,
+      "job": 122455356673,
+      "status": "success",
+      "phases": [
+        "write",
+        "read",
+        "incomplete-write",
+        "incomplete-read",
+        "legacy-write",
+        "legacy-read"
+      ],
+      "loggedVerifier": {
+        "complete_pairs_equal": true,
+        "fresh_native_reopen": true,
+        "incomplete_native_error": true,
+        "legacy_record_preserved": true
+      },
+      "rawArtifactIndependentlyReverified": false
+    },
+    "testsRerunInThisAudit": false
+  },
+  "limitations": {
+    "freshAuthenticatedBrowser": false,
+    "freshRenderedUI": false,
+    "downloadedBytes": false,
+    "humanUsabilityStudy": false,
+    "customerDataReadiness": false,
+    "penetrationTest": false,
+    "competitors": "public first-party descriptions, not independent performance ranking"
+  },
+  "productionWrites": 0
+}
