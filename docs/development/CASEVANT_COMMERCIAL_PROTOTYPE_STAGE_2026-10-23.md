@@ -1,5 +1,7 @@
 # Commercial prototype continuation — 23 October 2026
 
+**Historical stage; current plan2November2026:** [Product improvement instructions](CASEVANT_PRODUCT_IMPROVEMENT_STAGE_2026-11-02.md) and [fresh audit](../testing/UI_UX_COMMERCIAL_AUDIT_2026-11-02.md) supersede the active ordering and stale pending/failure wording here. Preserve this file as the v162/v163 delivery ledger and acceptance history.
+
 This is the current execution order. Use the canonical product invariants, the [weekly audit](../testing/weekly-quality-ux-audit-2026-10-23.md), and the 22 October continuation for retained receipts and exact compatibility contracts. Older delivery notes are history, not a queue to repeat. No new recurring automation is created by this weekly review.
 
 **Delivered27October: public v163**, runtime d4ff9b6960c3869820cc976cadefdd2e4d486527, [native rollout receipt](../testing/receipts/adapter-v163-2026-10-27.json) and [completed adapter review](../testing/adapter-backport-review-2026-10-27.md#delivered-public-sites-v163). The reproducible adapter repair, material counts/read feedback, truthful Markdown handoff and entry alignment are deployed. Candidate and exact-main web/PDF1801pass/0fail/3inherited skips; both audits0; both origins187/187assets and matching public Worker identity. Public audience/environment42/storage unchanged; no production case writes. The unmodified1.0.3 hold and candidate wording below are history, not instructions to repeat the failed upgrade.
