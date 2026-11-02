@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildCaseMarkdown, type CaseMarkdownLanguage, type CaseMarkdownStatus } from "./case-markdown";
 import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "./case-markdown-filename";
 import { startReportDownload } from "./report-download";
+import { containDialogFocus } from "./dialog-focus";
 import type { StudioDraft } from "./types";
 
 export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAuthority,close,completed}:{locale:"en"|"ru";draft:StudioDraft;canExport?:boolean;verifyAuthority?:()=>Promise<()=>boolean>;close:()=>void;completed:()=>void}){
@@ -18,6 +19,12 @@ export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAu
   const [filenameEdited,setFilenameEdited]=useState(false);
   const context=useMemo(()=>({draft,canExport}),[draft,canExport]);
   const committedContext=useRef<typeof context|null>(null);
+  const dialogRef=useRef<HTMLElement|null>(null);
+  const closeRef=useRef(close);
+  useLayoutEffect(()=>{closeRef.current=close;},[close]);
+  useEffect(()=>{
+    if(dialogRef.current)return containDialogFocus(dialogRef.current,()=>closeRef.current());
+  },[]);
   useLayoutEffect(()=>{committedContext.current=context;return()=>{committedContext.current=null;};},[context]);
   async function verifyExport(){
     if(!canExport||committedContext.current!==context)throw new Error("Export context changed");
@@ -52,16 +59,16 @@ export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAu
   }
 
   return <div className="case-report-backdrop" role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)close();}}>
-    <section className="case-report-dialog case-markdown-dialog" role="dialog" aria-modal="true" aria-labelledby="case-markdown-title">
+    <section ref={dialogRef} tabIndex={-1} className="case-report-dialog case-markdown-dialog" role="dialog" aria-modal="true" aria-labelledby="case-markdown-title" aria-describedby={`case-markdown-intro case-markdown-preparation-note${error?" case-markdown-error":""}`}>
       <header><div><span>{locale==="en"?"PORTABLE CASE SPECIFICATION · MD":"ПЕРЕНОСИМАЯ СПЕЦИФИКАЦИЯ КЕЙСА · MD"}</span><h2 id="case-markdown-title">{locale==="en"?"Polished case description":"Структурированное описание кейса"}</h2></div><button type="button" onClick={close} aria-label={locale==="en"?"Close Markdown export":"Закрыть экспорт Markdown"}>×</button></header>
-      <p>{locale==="en"?"A professional, human-readable brief plus a compressed canonical manifest. Re-entering the complete file in Studio reconstructs the same graph and fingerprint without AI reinterpretation.":"Профессиональное описание для чтения и сжатый канонический манифест. Повторный ввод полного файла в Studio восстанавливает ту же схему и отпечаток без повторной AI-интерпретации."}</p>
+      <p id="case-markdown-intro">{locale==="en"?"A professional, human-readable brief plus a compressed canonical manifest. Re-entering the complete file in Studio reconstructs the same graph and fingerprint without AI reinterpretation.":"Профессиональное описание для чтения и сжатый канонический манифест. Повторный ввод полного файла в Studio восстанавливает ту же схему и отпечаток без повторной AI-интерпретации."}</p>
       <div className="case-report-grid">
-        <label><span>{locale==="en"?"Document preparation":"Подготовка документа"}</span><select value={status} onChange={(event)=>{const next=event.target.value as CaseMarkdownStatus;setStatus(next);if(!filenameEdited)setFilename(caseMarkdownFilename(draft,next,openedAt));}}><option value="amended">{locale==="en"?"Working brief":"Рабочее описание"}</option><option value="final">{locale==="en"?"Prepared brief":"Подготовленное описание"}</option></select><small>{locale==="en"?"This choice does not record human review or approval.":"Этот выбор не фиксирует проверку или утверждение человеком."}</small></label>
+        <label><span>{locale==="en"?"Document preparation":"Подготовка документа"}</span><select data-dialog-initial-focus value={status} onChange={(event)=>{const next=event.target.value as CaseMarkdownStatus;setStatus(next);if(!filenameEdited)setFilename(caseMarkdownFilename(draft,next,openedAt));}}><option value="amended">{locale==="en"?"Working brief":"Рабочее описание"}</option><option value="final">{locale==="en"?"Prepared brief":"Подготовленное описание"}</option></select><small id="case-markdown-preparation-note">{locale==="en"?"This choice does not record human review or approval.":"Этот выбор не фиксирует проверку или утверждение человеком."}</small></label>
         <label><span>{locale==="en"?"Output language":"Язык документа"}</span><select value={language} onChange={(event)=>setLanguage(event.target.value as CaseMarkdownLanguage)}><option value="en">English</option><option value="ru">Русский</option></select></label>
-        <label className="case-markdown-filename"><span>Case filename</span><input value={filename} maxLength={180} spellCheck={false} onChange={(event)=>{setFilenameEdited(true);setFilename(event.target.value);}} onBlur={()=>setFilename((current)=>normalizeCaseMarkdownFilename(current,caseMarkdownFilename(draft,status,openedAt)))}/><small>{locale==="en"?"Editable; the default includes your local date and time (YYYYMMDD_HHMMSS).":"Можно изменить; по умолчанию добавляются локальные дата и время (YYYYMMDD_HHMMSS)."}</small></label>
+        <label className="case-markdown-filename"><span>{locale==="en"?"Case filename":"Имя файла кейса"}</span><input value={filename} maxLength={180} spellCheck={false} onChange={(event)=>{setFilenameEdited(true);setFilename(event.target.value);}} onBlur={()=>setFilename((current)=>normalizeCaseMarkdownFilename(current,caseMarkdownFilename(draft,status,openedAt)))}/><small>{locale==="en"?"Editable; the default includes your local date and time (YYYYMMDD_HHMMSS).":"Можно изменить; по умолчанию добавляются локальные дата и время (YYYYMMDD_HHMMSS)."}</small></label>
       </div>
       <div className="case-markdown-meta"><span>{markdown.length.toLocaleString()} {locale==="en"?"characters":"символов"}</span><code>{fingerprint||"…"}</code></div>
-      {error?<p className="case-report-error" role="alert">{error}</p>:<textarea className="case-markdown-preview" readOnly value={markdown} aria-label={locale==="en"?"Generated Markdown case description":"Созданное Markdown-описание кейса"}/>}
+      {error?<p id="case-markdown-error" className="case-report-error" role="alert">{error}</p>:<textarea className="case-markdown-preview" readOnly value={markdown} aria-label={locale==="en"?"Generated Markdown case description":"Созданное Markdown-описание кейса"}/>}
       <aside className="case-report-status"><b>{locale==="en"?"Deterministic hand-off":"Детерминированная передача"}</b><span>{locale==="en"?"Narrative edits outside Studio do not alter the embedded case. For canonical amendments, import, edit in Studio and regenerate.":"Правки текста вне Studio не меняют встроенный кейс. Для канонических изменений импортируйте файл, отредактируйте кейс в Studio и создайте файл заново."}</span></aside>
       <footer>
         <button className="secondary-cta" type="button" onClick={close}>{locale==="en"?"Cancel":"Отмена"}</button>

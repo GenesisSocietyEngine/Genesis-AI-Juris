@@ -1,5 +1,15 @@
 # Product improvement implementation — 2 November 2026
 
+## S02: bounded dialog accessibility and practitioner guidance
+
+Outcome: Markdown export focuses its preparation control on opening, wraps Tab/Shift+Tab within available controls, closes on unhandled Escape and restores the connected opener on cleanup. The close callback remains current without rerunning initial focus on parent renders. The read-only preview remains keyboard reachable. Introduction, preparation caveat and current errors are associated with the dialog; the filename label is localized. No report-renderer, authority fence, persistence or source carrier changes are included.
+
+Provider error presentation distinguishes access/setup, workspace usage, transient rate limits, rejected requests and temporary availability in EN/RU. Practitioner messages offer retry, local editing or administrator help; raw operator fallback diagnostics are not echoed for provider errors. Server reason codes and operator diagnostics remain unchanged. Refusal, invalid output, stale context and capacity messages retain their existing distinctions. No live provider requests or credential/configuration changes were made.
+
+All48 expanded regressions pass, including exact historical Markdown bytes, canonical payload equality, actual dialog SSR in both languages, three explicitly modelled DOM focus lifecycle tests and the real client error mapper. These are not live keyboard/viewport acceptance. The initial restricted-sandbox run stopped before test execution because Node could not obtain its Windows user information; the authorized same-runtime run passes. Strict TypeScript and targeted lint pass. An older source guard requiring Final reviewed was amended to require Working brief plus the explicit no-approval caveat; retained historical fixtures were not rewritten. Candidate/exact-main release gates remain separately tracked.
+
+Interactive keyboard, 200% zoom, narrow/short-height layouts and actual downloads remain blocked and unobserved in this implementation. There have been no new browser attempts or production case writes.
+
 Baseline: canonical a0817eb2e7d9a03f4457e05a2daa73eab870d716; public163/runtime d4ff9b6, matching application/hosting hashes established in the audit. Fresh Sites reports active/public/owner/latest163. The new checkout initially has insufficient shallow ancestry for the Sites history comparison; fetching20canonical ancestors proves d4ff9b6 is an ancestor and the supported helper then opens a0817eb. No remote history is overwritten. Runtime changes, publication and browser acceptance are separate gates.
 
 ## S00: patched matcher behind a bounded consumer adapter

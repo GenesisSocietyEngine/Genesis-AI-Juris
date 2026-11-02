@@ -54,5 +54,8 @@ test('the actual export dialog starts with a working brief in both locales', asy
     assert.ok(html.includes(locale === 'en' ? 'Working brief' : 'Рабочее описание'));
     assert.doesNotMatch(html, /Final reviewed|Финальный проверенный/);
     assert.match(html, /amended_\d{8}_\d{6}\.md/);
+    assert.ok(html.includes(locale === 'en' ? 'Case filename' : 'Имя файла кейса'));
+    assert.match(html, /aria-describedby="case-markdown-intro case-markdown-preparation-note"/);
+    assert.match(html, /data-dialog-initial-focus/);
   }
 });
