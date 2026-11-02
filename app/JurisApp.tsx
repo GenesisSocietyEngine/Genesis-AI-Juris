@@ -2723,6 +2723,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       if (restorePending) return;
       const step = parseStudioWorkflowStep(new URL(window.location.href).searchParams.get("studio_step"));
       if (step) {
+        materialReadingMemory.rememberReview(null);
         setActionTarget(null);
         setActionNotice("");
         setGuidedStep(guidedDraftIsEmpty ? 1 : step);
@@ -2731,7 +2732,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     window.addEventListener("popstate", restoreGuidedStepFromHistory);
     window.addEventListener("genesis-studio-navigation", restoreGuidedStepFromHistory);
     return () => { window.removeEventListener("popstate", restoreGuidedStepFromHistory); window.removeEventListener("genesis-studio-navigation", restoreGuidedStepFromHistory); };
-  }, [guidedDraftIsEmpty, restorePending]);
+  }, [guidedDraftIsEmpty, restorePending, materialReadingMemory]);
 
   useEffect(() => {
     // Opening a source adjusts the viewport only. Node positions belong to the
@@ -3445,7 +3446,8 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     validationReady,
     visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted",
   ] as const;
-  function selectGuidedStep(step: GuidedStudioStep) {
+  function selectGuidedStep(step: GuidedStudioStep, reviewId?: string) {
+    materialReadingMemory.rememberReview(reviewId);
     setActionTarget(null);
     setActionNotice("");
     const url = new URL(window.location.href);
@@ -3456,6 +3458,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     setGuidedStep(step);
   }
   function openOverview() {
+    materialReadingMemory.rememberReview(null);
     setActionTarget(null);
     setActionNotice("");
     const url = new URL(window.location.href);
@@ -3464,22 +3467,26 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     setOverviewSelected(true);
   }
   function openOverviewNode(nodeId: string) {
+    const reviewId = materialReadingMemory.reviewFinding();
     setGraphPresentation("detail"); setGraphZoom(1);
-    selectGuidedStep(4);
+    selectGuidedStep(4, reviewId ?? undefined);
     selectGraphNode(nodeId);
     setActionTarget({ step: 4, id: `studio-node-${nodeId}`, nodeId });
   }
   function openStudioAction(target: StudioActionTarget) {
     if (target.developer) changeDisplayMode("developer");
     if (target.nodeId) { setGraphPresentation("detail"); setGraphZoom(1); selectNode(target.nodeId); }
-    selectGuidedStep(target.step);
+    const reviewId = checks.some(check => check.id === target.reviewId && check.level === "warn") ? target.reviewId : undefined;
+    selectGuidedStep(target.step, reviewId);
     setActionNotice("");
     setActionTarget(target);
   }
   function returnToActions(message = "") {
+    const reviewId = materialReadingMemory.reviewFinding();
+    const findingStillOpen = reviewId && checks.some(check => check.id === reviewId && check.level === "warn");
     changeDisplayMode("user");
     selectGuidedStep(5);
-    setActionTarget({ step: 5, id: "studio-next-actions" });
+    setActionTarget({ step: 5, id: findingStillOpen ? `action-${reviewId}` : "studio-next-actions" });
     setActionNotice(message);
   }
   function addConnectedItem(value: { type: StudioNodeType; title: string; detail: string; relatedId: string }) {
@@ -3628,7 +3635,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     {(displayMode === "developer" || visibleStep === 2) && prompt.trim() && aiState === "error" && <section className="prompt-ai-status page-width error" role="alert"><Icon name="alert"/><div><b>{locale === "en" ? "No changes were made" : "Изменения не внесены"}</b><p>{aiError}</p><small>{displayMode === "developer" ? (locale === "en" ? "Retry AI analysis or inspect the exact-command preview below." : "Повторите AI-анализ или проверьте точный командный план ниже.") : (locale === "en" ? "Go back to the brief to retry AI analysis or apply the safe local interpretation." : "Вернитесь к описанию, чтобы повторить AI-анализ или применить безопасную локальную интерпретацию.")}</small></div></section>}
     {(displayMode === "developer" || visibleStep === 2) && activeAIResult && <Suspense fallback={<section className="prompt-ai-status page-width" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Preparing the proposed scheme…" : "Подготавливается предлагаемая схема…"}</b></div></section>}><StudioAIReview locale={locale} draft={draft} plan={activeAIResult.plan} nodeTitles={aiNodeTitles} linkEndpoints={reviewLinkEndpoints} nodeLabels={text.nodeTypes} applyEnabled={canDuplicate && aiState !== "analysing"} showTechnicalIds={displayMode === "developer"} onApply={applyActiveAIPlan}/></Suspense>}
     {displayMode === "developer" && !canonicalPrompt && prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary>{promptDerivationsSettled && <section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section>}</details>}
-    {actionTarget && actionTarget.id !== "studio-next-actions" && <div className="action-return page-width"><button type="button" onClick={() => returnToActions()}>{locale === "en" ? "← Back to case actions" : "← Вернуться к действиям"}</button><span>{locale === "en" ? "Changes stay in the working draft; save to workspace when ready." : "Изменения остаются в черновике; затем сохраните кейс в рабочем пространстве."}</span></div>}
+    {actionTarget && actionTarget.step !== 5 && <div className="action-return page-width"><button type="button" onClick={() => returnToActions()}>{materialReadingMemory.reviewFinding() ? (locale === "en" ? "← Back to review finding" : "← Вернуться к замечанию") : (locale === "en" ? "← Back to case actions" : "← Вернуться к действиям")}</button><span>{locale === "en" ? "Changes stay in the working draft; save to workspace when ready." : "Изменения остаются в черновике; затем сохраните кейс в рабочем пространстве."}</span></div>}
     {actionNotice && <p className="action-notice page-width" role="status">{actionNotice}</p>}
     {displayMode === "user" && visibleStep === 5 && <Suspense fallback={<p role="status">Checking actions…</p>}><StudioActionPanel draft={draft} checks={checks} locale={locale} checking={!derivationsSettled} canEdit={canDuplicate} onOpen={openStudioAction} onReport={() => void openCaseReport()} onSave={() => void shareDraft("save")} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} saving={workspaceState === "saving"} restoring={restorePending} withinEnvelope={saveWithinEnvelope}/></Suspense>}
     {visibleStep === 3 && actionTarget?.nodeType && <Suspense fallback={null}><StudioEvidenceComposer draft={draft} type={actionTarget.nodeType} locale={locale} canEdit={canDuplicate} value={evidenceBuffers[actionTarget.nodeType] ?? emptyStudioEvidenceInput()} onChange={patch => onEvidenceChange(actionTarget.nodeType!, patch)} onClear={() => onEvidenceClear(actionTarget.nodeType!)} onSave={addConnectedItem}/></Suspense>}
@@ -3761,7 +3768,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       </div></details></>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
     </section>}
     {(displayMode === "developer" || (visibleStep === 5 && packageRequiresPlayableRoute)) && <StudioSimulationPanelLoader locale={locale} text={text} draft={draft} displayMode={displayMode} trainingWorkflow={trainingWorkflow} checks={checks} visibleChecks={visibleChecks} derivationsSettled={derivationsSettled} compiledDraft={compiledDraft} playDraft={playDraft} onFixNode={(nodeId) => { selectGraphNode(nodeId); selectGuidedStep(4); }}/> }
-    {(displayMode === "developer" || visibleStep === 5) && !packageRequiresPlayableRoute && <Suspense fallback={null}><StudioPackageValidationCard locale={locale} draft={draft} checks={checks} checking={!derivationsSettled} onOpen={check => openStudioAction(studioReviewAction(draft, check))}/></Suspense>}
+    {(displayMode === "developer" || visibleStep === 5) && !packageRequiresPlayableRoute && <Suspense fallback={null}><StudioPackageValidationCard locale={locale} draft={draft} checks={checks} checking={!derivationsSettled} onOpen={check => openStudioAction({ ...studioReviewAction(draft, check), reviewId: check.id })}/></Suspense>}
     {displayMode === "user" && visibleStep === 6 && <Suspense fallback={null}><StudioCasePlaybook locale={locale} draft={draft} phase="outputs"/></Suspense>}
     {displayMode === "user" && visibleStep === 6 && <section className="studio-finish page-width" aria-labelledby="studio-finish-title">
       <header><div><span>{locale === "en" ? "FINAL STEP · YOUR CASE STAYS EDITABLE" : "ФИНАЛЬНЫЙ ЭТАП · КЕЙС ОСТАЁТСЯ РЕДАКТИРУЕМЫМ"}</span><h2 id="studio-finish-title">{locale === "en" ? "Choose what happens next" : "Выберите следующее действие"}</h2></div>{validationReady ? <b className="ready">{locale === "en" ? "READY" : "ГОТОВО"}</b> : <button type="button" className="review-needed" onClick={() => returnToActions()}>{locale === "en" ? "Review needed →" : "Нужна проверка →"}</button>}</header>

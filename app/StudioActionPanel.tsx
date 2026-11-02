@@ -8,7 +8,7 @@ import type { StudioCheck } from "./studio-validation";
 import type { StudioWorkflowStep } from "./studio-workflow";
 import type { StudioEvidenceInput } from "./studio-evidence-buffer";
 
-export type StudioActionTarget = { step: StudioWorkflowStep; id: string; nodeType?: StudioNodeType; nodeId?: string; developer?: boolean };
+export type StudioActionTarget = { step: StudioWorkflowStep; id: string; nodeType?: StudioNodeType; nodeId?: string; developer?: boolean; reviewId?: string };
 
 export default function StudioActionPanel({ draft, checks, locale, checking, canEdit, onOpen, onReport, onSave, saved, saving, restoring = false, withinEnvelope }: {
   draft: StudioDraft; checks: StudioCheck[]; locale: "en" | "ru"; checking: boolean; canEdit: boolean;
@@ -34,7 +34,7 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
     <header><div><h2 id="studio-next-actions-title">{en ? "Your next actions" : "Следующие действия"}</h2><p>{en ? "Open an action, make the change, then return here to check progress." : "Откройте действие, внесите изменения и вернитесь сюда проверить результат."}</p></div><span role="status">{checking ? (en ? "Checking changes…" : "Проверка изменений…") : `${warnings.length} ${en ? "to complete" : "для завершения"}`}</span></header>
     {!canEdit && <p className="action-prerequisite">{en ? "Inspection only. Ask the case owner for an editable working copy; the source remains protected." : "Только просмотр. Запросите у владельца редактируемую рабочую копию."}</p>}
     <div className="action-tile-grid">
-      {!checking && warnings.filter(check => check.id).map(check => { const item = action(check); return <ActionTile key={check.id} id={`action-${check.id}`} title={item.title} detail={check.text} status={en ? "Needs attention" : "Нужно действие"} next={item.target.developer ? (en ? "Developer controls" : "Настройки разработчика") : (en ? "Open control" : "Открыть поле")} onClick={() => onOpen(item.target)}/>; })}
+      {!checking && warnings.filter(check => check.id).map(check => { const item = action(check); return <ActionTile key={check.id} id={`action-${check.id}`} title={item.title} detail={check.text} status={en ? "Needs attention" : "Нужно действие"} next={item.target.developer ? (en ? "Developer controls" : "Настройки разработчика") : (en ? "Open control" : "Открыть поле")} onClick={() => onOpen({ ...item.target, reviewId: check.id })}/>; })}
       {!checking && warnings.filter(check => !check.id).map((check, index) => <p key={index} role="alert">{check.text} {en ? "Return to the previous step and retry validation." : "Вернитесь на предыдущий шаг и повторите проверку."}</p>)}
       {!checking && warnings.length === 0 && <p className="action-complete" role="status">{en ? "Completeness checks passed. Evidence quality and independent approval still require review." : "Проверки полноты пройдены. Надёжность доказательств и независимое утверждение проверяются отдельно."}</p>}
       <ActionTile title={en ? "Generate report" : "Создайте отчёт"} detail={en ? "Preview the active case as a preliminary A4 decision package." : "Просмотрите предварительный пакет решений по текущему кейсу в A4."} status={en ? "Preliminary draft" : "Предварительный черновик"} next={en ? "Open report" : "Открыть отчёт"} disabled={!canEdit || !draft.nodes.length} onClick={onReport}/>

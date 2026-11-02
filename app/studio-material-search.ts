@@ -61,8 +61,13 @@ export type MaterialReadingState = { query: string; filter: string; history: boo
 /** Owned by the current application context; discarded on draft/locale/authority changes. */
 export function createMaterialReadingMemory(context: { draft: object; locale: string; epoch?: number; allowed?: boolean }) {
   let current: MaterialReadingState | null = null;
+  let reviewId: string | null = null;
   return {
     context,
+    // Navigation only. The parent replaces this memory on case, locale or
+    // authority changes; no finding or permission is stored in the case.
+    rememberReview: (id?: string | null) => { reviewId = context.allowed && id && /^[a-z0-9][a-z0-9:_-]{0,119}$/.test(id) ? id : null; },
+    reviewFinding: () => context.allowed ? reviewId : null,
     read: () => current,
     write: (next: MaterialReadingState) => { current = { ...next, returnTo: next.returnTo ? { ...next.returnTo } : undefined }; },
     takeReturn: () => { const target = current?.returnTo; if (current) current = { ...current, returnTo: undefined }; return target; },
