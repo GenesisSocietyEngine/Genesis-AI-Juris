@@ -1,0 +1,355 @@
+{
+  "schema": "casevant.release-hold.v1",
+  "date": "2026-11-02",
+  "stage": "compact-template-demo-catalogues",
+  "implementationPullRequest": 200,
+  "implementationMerged": true,
+  "verifiedMain": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+  "applicationInputsSha256": "6ca2ac160a4e4e53be4d4e09d94951810550d8d95a43a1ea8f1b07149e366dd1",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "sourceInputsVerified": 579,
+  "candidate": {
+    "sha": "ab590cf26f60430739ecc6b47a60d75c3b3ca472",
+    "runId": 41518957089,
+    "totals": {
+      "tests": 1842,
+      "pass": 1839,
+      "fail": 0,
+      "skipped": 3
+    },
+    "renderedHtmlPassed": 2
+  },
+  "mainAcceptance": {
+    "runId": 41520305837,
+    "totals": {
+      "tests": 1842,
+      "pass": 1839,
+      "fail": 0,
+      "skipped": 3
+    },
+    "renderedHtmlPassed": 2,
+    "strictTypesLintHistoryContractsPackagedWorkerPdf": "passed",
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0,
+    "verifiedBuildArtifact": {
+      "runId": 41520305837,
+      "artifactId": 13178101574,
+      "artifactName": "verified-web-build-2fab5b28e52d41c7b2cca42679f0b0c0630050f7-41520305837",
+      "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-2fab5b2.zip",
+      "sha256": "e6067f87c228e2fc04f5dcec432f71aefcdc03aabe5d91f58fb5a8134bfc3287",
+      "bytes": 31203383,
+      "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-2fab5b2",
+      "entries": 543
+    },
+    "completeSourceReceiptVerified": true
+  },
+  "localBrowser": {
+    "before": {
+      "demo": {
+        "height": 688,
+        "listHeight": 4238.10009765625,
+        "listWidth": 1195.2000732421875,
+        "rows": [
+          {
+            "height": 492.3500061035156,
+            "title": "Project Canopy"
+          },
+          {
+            "height": 492.3500061035156,
+            "title": "Failed ERP Implementation"
+          },
+          {
+            "height": 507.8500061035156,
+            "title": "Unpaid Logistics Invoices"
+          },
+          {
+            "height": 507.8500061035156,
+            "title": "GreenFire \u2014 The First 72 Hours"
+          },
+          {
+            "height": 533.4500122070312,
+            "title": "GoldenShell \u2014 Recall at Dawn"
+          },
+          {
+            "height": 533.4500122070312,
+            "title": "Desert Water"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Harbor \u2014 approve a supplier pilot?"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Northline \u2014 disputed delivery invoices"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Cloudbridge \u2014 SaaS renewal review"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Orchard \u2014 compare investment economics"
+          },
+          {
+            "height": 528.25,
+            "title": "Clearpath \u2014 vendor-control gaps"
+          },
+          {
+            "height": 528.25,
+            "title": "Meridian \u2014 cross-border reporting readiness"
+          },
+          {
+            "height": 528.25,
+            "title": "Atlas \u2014 duplicate invoice postings"
+          },
+          {
+            "height": 528.25,
+            "title": "Beacon \u2014 disputed expense approvals"
+          },
+          {
+            "height": 502.6499938964844,
+            "title": "Signal \u2014 the first incident decision"
+          }
+        ],
+        "width": 1522
+      },
+      "templates": {
+        "height": 688,
+        "listHeight": 1876.4625244140625,
+        "listWidth": 1195.2000732421875,
+        "rows": 9,
+        "width": 1522
+      }
+    },
+    "after": {
+      "demo": {
+        "height": 632,
+        "listHeight": 3087.5625,
+        "listWidth": 1195.2000732421875,
+        "overflow": false,
+        "rows": 15,
+        "width": 1522
+      },
+      "templates": {
+        "height": 632,
+        "listHeight": 1415.4000244140625,
+        "listWidth": 1195.2000732421875,
+        "overflow": false,
+        "rows": 9,
+        "width": 1522
+      }
+    },
+    "localTabs": {
+      "starter": "178222777",
+      "canopy": "178222780"
+    },
+    "checks": [
+      "EN Canopy About Enter: focused summary and full description visible; direct action remains visible",
+      "Canopy walkthrough lazily loads nine-doc/four-variant flow",
+      "EN Advisory category: two rows",
+      "RU Templates search: two tax rows, Enter expands complete intake",
+      "RU empty search: zero, keyboard Clear restores nine; pointer Clear during viewport reset unconfirmed",
+      "390x480 EN Demo and RU Demo/Templates: no horizontal overflow; measured actions >=46.5px",
+      "local empty starter opens via direct action",
+      "local Canopy opens direct from closed About: 14 records",
+      "local leave confirmation Stay here preserves Canopy; DOM capture missed native dialog, AX capture identified it; search-return not claimed"
+    ]
+  },
+  "nativeSites": {
+    "site": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "latestVersion": 168,
+      "access": "public",
+      "status": "active",
+      "currentLiveUrl": "https://casevant.pro"
+    },
+    "environment": {
+      "revision": 42,
+      "entries": [
+        {
+          "key": "GENESIS-JURIS-Production",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_ADMIN_EMAILS",
+          "is_secret": true
+        },
+        {
+          "key": "GENESIS_AI_DAILY_REQUEST_LIMIT",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_DEPLOYMENT_VERSION",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_INVITATION_FROM_EMAIL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_INVITATION_MAIL_ENABLED",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_OPENAI_MODEL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_PUBLIC_ORIGIN",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_RESET_FROM_EMAIL",
+          "is_secret": false
+        },
+        {
+          "key": "GENESIS_WEB_COMMIT",
+          "is_secret": false
+        },
+        {
+          "key": "OPENAI_API_KEY",
+          "is_secret": true
+        },
+        {
+          "key": "OPEN_API_KEY",
+          "is_secret": true
+        },
+        {
+          "key": "RESEND_API_KEY",
+          "is_secret": true
+        }
+      ],
+      "returnedEntryRepresentationsUnchanged": true
+    },
+    "preEditOpening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "d3b96aeb6d49a2f8284cb15c16cf4ff39ed86494"
+    },
+    "verifiedMainOpening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7"
+    }
+  },
+  "publicRuntimeHeld": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "publication": {
+    "status": "blocked-before-save",
+    "cause": "Sites repository hostname git.chatgpt-team.site cannot be resolved; supported source-helper packaging failed twice with Could not resolve host, and Resolve-DnsName timed out.",
+    "supportedPackagingAttempts": 2,
+    "savedVersionCreated": false,
+    "deploymentStarted": false,
+    "archiveCreated": false,
+    "sourceAndVerifiedBuildRetained": true,
+    "previousCurrentAssetsRetained": {
+      "source": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "previousCurrentAssets": 137,
+      "newlyRetained": 52,
+      "localVerifiedTotal": 189
+    },
+    "networkOrSecuritySettingsChanged": false,
+    "credentialHandling": "Already authorized hidden stdin only; no credential persisted or exposed."
+  },
+  "nativeWorkflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 41520305837,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "Root Web and PDF",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41520305892,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "iOS Tax Application",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41520305738,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41520305661,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41520305857,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41520305842,
+      "headSha": "2fab5b28e52d41c7b2cca42679f0b0c0630050f7",
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41503754622,
+      "headSha": "d3b96aeb6d49a2f8284cb15c16cf4ff39ed86494",
+      "name": "iOS Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41503754539,
+      "headSha": "d3b96aeb6d49a2f8284cb15c16cf4ff39ed86494",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    }
+  ],
+  "checks": {
+    "focusedPassed": 46,
+    "productionCaseOpenedSavedReplacedDeletedOrBulkEdited": false,
+    "sourceFactoriesAuthorityPersistenceReportRecordingChanges": false,
+    "allOriginalAndSyntheticCasesRetained": true,
+    "temporaryViewportReset": true
+  },
+  "acceptanceLimits": [
+    "Local catalogue/open/cancel and generated-markup evidence are separate from production acceptance.",
+    "No fresh production observation of the new layout is possible before a successful deployment; public v168 baseline is not converted into candidate acceptance.",
+    "Completed case-return/search restoration is not claimed after Stay here preserved the local Canopy. A pointer Clear during viewport reset was unconfirmed; subsequent keyboard Clear succeeded.",
+    "All prior S03 authenticated A/B save/reopen/export, legitimate owner recovery, same-tab identity/timing, original/historical, 43 missing-original, native and operator/commercial limits remain open.",
+    "The PR attachment tool reports the existing 100-item cap; ordinary PR links remain usable and no older attachment is removed."
+  ],
+  "continuation": [
+    "Wait for actual repository DNS recovery; preserve audience, configuration and all cases. Do not change DNS/security controls, hard-code an IP or bypass source APIs.",
+    "Reverify current remote main, deployed v168/runtime2457b9d and all application/hosting inputs before resuming. Documentation-only closure adds no runtime input changes but source SHA must match the current main artifact.",
+    "Use fresh exact-main passing web/PDF build and its verified archive/source/tree/input receipts; preserve original failed attempts and CI artifact.",
+    "Refresh short-lived Sites credential as needed, use hidden stdin, supported helper open/package, native save/deploy, then both-origin runtime/assets and fresh EN/RU wide/narrow catalogue checks.",
+    "After rollout, close the receipt and resume S03 proof; do not rebuild these delivered source controls or claim commercial readiness."
+  ]
+}

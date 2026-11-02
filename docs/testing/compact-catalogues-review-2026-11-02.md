@@ -1,5 +1,8 @@
 # Compact Templates and Demo review — 2 November 2026
 
+**Implemented and merged; production rollout blocked.** PR200 integrates at 2fab5b28e52d41c7b2cca42679f0b0c0630050f7 after candidate/exact-main gates pass. Public v168 remains unchanged. [Native publishing-hold receipt](receipts/compact-catalogues-release-hold-2026-11-02.json). Earlier candidate wording below is dated history.
+
+
 ## Outcome and acceptance
 
 The user extended the compact Sources request to Templates and Demo. Use one consistent, single-column row list, including two-result filters. Keep full titles, category/jurisdiction, fictional status, intended output and direct opening actions visible. Put complete descriptions, prompts, intake and source/editorial guidance in native, initially closed disclosures. Preserve all nine starters, 15 examples, nine category filters, Canopy’s optional walkthrough, saved-play recovery, cancellation, authority and working-copy safeguards. This bounded layout slice takes priority over S03 proof; it does not close S03.
@@ -28,3 +31,12 @@ An empty local starter opens directly. A local Canopy opens directly with About 
 42 existing focused catalogue/category/conversion/navigation/UI checks pass. Four additional EN/RU structural regression checks prove direct opening/cancel/retry are outside initially closed guidance, all starters/examples retain full copy, feedback is intentionally disclosed and rendering invokes no launch callbacks. Strict TypeScript and changed-file lint pass. Initial sandbox Node execution failed before tests with uv_os_get_passwd ENOMEM; the same commands run successfully with approved execution. A synthetic test initially used a nonexistent category key; corrected to the real registry identity before passing, with no application change.
 
 Candidate and exact-main full web/PDF/package/audit gates, exact CI artifact adoption, Sites save/deployment and fresh production checks remain required. Local/component evidence is separate from production. Preserve all original/synthetic saved cases and existing unsaved tabs. No production case saves, replacements, deletions or bulk mutations are part of this slice. S03 authenticated save/reopen/export, legitimate unsupported-owner recovery, same-tab identity/timing, historical/original-source, native and operator/commercial limits remain open. Do not claim commercial readiness from this density amendment.
+
+
+## Final source review and publishing limit
+
+Candidate and exact-main gates pass: 1,839 tests / 0 failures / 3 inherited skips plus 2 HTML checks; strict types/lint, history/contracts, packaged browser/Worker/tax, unchanged 47-report/bilingual/tax PDF locks and both zero-finding audits. Exact-main CI artifact13178101574 from run41520305837 is SHA-256 e6067f87c228e2fc04f5dcec432f71aefcdc03aabe5d91f58fb5a8134bfc3287, 31,203,383bytes. Source/tree and all579 input receipts match before adopting its build. Only v168’s137 current assets were considered;52 newly retained,189 local total. No old binary was executed.
+
+The supported Sites opening succeeds at exact main. Packaging fails twice because git.chatgpt-team.site cannot be resolved; Resolve-DnsName independently times out. No archive, saved version or deployment is created. Both origins still return v168/runtime2457b9d65a7574dadfbfa875ba5152be31785350 and its exact application/hosting hashes. Native Site remains active/public168; environment42/all13 returned entry representations and bindings are unchanged. No network/security workaround is attempted; no production case is opened/saved/replaced/deleted/bulk edited. Local preview remains available; fresh production acceptance of the new layout stays unverified.
+
+Resume publishing only after actual repository DNS recovery: reverify canonical main and deployed identity, use the current exact-main passing CI artifact and source receipts, refresh the short-lived credential through hidden stdin, package with the supported helper, save/deploy natively, then check both origins and fresh wide/narrow EN/RU catalogues. Retain all failed attempts, source, build, prior cases and unsaved tabs. This documentation closure changes no application/hosting input; it is not a production release. S03 and all previous recovery/identity/historical/missing-source/native/commercial limits remain open.
