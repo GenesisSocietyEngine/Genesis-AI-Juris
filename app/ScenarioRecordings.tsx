@@ -1,23 +1,32 @@
 "use client";
 
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {createRecordingMedia} from './recording-media';
 import recordings from './scenario-recordings.json';
 import styles from './scenario-recordings.module.css';
 
 function Recording({recording,locale}:{recording:typeof recordings[number];locale:'en'|'ru'}) {
   const video=useRef<HTMLVideoElement>(null),pending=useRef<number|null>(null);
+  const media=useRef<ReturnType<typeof createRecordingMedia>|null>(null),active=useRef(true);
+  useEffect(()=>{active.current=true;return()=>{active.current=false;media.current?.dispose();media.current=null;};},[]);
   const [notice,setNotice]=useState('');
   const en=locale==='en',time=(seconds:number)=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
-  function seek(seconds:number) {
+  async function seek(seconds:number) {
     if(!video.current)return;
-    if(video.current.readyState===0){pending.current=seconds;video.current.load();}
-    else video.current.currentTime=seconds;
+    pending.current=seconds;
     video.current.focus();
-    setNotice(en?`Step selected at ${time(seconds)}. Press Play to continue.`:`Выбран шаг ${time(seconds)}. Нажмите «Воспроизвести».`);
+    setNotice(en?'Loading the short recording…':'Загружается короткая запись…');
+    media.current??=createRecordingMedia(recording.video,{fetch:(path,options)=>fetch(path,options),create:blob=>URL.createObjectURL(blob),revoke:url=>URL.revokeObjectURL(url)});
+    try {
+      const url=await media.current.load();
+      if(!active.current||!video.current)return;
+      if(video.current.src!==url){video.current.src=url;video.current.load();}
+      else if(video.current.readyState>0&&pending.current!==null){video.current.currentTime=pending.current;pending.current=null;}
+    }catch{if(active.current)setNotice(en?'Unable to load this step. Read the steps below or download the transcript.':'Не удалось загрузить шаг. Прочитайте шаги ниже или скачайте расшифровку.');}
   }
   return <article className={styles.card} aria-labelledby={`recording-${recording.id}`}>
     <header><p className={styles.meta}>{time(recording.durationSeconds)} · {en?'RECORDED 2 NOVEMBER 2026':'ЗАПИСАНО 2 НОЯБРЯ 2026'}</p><h3 id={`recording-${recording.id}`}>{recording.title[locale]}</h3><p>{recording.description[locale]}</p></header>
-    <video ref={video} controls playsInline preload="none" style={{aspectRatio:`${recording.width}/${recording.height}`}} poster={recording.poster} aria-label={recording.title[locale]} aria-describedby={`scope-${recording.id}`} onLoadedMetadata={()=>{if(pending.current!==null&&video.current){video.current.currentTime=pending.current;pending.current=null;}}} onError={()=>setNotice(en?'Video unavailable. Read the steps below or download the transcript.':'Видео недоступно. Прочитайте шаги ниже или скачайте расшифровку.')}>
+    <video ref={video} controls playsInline preload="none" style={{aspectRatio:`${recording.width}/${recording.height}`}} poster={recording.poster} aria-label={recording.title[locale]} aria-describedby={`scope-${recording.id}`} onSeeked={()=>{const seconds=Math.round(video.current?.currentTime??0);setNotice(en?`Step selected at ${time(seconds)}. Press Play to continue.`:`Выбран шаг ${time(seconds)}. Нажмите «Воспроизвести».`);}} onLoadedMetadata={()=>{if(pending.current!==null&&video.current){video.current.currentTime=pending.current;pending.current=null;}}} onError={()=>setNotice(en?'Video unavailable. Read the steps below or download the transcript.':'Видео недоступно. Прочитайте шаги ниже или скачайте расшифровку.')}>
       <source src={recording.video} type="video/mp4"/>
       <track kind="captions" srcLang="en" label="English" src={recording.video.replace('.mp4','.en.vtt')} default={en}/>
       <track kind="captions" srcLang="ru" label="Русский" src={recording.video.replace('.mp4','.ru.vtt')} default={!en}/>
