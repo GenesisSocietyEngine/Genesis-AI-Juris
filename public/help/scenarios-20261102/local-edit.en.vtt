@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:08.000
+Start with Describe your case. This recording uses an isolated local preview and synthetic information.
+
+00:00:08.000 --> 00:00:16.000
+Enter the labelled synthetic instruction: set a title and add two evidence records. Choose Review without AI; no provider request is made.
+
+00:00:16.000 --> 00:00:24.000
+Read all three proposed changes. Nothing has been applied. The local builder does not assess evidence or record professional approval.
+
+00:00:24.000 --> 00:00:32.000
+Edit brief returns to the exact instruction and restores keyboard focus. Review the proposal again before Apply.
+
+00:00:32.000 --> 00:00:40.000
+Apply creates the synthetic title and two records as one draft change. These working records are not accepted evidence or a confirmed workspace save.
+
+00:00:40.000 --> 00:00:48.000
+Undo restores the previous empty draft. Redo remains available. No production case is changed by this local demonstration.
+
+00:00:48.000 --> 00:00:56.000
+Redo restores the same two records. Saving, authenticated reopening, downloads and AI use are separate steps and are not demonstrated here.

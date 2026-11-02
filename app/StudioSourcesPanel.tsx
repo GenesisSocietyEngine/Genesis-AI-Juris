@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { StudioOverviewProps } from "./StudioOverview";
-import { openStudioSourceFragment, studioOverview, studioSourceFragmentId } from "./studio-overview";
+import { openStudioSourceFragment, sameSourceReadingContext, studioOverview, studioSourceFragmentId, type SourceReadingContext } from "./studio-overview";
 import { studioGovernedEvidenceDestination } from "./studio-governed-evidence";
 import { reportStatementStatus } from "./report-statement-status";
 import { useWorkspaceLocation } from "./use-interface-locale";
@@ -25,6 +25,9 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
   const root = useRef<HTMLElement>(null);
   const [notice, setNotice] = useState("");
   const [technicalOpen, setTechnicalOpen] = useState(false);
+  const [sourceReturn, setSourceReturn] = useState<{ context: SourceReadingContext; id: string; trigger: HTMLButtonElement; title: string } | null>(null);
+  const sourceContext = { draft, locale, epoch: packetAuthority?.epoch, copyAllowed: packetAuthority?.allowed };
+  const activeReturn = sourceReturn && sameSourceReadingContext(sourceReturn.context, sourceContext) ? sourceReturn : null;
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const records = [...model.facts, ...model.evidence];
   function openArea(id: "studio-source-documents" | "studio-source-records" | "studio-source-requirement" | "studio-governed-evidence-title") {
@@ -39,9 +42,17 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
     const connected = new Set(draft.links.flatMap(link => link.from === nodeId ? [link.to] : link.to === nodeId ? [link.from] : []));
     return model.facts.filter(fact => connected.has(fact.id));
   }
-  function jump(document: string, version: number, section: string) {
-    const opened = root.current && openStudioSourceFragment(root.current, studioSourceFragmentId(document, version, section));
+  function jump(document: string, version: number, section: string, trigger: HTMLButtonElement, title: string) {
+    const id = studioSourceFragmentId(document, version, section);
+    const opened = root.current && openStudioSourceFragment(root.current, id);
+    setSourceReturn(opened ? { context: sourceContext, id, trigger, title } : null);
     setNotice(opened ? "" : t("That exact reference section is unavailable. No substitute version has been opened.", "Точный фрагмент недоступен. Другая версия не была подставлена."));
+  }
+  function returnToReference() {
+    if (!activeReturn || !activeReturn.trigger.isConnected || !root.current?.contains(activeReturn.trigger)) return;
+    activeReturn.trigger.focus({ preventScroll: true });
+    activeReturn.trigger.scrollIntoView({ block: "center", behavior: "auto" });
+    setSourceReturn(null);
   }
   return <section ref={root} className={styles.workspace} aria-labelledby="studio-sources-title">
     <header className={styles.header}><div><p className={styles.eyebrow}>{t("CASE MATERIALS", "МАТЕРИАЛЫ ДЕЛА")}</p><h2 id="studio-sources-title">{t("Sources and evidence", "Источники и материалы")}</h2></div><span className={styles.status}>{t("Review not recorded here", "Проверка здесь не зафиксирована")}</span></header>
@@ -59,7 +70,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
     <StudioMaterialsWorkspace draft={draft} locale={locale} authority={packetAuthority} onNode={onNode} onApply={onMaterialsChange} readingMemory={readingMemory}/>
     <details><summary>{t("Reference packet details and history", "Сведения и история пакета источников")}</summary>
     <StudioConvertedSourcePacket key={"packet-" + (packetAuthority?.epoch ?? 0)} draft={draft} locale={locale} onNode={onNode} authority={packetAuthority}/>
-    {model.referenceScenario && model.sourcePacket.length > 0 && <section className={styles.block}><h3>{t("Retained fictional source packet", "Сохранённый пакет вымышленных источников")}</h3><p>{t(`${model.documentCount} document identities · ${model.sourcePacket.length} immutable versions. Open the version cited by the record; a later version does not silently replace it.`, `Документов: ${model.documentCount}; неизменяемых версий: ${model.sourcePacket.length}. Открывайте указанную в записи версию: новая версия не подставляется автоматически.`)}</p>{model.sourcePacket.map(source => <details className={styles.source} key={`${source.id}:${source.version}`}><summary>{source.id} v{source.version} — {source.title}</summary>{Object.entries(source.sections).map(([section, text]) => <div className={styles.fragment} tabIndex={-1} id={studioSourceFragmentId(source.id, source.version, section)} key={section} lang="en"><h4>§ {section}</h4><p>{text}</p></div>)}</details>)}</section>}
+    {model.referenceScenario && model.sourcePacket.length > 0 && <section className={styles.block}><h3>{t("Retained fictional source packet", "Сохранённый пакет вымышленных источников")}</h3><p>{t(`${model.documentCount} document identities · ${model.sourcePacket.length} immutable versions. Open the version cited by the record; a later version does not silently replace it.`, `Документов: ${model.documentCount}; неизменяемых версий: ${model.sourcePacket.length}. Открывайте указанную в записи версию: новая версия не подставляется автоматически.`)}</p>{model.sourcePacket.map(source => <details className={styles.source} key={`${source.id}:${source.version}`}><summary>{source.id} v{source.version} — {source.title}</summary>{Object.entries(source.sections).map(([section, text]) => <div className={styles.fragment} tabIndex={-1} id={studioSourceFragmentId(source.id, source.version, section)} key={section} lang="en"><h4>§ {section}</h4><p>{text}</p>{activeReturn?.id === studioSourceFragmentId(source.id, source.version, section) && <div className={styles.sourceReturn} lang={locale}><p>{t("Cited by: ", "Ссылается запись: ")}{activeReturn.title}</p><button type="button" onClick={returnToReference}>{t("← Back to citing record", "← Вернуться к записи со ссылкой")}</button></div>}</div>)}</details>)}</section>}
     {model.referenceScenario && packetAuthority && <section className={styles.block}><h3>{t("Complete source packet export", "Экспорт полного пакета источников")}</h3><StudioSourcePacketExport key={packetAuthority.epoch} draft={draft} locale={locale} allowed={packetAuthority.allowed} verify={packetAuthority.verify}/></section>}
     {model.documentCount === null && <section className={styles.block}><h3>{t("Text references only", "Только текстовые ссылки")}</h3>{draft.classification?.sourceUrls?.length ? <ul>{draft.classification.sourceUrls.map((url, index) => <li key={`${index}:${url}`}><code>{url}</code></li>)}</ul> : <p>{t("No separate source URLs are recorded. Node explanations remain available in the decision map.", "Отдельные URL источников не записаны. Пояснения узлов доступны на карте решений.")}</p>}<p>{t("A text URL is not an uploaded document, exact citation or human verification.", "Текстовый URL не является загруженным документом, точной цитатой или человеческой проверкой.")}</p></section>}
     </details></section>
@@ -79,7 +90,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
         : t("Choose the intended case in My cases → Team, then open Evidence. Studio does not infer a matching organization case or copy your draft into it.", "Выберите нужное дело в «Мои кейсы → Команда», затем откройте «Доказательства». Studio не подбирает дело организации и не копирует в него черновик.")}</p>
       <a className={styles.actionLink} href={evidenceDestination.href}>{evidenceDestination.returning ? t("Return to the originating case's evidence", "Вернуться к доказательствам исходного дела") : t("Choose an organization case", "Выбрать дело организации")}</a>
     </details>
-    {model.references.length > 0 && <section className={styles.block}><h3>{t("Text references in the working model", "Текстовые ссылки в рабочей модели")}</h3><p>{t("These references open the retained fictional source section. They are not accepted dossier anchors or proof of an unchanged source-to-conclusion dependency.", "Ссылки открывают сохранённый фрагмент вымышленного источника. Это не принятые ссылки дела и не доказательство неизменной зависимости вывода от источника.")}</p><ul className={styles.references}>{model.references.map(ref => <li key={`${ref.nodeId}:${ref.document}:${ref.version}:${ref.section}`}><button type="button" onClick={() => onNode(ref.nodeId)}>{draft.nodes.find(node => node.id === ref.nodeId)?.title ?? ref.nodeId}</button><span>{ref.document} v{ref.version} § {ref.section}</span>{ref.source ? <button type="button" onClick={() => jump(ref.document, ref.version, ref.section)}>{t("Open exact reference passage", "Открыть точный фрагмент")}</button> : <strong>{t("Exact source/version/section unavailable", "Точный источник, версия или фрагмент недоступны")}</strong>}{!ref.exactTextPresent && <p>{t("The full reference excerpt is not present verbatim in this graph record. Reconcile the text before relying on the relationship.", "Полный фрагмент источника не совпадает дословно с записью. Сопоставьте тексты перед использованием связи.")}</p>}</li>)}</ul></section>}
+    {model.references.length > 0 && <section className={styles.block}><h3>{t("Text references in the working model", "Текстовые ссылки в рабочей модели")}</h3><p>{t("These references open the retained fictional source section. They are not accepted dossier anchors or proof of an unchanged source-to-conclusion dependency.", "Ссылки открывают сохранённый фрагмент вымышленного источника. Это не принятые ссылки дела и не доказательство неизменной зависимости вывода от источника.")}</p><ul className={styles.references}>{model.references.map(ref => <li key={`${ref.nodeId}:${ref.document}:${ref.version}:${ref.section}`}><button type="button" onClick={() => onNode(ref.nodeId)}>{draft.nodes.find(node => node.id === ref.nodeId)?.title ?? ref.nodeId}</button><span>{ref.document} v{ref.version} § {ref.section}</span>{ref.source ? <button type="button" onClick={event => jump(ref.document, ref.version, ref.section, event.currentTarget, draft.nodes.find(node => node.id === ref.nodeId)?.title ?? ref.nodeId)}>{t("Open exact reference passage", "Открыть точный фрагмент")}</button> : <strong>{t("Exact source/version/section unavailable", "Точный источник, версия или фрагмент недоступны")}</strong>}{!ref.exactTextPresent && <p>{t("The full reference excerpt is not present verbatim in this graph record. Reconcile the text before relying on the relationship.", "Полный фрагмент источника не совпадает дословно с записью. Сопоставьте тексты перед использованием связи.")}</p>}</li>)}</ul></section>}
     <details className={`${styles.block} ${styles.planning}`} onToggle={event => setTechnicalOpen(event.currentTarget.open)}>
       <summary>{t("Source history and technical details", "История источников и технические сведения")}</summary>
       {technicalOpen && <>

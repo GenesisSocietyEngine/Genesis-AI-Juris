@@ -81,9 +81,21 @@ export function openStudioSourceFragment(root: Pick<HTMLElement, "querySelector"
   if (!/^studio-reference-D\d{2}-v\d+-[A-Za-z][A-Za-z0-9_-]*$/.test(id)) return false;
   const section = root.querySelector<HTMLElement>(`[id="${id}"]`);
   if (!section) return false;
-  const details = section.closest("details");
-  if (details) details.open = true;
+  let details = section.closest("details");
+  while (details) {
+    details.open = true;
+    details = details.parentElement?.closest("details") ?? null;
+  }
   section.focus();
   section.scrollIntoView({ block: "nearest", behavior: "auto" });
   return true;
+}
+
+export type SourceReadingContext = { draft: object; locale: string; epoch?: number; copyAllowed?: boolean };
+/** Ephemeral navigation only; never restores a target into another case or authority context. */
+export function sameSourceReadingContext(before: SourceReadingContext, current: SourceReadingContext) {
+  // Export availability invalidates a prior scope; it does not grant or deny
+  // reading an already-rendered reference. The existing parent owns read access.
+  return before.draft === current.draft && before.locale === current.locale
+    && before.epoch === current.epoch && before.copyAllowed === current.copyAllowed;
 }

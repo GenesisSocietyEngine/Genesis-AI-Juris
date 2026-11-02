@@ -1,0 +1,133 @@
+[
+  {
+    "id": "canopy",
+    "title": {
+      "en": "Canopy: inspect a source and return",
+      "ru": "Canopy: проверить источник и вернуться"
+    },
+    "description": {
+      "en": "Open an example, find a body-only phrase, inspect its exact reference and return to the citing record.",
+      "ru": "Откройте пример, найдите фразу в тексте, проверьте точный источник и вернитесь к записи со ссылкой."
+    },
+    "durationSeconds": 48,
+    "width": 1508,
+    "height": 626,
+    "video": "/help/scenarios-20261102/canopy.mp4",
+    "poster": "/help/scenarios-20261102/canopy-poster.jpg",
+    "sourceCommit": "a8b919a03ebdfff32297f881f316aab0b9a377ca",
+    "capturedDate": "2026-11-02",
+    "steps": [
+      {
+        "at": 0,
+        "text": {
+          "en": "Open Project Canopy from Example cases. It is a fictional Advisory decision example.",
+          "ru": "Откройте Project Canopy в примерах. Это вымышленный кейс категории «Консультативное решение»."
+        }
+      },
+      {
+        "at": 8,
+        "text": {
+          "en": "The example opens as a separate working copy. Opening it does not confirm a workspace save or professional review.",
+          "ru": "Пример открывается как отдельная рабочая копия. Это не подтверждает сохранение в аккаунте или профессиональную проверку."
+        }
+      },
+      {
+        "at": 16,
+        "text": {
+          "en": "Open Sources & evidence and search for 450 packs. Two loaded materials contain this phrase.",
+          "ru": "Откройте источники и материалы и найдите 450 packs. Фраза есть в двух загруженных материалах."
+        }
+      },
+      {
+        "at": 24,
+        "text": {
+          "en": "Read matching passage opens and focuses the literal text. Check its document, version and section.",
+          "ru": "Открытие найденного фрагмента выделяет точный текст. Проверьте документ, версию и раздел."
+        }
+      },
+      {
+        "at": 32,
+        "text": {
+          "en": "Open exact reference passage reveals the cited D01 v1 Mandate section and the title of the citing record. All containing disclosures open.",
+          "ru": "Точная ссылка открывает D01 v1, раздел Mandate, и название записи со ссылкой. Все содержащие раздел блоки раскрываются."
+        }
+      },
+      {
+        "at": 40,
+        "text": {
+          "en": "Back to citing record restores the original control with visible focus. Reading a fictional reference does not accept evidence or approve a decision.",
+          "ru": "Возврат восстанавливает исходную кнопку и видимый фокус. Чтение вымышленного источника не означает принятия доказательства или утверждения решения."
+        }
+      }
+    ]
+  },
+  {
+    "id": "local-edit",
+    "title": {
+      "en": "Brief: review, edit and undo",
+      "ru": "Описание: проверить, изменить и отменить"
+    },
+    "description": {
+      "en": "Review a local proposal before applying two synthetic records, edit the brief and verify Undo/Redo.",
+      "ru": "Проверьте локальное предложение до добавления двух учебных записей, вернитесь к описанию и проверьте отмену и повтор."
+    },
+    "durationSeconds": 56,
+    "width": 1508,
+    "height": 626,
+    "video": "/help/scenarios-20261102/local-edit.mp4",
+    "poster": "/help/scenarios-20261102/local-edit-poster.jpg",
+    "sourceCommit": "a8b919a03ebdfff32297f881f316aab0b9a377ca",
+    "capturedDate": "2026-11-02",
+    "steps": [
+      {
+        "at": 0,
+        "text": {
+          "en": "Start with Describe your case. This recording uses an isolated local preview and synthetic information.",
+          "ru": "Начните с описания кейса. Запись сделана в изолированной локальной версии на вымышленных данных."
+        }
+      },
+      {
+        "at": 8,
+        "text": {
+          "en": "Enter the labelled synthetic instruction: set a title and add two evidence records. Choose Review without AI; no provider request is made.",
+          "ru": "Введите учебную команду: задать название и добавить две записи материалов. Выберите проверку без AI; запроса к провайдеру нет."
+        }
+      },
+      {
+        "at": 16,
+        "text": {
+          "en": "Read all three proposed changes. Nothing has been applied. The local builder does not assess evidence or record professional approval.",
+          "ru": "Прочитайте все три изменения. Они ещё не применены. Локальный конструктор не оценивает доказательства и не фиксирует утверждение."
+        }
+      },
+      {
+        "at": 24,
+        "text": {
+          "en": "Edit brief returns to the exact instruction and restores keyboard focus. Review the proposal again before Apply.",
+          "ru": "Возврат к описанию сохраняет точную команду и фокус клавиатуры. Перед применением снова проверьте предложение."
+        }
+      },
+      {
+        "at": 32,
+        "text": {
+          "en": "Apply creates the synthetic title and two records as one draft change. These working records are not accepted evidence or a confirmed workspace save.",
+          "ru": "Применение добавляет учебное название и две записи одним изменением черновика. Это не принятые доказательства и не подтверждённое сохранение."
+        }
+      },
+      {
+        "at": 40,
+        "text": {
+          "en": "Undo restores the previous empty draft. Redo remains available. No production case is changed by this local demonstration.",
+          "ru": "Отмена возвращает прежний пустой черновик. Повтор остаётся доступен. Производственные кейсы в этом локальном упражнении не изменяются."
+        }
+      },
+      {
+        "at": 48,
+        "text": {
+          "en": "Redo restores the same two records. Saving, authenticated reopening, downloads and AI use are separate steps and are not demonstrated here.",
+          "ru": "Повтор восстанавливает те же две записи. Сохранение, открытие после входа, скачивание и AI — отдельные действия, здесь они не показаны."
+        }
+      }
+    ]
+  }
+]
