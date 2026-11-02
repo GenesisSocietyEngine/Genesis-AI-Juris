@@ -6,14 +6,16 @@ import recordings from './scenario-recordings.json';
 import styles from './scenario-recordings.module.css';
 
 function Recording({recording,locale}:{recording:typeof recordings[number];locale:'en'|'ru'}) {
-  const video=useRef<HTMLVideoElement>(null),pending=useRef<number|null>(null);
+  const video=useRef<HTMLVideoElement>(null),pending=useRef<number|null>(null),resume=useRef(false);
   const media=useRef<ReturnType<typeof createRecordingMedia>|null>(null),active=useRef(true);
   useEffect(()=>{active.current=true;return()=>{active.current=false;media.current?.dispose();media.current=null;};},[]);
   const [notice,setNotice]=useState('');
   const en=locale==='en',time=(seconds:number)=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
-  async function seek(seconds:number) {
+  async function seek(seconds:number,play=false) {
     if(!video.current)return;
+    resume.current=play;
     pending.current=seconds;
+    video.current.pause();
     video.current.focus();
     setNotice(en?'Loading the short recording…':'Загружается короткая запись…');
     media.current??=createRecordingMedia(recording.video,{fetch:(path,options)=>fetch(path,options),create:blob=>URL.createObjectURL(blob),revoke:url=>URL.revokeObjectURL(url)});
@@ -24,9 +26,15 @@ function Recording({recording,locale}:{recording:typeof recordings[number];local
       else if(video.current.readyState>0&&pending.current!==null){video.current.currentTime=pending.current;pending.current=null;}
     }catch{if(active.current)setNotice(en?'Unable to load this step. Read the steps below or download the transcript.':'Не удалось загрузить шаг. Прочитайте шаги ниже или скачайте расшифровку.');}
   }
+  function applyStep() {
+    const player=video.current;
+    if(!player?.src.startsWith('blob:')||pending.current===null)return;
+    player.currentTime=pending.current;pending.current=null;
+    if(resume.current){resume.current=false;void player.play().catch(()=>{if(active.current)setNotice(en?'Ready. Press Play to continue.':'Готово. Нажмите «Воспроизвести».');});}
+  }
   return <article className={styles.card} aria-labelledby={`recording-${recording.id}`}>
     <header><p className={styles.meta}>{time(recording.durationSeconds)} · {en?'RECORDED 2 NOVEMBER 2026':'ЗАПИСАНО 2 НОЯБРЯ 2026'}</p><h3 id={`recording-${recording.id}`}>{recording.title[locale]}</h3><p>{recording.description[locale]}</p></header>
-    <video ref={video} controls playsInline preload="none" style={{aspectRatio:`${recording.width}/${recording.height}`}} poster={recording.poster} aria-label={recording.title[locale]} aria-describedby={`scope-${recording.id}`} onSeeked={()=>{const seconds=Math.round(video.current?.currentTime??0);setNotice(en?`Step selected at ${time(seconds)}. Press Play to continue.`:`Выбран шаг ${time(seconds)}. Нажмите «Воспроизвести».`);}} onLoadedMetadata={()=>{if(pending.current!==null&&video.current){video.current.currentTime=pending.current;pending.current=null;}}} onError={()=>setNotice(en?'Video unavailable. Read the steps below or download the transcript.':'Видео недоступно. Прочитайте шаги ниже или скачайте расшифровку.')}>
+    <video ref={video} controls playsInline preload="none" style={{aspectRatio:`${recording.width}/${recording.height}`}} poster={recording.poster} aria-label={recording.title[locale]} aria-describedby={`scope-${recording.id}`} onPlay={()=>{if(video.current&&!video.current.src.startsWith('blob:'))void seek(video.current.currentTime,true);else setNotice(en?'Playing recording.':'Запись воспроизводится.');}} onSeeked={()=>{const seconds=Math.round(video.current?.currentTime??0);setNotice(video.current?.paused?(en?`Step selected at ${time(seconds)}. Press Play to continue.`:`Выбран шаг ${time(seconds)}. Нажмите «Воспроизвести».`):(en?'Playing recording.':'Запись воспроизводится.'));}} onLoadedMetadata={applyStep} onError={()=>setNotice(en?'Video unavailable. Read the steps below or download the transcript.':'Видео недоступно. Прочитайте шаги ниже или скачайте расшифровку.')}>
       <source src={recording.video} type="video/mp4"/>
       <track kind="captions" srcLang="en" label="English" src={recording.video.replace('.mp4','.en.vtt')} default={en}/>
       <track kind="captions" srcLang="ru" label="Русский" src={recording.video.replace('.mp4','.ru.vtt')} default={!en}/>
