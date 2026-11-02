@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import { createMaterialReadingMemory } from "../app/studio-material-search";
+import { buildCanopyPackage } from "../app/canopy-fixture";
 import { parseStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
 
 // Execute the actual application handlers, including their shared calls.
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openOverview", "openStudioAction", "returnToActions", "undoStudioEdit", "redoStudioEdit", "timelineShortcut"];
+const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openOverview", "openStudioAction", "openOverviewNode", "returnToActions", "undoStudioEdit", "redoStudioEdit", "timelineShortcut"];
 const handlers = new Map<string, string>();
 function visit(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name && names.includes(node.name.text)) handlers.set(node.name.text, node.getText(source));
@@ -18,13 +20,16 @@ const compiled = ts.transpileModule([...handlers.values()].join("\n") + "\nretur
 function harness(options: { pending?: boolean; empty?: boolean } = {}) {
   let href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=run_compare";
   const input = { title: "QA synthetic retained evidence", detail: "Unadded input", relatedId: "source-node" };
-  const state = { target: { step: 3, id: "studio-evidence-composer", nodeType: "evidence" } as null | Record<string, unknown>, notice: "Temporary action notice", step: 3, overview: false, selected: "source-node", presentation: "list", zoom: 0.5, mode: "user", input, draft: { nodes: [{ id: "existing" }], links: [] }, undo: [{ id: "earlier-revision" }], pushes: [] as string[], travels: [] as string[] };
+  const state = { target: { step: 3, id: "studio-evidence-composer", nodeType: "evidence" } as null | Record<string, unknown>, notice: "Temporary action notice", step: 3, overview: false, selected: "source-node", presentation: "list", zoom: 0.5, mode: "user", input, draft: buildCanopyPackage("base").draft, undo: [{ id: "earlier-revision" }], pushes: [] as string[], travels: [] as string[] };
+  const checks = [{ id: "orphan", level: "warn" }, { id: "route", level: "warn" }];
+  let memory = createMaterialReadingMemory({draft:state.draft,locale:"en",epoch:1,allowed:true});
   class Element { isContentEditable = false; }
   class Input extends Element {}
   class Textarea extends Element {}
   class Select extends Element {}
   const forbidden = () => { throw Error("Navigation must not mutate draft/input/history or persist"); };
   const scope = {
+    materialReadingMemory: { rememberReview: (id?: string | null) => memory.rememberReview(id), reviewFinding: () => memory.reviewFinding() }, checks,
     URL, parseStudioWorkflowStep, serializedStudioWorkflowStep, restorePending: options.pending ?? false, guidedDraftIsEmpty: options.empty ?? false,
     window: { location: { get href() { return href; } }, history: { state: { retained: true }, pushState(_state: unknown, _title: string, url: URL) { href = url.href; state.pushes.push(href); } } },
     setGuidedStep: (value: number) => { state.step = value; },
@@ -34,6 +39,7 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
     setGraphPresentation: (value: string) => { state.presentation = value; },
     setGraphZoom: (value: number) => { state.zoom = value; },
     selectNode: (value: string) => { state.selected = value; },
+    selectGraphNode: (value: string) => { state.selected = value; },
     changeDisplayMode: (value: string) => { state.mode = value; },
     clearStudioEvidenceBuffers: forbidden, onEvidenceClear: forbidden, applyCaseChange: forbidden, setDraft: forbidden, saveDraft: forbidden,
     undoDraft: () => state.travels.push("undo"), redoDraft: () => state.travels.push("redo"),
@@ -41,10 +47,10 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
   };
   const actions = new Function(...Object.keys(scope), compiled)(...Object.values(scope)) as {
     restoreGuidedStepFromHistory: () => void; selectGuidedStep: (step: number) => void; openOverview: () => void;
-    openStudioAction: (target: Record<string, unknown>) => void; returnToActions: (message?: string) => void;
+    openStudioAction: (target: Record<string, unknown>) => void; openOverviewNode: (nodeId: string) => void; returnToActions: (message?: string) => void;
     undoStudioEdit: () => void; redoStudioEdit: () => void; timelineShortcut: (event: Record<string, unknown>) => void;
   };
-  return { state, actions, inputElement: new Input(), navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
+  return { state, actions, checks, currentReview: () => memory.reviewFinding(), replaceContext: (change: object) => { memory = createMaterialReadingMemory({draft:state.draft,locale:"en",epoch:1,allowed:true,...change}); }, inputElement: new Input(), navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
 }
 
 test("browser history leaves the correction normally and preserves unadded input, records and Undo", () => {
@@ -104,4 +110,47 @@ test("button and keyboard Undo/Redo clear obsolete completion feedback and deleg
   state.notice = "Retained notice"; actions.timelineShortcut({ ...event, target: inputElement });
   assert.equal(state.notice, "Retained notice", "native field Undo is left alone"); assert.equal(state.travels.length, 4);
   assert.equal(state.target?.id, "studio-evidence-composer"); assert.equal(state.input.detail, "Unadded input");
+});
+
+
+for (const checkId of ["orphan", "route"]) test(`actual Review → affected node → related evidence → exact ${checkId} finding preserves the complete case`, () => {
+  const h = harness();
+  const carrier = JSON.parse(readFileSync("tests/fixtures/fiveflats-rent-146000.studio-draft.json", "utf8"));
+  h.state.draft.taxEconomics = carrier.taxEconomics;
+  h.state.draft.taxAnalysis = {format:"genesis-juris-tax-attachment",carrierVersion:1,document:' {"exact":"retained historical approval bytes"} \r\n'};
+  const before = JSON.stringify(h.state), originalDraft = h.state.draft, history = h.state.undo, input = h.state.input;
+  const node = h.state.draft.nodes.find(node => node.type === "decision")!, evidence = h.state.draft.nodes.find(node => node.type === "evidence")!;
+  h.actions.openStudioAction({step:4,id:`studio-node-${node.id}`,nodeId:node.id,reviewId:checkId});
+  assert.equal(h.currentReview(),checkId);
+  h.actions.openOverviewNode(evidence.id);
+  assert.equal(h.currentReview(),checkId,"nested evidence inspection retains the originating Review finding");
+  assert.equal(h.state.selected,evidence.id);
+  h.actions.returnToActions();
+  assert.deepEqual(h.state.target,{step:5,id:`action-${checkId}`});
+  assert.equal(h.currentReview(),null,"the return is consumed, not sticky across subsequent navigation");
+  assert.equal(h.state.draft,originalDraft);assert.equal(h.state.undo,history);assert.equal(h.state.input,input);
+  assert.equal(JSON.stringify(h.state.draft),JSON.stringify(JSON.parse(before).draft));
+  assert.equal(h.state.pushes.length,3,"three explicit navigation activations; this is not measured browser action timing");
+});
+
+test("cleared findings, ordinary sections and history never restore a stale Review target", () => {
+  for (const leave of ["section","overview","history","resolved","unrecognized"] as const) {
+    const h=harness();
+    h.actions.openStudioAction({step:4,id:"studio-node-existing",nodeId:"existing",reviewId:"orphan"});
+    if(leave==="section")h.actions.selectGuidedStep(3);
+    if(leave==="overview")h.actions.openOverview();
+    if(leave==="history")h.actions.restoreGuidedStepFromHistory();
+    if(leave==="resolved")h.checks[0].level="ok";
+    if(leave==="unrecognized")h.actions.openStudioAction({step:3,id:"studio-source-urls",reviewId:"not-a-current-finding"});
+    h.actions.returnToActions();
+    assert.deepEqual(h.state.target,{step:5,id:"studio-next-actions"},leave);
+  }
+});
+
+test("changed draft/source/version, locale, authority epoch or denied access drops exact Review return", () => {
+  for(const change of [{draft:{...buildCanopyPackage("base").draft,version:"99.0.0"}},{locale:"ru"},{epoch:2},{allowed:false}]) {
+    const h=harness();h.actions.openStudioAction({step:4,id:"studio-node-existing",nodeId:"existing",reviewId:"route"});
+    h.replaceContext(change);h.actions.returnToActions();
+    assert.deepEqual(h.state.target,{step:5,id:"studio-next-actions"});assert.equal(h.currentReview(),null);
+  }
 });

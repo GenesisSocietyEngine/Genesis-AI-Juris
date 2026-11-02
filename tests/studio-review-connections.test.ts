@@ -25,9 +25,9 @@ test("opening an affected node leaves list or overview mode before focusing its 
   const handler = source.slice(source.indexOf("  function openStudioAction("), source.indexOf("  function returnToActions("));
   assert.ok(handler.includes("function openStudioAction"));
   const calls: unknown[] = [];
-  const open = new Function("changeDisplayMode", "setGraphPresentation", "setGraphZoom", "selectNode", "selectGuidedStep", "setActionNotice", "setActionTarget",
+  const open = new Function("changeDisplayMode", "setGraphPresentation", "setGraphZoom", "selectNode", "selectGuidedStep", "setActionNotice", "setActionTarget", "checks",
     handler.replace("target: StudioActionTarget", "target") + "; return openStudioAction;")(
-      ...["mode", "presentation", "zoom", "node", "step", "notice", "focus"].map(name => (value: unknown) => calls.push([name, value])),
+      ...["mode", "presentation", "zoom", "node", "step", "notice", "focus"].map(name => (value: unknown) => calls.push([name, value])), [],
     );
   const target = { step: 4, id: "studio-node-b", nodeId: "b" };
   open(target);
@@ -134,7 +134,7 @@ test("review actions open context, missing-start composer and the exact disconne
       const tile = render(check).find(el => el.props.id === `action-${check?.id}`)!;
       assert.ok(tile);
       (tile.props.onClick as () => void)();
-      assert.deepEqual(opened.pop(), expected);
+      assert.deepEqual(opened.pop(), { ...expected, reviewId: check?.id });
     }
   }
 });
