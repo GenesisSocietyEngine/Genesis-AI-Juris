@@ -1,5 +1,8 @@
 # S03 authenticated acceptance and saved-case access recovery — 2 November 2026
 
+**Delivered — public v170.** Runtime `c3c46f98959ef03526bd300307b7ea4c7d2c5ff2`; [native receipt](receipts/s03-saved-access-v170-2026-11-02.json). Post-deploy interactive checks remain blocked by the Chrome extension requirement at the user’s direction. Earlier observations below are explicitly from v169; the outage retry is covered by local component/actual-handler evidence and exact-main gates, not a fresh production outage simulation.
+
+
 ## Outcome and scope
 
 Production v169/runtime `4a5848c7b614daf50696922619cc16c51597e46b` was reverified against canonical main `2bcba31cf65c6bf05c45f3e47a60f2e82e23ba93`: all 579 application/hosting inputs match. The existing Sites source helper opened that exact main before implementation. The authorized Chrome identity was confirmed through the normal account UI. No credentials, tokens, private original case bodies or download history were extracted.
@@ -47,3 +50,12 @@ Review: native button/status/description, single-flight disabled retry, safe pos
 This review initially records a candidate, not a new production version. Require candidate and exact-main web/PDF gates, verified CI build adoption, existing Sites save/deploy receipt and fresh runtime checks before claiming publication. Preserve v169 receipt and paused v167 caption-boundary observation. Do not republish delivered catalogue controls merely to close documentation.
 
 After the bounded retry correction, reproduce remaining S05 correction destinations before changing them; then assess manual-choice and measured density/locale slices separately. Resume isolated authority/native cancellation and legitimate owner recovery only when their normal authorized test contexts are available. Keep browser, actual file, component, real-handler and original-artifact evidence distinct.
+
+
+## Final delivery review
+
+PR203 is normally merged. Candidate and exact-main gates pass: 1844tests/0fail/3inherited skips plus2HTML, strict types/lint/history/contracts, packaged browser/Worker/tax,47-report/bilingual/tax PDF locks and zero findings in both audits. Verified exact-main archive digest/source/tree and all580inputs precede adoption. Existing public Sites deployment succeeds, both origins verify189/189assets and exact runtime, and configuration/storage bindings remain unchanged. Only v169 current-manifest assets are retained. The receipt records native workflow state separately; web publication does not assert native completion.
+
+The requested Chrome continuation is explicitly blocked. No further browser attempts, network manipulation, forced sign-out, case overwrite or deletion follows that instruction. The final unsaved synthetic stale title is retained in the ignored browser checkpoint; the browser tab is not deliberately navigated, saved or closed. The extension also blocked refreshing its handoff mark, so continued tab availability is not asserted. User original tabs are untouched. The actual source of the access connectivity failure remains unproven; the delivered correction addresses its observed UI recovery gap.
+
+This closure updates instructions and receipts only. Application and hosting input equality is verified again after integration; no duplicate Sites release is made. Remaining S03/S05 and commercial readiness work stays bounded by the next-execution instructions.
