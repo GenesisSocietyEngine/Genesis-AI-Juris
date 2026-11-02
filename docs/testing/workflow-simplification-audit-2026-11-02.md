@@ -1,0 +1,21 @@
+# Workflow simplification audit — 2 November 2026
+
+Baseline: clean canonical a7b0f3035206f29ee35fd6cfe05871317c350795, public v164/runtime86454a74da4296343e809ac592bd599e2be7e3d5. Both public release endpoints freshly match application74f93bc9b67e5783b1b7e62198abe49475949da6bf7a502d5e17f30a6edb5f08 and hosting20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe. Sites confirms the same public project/version; the supported source helper opens a7b0f30 before editing. Existing cases and the user's original tab are untouched.
+
+The updated supported in-app browser now exposes a URL-bound DOM/AX session. This changes the earlier tooling boundary; it does not retroactively complete blocked checks. Fresh inspection uses a separate agent-created, signed-out tab and public fictional Canopy only. No provider calls, authentication, case saves or production persistence writes occur.
+
+## Findings and chosen slices
+
+1. **P1: loaded document passages are not searchable.** Live path: Studio → Browse example cases → Open Project Canopy → Sources & evidence → D01 Read text. The Thresholds section contains “450 packs per week”; entering “450 packs” in Find a material produces0matches. Source confirms title/note-only filtering. This forces users to expand and scan individual documents despite the text already being loaded.
+2. **P1: finding a linked node loses retrieval context.** Source panel/material component unmount on Decision navigation; query/filter/retained-version choice/page depth are local component state. No case-scoped return-state carrier exists. Implement an ephemeral view-state object scoped to the exact draft, locale and authority epoch; never persist queries or selected evidence to browser storage or case data.
+3. **P1: local intake exposes implementation choices prematurely.** Fresh original-tab inspection shows Sign in to use AI plus disabled uppercase Apply locally interpreted changes and Quick rule-based template before any brief. Source confirms the local Apply button invokes the change handler directly, while the complete local proposal is displayed separately on step2. Replace the regular-user entry with Review without AI; put Apply after the complete local proposal. Keep developer commands and explicit rule-template confirmation available.
+4. **P2: material filtering omits an explicit URL-only choice and empty search copy suggests creating records.** Add the existing URL material kind to the filter; offer Reset filters and search guidance instead of implying that a failed phrase search means evidence must be created. Keep missing-original disclosure and document-review status visible.
+5. **Retain:** five main case sections, one standard case-opening flow, exact source/version identities, independent save/review/approval semantics, full-record exports and existing report locks. Additional help, repeated save coaching, long technical/privacy copy and large record lists merit measured follow-up, not a blanket removal of material safeguards.
+
+## Acceptance before release
+
+SliceA: bounded local title/note/body search, literal original-text snippets and matching passage highlighting, existing section identities when supplied, EN/RU/diacritics, explicit truncation/scope, missing/URL-only bodies, immutable source text/hash/archive semantics, query/filter/history/page-depth/scroll return from a linked node, and context cancellation. Preserve the full ZIP scope and all authority/CAS/evidence handlers. Review actual component contracts separately from browser observations.
+
+SliceB: empty/brief/ready/blocked local states, full proposal before Apply, Edit brief return, plain bilingual action labels, retained template confirmation and unchanged handlers/authorization/canonical-import flow. Test real controls where supported. No silent switch from provider AI to local results.
+
+Use current candidate and exact-main web/PDF/packaged/audit gates and the existing public Sites project. Retain the immediately previous v164client manifest on rollout. Native/iOS completion, historical pagination cause, authenticated A/B save/cancellation, unsupported-owner recovery, actual original-file availability and commercial/operator readiness remain independent acceptance rows.
