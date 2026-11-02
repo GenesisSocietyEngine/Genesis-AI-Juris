@@ -7,6 +7,7 @@ import type { StudioDraft } from "./types";
 export type StudioMaterial = {
   id: string; title: string; kind: "working" | "reference" | "missing" | "url";
   text: string | null; note: string; nodeIds: string[]; selected: boolean;
+  sections?: Record<string, string>;
 };
 /** A reading projection. Original documents that were never supplied have no invented body. */
 export async function studioMaterials(draft: StudioDraft, locale: "en" | "ru"): Promise<StudioMaterial[]> {
@@ -22,7 +23,7 @@ export async function studioMaterials(draft: StudioDraft, locale: "en" | "ru"): 
     const packet = buildStudioSourcePacket(draft, locale);
     for (const document of packet.manifest.documents) materials.push({
       id: `canopy:${document.id}:v${document.version}`, title: `${document.id} v${document.version} — ${document.title}`,
-      kind: "reference", text: document.text, note: locale === "en" ? "Fictional reference · " + (document.selected ? "selected version" : "retained version") : "Вымышленный источник · " + (document.selected ? "выбранная версия" : "прежняя версия"), selected: document.selected,
+      kind: "reference", text: document.text, sections: document.sections, note: locale === "en" ? "Fictional reference · " + (document.selected ? "selected version" : "retained version") : "Вымышленный источник · " + (document.selected ? "выбранная версия" : "прежняя версия"), selected: document.selected,
       nodeIds: [...new Set(overview.references.filter(ref => ref.document === document.id && ref.version === document.version).map(ref => ref.nodeId))],
     });
   }
@@ -54,7 +55,7 @@ export async function studioMaterialsArchive(draft: StudioDraft, materials: Stud
     const filename = material.text === null ? null : materialFilename(material, index);
     const contentSha256 = material.text === null ? null : await materialHash(material.text);
     if (filename) files[filename] = strToU8(material.text!);
-    return { ...material, text: undefined, filename, contentSha256 };
+    return { ...material, text: undefined, sections: undefined, filename, contentSha256 };
   }));
   if (!current()) return null;
   files["manifest.json"] = strToU8(JSON.stringify({ format: "casevant-materials", schemaVersion: 1,

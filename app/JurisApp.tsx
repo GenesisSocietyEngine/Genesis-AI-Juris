@@ -1,5 +1,6 @@
 "use client";
 import { studioReviewAction } from "./studio-review-action";
+import { createMaterialReadingMemory } from "./studio-material-search";
 
 import { lazy, useLayoutEffect, Suspense, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -2379,6 +2380,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
   const fieldBefore = useRef("");
+  const materialReadingMemory = useMemo(() => createMaterialReadingMemory({draft,locale,epoch:reportAuthority.epoch,allowed:canDuplicate && reportAuthority.allowed && !restorePending}), [draft, locale, reportAuthority.epoch, reportAuthority.allowed, canDuplicate, restorePending]);
   const fieldBeforeDraft = useRef<StudioDraft | null>(null);
   const economicPromptSyncRef = useRef(0);
   const [selectedRevisionId, setSelectedRevisionId] = useState("");
@@ -3567,7 +3569,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     {showOverview && <Suspense fallback={<p role="status">{locale === "en" ? "Opening case overview…" : "Открывается обзор дела…"}</p>}><StudioOverview draft={draft} locale={locale} onStep={selectGuidedStep} onNode={openOverviewNode} onAction={openStudioAction}/></Suspense>}
     {displayMode === "user" && trainingWorkflow && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { if (operationPending.current) return; const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
     window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
-    {visibleStep === 3 && displayMode === "user" && !trainingWorkflow && !caseSettingsAction && <Suspense fallback={null}><StudioSourcesPanel onMaterialsChange={applyMaterials} onUpgrade={openUpdatedExample} draft={draft} locale={locale} onStep={selectGuidedStep} onNode={openOverviewNode} onAction={openStudioAction} packetAuthority={{ allowed: canDuplicate && reportAuthority.allowed && !restorePending, epoch: reportAuthority.epoch, verify: reportAuthority.verify }}/></Suspense>}
+    {visibleStep === 3 && displayMode === "user" && !trainingWorkflow && !caseSettingsAction && <Suspense fallback={null}><StudioSourcesPanel readingMemory={materialReadingMemory} onMaterialsChange={applyMaterials} onUpgrade={openUpdatedExample} draft={draft} locale={locale} onStep={selectGuidedStep} onNode={openOverviewNode} onAction={openStudioAction} packetAuthority={{ allowed: canDuplicate && reportAuthority.allowed && !restorePending, epoch: reportAuthority.epoch, verify: reportAuthority.verify }}/></Suspense>}
     {displayMode === "user" && timeline.revisions.length > 0 && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} draft change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoStudioEdit} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoStudioEdit} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
     {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>

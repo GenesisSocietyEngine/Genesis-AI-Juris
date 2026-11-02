@@ -7,6 +7,7 @@ import { build } from "esbuild";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { buildConvertedExample } from "../app/converted-examples";
 import type { StudioDraft } from "../app/types";
+import { createMaterialReadingMemory, type MaterialReadingMemory } from "../app/studio-material-search";
 
 // Real component, materials projection, archive and download helper. Hook/DOM
 // scheduling is modeled: these assertions are not live browser/file acceptance.
@@ -23,6 +24,7 @@ function hooks() {
     begin() {cursor = 0; effects = [];}, flush() {for (const run of effects) run();}, unmount() {slots.forEach(slot => slot.cleanup?.());},
     useState(initial: unknown) {const slot = next(); if (!("value" in slot)) slot.value = initial; return [slot.value, (value: unknown) => {slot.value = typeof value === "function" ? value(slot.value) : value;}];},
     useRef(initial: unknown) {const slot = next(); if (!("value" in slot)) slot.value = {current: initial}; return slot.value;},
+    useMemo(compute: () => unknown, deps: unknown[]) {const slot = next(); if (!slot.deps || !deps.every((value,index) => Object.is(value,slot.deps![index]))) {slot.value=compute();slot.deps=deps;} return slot.value;},
     useEffect: effect, useLayoutEffect: effect,
   };
 }
@@ -31,7 +33,7 @@ const bundled = await build({entryPoints: ["app/StudioMaterialsWorkspace.tsx"], 
   builder.onResolve({filter: /^react$/}, () => ({path: "hooks", namespace: "contract"}));
   builder.onResolve({filter: /^\.\/studio-materials$/}, () => ({path: "materials", namespace: "contract"}));
   builder.onLoad({filter: /.*/, namespace: "contract"}, args => ({loader: "js", resolveDir: process.cwd(), contents: args.path === "hooks"
-    ? ["useState", "useEffect", "useLayoutEffect", "useRef"].map(name => `export const ${name}=(...args)=>globalThis.__materialsUi.hooks.${name}(...args);`).join("\n")
+    ? ["useState", "useEffect", "useLayoutEffect", "useRef", "useMemo"].map(name => `export const ${name}=(...args)=>globalThis.__materialsUi.hooks.${name}(...args);`).join("\n")
     : `import * as actual from './app/studio-materials.ts'; export * from './app/studio-materials.ts'; export async function studioMaterials(...args){ const control=globalThis.__materialsUi; if(control.hold) await control.hold; if(control.failure)throw Error('Synthetic read failure'); return actual.studioMaterials(...args); }`,
   }));
 }}]});
@@ -42,14 +44,14 @@ function elements(value: unknown): Element[] {if (Array.isArray(value)) return v
 function text(value: unknown): string {if (Array.isArray(value)) return value.map(text).join(" "); if (typeof value === "string" || typeof value === "number") return String(value); return value && typeof value === "object" && "props" in value ? text((value as Element).props.children) : "";}
 function control(tree: unknown, type: string, label: string) {const found = elements(tree).find(e => e.type === type && text(e) === label); assert.ok(found, `${type}: ${label}`); return found;}
 const statuses = (tree: unknown) => elements(tree).filter(e => e.props.role === "status").map(text).join(" | ");
-function fixture(locale: "en" | "ru", initial = buildCanopyPackage("base").draft) {
+function fixture(locale: "en" | "ru", initial = buildCanopyPackage("base").draft, readingMemory?: MaterialReadingMemory) {
   const previous = {document: Object.getOwnPropertyDescriptor(globalThis, "document"), window: Object.getOwnPropertyDescriptor(globalThis, "window"), create: URL.createObjectURL, revoke: URL.revokeObjectURL};
   const runtime = {hooks: hooks(), failure: false, hold: undefined as Promise<void> | undefined}; globals.__materialsUi = runtime;
   let draft = initial, downloads = 0, allowed = true;
   URL.createObjectURL = () => "blob:synthetic-materials"; URL.revokeObjectURL = () => {};
   Object.defineProperty(globalThis, "document", {configurable: true, value: {body: {appendChild() {}}, createElement: () => ({remove() {}, click() {downloads++;}})}});
-  Object.defineProperty(globalThis, "window", {configurable: true, value: {setTimeout() {}}});
-  const render = () => {runtime.hooks.begin(); const tree = Component({draft, locale, authority: {allowed, epoch: allowed ? 1 : 2, verify: async () => () => allowed}, onNode() {}}); runtime.hooks.flush(); return tree;};
+  Object.defineProperty(globalThis, "window", {configurable: true, value: {setTimeout() {}, scrollY:420, scrollTo() {}}});
+  const render = () => {runtime.hooks.begin(); const tree = Component({draft, locale, readingMemory, authority: {allowed, epoch: allowed ? 1 : 2, verify: async () => () => allowed}, onNode() {}}); runtime.hooks.flush(); return tree;};
   const settle = async (predicate: (tree: unknown) => boolean) => {for (let attempt = 0; attempt < 200; attempt++) {const tree = render(); if (predicate(tree)) return tree; await new Promise(resolve => setTimeout(resolve, 5));} throw Error("Component did not settle at expected boundary");};
   return {runtime, render, settle, replace(next: StudioDraft) {draft = next;}, deny() {allowed = false;}, get downloads() {return downloads;}, close() {
     runtime.hooks.unmount(); delete globals.__materialsUi; URL.createObjectURL = previous.create; URL.revokeObjectURL = previous.revoke;
@@ -75,6 +77,59 @@ for (const locale of ["en", "ru"] as const) test(`${locale}: actual material cou
     tree = f.render(); assert.ok(statuses(tree).includes(count(15)));
     assert.match(statuses(tree), locale === "en" ? /Download prepared/ : /Скачивание подготовлено/);
     assert.equal(JSON.stringify(original), before);
+  } finally {f.close();}
+});
+
+test("body-only results expose literal passage, exact section, reset and retained filter state", async () => {
+  const draft=buildCanopyPackage('base').draft, memory=createMaterialReadingMemory({draft,locale:'en',epoch:1,allowed:true});
+  let f=fixture('en',draft,memory);
+  try {
+    let tree=await f.settle(tree=>statuses(tree).includes('10 matching materials'));
+    const search=elements(tree).find(e=>e.type==='input' && e.props.type==='search')!;
+    (search.props.onChange as (event:unknown)=>void)({target:{value:'450 packs'}});
+    tree=f.render(); assert.match(statuses(tree),/2 matching materials/);
+    assert.match(text(tree),/Thresholds/);
+    assert.ok(elements(tree).some(e=>e.type==='mark' && text(e)==='450 packs'));
+    assert.ok(control(tree,'summary','Read matching passage'));
+    const selector=elements(tree).find(e=>e.type==='select')!;
+    (selector.props.onChange as (event:unknown)=>void)({target:{value:'reference'}});
+    (elements(tree).find(e=>e.type==='input' && e.props.type==='checkbox')!.props.onChange as (event:unknown)=>void)({target:{checked:true}});
+    tree=f.render();
+    const linked=elements(tree).find(e=>e.type==='button' && typeof e.props['data-material-node']==='string')!;
+    (linked.props.onClick as (event:unknown)=>void)({currentTarget:{getBoundingClientRect:()=>({top:160})}});
+    assert.equal(memory.read()?.returnTo?.scrollY,420);
+    assert.equal(memory.read()?.returnTo?.viewportTop,160);
+    assert.equal(memory.read()?.query,'450 packs');
+    f.close(); f=fixture('en',draft,memory);
+    tree=await f.settle(tree=>statuses(tree).includes('2 matching materials'));
+    assert.equal(elements(tree).find(e=>e.type==='input' && e.props.type==='search')?.props.value,'450 packs');
+    assert.equal(elements(tree).find(e=>e.type==='select')?.props.value,'reference');
+    assert.equal(elements(tree).find(e=>e.type==='input' && e.props.type==='checkbox')?.props.checked,true);
+    (control(tree,'button','Reset filters').props.onClick as ()=>void)();
+    tree=f.render(); assert.match(statuses(tree),/10 matching materials/);
+    assert.equal(memory.read()?.query,'');
+    assert.equal(JSON.stringify(draft),JSON.stringify(buildCanopyPackage('base').draft));
+  } finally {f.close();}
+});
+
+test("material page depth survives a scoped remount while changed source/access clears search", async () => {
+  const draft=buildCanopyPackage('base').draft, template=draft.nodes.find(node=>node.type==='evidence')!;
+  draft.nodes.push(...Array.from({length:25},(_,index)=>({...template,id:`synthetic_page_${index}`,title:`QA ${index}`,detail:'Synthetic pagination needle'})));
+  const memory=createMaterialReadingMemory({draft,locale:'en',epoch:1,allowed:true});let f=fixture('en',draft,memory);
+  try {
+    let tree=await f.settle(tree=>statuses(tree).includes('26 matching materials'));
+    const search=elements(tree).find(e=>e.type==='input' && e.props.type==='search')!;
+    (search.props.onChange as (event:unknown)=>void)({target:{value:'pagination needle'}}); tree=f.render();
+    (control(tree,'button','Show 20 more').props.onClick as ()=>void)(); tree=f.render();
+    assert.equal(elements(tree).filter(e=>e.type==='li').length,25); assert.equal(memory.read()?.limit,40);
+    f.close();f=fixture('en',draft,memory);
+    tree=await f.settle(tree=>statuses(tree).includes('25 matching materials'));
+    assert.equal(elements(tree).filter(e=>e.type==='li').length,25);
+    f.deny();tree=f.render();
+    assert.equal(elements(tree).find(e=>e.type==='input' && e.props.type==='search')?.props.value,'');
+    assert.equal(memory.read()?.query,'');
+    f.replace({...draft,title:'Different exact source'}); tree=f.render();
+    assert.match(statuses(tree),/Loading materials/);
   } finally {f.close();}
 });
 
