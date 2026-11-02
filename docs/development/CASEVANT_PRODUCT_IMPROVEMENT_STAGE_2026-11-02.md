@@ -1,5 +1,7 @@
 # CaseVant product improvement: detailed execution instructions
 
+Implementation checkpoint2November: S00 dependency repair, S01 neutral versioned Markdown presentation and S02 dialog keyboard/localization/practitioner guidance are implemented as separate reviewed commits; see the [implementation evidence](../testing/improvement-implementation-2026-11-02.md). Full candidate/exact-main CI and native Sites receipts are release gates, not inferred from focused checks. S03 live acceptance remains blocked; do not repeat browser attempts until that boundary changes. After release verification, proceed with S04 bounded loaded-body material search while preserving the pending S03 observations. No commercial-readiness claim follows from these code changes.
+
 Effective2November2026. This is the current execution plan, supported by the [UI/UX/commercial audit](../testing/UI_UX_COMMERCIAL_AUDIT_2026-11-02.md) and [fresh evidence receipt](../testing/receipts/readiness-audit-2026-11-02.json). The October documents remain the delivery ledger and preservation contracts. Their failed/pending candidate wording is not a current task queue.
 
 This stage prepares and sequences improvements. It does not certify commercial readiness or authorize new data processing, recruitment, outreach, analytics, pricing, external communication or destructive case disposal. No runtime change or new Site publication is part of the audit-only amendment.

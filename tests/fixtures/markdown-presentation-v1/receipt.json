@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "a0817eb2e7d9a03f4457e05a2daa73eab870d716",
+  "sourceScope": "unchanged deployed-v163 Markdown serializer; synthetic fixture with supported evidence effect, not original old application artifact",
+  "entries": [
+    {
+      "file": "en-final.md",
+      "sha256": "f36debaab19390a53751aeff62668efb18100089637fc2da056979f0ba99b9ca",
+      "fingerprint": "sha256-130034e19ebfc3ad68224e3a719dbc2a8915581690567b8748bdec80785ddd68"
+    },
+    {
+      "file": "ru-final.md",
+      "sha256": "2f6dd28b444f99cc22a0331413c866169bfe43e155404e11c5ed5f66e2a0f1f0",
+      "fingerprint": "sha256-130034e19ebfc3ad68224e3a719dbc2a8915581690567b8748bdec80785ddd68"
+    }
+  ]
+}

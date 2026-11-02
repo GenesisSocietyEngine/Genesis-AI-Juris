@@ -1,8 +1,18 @@
 export function localizedStudioAIError(locale:"en"|"ru",code:unknown,fallback:unknown){
   const key=typeof code==="string"?code:"";
   if(key.startsWith("provider_")){
-    if(locale==="en"&&typeof fallback==="string")return fallback;
-    return "OpenAI API отклонил запрос. Проверьте ключ, доступ к модели, биллинг и лимиты проекта.";
+    const providerMessages:Record<string,[string,string]>={
+      provider_authentication:["AI access needs attention from your workspace administrator. You can continue editing locally.","Администратору рабочего пространства нужно проверить доступ к AI. Вы можете продолжить редактирование локально."],
+      provider_permission:["AI access needs attention from your workspace administrator. You can continue editing locally.","Администратору рабочего пространства нужно проверить доступ к AI. Вы можете продолжить редактирование локально."],
+      provider_model_unavailable:["The workspace AI service is unavailable. Contact your workspace administrator or continue editing locally.","AI-сервис рабочего пространства недоступен. Обратитесь к администратору или продолжите редактирование локально."],
+      provider_quota:["The workspace AI usage limit has been reached. Contact your workspace administrator or continue editing locally.","Лимит использования AI в рабочем пространстве исчерпан. Обратитесь к администратору или продолжите редактирование локально."],
+      provider_rate_limited:["AI is receiving too many requests. Wait briefly, then retry. You can continue editing locally.","AI получает слишком много запросов. Немного подождите и повторите попытку. Вы можете продолжить редактирование локально."],
+      provider_bad_request:["AI could not prepare this proposal. Try a simpler instruction; if it persists, contact your workspace administrator.","AI не удалось подготовить предложение. Попробуйте более простую инструкцию; если ошибка повторяется, обратитесь к администратору рабочего пространства."],
+      provider_rejected:["AI could not prepare this proposal. Try again; if it persists, contact your workspace administrator.","AI не удалось подготовить предложение. Повторите попытку; если ошибка повторяется, обратитесь к администратору рабочего пространства."],
+      provider_unavailable:["AI is temporarily unavailable. Retry shortly or continue editing locally.","AI временно недоступен. Повторите попытку немного позже или продолжите редактирование локально."],
+    };
+    const translated=providerMessages[key]??providerMessages.provider_unavailable;
+    return translated[locale==="en"?0:1];
   }
   const messages:Record<string,[string,string]>={
     ai_context_too_large:["AI analysis accepts up to 128 KB. Shorten long details or analyse a smaller branch.","AI-анализ принимает не более 128 КБ. Сократите длинные описания или анализируйте меньшую ветвь."],

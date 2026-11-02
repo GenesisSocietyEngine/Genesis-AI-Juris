@@ -1,0 +1,9 @@
+{
+  "name": "minimatch",
+  "version": "11.0.1+casevant.compat.1",
+  "private": true,
+  "main": "index.cjs",
+  "license": "ISC",
+  "dependencies": { "@casevant/minimatch-engine": "npm:minimatch@11.0.1" },
+  "engines": { "node": "18 || 20 || >=22" }
+}

@@ -270,14 +270,16 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Report export is unavailable in inspection-only mode/);
   assert.match(reportDialogSource, /const outputBlocked = !canGenerateReport \|\| busy/);
   assert.match(reportDialogSource, /disabled=\{outputBlocked\}/);
-  assert.match(markdownActionsSource, /Export Final case prompt \(\.md\)/);
+  assert.match(markdownActionsSource, /Export case brief \(\.md\)/);
   assert.match(markdownActionsSource, /Import case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /closest\("details"\)\?\.removeAttribute\("open"\)/, "opening Markdown export closes the More actions menu");
   assert.match(appSource, /CanonicalPromptAction/);
   assert.match(promptAuxiliarySource, /Verify canonical case/);
   assert.match(appSource, /<progress className="ai-progress-fallback" max=\{100\} value=\{8\}/, "the lazy-loading fallback keeps a native activity track in every theme");
   assert.match(markdownDialogSource, /Download \.md/);
-  assert.match(markdownDialogSource, /Final reviewed/);
+  assert.match(markdownDialogSource, /Working brief/);
+  assert.match(markdownDialogSource, /does not record human review or approval/);
+  assert.doesNotMatch(markdownDialogSource, /Final reviewed/);
   assert.match(markdownDialogSource, /Case filename/);
   assert.match(markdownDialogSource, /YYYYMMDD_HHMMSS/);
   assert.match(canonicalReviewSource, /Apply exact case/);

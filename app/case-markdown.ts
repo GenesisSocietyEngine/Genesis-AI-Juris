@@ -5,6 +5,7 @@ import { hasTaxAttachment } from "./tax-authoring";
 import type { StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 export const CANONICAL_CASE_MARKER = "GENESIS-JURIS-CANONICAL-V1";
+export const CASE_MARKDOWN_PRESENTATION_VERSION = 2;
 export type CaseMarkdownStatus = "amended" | "final";
 export type CaseMarkdownLanguage = "en" | "ru";
 export type ParsedCaseMarkdown = { draft: StudioDraft; fingerprint: string; status: CaseMarkdownStatus; language: CaseMarkdownLanguage };
@@ -61,7 +62,7 @@ function relation(link: StudioLink, nodes: Map<string, StudioNode>, language: Ca
     rule?.repeatability,
     rule?.maxUses !== undefined ? `${language === "en" ? "max" : "макс."} ${rule.maxUses}` : "",
     rule?.guards?.length ? rule.guards.map((guard) => `${guard.metric} ${guard.comparison} ${guard.value}`).join(", ") : "",
-    rule?.effects && Object.keys(rule.effects).length ? Object.entries(rule.effects).map(([key,value]) => `${key} ${Number(value) >= 0 ? "+" : ""}${value}`).join(", ") : "",
+    rule?.effects && Object.keys(rule.effects).length ? `${language === "en" ? "Retained execution effects (not evidence acceptance)" : "Сохранённые эффекты исполнения (не принятие доказательств)"}: ${Object.entries(rule.effects).map(([key,value]) => `${key} ${Number(value) >= 0 ? "+" : ""}${value}`).join(", ")}` : "",
   ].filter(Boolean);
   return `- **${from} → ${to}**${notes.length ? ` — ${notes.join("; ")}` : ""}`;
 }
@@ -129,13 +130,15 @@ export async function buildCaseMarkdown(source:StudioDraft,options:{status:CaseM
   const marker=taxPayload?.marker??`<!-- ${CANONICAL_CASE_MARKER}\nfingerprint:${fingerprint}\nencoding:gzip-base64url\npayload:${await gzip(JSON.stringify({format:"genesis-juris-canonical-markdown",schemaVersion:1,fingerprint,status:options.status,language,draft}))}\n-->`;
   const lines=[
     `# ${draft.title}`,"",
-    `> **${en?"Document status":"Статус документа"}:** ${options.status==="final"?(en?"Final reviewed case description":"Финальное проверенное описание кейса"):(en?"Amended case description":"Уточнённое описание кейса")}`,
+    `<!-- CASEVANT-BRIEF-PRESENTATION-V${CASE_MARKDOWN_PRESENTATION_VERSION} -->`,"",
+    `> **${en?"Document preparation":"Подготовка документа"}:** ${options.status==="final"?(en?"Prepared brief":"Подготовленное описание"):(en?"Working brief":"Рабочее описание")}`,
+    `> ${en?"This presentation label does not record human review or approval. Verify those separately for the exact case version.":"Эта метка оформления не фиксирует проверку или утверждение человеком. Проверяйте их отдельно для точной версии кейса."}`,
     `> **${en?"Canonical fingerprint":"Канонический отпечаток"}:** \`${fingerprint}\``,"",
     `## ${en?"1. Case mandate":"1. Мандат кейса"}`,"",
     draft.premise||(en?"_The factual case context must be completed in Studio._":"_Фактический контекст кейса необходимо заполнить в Studio._"),"",
-    `| ${en?"Field":"Поле"} | ${en?"Reviewed value":"Проверенное значение"} |`,"|---|---|",
+    `| ${en?"Field":"Поле"} | ${en?"Recorded value":"Записанное значение"} |`,"|---|---|",
     `| ${en?"Jurisdiction":"Юрисдикция"} | ${cell(draft.jurisdiction)} |`,
-    `| ${en?"Player role":"Роль игрока"} | ${cell(draft.role)} |`,
+    `| ${en?"Recorded role":"Записанная роль"} | ${cell(draft.role)} |`,
     `| ${en?"Practice area":"Область практики"} | ${cell(draft.classification?.practiceArea)} |`,
     `| ${en?"Difficulty":"Сложность"} | ${cell(draft.classification?.difficulty)} |`,
     `| ${en?"Case purpose":"Цель кейса"} | ${cell(draft.classification?.purpose)} |`,
