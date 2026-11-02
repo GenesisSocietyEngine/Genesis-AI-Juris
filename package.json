@@ -51,6 +51,7 @@
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.4.2",
+    "minimatch": "file:vendor/minimatch-compat",
     "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "tsx": "4.22.1",
@@ -66,6 +67,7 @@
     "browserslist": "4.28.8",
     "fast-uri": "3.1.9",
     "fflate": "0.7.5",
+    "minimatch": "$minimatch",
     "miniflare": {
       "undici": "7.30.1"
     },
