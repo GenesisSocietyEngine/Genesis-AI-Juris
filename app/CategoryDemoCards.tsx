@@ -16,10 +16,11 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
   return <>{demos.map(demo => {
     const book = caseTypePlaybook(caseTypeReference(demo.caseTypeId));
     return <article className="demo-catalogue-card" data-example-family="category" key={demo.caseTypeId}>
-      <span className="demo-format">{en ? "Worked Studio example" : "Учебный пример Studio"}</span>
-      <h2>{demo.title[locale]}</h2><p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {categoryDemoPrompt(demo.caseTypeId, locale)}</p>
-      <p className="demo-card-meta">{caseTypePresentation(book, locale).label} · {en ? "Fictional example" : "Вымышленный пример"}</p>
-      <p><b>{en ? "Work towards" : "Результат"}:</b> {book.primaryOutcome[locale]}</p>
+      <div className="catalogue-row-main"><span className="demo-format">{en ? "Worked Studio example" : "Учебный пример Studio"}</span><h2>{demo.title[locale]}</h2><p className="demo-card-meta">{caseTypePresentation(book, locale).label} · {en ? "Fictional example" : "Вымышленный пример"}</p><p className="catalogue-row-output"><b>{en ? "Work towards" : "Результат"}:</b> {book.primaryOutcome[locale]}</p></div>
+      <div className="catalogue-row-actions">
+      <button type="button" className="primary-cta" onClick={() => onOpen(demo.caseTypeId)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${demo.title[locale]}`}>{en ? "Open example case" : "Открыть пример кейса"}</button>
+      </div>
+      <details className="catalogue-row-details"><summary>{en ? "About this example" : "О примере"}<span className="visually-hidden"> — {demo.title[locale]}</span></summary><p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {categoryDemoPrompt(demo.caseTypeId, locale)}</p>
       <details className="demo-editorial"><summary>{en ? "What to explore" : "Что изучить"}</summary><p>{en ? "After opening, choose Brief & structure → Edit the brief to adapt this prompt. Opening an example does not run AI." : "После открытия выберите «Задача и структура → Изменить описание», чтобы адаптировать промпт. Открытие примера не запускает ИИ."}</p><p>{demo.evidence[locale]}</p><p>{en ? "Trace the decision to its evidence, compare both outcomes and review the expected output. Professional review remains required." : "Проследите доказательства решения, сравните исходы и изучите ожидаемый результат. Требуется профессиональная проверка."}</p>{demo.caseTypeId === "training_simulation" && <p>{en ? "In Studio, choose Test → Play to make decisions on the branching route." : "В Studio выберите «Тест → Играть», чтобы пройти маршрут решений."}</p>}</details>
       <details className="demo-editorial"><summary>{en ? "Synthetic sources & output outline" : "Учебные источники и структура результата"}<span className="visually-hidden"> — {demo.title[locale]}</span></summary>
         <p>{en ? "These inspectable excerpts are authored for teaching. They are not external documents or verified legal sources." : "Эти доступные для изучения выдержки созданы для обучения. Это не внешние документы и не проверенные правовые источники."}</p>
@@ -29,7 +30,7 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
         <p>{demo.decision[locale]}</p><ul><li>{demo.proceed[locale]}</li><li>{demo.pause[locale]}</li></ul>
         <p>{en ? "A pause can be the appropriate professional decision. Only the training simulation grades its explicitly unsafe restart route. This outline is not a generated or approved report." : "Пауза может быть правильным профессиональным решением. Только учебная симуляция оценивает явно небезопасный повторный запуск. Эта структура не является сформированным или утверждённым отчётом."}</p>
       </details>
-      <button type="button" className="primary-cta" onClick={() => onOpen(demo.caseTypeId)} aria-label={`${en ? "Open example case" : "Открыть пример кейса"}: ${demo.title[locale]}`}>{en ? "Open example case" : "Открыть пример кейса"}</button>
+      </details>
       {exampleLaunch?.id === `category:${demo.caseTypeId}` && cancelExample && <ExampleLaunchStatus launch={exampleLaunch} locale={locale} cancel={cancelExample} retry={() => onOpen(demo.caseTypeId)}/>}
     </article>;
   })}</>;
