@@ -8,6 +8,7 @@ import { caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15, 
 import { StudioTaxWriteBaseline } from "../app/studio-tax-write-baseline";
 import { savedStudioPath } from "../app/studio-save-receipt";
 import { parseStudioWorkflowStep, restoredStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
+import { unavailableSavedCaseId } from "../app/StudioSavedCaseAccessNotice";
 import type { StudioDraft } from "../app/types";
 
 // Execute the actual parent handler, URL integration expression and effects.
@@ -48,6 +49,7 @@ function harness(query = "custom_case=1&studio_step=case_map") {
     studioChangedBeforeRestoreRef: { current: false }, recovery: null as null | { rawText?: string; canExport: boolean; scope: string; filename: string },
     setStudioRecovery: (value: { rawText?: string; canExport: boolean; scope: string; filename: string }) => { state.recovery = value; },
     savedCaseRestorePending: null as number | null, studioAIEntitlement: "not_configured", studioRestoreReady: true, studioCustomCaseId: null,
+    get unavailableSavedCaseAccessId(): number | null { return unavailableSavedCaseId({ phase: state.studioAIEntitlement === "unavailable" ? "unavailable" : "ready", signOutPending: false, currentCaseId: state.studioCustomCaseId, requested: new URL(href).searchParams.get("custom_case") }); },
     fetch: (_path: string, init: RequestInit) => { assert.ok(init.signal, "Saved-case read has bounded cancellation"); return new Promise<Response>((resolve, reject) => requests.push({ resolve, reject })); },
     readJsonResponse: (response: Response) => response.json(),
     studioDepartureFingerprint: caseFingerprint,
@@ -161,7 +163,7 @@ test("anonymous and unavailable identity do not start or retain a saved-case res
     const h = harness(); h.state.studioAIEntitlement = entitlement;
     h.actions.entry(); h.flush();
     assert.equal(h.requests.length, 0); assert.equal(h.state.savedCaseRestorePending, null);
-    assert.equal(h.actions.pending(), false);
+    assert.equal(h.actions.pending(), entitlement === "unavailable");
   }
 });
 
@@ -205,4 +207,27 @@ test("actual late recovery completion reveals no raw text after source/account/r
     h.requests[0].resolve(Response.json({ error: "No access" }, { status })); await pending;
     assert.equal(h.state.recovery, null); assert.equal(h.installed(), null); assert.equal(h.storage.size, 0);
   }
+});
+
+
+test("an unavailable saved-case opening keeps its requested step and panel without reads or placeholder writes", () => {
+  const h = harness("custom_case=1&studio_step=case_map&studio_panel=overview");
+  h.state.studioAIEntitlement = "unavailable";
+  h.state.studioRestoreReady = false;
+  const url = h.url().href, draft = h.state.draftRef.current;
+  h.actions.entry(); h.flush(); h.navigationEffects();
+  assert.equal(h.actions.pending(), true);
+  assert.equal(h.url().href, url);
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.storage.size, 0);
+  assert.equal(h.state.draftRef.current, draft);
+});
+
+test("unavailable identity leaves an ordinary local builder available without a saved-case URL", () => {
+  const h = harness("view=studio&studio_step=describe");
+  h.state.studioAIEntitlement = "unavailable";
+  h.state.studioRestoreReady = false;
+  h.actions.entry(); h.flush();
+  assert.equal(h.actions.pending(), false);
+  assert.equal(h.requests.length, 0);
 });
