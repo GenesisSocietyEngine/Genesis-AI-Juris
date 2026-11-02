@@ -77,6 +77,7 @@ test("saved-version inspection is inside the existing More actions menu and pres
     assert.match(html, /<div class="studio-more-menu"><section>[\s\S]*?<a class="secondary-cta"/);
     assert.match(html, /custom_case=48/);
     assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+    assert.ok(html.includes(locale === "en" ? "JSON requires this exact version saved to workspace" : "Для JSON сохраните точную версию в workspace"));
   }
   assert.doesNotMatch(renderToStaticMarkup(createElement(StudioUserMoreActions,base)), /Inspect saved version/);
 });

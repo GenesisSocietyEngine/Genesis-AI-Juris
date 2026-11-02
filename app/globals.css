@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+.prompt-local-options{margin:16px 0;padding:12px 16px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}.prompt-local-options>summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;color:var(--copy);font-weight:600}.prompt-local-options>p{font-size:.9rem;line-height:1.5;color:var(--copy)}
+
 :root {
   --ink-950: #061019;
   --ink-900: #0b1721;
