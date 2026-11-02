@@ -270,7 +270,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Report export is unavailable in inspection-only mode/);
   assert.match(reportDialogSource, /const outputBlocked = !canGenerateReport \|\| busy/);
   assert.match(reportDialogSource, /disabled=\{outputBlocked\}/);
-  assert.match(markdownActionsSource, /Export Final case prompt \(\.md\)/);
+  assert.match(markdownActionsSource, /Export case brief \(\.md\)/);
   assert.match(markdownActionsSource, /Import case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /closest\("details"\)\?\.removeAttribute\("open"\)/, "opening Markdown export closes the More actions menu");
   assert.match(appSource, /CanonicalPromptAction/);

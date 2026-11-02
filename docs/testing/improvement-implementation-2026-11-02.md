@@ -10,6 +10,8 @@ All48 expanded regressions pass, including exact historical Markdown bytes, cano
 
 Interactive keyboard, 200% zoom, narrow/short-height layouts and actual downloads remain blocked and unobserved in this implementation. There have been no new browser attempts or production case writes.
 
+Final journey review catches an additional entry-label mismatch: More actions still says Export Final case prompt. It now says Export case brief in EN/RU. The dated tutorial/video/transcript bytes remain unchanged; an adjacent bilingual current-label correction explains the new menu and preparation labels. Actual SSR tests check both entry and correction. The React checklist review confirms direct/lazy imports, existing authority/persistence boundaries, stable effect cleanup and accessible control labels; no UI framework or unrelated hook refactor is introduced. Full candidate checks must run against this follow-up commit rather than the prior head.
+
 Baseline: canonical a0817eb2e7d9a03f4457e05a2daa73eab870d716; public163/runtime d4ff9b6, matching application/hosting hashes established in the audit. Fresh Sites reports active/public/owner/latest163. The new checkout initially has insufficient shallow ancestry for the Sites history comparison; fetching20canonical ancestors proves d4ff9b6 is an ancestor and the supported helper then opens a0817eb. No remote history is overwritten. Runtime changes, publication and browser acceptance are separate gates.
 
 ## S00: patched matcher behind a bounded consumer adapter

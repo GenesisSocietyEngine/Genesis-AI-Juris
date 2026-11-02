@@ -5,11 +5,24 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import CaseMarkdownDialog from '../app/CaseMarkdownDialog';
+import CaseMarkdownActions from '../app/CaseMarkdownActions';
+import TrainingVideo from '../app/TrainingVideo';
 import { buildCaseMarkdown, parseCaseMarkdown } from '../app/case-markdown';
 
 const directory = new URL('./fixtures/markdown-presentation-v1/', import.meta.url);
 const receipt = JSON.parse(readFileSync(new URL('receipt.json', directory), 'utf8')) as { entries: Array<{ file: string; sha256: string; fingerprint: string }> };
 const marker = (text: string) => text.match(/<!-- GENESIS-JURIS-CANONICAL-V1\n[\s\S]*?-->/)?.[0];
+
+test('export entry is neutral and dated tutorial has an explicit current-label correction', () => {
+  for (const locale of ['en', 'ru'] as const) {
+    const menu = renderToStaticMarkup(createElement(CaseMarkdownActions, { locale, loadDisabled: false, exportDisabled: false, loaded() {}, opened() {}, failed() {} }));
+    assert.ok(menu.includes(locale === 'en' ? 'Export case brief (.md)' : 'Экспорт описания кейса (.md)'));
+    assert.doesNotMatch(menu, /Final case prompt/);
+    const training = renderToStaticMarkup(createElement(TrainingVideo, { locale }));
+    assert.ok(training.includes(locale === 'en' ? 'does not record human review or approval' : 'не фиксирует проверку или утверждение человеком'));
+    assert.match(training, /casevant-training-20261005\.en\.mp4/, 'historical video remains intact');
+  }
+});
 
 test('retained presentation-v1 fixtures keep their exact bytes and historical status', async () => {
   for (const entry of receipt.entries) {
