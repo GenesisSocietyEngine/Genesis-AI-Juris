@@ -10,7 +10,9 @@ export default function CaseMarkdownActions({locale,loadDisabled,exportDisabled,
     catch (error) { failed(studioPromptFileError(error, locale)); }
   }
   async function open(button:HTMLButtonElement){
+    const returnTo=button.closest("details")?.querySelector<HTMLElement>("summary");
     button.closest("details")?.removeAttribute("open");
+    returnTo?.focus({preventScroll:true});
     try{await import("./CaseMarkdownDialog");opened();}
     catch{failed(locale==="en"?"Markdown tools failed. Refresh.":"Модуль Markdown не загрузился. Обновите.");}
   }
