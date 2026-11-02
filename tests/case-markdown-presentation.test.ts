@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -36,7 +37,7 @@ test('retained presentation-v1 fixtures keep their exact bytes and historical st
   }
 });
 
-test('presentation-v2 changes review wording without changing the same-option canonical payload', async () => {
+test('presentation-v2 preserves the same-option canonical payload with only the platform gzip OS byte allowed to differ', async () => {
   for (const language of ['en', 'ru'] as const) {
     const old = readFileSync(new URL(`${language}-final.md`, directory), 'utf8');
     const parsed = await parseCaseMarkdown(old);
@@ -49,7 +50,16 @@ test('presentation-v2 changes review wording without changing the same-option ca
     assert.match(built.markdown, language === 'en' ? /Retained execution effects/ : /Сохранённые эффекты исполнения/);
     assert.match(built.markdown, language === 'en' ? /does not record human review or approval/ : /не фиксирует проверку или утверждение человеком/);
     assert.ok(marker(old));
-    assert.equal(marker(built.markdown), marker(old), 'compressed canonical bytes are unchanged for identical options');
+    const oldMarker = marker(old)!, newMarker = marker(built.markdown)!;
+    assert.equal(newMarker.replace(/payload:[^\n]+/, 'payload:'), oldMarker.replace(/payload:[^\n]+/, 'payload:'), 'canonical envelope metadata is unchanged');
+    const compressed = (value: string) => Buffer.from(value.match(/payload:([^\n]+)/)![1], 'base64url');
+    const originalBytes = compressed(oldMarker), currentBytes = compressed(newMarker);
+    assert.deepEqual(currentBytes.subarray(0, 9), originalBytes.subarray(0, 9), 'all gzip header fields before OS stay exact');
+    assert.deepEqual(currentBytes.subarray(10), originalBytes.subarray(10), 'compressed body and checksum/length trailer stay byte-identical');
+    assert.deepEqual(gunzipSync(currentBytes), gunzipSync(originalBytes), 'entire uncompressed canonical JSON stays byte-identical');
+    if (process.platform === 'win32') assert.equal(newMarker, oldMarker, 'same-platform envelope stays entirely byte-identical');
+    if (process.platform === 'linux') assert.equal(currentBytes[9], 3, 'Linux gzip OS metadata');
+    assert.equal(originalBytes[9], 10, 'retained Windows fixture OS metadata is immutable');
     assert.deepEqual(parsed.draft, before, 'the source case is not mutated');
     const restored = await parseCaseMarkdown(built.markdown);
     assert.deepEqual(restored?.draft, parsed.draft);
