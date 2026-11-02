@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {Buffer} from 'node:buffer';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
@@ -21,11 +22,11 @@ test('recordings bind actual captured frames and every published asset to exact 
     for(const frame of scenario.captures){
       const file=resolve(root,'scripts/training/scenarios-20261102',frame.file);
       assert.ok(file.startsWith(resolve(root,'scripts/training/scenarios-20261102/screens')));
-      const bytes=readFileSync(file);assert.equal(sha(bytes),frame.sha256);assert.equal(bytes.subarray(0,3).toString('hex'),'ffd8ff');
+      const bytes=Buffer.from(readFileSync(file));assert.equal(sha(bytes),frame.sha256);assert.equal(bytes.subarray(0,3).toString('hex'),'ffd8ff');
       assert.match(frame.url,/^http:\/\/127\.0\.0\.1:4187\/studio/);
     }
     for(const asset of scenario.assets){
-      const bytes=readFileSync(resolve(root,'public',asset.path.slice(1)));
+      const bytes=Buffer.from(readFileSync(resolve(root,'public',asset.path.slice(1))));
       assert.equal(bytes.length,asset.bytes);assert.equal(sha(bytes),asset.sha256);
       if(asset.path.endsWith('.mp4')){assert.ok(bytes.length<24*1024*1024);assert.equal(bytes.subarray(4,8).toString(),'ftyp');assert.ok(bytes.indexOf('moov')<bytes.indexOf('mdat'),'fast start');}
     }
