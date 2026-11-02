@@ -1,0 +1,540 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-02",
+  "stage": "compact-source-documents-and-references",
+  "runtimeCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+  "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    198
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_63886c17972c8191a876b7234b9a1291",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 168,
+    "source": {
+      "commit_sha": "2457b9d65a7574dadfbfa875ba5152be31785350"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000006a6082108dc58a77057593c4",
+      "content_hash": "sha256:721a1e623d60e12cd75dd8bd07381a8168b7ca617d00f34ec2fb7f1f282af44c",
+      "size_bytes": 50677760,
+      "file_count": 603
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae8d93745008191babaa01f6a7891b6",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_63886c17972c8191a876b7234b9a1291",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-02T18:41:22.467750+00:00"
+  },
+  "sourceHelper": {
+    "preEditOpening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "f8b577d1e7f208d41a1e1a3087bb278e3e16e3b4"
+    },
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "2457b9d65a7574dadfbfa875ba5152be31785350"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-compact-sources-2457b9d-20261102.tar"
+    }
+  },
+  "localArchive": {
+    "path": "C:/Users/User/Documents/ChatGPT/software/casevant-compact-sources-2457b9d-20261102.tar",
+    "sha256": "9031f4f7d39b0c3d621487eadc0515bc4d737d087ddce2b43594d2461f46393e",
+    "bytes": 31356615
+  },
+  "candidate": {
+    "sha": "56e41ec54e4ae439f43e92541a60330e5a621527",
+    "runId": 41499088515,
+    "tests": 1838,
+    "passed": 1835,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2
+  },
+  "mainAcceptance": {
+    "runId": 41500919729,
+    "artifactId": 13169281346,
+    "artifactName": "verified-web-build-2457b9d65a7574dadfbfa875ba5152be31785350-41500919729",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-2457b9d.zip",
+    "sha256": "71e54b67edfcf3d5cac0aeb70269b63cf564838b4c95e770df8a8a9ba8798b8d",
+    "bytes": 31202317,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-2457b9d",
+    "entries": 543,
+    "tests": 1838,
+    "passed": 1835,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "sourceInputsVerified": 579,
+    "completeSourceReceiptVerified": true,
+    "webPdfPackagedWorker": "passed",
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0
+  },
+  "publicAssets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 197,
+      "verifiedCount": 197,
+      "receiptSha256": "b1eae61c4f044b330bdf2a12e1b93f46756453992b9a8f9322b15ffa08e65015",
+      "expectedBuild": {
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "previousSourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 60
+      },
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 197,
+      "verifiedCount": 197,
+      "receiptSha256": "a5de04a21709720d1899276acfb185f32aeea2d01d56b296889bf2fdc7722f1f",
+      "expectedBuild": {
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "previousSourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 60
+      },
+      "passed": true
+    }
+  ],
+  "publicRuntime": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "2457b9d65a7574dadfbfa875ba5152be31785350",
+        "applicationInputsSha256": "09e47f5bbdae754a3d038f85f27f7dc3f4d555ad13808affc191d2bcc9514e9c",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "productionBrowser": {
+    "runtime": "2457b9d65a7574dadfbfa875ba5152be31785350",
+    "date": "2026-11-02",
+    "browser": "Fresh Chrome QA tab; fictional Canopy independent unsaved working copy",
+    "sourceVersion": "2.0.0",
+    "layout": {
+      "downloadButtons": [
+        {
+          "disabled": false,
+          "name": "Download text: Is independent commissioning evidence accepted?"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D01 v1 — Investment mandate and approval thresholds"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D02 v1 — Draft farm-management term sheet"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D03 v1 — Hospitality demand pipeline"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D04 v1 — Current capacity and crop-fit report"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D05 v1 — Candidate-site technical assessment"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D06 v1 — Independent commissioning and traceability-readiness report"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D08 v1 — Staffing and 90-day transition plan"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D09 v1 — Cold-chain and delivery service model"
+        },
+        {
+          "disabled": false,
+          "name": "Download text: D07 v2 — Reviewed scenario assumptions and units addendum"
+        }
+      ],
+      "height": 688,
+      "libraryWidth": 1180,
+      "listHeight": 688.7999877929688,
+      "open": 0,
+      "rows": 10,
+      "visibleControls": 25,
+      "width": 1522
+    },
+    "passage": {
+      "focus": "MARK",
+      "open": true,
+      "text": "450 packs"
+    },
+    "returnFromNode": {
+      "focus": "N02 · Is this within the committee mandate?",
+      "height": 688,
+      "hiddenAncestors": 0,
+      "query": "450 packs",
+      "top": 322.3000183105469
+    },
+    "exactReference": {
+      "hiddenAncestors": 0,
+      "id": "studio-reference-D01-v1-Mandate"
+    },
+    "exactReferenceReturn": {
+      "focus": "Open exact reference passage",
+      "height": 688,
+      "top": 322.1625061035156
+    },
+    "screenshots": [
+      ".artifacts/compact-sources/production-v168.jpg",
+      ".artifacts/compact-sources/production-references-v168.jpg"
+    ],
+    "productionSaveReplaceDeleteBulkActionPerformed": false,
+    "browserDiskDownloadObserved": false,
+    "narrowEvidence": "Separate local full-app GreenFire and 250px RU synthetic component checks; not relabelled production"
+  },
+  "localBrowser": {
+    "baseline": {
+      "height": 688,
+      "libraryWidth": 1180,
+      "listHeight": 2112.375,
+      "rows": [
+        {
+          "height": 249.0375061035156,
+          "title": "Is independent commissioning evidence accepted?"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D01 v1 — Investment mandate and approval thresholds"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D02 v1 — Draft farm-management term sheet"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D03 v1 — Hospitality demand pipeline"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D04 v1 — Current capacity and crop-fit report"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D05 v1 — Candidate-site technical assessment"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D06 v1 — Independent commissioning and traceability-readiness report"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D08 v1 — Staffing and 90-day transition plan"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D09 v1 — Cold-chain and delivery service model"
+        },
+        {
+          "height": 197.0375061035156,
+          "title": "D07 v2 — Reviewed scenario assumptions and units addendum"
+        }
+      ],
+      "visibleControls": 38,
+      "width": 1522,
+      "runtime": "7f6dd9ff05284e60686d7c4199a1ab332b148536"
+    },
+    "localAfter": {
+      "height": 632,
+      "libraryWidth": 1180,
+      "listHeight": 688.7999877929688,
+      "rows": [
+        {
+          "height": 68.80000305175781,
+          "title": "Is independent commissioning evidence accepted?"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D01 v1 — Investment mandate and approval thresholds"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D02 v1 — Draft farm-management term sheet"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D03 v1 — Hospitality demand pipeline"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D04 v1 — Current capacity and crop-fit report"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D05 v1 — Candidate-site technical assessment"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D06 v1 — Independent commissioning and traceability-readiness report"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D08 v1 — Staffing and 90-day transition plan"
+        },
+        {
+          "height": 68.80000305175781,
+          "title": "D09 v1 — Cold-chain and delivery service model"
+        },
+        {
+          "height": 68,
+          "title": "D07 v2 — Reviewed scenario assumptions and units addendum"
+        }
+      ],
+      "visibleControls": 25,
+      "width": 1522
+    },
+    "passage": {
+      "focus": "MARK",
+      "open": true,
+      "text": "450 packs"
+    },
+    "sourceReturn": {
+      "focus": "N02 · Is this within the committee mandate?",
+      "height": 632,
+      "hiddenAncestors": 0,
+      "query": "450 packs",
+      "tag": "BUTTON",
+      "top": 294.3000183105469
+    },
+    "exactReference": {
+      "closed": 0,
+      "id": "studio-reference-D01-v1-Mandate"
+    },
+    "exactReferenceReturn": {
+      "focus": "Open exact reference passage",
+      "height": 632,
+      "top": 293.9250183105469
+    },
+    "inspectorInitialCorrection": {
+      "clientWidth": 196,
+      "rows": [
+        {
+          "height": 369.875,
+          "width": 164
+        },
+        {
+          "height": 327.4250183105469,
+          "width": 164
+        }
+      ],
+      "scrollWidth": 196,
+      "width": 201.1999969482422
+    },
+    "inspectorCorrected": {
+      "clientWidth": 212,
+      "rows": [
+        {
+          "height": 250.9250030517578,
+          "width": 190
+        },
+        {
+          "height": 229.3000030517578,
+          "width": 190
+        }
+      ],
+      "scrollWidth": 212,
+      "titles": [
+        {
+          "text": "Is independent commissioning evidence accepted?",
+          "width": 159.16250610351562
+        },
+        {
+          "text": "QA synthetic second evidence record",
+          "width": 159.16250610351562
+        }
+      ],
+      "width": 217.1999969482422
+    },
+    "syntheticComponentBatch": {
+      "beforeConnections": 15,
+      "afterAttach": 17,
+      "afterFixtureUndo": 15,
+      "productionAuthority": false,
+      "fullApplicationPersistence": false
+    },
+    "greenfire": {
+      "documentWidth": 375,
+      "height": 480,
+      "rows": [
+        {
+          "downloadButtons": 0,
+          "note": "›Site CCTV exportOriginal body not supplied. No file is available.Details2 related nodes",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Dangerous-goods manifestOriginal body not supplied. No file is available.Details2 related nodes",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Environmental permit and site planOriginal body not supplied. No file is available.Details2 related nodes",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Safety coordinator emailOriginal body not supplied. No file is available.Details2 related nodes",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Insurance policy bundleOriginal body not supplied. No file is available.Details2 related nodes",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Fire-service runoff mapOriginal body not supplied. No file is available.Details1 related node",
+          "open": false
+        },
+        {
+          "downloadButtons": 0,
+          "note": "›Privileged preliminary fire assessmentOriginal body not supplied. No file is available.Details4 related nodes",
+          "open": false
+        }
+      ],
+      "status": "7 matching materials",
+      "width": 390
+    },
+    "viewportReset": true,
+    "limits": "No production case writes or authenticated save/download acceptance. Full-app local, component synthetic and production baseline evidence are separate."
+  },
+  "localBrowserReceiptSha256": "d8139b738f703f0597c5eff95cced9233668c23ac0502e9872760e9f696586ee",
+  "configuration": {
+    "before": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "current_user_role": "owner",
+      "latest_version_number": 167,
+      "current_live_url": "https://casevant.pro"
+    },
+    "after": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "current_user_role": "owner",
+      "latest_version_number": 168,
+      "current_live_url": "https://casevant.pro"
+    },
+    "environment": {
+      "revision": 42,
+      "entryCount": 13
+    },
+    "environmentEntriesUnchanged": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ],
+    "bindingsAndAudienceChanged": false
+  },
+  "nativeWorkflows": [
+    {
+      "conclusion": "",
+      "databaseId": 41500919776,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "iOS Native FFI",
+      "status": "queued"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41500919775,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41500919618,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "iOS Tax Application",
+      "status": "queued"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41500920003,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41500919651,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41500919729,
+      "headSha": "2457b9d65a7574dadfbfa875ba5152be31785350",
+      "name": "Root Web and PDF",
+      "status": "completed"
+    }
+  ],
+  "checks": {
+    "focusedPassed": 23,
+    "strictTypes": "passed",
+    "lint": "passed",
+    "productionCaseSaveReplaceDeleteBulkActionPerformed": false,
+    "sourceFactoriesChanged": false,
+    "persistenceOrAuthorityChanged": false,
+    "reportOrRecordingChanges": false
+  },
+  "acceptanceLimits": [
+    "List-height/control-count measurements are same-width UI observations, not measured retrieval time, document coverage, evidence review or commercial ROI.",
+    "The 250px RU component bulk attach and fixture Undo use synthetic authority; they are not authenticated production or full-application persistence/Undo acceptance.",
+    "No production case save/replacement/deletion/bulk mutation; routine account/session traffic is not a zero-database-write assertion.",
+    "Browser download-to-disk and authenticated save/recovery acceptance remain separate. Material/archive/download handlers and fences are unchanged and retain existing test coverage.",
+    "Preserve all previous S03 owner-recovery, same-tab identity/cancellation, original-artifact/historical-pagination, missing-source, native and commercial/operator limits.",
+    "A stale-tab preservation attempt timed out and reset browser control; a fresh tab in the same Chrome browser recovered. Known old tab rebinding reported debugger unattached; no old/user tab was navigated or intentionally closed, and these attempts are not product defects."
+  ],
+  "publishingNote": "Exact-main CI ZIP/source/tree/full input receipt verified before adopting build bytes. Retain only v167 current-manifest assets. Documentation-only closure leaves application and hosting inputs unchanged and needs no duplicate rollout."
+}

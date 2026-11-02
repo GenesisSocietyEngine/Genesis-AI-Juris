@@ -1,5 +1,8 @@
 # Compact source documents and references
 
+**Delivered — public v168.** Runtime 2457b9d65a7574dadfbfa875ba5152be31785350; [native receipt](receipts/compact-sources-v168-2026-11-02.json). Earlier candidate notes below remain dated review history.
+
+
 ## Outcome and acceptance
 
 User-requested bounded UX amendment: scan documents without repeated full action blocks; open one row for text and related nodes; keep file download, search, selection, exact reference navigation and return available. Preserve original bytes, identities, all existing/synthetic cases, evidence/protection/tax/history carriers, frozen templates, missing-original disclosures and authority/fingerprint/CAS contracts. This is presentation and reading navigation, not a case-data migration or approval change.
@@ -28,3 +31,14 @@ Actual local full-application GreenFire at 390×480: document width 375px; Missi
 Affected materials/search/archive/UI checks initially pass 22. Added compact-row contract tests exposed an incorrect test assumption that every source has a related node; corrected the expectation to preserve valid zero-related-node sources rather than invent connections. The 23 affected checks then pass. Final source-specific strict/lint, candidate/exact-main full web/PDF/packaged gates and Sites receipt remain required before delivery.
 
 No production case save, amendment, replacement, deletion or bulk mutation is performed. Routine account/session traffic is not a zero-database-write assertion. Browser download-to-disk, authenticated save/recovery and same-tab identity/cancellation acceptance are not completed by this layout work. Preserve the prior S03, original-artifact/historical-pagination, missing-source, native and operator/commercial limits. Retain the v167 caption-boundary follow-on; this amendment does not change recordings, report renderers, sources or factories.
+
+
+## Delivery and final review
+
+PR198 is normally integrated; exact runtime 2457b9d65a7574dadfbfa875ba5152be31785350 deploys successfully through the existing CaseVant Site. Candidate and exact-main gates: 1835 passed / 0 failed / 3 inherited skips, plus 2 HTML checks; strict types/lint, migration/contracts, packaged browser/Worker/tax, all unchanged PDF locks and full/production audits with 0 findings pass. The exact-main CI ZIP digest, source/tree and every one of 579 source inputs match before adopting build bytes. Both origins verify 197/197 current/retained assets and exact public runtime. Only v167 current-manifest assets are retained.
+
+Fresh production browser observations are recorded in the native receipt and remain distinct from the live v167 baseline, local application and synthetic component fixture. A known-old-tab preservation call timed out and reset browser control; fresh same-browser tab creation recovered while known-old-tab rebinding reported debugger unattached. No user/old tab was navigated or intentionally closed and these automation limits are not counted as product faults. Recordings and all original source bodies/hashes remain unchanged. No production case save, replacement, deletion or bulk mutation. Browser download-to-disk and authenticated authority/persistence acceptance remain separate limits. Public audience, environment 42/all 13 entries and DB/DOSSIER_DOCUMENTS remain unchanged.
+
+Canonical continuation now resumes remaining S03 evidence rather than rebuilding this layout. Preserve all source/factory/tax/evidence/protection/history/recovery/report locks, 43 missing-original disclosures and prior native/operator/commercial limits. Documentation closure changes no application or hosting inputs.
+
+Fresh production Chrome repeats the collapsed-list measurements at the same 1,522×688 viewport and 1,180px library width as the baseline: ten rows, 688.8px list height, zero initially expanded rows and 25 visible controls. All ten per-text download buttons are enabled; that observation does not claim disk delivery. Enter focuses the literal `450 packs` mark. Returning from N02 retains the query and restores the visible node control at y322.3 with no closed ancestor. Exact D01 v1 Mandate opens with no closed ancestor; Tab reaches Back and Enter returns to the citing control at y322.2. The final document and reference screenshots are inspected. This production evidence is separate from the local GreenFire/narrow/Russian component rows.
