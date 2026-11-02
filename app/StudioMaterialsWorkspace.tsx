@@ -51,6 +51,8 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     if (!target) return;
     const button = Array.from(root.current.querySelectorAll<HTMLButtonElement>("[data-material-node]")).find(button => button.dataset.materialNode === target.key);
     if (button) {
+      // A compact row must reveal its linked control before restoring focus.
+      for (let parent = button.closest("details"); parent; parent = parent.parentElement?.closest("details") ?? null) parent.open = true;
       button.focus({ preventScroll: true });
       const margin = Math.min(96, window.innerHeight / 4);
       const viewportTop = Math.max(margin, Math.min(target.viewportTop ?? margin, Math.max(margin, window.innerHeight - 80)));
@@ -106,13 +108,24 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     {!loading && !readFailure && notice && <p role="status" aria-label={t("Material action status", "Статус действия с материалами")}>{notice}</p>}
     {!loading && !readFailure && !filtered.length && <p className={styles.empty}>{t("No matching materials. Try a shorter phrase, change the material type or reset filters.", "Материалы не найдены. Сократите фразу, измените тип материалов или сбросьте фильтры.")}</p>}
     {onApply && evidenceIds.length > 0 && <fieldset className={`${styles.notice} ${styles.bulk}`}><legend>{t(`${evidenceIds.length} working records selected`, `Выбрано рабочих записей: ${evidenceIds.length}`)}</legend><label>{t("Destination node", "Узел назначения")}<select value={target} onChange={event => setTarget(event.target.value)}><option value="">{t("Choose a node", "Выберите узел")}</option>{draft.nodes.map((node, index) => !evidenceIds.includes(node.id) && node.id !== nodeId ? <option key={node.id} value={node.id}>N{String(index + 1).padStart(2, "0")} · {node.title}</option> : null)}</select></label><div className={styles.actions}><button type="button" className={styles.primary} disabled={busy || !target} onClick={() => void arrange("attach")}>{t("Attach selected", "Прикрепить выбранные")}</button>{nodeId && <><button type="button" className={styles.secondary} disabled={busy || !target} onClick={() => void arrange("move")}>{t("Move to node", "Перенести к узлу")}</button><button type="button" className={styles.secondary} disabled={busy} onClick={() => void arrange("detach")}>{t("Disconnect here", "Отсоединить здесь")}</button></>}</div></fieldset>}
-    <ul className={styles.rows}>{filtered.slice(0, limit).map(({item, passage}) => <li key={item.id}>
-      <div className={styles.rowHeading}>{item.kind === "working" && item.id !== `working:${nodeId}` && onApply && <input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => setSelected(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))} />}<strong>{item.title}</strong></div>
-      <p className={styles.meta}>{item.note}</p>
+    <ul className={`${styles.rows} ${styles.materialList}`}>{filtered.slice(0, limit).map(({item, passage}) => {
+      const linked = item.nodeIds.filter(id => id !== nodeId);
+      return <li key={item.id} data-material-id={item.id}>
+      <div className={styles.materialLayout}>
+        {onApply && (item.kind === "working" && item.id !== `working:${nodeId}` ? <label className={styles.materialSelect}><input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => setSelected(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))} /><span className={styles.selectionLabel}>{t("Select", "Выбрать")}</span></label> : <span className={`${styles.materialSelect} ${styles.selectionSpace}`} aria-hidden="true"/>)}
+        <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
+          <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>
+          <div className={styles.materialBody}>
+            {item.text !== null && <p className={styles.materialText}>{passage ? <>{item.text.slice(0, passage.from)}<mark tabIndex={-1}>{item.text.slice(passage.from, passage.to)}</mark>{item.text.slice(passage.to)}</> : item.text}</p>}
+            <p className={styles.meta}>{t("Related nodes", "Связанные узлы")}</p>
+            <div className={styles.actions}>{linked.map(id => <button className={styles.secondary} key={id} type="button" data-material-node={`${item.id}→${id}`} onClick={event => openNode(id, `${item.id}→${id}`, event.currentTarget)}>N{String(draft.nodes.findIndex(node => node.id === id) + 1).padStart(2, "0")} · {draft.nodes.find(node => node.id === id)?.title}</button>)}</div>
+            {!linked.length && <p className={styles.meta}>{t("No related nodes recorded.", "Связанные узлы не записаны.")}</p>}
+          </div>
+        </details>
+        {item.text !== null && <button className={`${styles.secondary} ${styles.fileDownload}`} disabled={!authority?.allowed || busy} type="button" onClick={() => void download(item)} aria-label={t("Download text: ", "Скачать текст: ") + item.title}>{t("Download text", "Скачать текст")}</button>}
+      </div>
       {passage && <div className={styles.passage}><p className={styles.meta}>{item.id}{passage.section ? ` · § ${passage.section}` : ""} · {t("Text position", "Позиция в тексте")} {passage.from + 1}–{passage.to}</p><p>{passage.leading ? "…" : ""}{passage.before}<mark>{passage.exact}</mark>{passage.after}{passage.trailing ? "…" : ""}</p></div>}
-      {item.text !== null && <details onToggle={event => { if (event.currentTarget.open && passage) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}><summary>{passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}</summary><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{passage ? <>{item.text.slice(0, passage.from)}<mark tabIndex={-1}>{item.text.slice(passage.from, passage.to)}</mark>{item.text.slice(passage.to)}</> : item.text}</p></details>}
-      <div className={styles.actions}>{item.text !== null && <button className={styles.secondary} disabled={!authority?.allowed || busy} type="button" onClick={() => void download(item)}>{t("Download text", "Скачать текст")}</button>}{item.nodeIds.filter(id => id !== nodeId).map(id => <button className={styles.secondary} key={id} type="button" data-material-node={`${item.id}→${id}`} onClick={event => openNode(id, `${item.id}→${id}`, event.currentTarget)}>N{String(draft.nodes.findIndex(node => node.id === id) + 1).padStart(2, "0")} · {draft.nodes.find(node => node.id === id)?.title}</button>)}</div>
-    </li>)}</ul>
+    </li>;})}</ul>
     {filtered.length > limit && <button type="button" className={styles.secondary} onClick={() => setReading("limit", value => value + 20)}>{t("Show 20 more", "Показать ещё 20")}</button>}
 
   </section>;
