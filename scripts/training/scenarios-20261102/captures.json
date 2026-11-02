@@ -1,0 +1,228 @@
+{
+  "sourceCommit": "a8b919a03ebdfff32297f881f316aab0b9a377ca",
+  "environment": "isolated local Vite/Worker preview on4187; signed out; fictional/synthetic cases",
+  "format": "edited still-frame step captures from actual browser actions; not continuous video or authenticated save/AI acceptance",
+  "captures": [
+    {
+      "scenario": "canopy",
+      "step": "01-library",
+      "file": "screens/canopy-01-library.jpg",
+      "sha256": "bd88a78159ae829be35dfcec7150d567bfb9791dfa5e4d38709782a270a1fde4",
+      "capturedAt": "2026-11-02T15:39:31.110Z",
+      "url": "http://127.0.0.1:4187/studio?view=demos&lang=en",
+      "state": {
+        "focus": "CaseVantby Falcon-Merlin GroupWorkspaceCase Studio⌄Open Case StudioNew blank caseImport case or prom",
+        "heading": "Example cases",
+        "scroll": 0,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "canopy",
+      "step": "02-working-copy",
+      "file": "screens/canopy-02-working-copy.jpg",
+      "sha256": "7e7a3604c89164e65f583f95dd7a578835f85bb4f2169eae5a8f824520eb80c5",
+      "capturedAt": "2026-11-02T15:39:45.940Z",
+      "url": "http://127.0.0.1:4187/studio?view=studio&lang=en&studio_step=describe&studio_panel=overview",
+      "state": {
+        "focus": "CaseVantby Falcon-Merlin GroupWorkspaceCase Studio⌄Open Case StudioNew blank caseImport case or prom",
+        "heading": "Project Canopy — Managed-site expansion gate",
+        "scroll": 0,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "canopy",
+      "step": "03-body-search",
+      "file": "screens/canopy-03-body-search.jpg",
+      "sha256": "44214020e63131ab2cf69341c8ab3918c52bc8b1ab923886e7cd36b14ff09d3d",
+      "capturedAt": "2026-11-02T15:39:58.749Z",
+      "url": "http://127.0.0.1:4187/studio?view=studio&lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "",
+        "heading": "Project Canopy — Managed-site expansion gate",
+        "scroll": 871.2000122070312,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "canopy",
+      "step": "04-highlighted-passage",
+      "file": "screens/canopy-04-highlighted-passage.jpg",
+      "sha256": "c1de6b407eb05fe0dcca5c83cfe6f5def3b74f7f996d92fbc4cd4b9d4cdf88a8",
+      "capturedAt": "2026-11-02T15:40:07.153Z",
+      "url": "http://127.0.0.1:4187/studio?view=studio&lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "450 packs",
+        "heading": "Project Canopy — Managed-site expansion gate",
+        "scroll": 1496,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "canopy",
+      "step": "05-exact-reference",
+      "file": "screens/canopy-05-exact-reference.jpg",
+      "sha256": "42096768fce1c2c742022447bca1ffa74c3fd1f892daeed5d47b6309a73fa6c3",
+      "capturedAt": "2026-11-02T15:40:13.031Z",
+      "url": "http://127.0.0.1:4187/studio?view=studio&lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "§ MandateThe fictional Investment and Operating Committee has ten days from dossier opening to choos",
+        "heading": "Project Canopy — Managed-site expansion gate",
+        "scroll": 2412,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "canopy",
+      "step": "06-return-to-reference",
+      "file": "screens/canopy-06-return-to-reference.jpg",
+      "sha256": "9cff1b755f517a2aeb9019c2bdde9791bf9b31ad000f2ce3ba608036e183e160",
+      "capturedAt": "2026-11-02T15:40:23.261Z",
+      "url": "http://127.0.0.1:4187/studio?view=studio&lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "Open exact reference passage",
+        "heading": "Project Canopy — Managed-site expansion gate",
+        "scroll": 4374.39990234375,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "01-entry",
+      "file": "screens/local-edit-01-entry.jpg",
+      "sha256": "17a02a4e8872b49d9e4e07c4cc8bc28e787a9df2230c7700f5bcbad7281c074e",
+      "capturedAt": "2026-11-02T16:04:23.069Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=describe",
+      "state": {
+        "focus": "CaseVantby Falcon-Merlin GroupWorkspaceCase Studio⌄Open Case StudioNew blank caseImport case or prom",
+        "heading": "Describe your case",
+        "scroll": 0,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "02-brief",
+      "file": "screens/local-edit-02-brief.jpg",
+      "sha256": "c594d7d7e416681b6c6994988c69ea571d41afd9882540496fa05663059cead8",
+      "capturedAt": "2026-11-02T16:04:45.268Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=describe",
+      "state": {
+        "focus": "Set case title to “QA synthetic — Help workflow recording”; Add 2 evidence nodes named “QA synthetic",
+        "heading": "Describe your case",
+        "scroll": 666.4000244140625,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "03-review",
+      "file": "screens/local-edit-03-review.jpg",
+      "sha256": "0b2c65d6bb263f964d80e349ae346137c853bdd76336be61298702498579f4e9",
+      "capturedAt": "2026-11-02T16:04:51.436Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=review_ai_draft",
+      "state": {
+        "focus": "Review local changes",
+        "heading": "Describe your case",
+        "scroll": 514.4000244140625,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "04-edit-return",
+      "file": "screens/local-edit-04-edit-return.jpg",
+      "sha256": "1ca79bc7a01e8dd62be6ba4cdbae7458dd1b8082849dfc768d8bd5da0b4f9d78",
+      "capturedAt": "2026-11-02T16:04:58.755Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=describe",
+      "state": {
+        "focus": "Set case title to “QA synthetic — Help workflow recording”; Add 2 evidence nodes named “QA synthetic",
+        "heading": "Describe your case",
+        "scroll": 666.4000244140625,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "05-applied-records",
+      "file": "screens/local-edit-05-applied-records.jpg",
+      "sha256": "0e4664d53526405a4cd2a07b954d2aae2d2bb6456ba05425364844f3d3372a62",
+      "capturedAt": "2026-11-02T16:05:20.536Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "Recorded facts and evidence",
+        "heading": "QA synthetic — Help workflow recording",
+        "scroll": 1772.800048828125,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "06-undo",
+      "file": "screens/local-edit-06-undo.jpg",
+      "sha256": "2f0a212c90591df587fc5cc8d1b49390013c7edbb1e22c0cc93e69f7e4594a2a",
+      "capturedAt": "2026-11-02T16:05:26.307Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=describe",
+      "state": {
+        "focus": "CaseVantby Falcon-Merlin GroupWorkspaceCase Studio⌄Open Case StudioNew blank caseImport case or prom",
+        "heading": "Describe your case",
+        "scroll": 453.6000061035156,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    },
+    {
+      "scenario": "local-edit",
+      "step": "07-redo",
+      "file": "screens/local-edit-07-redo.jpg",
+      "sha256": "0e4664d53526405a4cd2a07b954d2aae2d2bb6456ba05425364844f3d3372a62",
+      "capturedAt": "2026-11-02T16:06:38.566Z",
+      "url": "http://127.0.0.1:4187/studio?lang=en&studio_step=facts_assumptions",
+      "state": {
+        "focus": "Recorded facts and evidence",
+        "heading": "QA synthetic — Help workflow recording",
+        "scroll": 1772.800048828125,
+        "viewport": {
+          "height": 632,
+          "width": 1522
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # CaseVant — current quick start
 
-Updated: 2026-10-05
+Updated: 2026-11-02
 
 ## 1. Start with a brief, template or file
 
@@ -59,3 +59,9 @@ Check the browser's downloads and popup settings, then try Preview PDF. Open the
 ### What does the CaseVant training cover?
 
 The 10-minute course was rebuilt for CaseVant on 5 October 2026, with current navigation, English narration, captions and transcript. It combines a real CaseVant opening screen with labeled workflow illustrations. Account saves, AI and Team creation are instructions, not recordings of completed actions. Check the inputs in your own case.
+
+## Current scenario recordings and local review
+
+Open Help & training → Scenario recordings. Two short videos show source inspection/return and local review/edit/apply/Undo/Redo. They use actual browser step captures from an isolated local preview with fictional/synthetic data, not continuous footage or authenticated save/AI/download acceptance. EN/RU captions and transcripts are available.
+
+Use Review without AI to inspect the complete local proposal before Apply; Edit brief preserves your input. Context-only proposals add text without records. In Sources & evidence, search loaded document text and use Open exact reference passage → Back to citing record for the precise version/section and return focus. Missing originals remain unavailable. These actions do not accept evidence, approve a decision or confirm a workspace save.
