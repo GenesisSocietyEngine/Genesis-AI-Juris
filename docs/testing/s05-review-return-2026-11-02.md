@@ -1,5 +1,8 @@
 # S05 Review correction and evidence return audit — 2 November 2026
 
+**Delivered — public v171.** Runtime `9b9c50893803fa31d8e315925ad8c98d2d09f8c0`; [native receipt](receipts/s05-review-return-v171-2026-11-03.json). Blocked browser interaction remains an explicit acceptance limit; no fresh focus/keyboard/narrow or production journey pass is inferred. Candidate notes below are retained review history.
+
+
 ## Verified starting point and intended outcome
 
 Canonical main/clean checkout `fe85ca12239ff55cd8855bd1231b700f7d371502`; public Sites v170/runtime `c3c46f98959ef03526bd300307b7ea4c7d2c5ff2`. Fresh native Sites metadata, both public release endpoints and all580 application/hosting input receipts match; main differs only in documentation. The supported Sites helper opened main before editing. This slice owns only Review-origin navigation, existing reading-memory scope and regression coverage. No production case was opened or written; every existing and synthetic case and unsaved tab remains outside this implementation.
@@ -44,3 +47,12 @@ Keep legitimate unsupported-owner recovery, native cancellation, same-tab identi
 This begins as a development candidate. Require independently reviewable source, candidate and exact-main web/PDF gates, verified CI artifact digest/source/tree/all input receipts, retention of only v170's current client manifest, supported existing Sites save/deploy and sanitized native receipt. Keep production HTTP/runtime/static checks separate from blocked interactive acceptance. Docs-only closure must not duplicate runtime publication.
 
 After this correction, browser-observe the bounded Review → available passage/missing source → same finding journey when available. Reproduce any remaining S05 task gap before modifying it. Actual original source-body acquisition and governed dossier review stay separate work; retain missing evidence until permitted originals exist. Only then assess manual choice and measured density/locale work as separate slices. Do not certify all S05, accessibility or commercial readiness from these tests.
+
+
+## Final delivery review
+
+PR205 is normally integrated. Candidate and exact-main gates pass: 1853passed/0fail/3inherited skips plus2HTML, strict types/lint/history/contracts, packaged browser/Worker/tax,47-report/bilingual/tax PDF locks and zero findings in both audits. Exact-main CI archive digest/source/tree/all580inputs match before adopting build bytes. Existing public Sites deployment succeeds; both origins verify189/189assets and exact runtime. Public audience, environment42/all13 returned entry representations and storage bindings remain unchanged. Only v170 current-manifest client assets are retained.
+
+Pre/post actual-handler reproduction confirms the exact target changes from the section top to `action-orphan`; case bytes stay unchanged. The48focused tests verify both Review entry points, related evidence navigation, bilingual return markup, absence of a redundant Review return bar, context invalidation and material/carrier preservation. This is not live focus, source-opening action count, user retrieval timing or professional review acceptance. Browser checks remain blocked without another attempt. No production case read/write, sign-out, source upload, deletion or user-tab interaction was performed in this slice.
+
+Native workflow states are recorded separately; the authorized web-only release does not imply native completion. The attachment tool's existing100item cap does not invalidate ordinary PR review links; no older attachment is removed. After docs-only integration, verify application/hosting input equality again and do not publish a duplicate runtime release. Remaining S05 and earlier S03/operator/commercial limits continue under the amended instructions.
