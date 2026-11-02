@@ -1,0 +1,622 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-02",
+  "stage": "production-help-chapter-seeking-correction",
+  "runtimeCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+  "applicationInputsSha256": "d2c39b339accaf8673bce8c5cf293a297600b0ec8f5d02eee410e1e911763660",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    195,
+    196
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_d8a6e62f7acc819192c9e308a8914d6b",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 167,
+    "source": {
+      "commit_sha": "7f6dd9ff05284e60686d7c4199a1ab332b148536"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000d15481f59f30de92de30161c",
+      "content_hash": "sha256:434a37e7433388965d78778fd7e9503f24d206cb76e87ba6cd5f1e6ceb50b5a8",
+      "size_bytes": 50636800,
+      "file_count": 595
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae8cdcd55b88191b46cc973ca5320f0",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_d8a6e62f7acc819192c9e308a8914d6b",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-02T17:52:50.926504+00:00"
+  },
+  "sourceHelper": {
+    "preNativePlayOpening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "944fbd90c7bc30bedb4aaae771491b1333eef168"
+    },
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "7f6dd9ff05284e60686d7c4199a1ab332b148536"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-help-seeking-7f6dd9f-20261102.tar"
+    }
+  },
+  "localArchive": {
+    "path": "C:/Users/User/Documents/ChatGPT/software/casevant-help-seeking-7f6dd9f-20261102.tar",
+    "sha256": "f41864d744ae928460730aa1e1cc0555c8d8024ec81d70515a10dde4b479610c",
+    "bytes": 31352566
+  },
+  "candidate": {
+    "sha": "80b5e11504160a1febd2c1e8a72548e4f5e25c5b",
+    "runId": 41491855070,
+    "tests": 1837,
+    "passed": 1834,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2
+  },
+  "chapterOnlyCandidate": {
+    "sha": "a62c76d3130ea703d9e56982d7c65803878d9730",
+    "runId": 41489217638,
+    "tests": 1837,
+    "passed": 1834,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2
+  },
+  "mainAcceptance": {
+    "runId": 41493203335,
+    "artifactId": 13166146978,
+    "artifactName": "verified-web-build-7f6dd9ff05284e60686d7c4199a1ab332b148536-41493203335",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-7f6dd9f.zip",
+    "sha256": "1a579aec5e2db29e2f436601b8e2f8fb43e6d06ce610056eb1373e6f98400344",
+    "bytes": 31199909,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-7f6dd9f",
+    "entries": 543,
+    "tests": 1837,
+    "passed": 1834,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "sourceInputsVerified": 579,
+    "completeSourceReceiptVerified": true,
+    "webPdfPackagedWorker": "passed",
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0
+  },
+  "intermediateMain": {
+    "sha": "944fbd90c7bc30bedb4aaae771491b1333eef168",
+    "runId": 41491065309,
+    "tests": 1837,
+    "passed": 1834,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "deployed": false
+  },
+  "publicAssets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 189,
+      "verifiedCount": 189,
+      "receiptSha256": "fe7613a7d4aa2d46016ca8c0793d299db17fc09dd6191d762105a125a3e422e8",
+      "expectedBuild": {
+        "sourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "previousSourceCommit": "50811df2732ec6a67cef06c60574f18b6d3975aa",
+        "applicationInputsSha256": "d2c39b339accaf8673bce8c5cf293a297600b0ec8f5d02eee410e1e911763660",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 52
+      },
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 189,
+      "verifiedCount": 189,
+      "receiptSha256": "67aa3d8f75521a1c6a19571dab2d3a96aea8b414ab14da87540f54fded02ceeb",
+      "expectedBuild": {
+        "sourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "previousSourceCommit": "50811df2732ec6a67cef06c60574f18b6d3975aa",
+        "applicationInputsSha256": "d2c39b339accaf8673bce8c5cf293a297600b0ec8f5d02eee410e1e911763660",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 52
+      },
+      "passed": true
+    }
+  ],
+  "publicRuntime": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "applicationInputsSha256": "d2c39b339accaf8673bce8c5cf293a297600b0ec8f5d02eee410e1e911763660",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+        "applicationInputsSha256": "d2c39b339accaf8673bce8c5cf293a297600b0ec8f5d02eee410e1e911763660",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "publicMedia": [
+    {
+      "origin": "https://casevant.pro",
+      "verifiedFiles": 13,
+      "files": [
+        {
+          "path": "/help/scenarios-20261102/canopy.mp4",
+          "status": 200,
+          "bytes": 477131,
+          "sha256": "e0f8105837c73388d48a5dbe360655f6fb15967c723013149b0aa18a290ade00",
+          "contentType": "video/mp4",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy-poster.jpg",
+          "status": 200,
+          "bytes": 116211,
+          "sha256": "c31b56a04397d6ee51f6ed1040f353896e571d9456405b21363258355f03cffb",
+          "contentType": "image/jpeg",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.en.vtt",
+          "status": 200,
+          "bytes": 873,
+          "sha256": "900a5cf37c837f01d329351c5b09cb583f1e384c275db955be0e0372cf5a6364",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.en.md",
+          "status": 200,
+          "bytes": 1154,
+          "sha256": "c7bcd89df25b95bad11f23732b1e033daa71d71dab8e4ffb1fd36652ae937ae5",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.ru.vtt",
+          "status": 200,
+          "bytes": 1394,
+          "sha256": "48a4750b18e2daa3bddf69a2b3824963fd520f73c6de504bafb50a2c15a06ae8",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.ru.md",
+          "status": 200,
+          "bytes": 1877,
+          "sha256": "11c625dffcee7ecace23e6f068437e4d02e521d5ab57354b05c0693b2c2c849f",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.mp4",
+          "status": 200,
+          "bytes": 350212,
+          "sha256": "862c9ac6e907c6a45ccf824544cc51e7cdbedc8dd98a334d3705928a0ec3d511",
+          "contentType": "video/mp4",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit-poster.jpg",
+          "status": 200,
+          "bytes": 90128,
+          "sha256": "c756d838638ed4ab2e48088ed6b764395191ba5c9309e7375029fc9faa96fa4f",
+          "contentType": "image/jpeg",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.en.vtt",
+          "status": 200,
+          "bytes": 1128,
+          "sha256": "6dd48f4625aa87cedc5b0b84ee57969562f10d98bc2a3f2051331617d6ae2c92",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.en.md",
+          "status": 200,
+          "bytes": 1355,
+          "sha256": "f9e118914d6e353c9c2030ee495d0d775a2787edcb761a0dcf7835a9faadb03e",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.ru.vtt",
+          "status": 200,
+          "bytes": 1840,
+          "sha256": "99216a28e735f39233d2c1414e7be493addea4d067a13f9cfa923ad4150fa96f",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.ru.md",
+          "status": 200,
+          "bytes": 2285,
+          "sha256": "e1405fe7dcfa4458d77926015f7a655e76b273d7ae61c93207c6ba7d00baf2f1",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/manifest.json",
+          "status": 200,
+          "bytes": 12463,
+          "sha256": "6bcaabf5454b8e7227a07f542a61b9232bf29cb672c2623fc4c8b65422408e22",
+          "contentType": "application/json",
+          "verified": true
+        }
+      ],
+      "range": {
+        "status": 200,
+        "contentRange": null,
+        "bytes": 477131,
+        "verified": true
+      },
+      "authenticated": false,
+      "diskDownloadObserved": false
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verifiedFiles": 13,
+      "files": [
+        {
+          "path": "/help/scenarios-20261102/canopy.mp4",
+          "status": 200,
+          "bytes": 477131,
+          "sha256": "e0f8105837c73388d48a5dbe360655f6fb15967c723013149b0aa18a290ade00",
+          "contentType": "video/mp4",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy-poster.jpg",
+          "status": 200,
+          "bytes": 116211,
+          "sha256": "c31b56a04397d6ee51f6ed1040f353896e571d9456405b21363258355f03cffb",
+          "contentType": "image/jpeg",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.en.vtt",
+          "status": 200,
+          "bytes": 873,
+          "sha256": "900a5cf37c837f01d329351c5b09cb583f1e384c275db955be0e0372cf5a6364",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.en.md",
+          "status": 200,
+          "bytes": 1154,
+          "sha256": "c7bcd89df25b95bad11f23732b1e033daa71d71dab8e4ffb1fd36652ae937ae5",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.ru.vtt",
+          "status": 200,
+          "bytes": 1394,
+          "sha256": "48a4750b18e2daa3bddf69a2b3824963fd520f73c6de504bafb50a2c15a06ae8",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/canopy.ru.md",
+          "status": 200,
+          "bytes": 1877,
+          "sha256": "11c625dffcee7ecace23e6f068437e4d02e521d5ab57354b05c0693b2c2c849f",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.mp4",
+          "status": 200,
+          "bytes": 350212,
+          "sha256": "862c9ac6e907c6a45ccf824544cc51e7cdbedc8dd98a334d3705928a0ec3d511",
+          "contentType": "video/mp4",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit-poster.jpg",
+          "status": 200,
+          "bytes": 90128,
+          "sha256": "c756d838638ed4ab2e48088ed6b764395191ba5c9309e7375029fc9faa96fa4f",
+          "contentType": "image/jpeg",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.en.vtt",
+          "status": 200,
+          "bytes": 1128,
+          "sha256": "6dd48f4625aa87cedc5b0b84ee57969562f10d98bc2a3f2051331617d6ae2c92",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.en.md",
+          "status": 200,
+          "bytes": 1355,
+          "sha256": "f9e118914d6e353c9c2030ee495d0d775a2787edcb761a0dcf7835a9faadb03e",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.ru.vtt",
+          "status": 200,
+          "bytes": 1840,
+          "sha256": "99216a28e735f39233d2c1414e7be493addea4d067a13f9cfa923ad4150fa96f",
+          "contentType": "text/vtt",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/local-edit.ru.md",
+          "status": 200,
+          "bytes": 2285,
+          "sha256": "e1405fe7dcfa4458d77926015f7a655e76b273d7ae61c93207c6ba7d00baf2f1",
+          "contentType": "text/markdown",
+          "verified": true
+        },
+        {
+          "path": "/help/scenarios-20261102/manifest.json",
+          "status": 200,
+          "bytes": 12463,
+          "sha256": "6bcaabf5454b8e7227a07f542a61b9232bf29cb672c2623fc4c8b65422408e22",
+          "contentType": "application/json",
+          "verified": true
+        }
+      ],
+      "range": {
+        "status": 200,
+        "contentRange": null,
+        "bytes": 477131,
+        "verified": true
+      },
+      "authenticated": false,
+      "diskDownloadObserved": false
+    }
+  ],
+  "productionBrowser": {
+    "date": "2026-11-02",
+    "runtime": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+    "browser": "Authorized Chrome Maxim profile; Account Maxim Hayan visible",
+    "initial": {
+      "focus": "recordings",
+      "height": 632,
+      "players": [
+        {
+          "autoplay": false,
+          "paused": true,
+          "preload": "none",
+          "readyState": 0
+        },
+        {
+          "autoplay": false,
+          "paused": true,
+          "preload": "none",
+          "readyState": 0
+        }
+      ],
+      "width": 1522
+    },
+    "firstChapter": {
+      "captions": [
+        {
+          "lang": "en",
+          "readyState": 2
+        },
+        {
+          "lang": "ru",
+          "readyState": 0
+        }
+      ],
+      "duration": 48,
+      "paused": true,
+      "seekable": [
+        [
+          0,
+          48
+        ]
+      ],
+      "sourceKind": "blob",
+      "time": 32
+    },
+    "laterChapter": {
+      "duration": 48,
+      "paused": true,
+      "time": 40
+    },
+    "coldNativePlay": {
+      "activation": "one visible native Play click on previously untouched second recording",
+      "duration": 56,
+      "paused": false,
+      "seekable": [
+        [
+          0,
+          56
+        ]
+      ],
+      "sourceKind": "blob",
+      "time": 0.5266
+    },
+    "nativePause": {
+      "ended": false,
+      "paused": true,
+      "time": 21.731
+    },
+    "narrowRussian": {
+      "documentWidth": 375,
+      "height": 480,
+      "locale": "ru",
+      "notices": [
+        "Выбран шаг 0:32. Нажмите «Воспроизвести».",
+        ""
+      ],
+      "video": [
+        {
+          "duration": 48,
+          "paused": true,
+          "time": 32,
+          "tracks": [
+            {
+              "lang": "en",
+              "readyState": 0
+            },
+            {
+              "lang": "ru",
+              "readyState": 2
+            }
+          ]
+        }
+      ],
+      "width": 390
+    },
+    "viewportRestored": true,
+    "priorSourceReturn": {
+      "runtime": 166,
+      "receipt": "source-help-v166-2026-11-02.json",
+      "keyboard": "Enter opens D01 v1 Mandate; Tab reaches Back; Enter returns to original control at y294.3 within632px",
+      "retestedOn167": false,
+      "sourceCodeUnchangedByPlayerRefinements": true
+    },
+    "screenshots": [
+      ".artifacts/source-help-audit/production-help-v167.jpg",
+      ".artifacts/source-help-audit/production-help-ru-390-v167.jpg"
+    ],
+    "caseWrites": "No case save/replacement/deletion; routine authenticated/session traffic is not a zero-write test",
+    "browserDiskDownloads": "not confirmed; public HTTP bytes/hashes/MIME verified separately"
+  },
+  "configuration": {
+    "before": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "current_user_role": "owner",
+      "latest_version_number": 166,
+      "current_live_url": "https://casevant.pro"
+    },
+    "after": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "current_user_role": "owner",
+      "latest_version_number": 167,
+      "current_live_url": "https://casevant.pro"
+    },
+    "environment": {
+      "revision": 42,
+      "entryCount": 13
+    },
+    "environmentEntriesUnchanged": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ],
+    "bindingsAndAudienceChanged": false
+  },
+  "nativeWorkflows": [
+    {
+      "conclusion": "",
+      "databaseId": 41493203319,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "iOS Tax Application",
+      "status": "queued"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41493203294,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41493203323,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41493203322,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41493203251,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41493203335,
+      "headSha": "7f6dd9ff05284e60686d7c4199a1ab332b148536",
+      "name": "Root Web and PDF",
+      "status": "completed"
+    }
+  ],
+  "rootCause": {
+    "priorRelease": 166,
+    "receipt": "source-help-v166-2026-11-02.json",
+    "httpRange": "200/full bytes",
+    "observedSeekable": [
+      [
+        0,
+        0
+      ]
+    ],
+    "observedTime": 0,
+    "correction": "On-demand fixed public-media fetch for chapter selection or native Play into a reusable browser-local blob URL; no hosting/security change",
+    "focusedTests": 7,
+    "localFirstChapter": {
+      "time": 32,
+      "duration": 48,
+      "paused": true
+    },
+    "localSecondChapter": {
+      "time": 40,
+      "duration": 48,
+      "paused": true
+    },
+    "localRussianCaptionsLoaded": true
+  },
+  "acceptanceLimits": [
+    "Recordings remain edited actual local-browser step captures, not continuous footage or production authenticated save/AI/file-delivery proof.",
+    "No production case save/replacement/deletion; routine session traffic is not a zero-database-write acceptance test. Existing cases and synthetic working tabs are preserved.",
+    "Browser disk downloads remain unconfirmed; public HTTP file hashes/MIME and native video playback are separate evidence.",
+    "Retain all earlier S03 recovery/authority, same-tab identity/cancellation, original-artifact/historical-pagination, missing-source and operator/commercial acceptance limits.",
+    "Native workflow states remain separate; this web-only release does not resolve historic native editor failures."
+  ],
+  "publishingNote": "Exact-main CI ZIP, source/tree and every input receipt verified before adopting build bytes; retain only immediately previous current manifest. No duplicate rollout for documentation-only closure."
+}
