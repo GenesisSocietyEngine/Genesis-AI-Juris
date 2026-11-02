@@ -6,7 +6,7 @@ import { createElement, isValidElement, type ReactElement, type ReactNode } from
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildCanopyPackage, CANOPY_SCENARIOS, CANOPY_UNAVAILABLE } from "../app/canopy-fixture";
 import { caseFingerprint } from "../app/case-integrity";
-import { openStudioSourceFragment, studioOverview, studioOverviewAction, studioSourceFragmentId } from "../app/studio-overview";
+import { openStudioSourceFragment, sameSourceReadingContext, studioOverview, studioOverviewAction, studioSourceFragmentId } from "../app/studio-overview";
 import { searchStudioRecords } from "../app/studio-record-search";
 import type { StudioOverviewProps } from "../app/StudioOverview";
 import { buildConvertedExample, CONVERTED_EXAMPLES } from '../app/converted-examples';
@@ -161,6 +161,24 @@ test("source jump opens and focuses only the requested retained fragment; missin
   assert.equal(details.open, true); assert.deepEqual(events, ["focus", "scroll"]);
   assert.equal(openStudioSourceFragment({ querySelector: () => null }, id), false);
   assert.equal(openStudioSourceFragment(root as unknown as HTMLElement, 'unsafe"]'), false);
+});
+
+test("exact passage navigation opens every containing disclosure before focusing the section", () => {
+  const outer = {open:false,parentElement:null};
+  const inner = {open:false,parentElement:{closest:()=>outer}};
+  let focused=false;
+  const fragment={closest:()=>inner,focus(){assert.ok(inner.open && outer.open);focused=true;},scrollIntoView(){assert.ok(focused);}};
+  assert.equal(openStudioSourceFragment({querySelector:()=>fragment} as unknown as HTMLElement,studioSourceFragmentId('D01',1,'Mandate')),true);
+  assert.ok(focused);
+});
+
+test("a source return cannot cross a draft, language, epoch or access change", () => {
+  const draft=buildCanopyPackage('base').draft, before={draft,locale:'en',epoch:3,allowed:true};
+  assert.ok(sameSourceReadingContext(before,{...before}));
+  for(const change of [{draft:structuredClone(draft)},{locale:'ru'},{epoch:4},{allowed:false},{allowed:undefined}]) {
+    assert.equal(sameSourceReadingContext(before,{...before,...change}),false);
+  }
+  assert.equal(sameSourceReadingContext({...before,allowed:false},{...before,allowed:false}),false);
 });
 
 const require = createRequire(import.meta.url);
