@@ -119,10 +119,10 @@
   },
   "after": {
     "scope": "Component SSR plus native closed-details visibility model; not browser pixels, interaction or retrieval timing",
-    "sourceRef": "working-tree",
+    "sourceRef": "70f8962536a6452a5d1bab31cad3118c29d1d2cd",
     "sourceHashes": {
-      "app/StudioFirstCaseGuide.tsx": "8fb04fceb0e0af7c393cdc1180d3afbecfc5b533bf85daaa1f6dd089595b8ac2",
-      "app/StudioCitedPassages.tsx": "47188374d70324c882c7f56c6d3ff3f3194ced0bb1f3d217b0e6794e8c9cbaa7"
+      "app/StudioFirstCaseGuide.tsx": "476188e2df99f67508eb2ace748297a6b2a7d896880f4a0f77f5993336284a38",
+      "app/StudioCitedPassages.tsx": "1421e7502c7b46f4f352a93056906481109549454c937a8d2493ba88ece44df6"
     },
     "guide": {
       "en": {

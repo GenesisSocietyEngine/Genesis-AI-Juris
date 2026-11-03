@@ -1,5 +1,8 @@
 # Compact Studio UX review — 3 November 2026
 
+**Delivered — public v173.** Runtime `a3978a926f618ccc2668bcb04965ced504963954`. [Native Sites receipt](receipts/compact-studio-v173-2026-11-03.json). Browser interaction remains blocked without retry; no fresh focus/scroll/keyboard/narrow/authenticated or commercial acceptance is inferred. Candidate notes below are retained review history.
+
+
 ## Outcome and scope
 
 Make Studio easier to scan without changing a case, its authority or its outputs. Reverified clean canonical main `6430adf709fa04ab2b41fb64f560614096417345` before editing: public v172 runtime `254a3da269f20aecdf3abdd4776ec5df60bdeed6`, application inputs `aad53c15c8cc00fbcf77bb1d0a4183bf5e414ff8a443dfa4a7e69d9efc9a3336`, hosting `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe` and all581 input receipts matched. Supported Sites source opening completed before editing. Task branch: `codex/compact-studio-guidance-20261103`.
@@ -17,7 +20,7 @@ This is a source/component UX audit, not a fresh interactive audit. Browser chec
 
 ## Measured component baseline
 
-Reproduce with pinned Node22 and `--import tsx scripts/measure-studio-compactness.mjs --ref 6430adf709fa04ab2b41fb64f560614096417345 --label before`, then omit `--ref` and use `--label after`. This compares exact Git component source snapshots using controlled React SSR and a native closed-details visibility model. It is **not an old published application artifact**, browser-layout measurement, user retrieval test or commercial proof. [Machine-readable before/after](receipts/compact-studio-component-measurements-2026-11-03.json) records source-component hashes and the unchanged literal-section hash.
+Reproduce with pinned Node22 and `--import tsx scripts/measure-studio-compactness.mjs --ref 6430adf709fa04ab2b41fb64f560614096417345 --label before`, then use `--ref 70f8962536a6452a5d1bab31cad3118c29d1d2cd --label accepted`. This compares exact Git component source snapshots using controlled React SSR and a native closed-details visibility model. It is **not an old published application artifact**, browser-layout measurement, user retrieval test or commercial proof. [Machine-readable before/after](receipts/compact-studio-component-measurements-2026-11-03.json) records source-component hashes and the unchanged literal-section hash.
 
 | Controlled state | EN visible characters before → after | RU before → after | Native buttons before → after |
 | --- | --- | --- | --- |
@@ -41,3 +44,20 @@ Initial restricted local Node invocation failed before tests with `uv_os_get_pas
 2. Browser acceptance stays blocked without retry until the user lifts that restriction. Then verify compact EN/RU/long-title/short-height surfaces, native details, actual keyboard focus/scroll and the one-action finding → node → passage → Return journey. Verify header Save/Report authority states; preserve every case and unsaved tab. Do not count SSR character reduction as pixel or retrieval-time proof.
 3. Resume remaining S03/S05 only through isolated authorized sessions. Keep legitimate unsupported-owner recovery, same-tab identity/source timing, original-artifact/historical pagination,43missing-original disclosures, native/operator/commercial limits and v167 paused caption-boundary observation explicit. No source substitution, governed edit merging, provider processing, disposal, analytics, pricing or outreach. Preserve the254-page ERP Full record and all PDF locks.
 4. Next simplification hypotheses need observed task evidence: manual-choice discoverability and measured finding/authorization/evidence-gap/owner/action retrieval.30-second/80% targets remain unvalidated hypotheses pending at least five evaluators. Do not rebuild delivered Sources/Templates/Demo controls or expand runtime scope just to close documentation.
+
+
+## Final journey review and delivery
+
+The source audit follows entry/blank brief → structured draft → source reading → Review correction/return → save/report. This release changes only redundant coaching and exact-passage presentation. Entry, saved-case search/pagination, library/template controls, graph placement/zoom, source downloads/archives and actual report generation are preserved; their broader historic/live acceptance is not newly claimed. Sources/Templates/Demo were already compacted and are not rebuilt here. Manual-choice discoverability and task retrieval remain independent measured follow-ons, not assumed usability defects.
+
+Corrected candidate and exact-main web/PDF gates pass 1868 tests with 0 failures and 3 inherited skips, plus 2 rendered HTML passes. Strict types/lint, historical migration/contract locks, packaged browser/Worker/tax execution, all 47 report visual baselines, bilingual Base/Medium and tax locks pass. Both dependency audits report 0 findings. Only 7 pre-existing root lint warnings remain locally; no new lint error. Native states are recorded independently, not converted to passes.
+
+Exact-main CI archive bytes/digest, source/tree and all 581 input receipts match before successful build adoption. Existing public Site deployment succeeds as v173; both origins verify 195/195 current/retained client assets and exact runtime. Audience, environment 42/all 13 returned entry representations and storage bindings remain unchanged. Only v172 current-manifest assets are retained, without chaining old retention. Raw helper upload and Sites normalized archive hashes remain distinct receipts.
+
+Final controlled measurements pin both before/after component source to exact Git refs, avoiding workstation line-ending ambiguity. The literal source-section digest remains unchanged. A source preservation helper initially compared raw CRLF with Git LF; normalizing line endings corrected that helper assertion without changing product code or weakening any source-input gate. Root code outside the coaching invocation is equivalent; only the five documented presentation paths changed among application/Worker/data/source/hosting inputs.
+
+The first candidate's accessible-name wording was amended before final gates: the full visible caption now starts the accessible name. Existing reader effects, stale-context/digest guards and Close/Review return handlers are unchanged. Final focused regressions pass 50/50. Source, save/receipt/CAS/seal/authority/recovery, historical factories, carriers, archive, approval state and PDF contracts are unchanged. Every case and unsaved tab is preserved; no production case read/save/replacement/deletion occurred.
+
+Browser checks remain blocked at the user's direction, without retry or an alternative automation path. Native disclosure, focus/scroll/keyboard, narrow/short-height EN/RU, authenticated outputs and production task counts have not been observed here. SSR character counts are not pixel heights, retrieval speed or satisfaction evidence. All S03/S05 unsupported-owner, same-tab identity/source timing, historical pagination/original artifact, 43 missing-original, native/operator/commercial and paused-caption limits remain explicit. No governed merging, provider processing, disposal, analytics, pricing or outreach is introduced.
+
+PR attachment's existing 100-item cap affects inline attachment only; normal review links remain available and earlier artifacts are retained. Documentation-only closure changes no application/hosting inputs and receives no duplicate Sites publication.
