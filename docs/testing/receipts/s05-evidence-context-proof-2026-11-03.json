@@ -16,7 +16,7 @@
   },
   "after": {
     "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
-    "componentRef": "working-tree",
+    "componentRef": "a8a5fb68c2918d329d496dbc2d38d0212e5d5ebe",
     "componentSha256": "3347b2dea324b6163f10e863e2dcd4dc2b11fded958cfd58ba34d49f7d358042",
     "controls": {
       "buttons": 2,
