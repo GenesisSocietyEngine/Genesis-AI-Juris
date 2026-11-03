@@ -3,12 +3,32 @@ import { buildStudioSourcePacket } from "./studio-source-packet";
 import { studioOverview } from "./studio-overview";
 import { casePublicationFingerprint } from "./case-integrity";
 import type { StudioDraft } from "./types";
+import { canopySourceText } from "./canopy-fixture";
 
 export type StudioMaterial = {
   id: string; title: string; kind: "working" | "reference" | "missing" | "url";
   text: string | null; note: string; nodeIds: string[]; selected: boolean;
   sections?: Record<string, string>;
 };
+
+export type StudioMaterialCitation = {
+  id: string; document: string; version: number; section: string;
+  text: string | null; verbatimInNode: boolean; selectedInSourceScenario: boolean;
+};
+/** Exact reading projection only; never changes the material/archive contract. */
+export function studioMaterialCitations(draft: StudioDraft, locale: "en" | "ru", nodeId: string | undefined, materials: StudioMaterial[]): StudioMaterialCitation[] {
+  if (!nodeId || !draft.nodes.some(node => node.id === nodeId)) return [];
+  const overview = studioOverview(draft, locale);
+  if (!overview.referenceScenario) return [];
+  return overview.references.filter(ref => ref.nodeId === nodeId).map(ref => {
+    const material = materials.find(item => item.id === `canopy:${ref.document}:v${ref.version}`);
+    const available = ref.source !== null && ref.excerpt !== null && material?.kind === "reference"
+      && material.nodeIds.includes(nodeId) && material.sections?.[ref.section] === ref.excerpt
+      && material.text === canopySourceText(ref.source);
+    return { id: `${ref.document}:v${ref.version}:${ref.section}`, document: ref.document, version: ref.version, section: ref.section,
+      text: available ? ref.excerpt : null, verbatimInNode: available && ref.exactTextPresent, selectedInSourceScenario: available && Boolean(material?.selected) };
+  });
+}
 /** A reading projection. Original documents that were never supplied have no invented body. */
 export async function studioMaterials(draft: StudioDraft, locale: "en" | "ru"): Promise<StudioMaterial[]> {
   const indices = new Map(draft.nodes.map((node, index) => [node.id, index]));

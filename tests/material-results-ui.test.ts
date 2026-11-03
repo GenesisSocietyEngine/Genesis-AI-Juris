@@ -44,14 +44,14 @@ function elements(value: unknown): Element[] {if (Array.isArray(value)) return v
 function text(value: unknown): string {if (Array.isArray(value)) return value.map(text).join(" "); if (typeof value === "string" || typeof value === "number") return String(value); return value && typeof value === "object" && "props" in value ? text((value as Element).props.children) : "";}
 function control(tree: unknown, type: string, label: string) {const found = elements(tree).find(e => e.type === type && text(e) === label); assert.ok(found, `${type}: ${label}`); return found;}
 const statuses = (tree: unknown) => elements(tree).filter(e => e.props.role === "status").map(text).join(" | ");
-function fixture(locale: "en" | "ru", initial = buildCanopyPackage("base").draft, readingMemory?: MaterialReadingMemory) {
+function fixture(locale: "en" | "ru", initial = buildCanopyPackage("base").draft, readingMemory?: MaterialReadingMemory, options: {nodeId?: string; onReturnToFinding?: () => void} = {}) {
   const previous = {document: Object.getOwnPropertyDescriptor(globalThis, "document"), window: Object.getOwnPropertyDescriptor(globalThis, "window"), create: URL.createObjectURL, revoke: URL.revokeObjectURL};
   const runtime = {hooks: hooks(), failure: false, hold: undefined as Promise<void> | undefined}; globals.__materialsUi = runtime;
   let draft = initial, downloads = 0, allowed = true;
   URL.createObjectURL = () => "blob:synthetic-materials"; URL.revokeObjectURL = () => {};
   Object.defineProperty(globalThis, "document", {configurable: true, value: {body: {appendChild() {}}, createElement: () => ({remove() {}, click() {downloads++;}})}});
   Object.defineProperty(globalThis, "window", {configurable: true, value: {setTimeout() {}, scrollY:420, scrollTo() {}}});
-  const render = () => {runtime.hooks.begin(); const tree = Component({draft, locale, readingMemory, authority: {allowed, epoch: allowed ? 1 : 2, verify: async () => () => allowed}, onNode() {}}); runtime.hooks.flush(); return tree;};
+  const render = () => {runtime.hooks.begin(); const tree = Component({draft, locale, readingMemory, ...options, authority: {allowed, epoch: allowed ? 1 : 2, verify: async () => () => allowed}, onNode() {}}); runtime.hooks.flush(); return tree;};
   const settle = async (predicate: (tree: unknown) => boolean) => {for (let attempt = 0; attempt < 200; attempt++) {const tree = render(); if (predicate(tree)) return tree; await new Promise(resolve => setTimeout(resolve, 5));} throw Error("Component did not settle at expected boundary");};
   return {runtime, render, settle, replace(next: StudioDraft) {draft = next;}, deny() {allowed = false;}, get downloads() {return downloads;}, close() {
     runtime.hooks.unmount(); delete globals.__materialsUi; URL.createObjectURL = previous.create; URL.revokeObjectURL = previous.revoke;
@@ -176,4 +176,18 @@ test("compact inventory keeps status and downloads outside collapsed text-and-no
     }
     assert.equal(JSON.stringify(draft),before);
   } finally {f.close();}
+});
+
+
+test("node citation controls wait for the actual materials read and reuse its scoped Review return callback",async()=>{
+ const draft=buildCanopyPackage('base').draft,before=JSON.stringify(draft);let returns=0,release!:()=>void;
+ const onReturnToFinding=()=>{returns++;},f=fixture('en',draft,undefined,{nodeId:'mandate',onReturnToFinding});
+ f.runtime.hold=new Promise<void>(r=>release=r);
+ const child=(tree:unknown)=>elements(tree).find(e=>Array.isArray(e.props.citations))!;
+ try{let tree=f.render();assert.deepEqual(child(tree).props.citations,[],'pending is not unavailable evidence');release();
+ tree=await f.settle(t=>(child(t).props.citations as unknown[]).length>0);
+ const citation=(child(tree).props.citations as Array<{id:string;text:string}>)[0];assert.equal(citation.id,'D01:v1:Mandate');assert.ok(citation.text.length>0);
+ assert.equal(child(tree).props.onReturnToFinding,onReturnToFinding);(child(tree).props.onReturnToFinding as ()=>void)();assert.equal(returns,1);
+ const scope=child(tree).props.context;f.deny();tree=f.render();assert.notEqual(child(tree).props.context,scope);assert.deepEqual(child(tree).props.citations,[]);assert.equal(JSON.stringify(draft),before);
+ }finally{release?.();f.close();}
 });

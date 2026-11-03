@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { casePublicationFingerprint } from "./case-integrity";
-import { studioMaterials, studioMaterialsArchive, materialFilename, type StudioMaterial } from "./studio-materials";
+import { studioMaterials, studioMaterialsArchive, studioMaterialCitations, materialFilename, type StudioMaterial } from "./studio-materials";
+import StudioCitedPassages from "./StudioCitedPassages";
 import { rearrangeStudioEvidence } from "./studio-evidence-operations";
 import { startReportDownload } from "./report-download";
 import type { StudioDraft } from "./types";
@@ -12,10 +13,11 @@ const EMPTY_MATERIALS: StudioMaterial[] = [];
 const DEFAULT_READING = { query: "", filter: "all", history: false, limit: 20 };
 
 export type MaterialsAuthority = { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
-export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory }: {
+export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding }: {
   draft: StudioDraft; locale: "en" | "ru"; authority?: MaterialsAuthority; nodeId?: string;
   onNode: (id: string) => void; onApply?: (expected: string, next: StudioDraft) => boolean;
   readingMemory?: MaterialReadingMemory;
+  onReturnToFinding?: () => void;
 }) {
   const scope = useMemo(() => ({ draft, locale, epoch: authority?.epoch, allowed: authority?.allowed }), [draft, locale, authority?.epoch, authority?.allowed]);
   const [loaded, setLoaded] = useState<{ scope: object; items: StudioMaterial[]; failure?: string } | null>(null);
@@ -42,6 +44,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   const items = loaded?.scope === scope ? loaded.items : EMPTY_MATERIALS;
   const loading = loaded?.scope !== scope;
   const readFailure = loaded?.scope === scope ? loaded.failure : undefined;
+  const citations = useMemo(() => !loading && !readFailure ? studioMaterialCitations(draft, locale, nodeId, items) : [], [draft, locale, nodeId, items, loading, readFailure]);
   const index = useMemo(() => indexStudioMaterials(items.filter(item => (!nodeId || item.nodeIds.includes(nodeId)) && (history || item.selected || item.nodeIds.length > 0)
     && (filter === "unassigned" ? item.kind === "working" && item.nodeIds.length === 1 : filter === "all" || item.kind === filter))), [items, nodeId, history, filter]);
   const filtered = useMemo(() => searchStudioMaterials(index, query), [index, query]);
@@ -99,6 +102,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     finally { setBusy(false); }
   }
   return <section ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
+    {nodeId && <StudioCitedPassages key={nodeId} citations={citations} context={scope} locale={locale} onReturnToFinding={onReturnToFinding}/>}
     <header className={styles.header}><div><h3>{nodeId ? t("Evidence for this node", "Материалы этого узла") : t("Materials library", "Библиотека материалов")}</h3><p>{nodeId ? t("Select working records to move or disconnect them. Their text remains in the library.", "Выберите рабочие записи для переноса или отсоединения. Тексты останутся в библиотеке.") : t("Browse text, inspect linked nodes, or download files. Working records and illustrative references require review; missing originals have no file.", "Просматривайте тексты и узлы или скачивайте файлы. Рабочие записи и учебные источники требуют проверки; отсутствующие оригиналы не имеют файла.")}</p></div>{!nodeId && <button className={styles.primary} type="button" disabled={busy || !authority?.allowed || !items.length} onClick={() => void download()}>{t("Download all (.zip)", "Скачать всё (.zip)")}</button>}</header>
     <div className={styles.toolbar}><label>{t("Find a material", "Найти материал")}<input type="search" value={query} maxLength={MATERIAL_SEARCH_LIMITS.query} placeholder={t("Title, note or loaded text", "Название, примечание или загруженный текст")} onChange={event => { setReading("query", event.target.value); setReading("limit", 20); }} /></label><label>{t("Show materials", "Показать материалы")}<select value={filter} onChange={event => { setReading("filter", event.target.value); setReading("limit", 20); }}><option value="all">{t("All materials", "Все материалы")}</option><option value="working">{t("Working evidence", "Рабочие материалы")}</option><option value="reference">{t("Illustrative references", "Учебные источники")}</option><option value="missing">{t("Missing originals", "Отсутствующие оригиналы")}</option><option value="url">{t("URL references only", "Только URL-ссылки")}</option><option value="unassigned">{t("Unassigned evidence", "Неприкреплённые материалы")}</option></select></label><label><input type="checkbox" checked={history} onChange={event => { setReading("history", event.target.checked); setReading("limit", 20); }} /> {t("Include retained versions", "Включить прежние версии")}</label></div>
     <p className={styles.meta}>{t("Searches loaded titles, notes and text. Missing originals and URL-only sources have no body to search.", "Поиск по загруженным названиям, примечаниям и тексту. Отсутствующие оригиналы и URL — без текста.")}</p>
