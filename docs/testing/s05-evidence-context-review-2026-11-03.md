@@ -1,5 +1,8 @@
 # S05 evidence context and compact action review — 3 November 2026
 
+**Delivered — public v174.** Runtime `c295a1a968611104b40e0923b3d480e77bfb5b20`; [native receipt](receipts/s05-evidence-context-v174-2026-11-03.json). Browser checks remain blocked without retry. Candidate notes below are retained historical checkpoints.
+
+
 ## Intended outcome and starting source
 
 A user can choose one evidence operation, inspect its exact count/source/destination, apply it once or cancel while access is being checked. Changing case, inspected node, language, source/access epoch or selection must invalidate the old intent. Same-case source search must survive node navigation. Existing evidence bodies, complete relation/aggregate carriers, saved identities, recovery and full reports remain intact.
@@ -34,7 +37,7 @@ The download boundary uses the same operation/context fence. Synthetic sink chec
 
 Twenty-two focused workflow checks cover EN/RU attach/move/disconnect and full carrier preservation; node/locale/source/denial/epoch changes; clear/cancel/unmount; immediate repeated activation; late cancelled completion versus a new pending intent; conflict/stale CAS refusal; exact text delivery to a synthetic sink; missing-original ZIP disclosures; deleted-node reattachment; numeric prefixes/supported long titles; captured stale callbacks; and same-case search continuity. Combined source, packet, literal-passage, Review-return and first-use regressions pass **72/72**. Checkpoint strict types and changed-file lint pass; final candidate/exact-main release gates remain pending until recorded below.
 
-Two fixture issues were corrected without weakening product guards: an over-limit synthetic title was shortened to a supported long title; a fixed 15ms ZIP assertion was replaced with a bounded completion condition. Failed local logs are retained in `.artifacts/s05-batch-20261103`; neither is described as a production defect. No production case or unsaved tab was accessed, saved, replaced or deleted.
+Two fixture issues were corrected without weakening product guards: an over-limit synthetic title was shortened to a supported long title; a fixed 15ms ZIP assertion was replaced with a bounded completion condition. Failure summaries are retained in this review and the tool transcript; the initial failed local log files were overwritten by later local runs. Final passing logs and before/after proofs are retained in `.artifacts/s05-batch-20261103`. Neither fixture issue is described as a production defect. No production case or unsaved tab was accessed, saved, replaced or deleted.
 
 ## Continuation instructions and acceptance limits
 
@@ -43,3 +46,18 @@ Two fixture issues were corrected without weakening product guards: an over-limi
 3. Continue the remaining Review finding → node → literal passage → exact Return acceptance and real original-file inventory independently. Keep 43 missing-original disclosures; actual body acquisition and governed source/approval review are separate. Do not substitute current templates for historical/unknown sources or manufacture unsupported-owner rows/tokens.
 4. Preserve S03 legitimate unsupported-owner recovery, native cancellation, same-tab identity/source timing, original-artifact/historical pagination, native/operator/commercial limits, v167 paused-caption observation and all factories/carriers/recovery/PDF locks, including the complete 254-page ERP Full report. No Header Save or historical pagination cause is claimed fixed by this work.
 5. Assess manual-choice discoverability and measured authorization/evidence-gap/owner/action retrieval as later independent slices. The 30-second/80% targets still require at least five consenting evaluators. Existing hashed Help recordings remain dated evidence, not recordings of this amended bulk workflow. No governed user-edit merging, provider processing, disposal, analytics, pricing or outreach is introduced. S05 remains partially delivered, not closed.
+
+
+## Final review and delivery
+
+PR211 is normally integrated. Candidate and exact-main gates pass 1890 tests / 0 failures / 3 inherited skips plus 2 rendered HTML passes. Strict types/lint, historical migration/contract locks, packaged browser/Worker/tax execution, all 47 report visual locks, bilingual Base/Medium and tax PDF locks pass. Both dependency audits report 0 findings. Local changed-file lint has no errors or warnings. Native queued/pending states are recorded independently, not converted to passes.
+
+Exact-main CI archive bytes/server digest, source/tree and all 581 input receipts match before build adoption. Existing public Site deployment succeeds as v174. Both origins verify 194/194 current/retained assets and exact runtime. Audience, environment 42/all 13 returned representations and storage bindings remain unchanged. Only v173 current-manifest assets are retained. Raw helper upload and normalized Sites archive receipts remain distinct. Documentation closure changes no runtime/hosting inputs and receives no additional Sites publication.
+
+The final proof is pinned to exact candidate Git bytes. It reproduces the old one-apply trace and the amended zero-apply trace with identical synthetic case bytes. Twenty-two workflow and 72 combined checks remain source/component/handler evidence with modeled hooks, authority and download delivery. The real local ZIP body is inspected through a synthetic sink; no actual browser download, sealed JSON/PDF or owner-recovery acceptance is claimed. Clearing a selection targets the scoped search control and exposes status; these DOM calls remain modeled. The search-scope review correction prevents node-navigation filter loss. Captured callbacks cannot restart a cleared or completed intent, and an old completion cannot unlock a newer pending operation.
+
+Only the materials component and scoped CSS change among runtime/data/hosting inputs. Root Save/Report/history/aggregate callbacks and existing evidence/carrier/CAS algorithms remain unchanged. No case format, factory/template version, source body, archive schema, approval state, persistence/seal policy, report renderer or recording is changed. No production case/tab was read, saved, replaced or deleted. Every original and synthetic case and unsaved tab is preserved.
+
+Browser acceptance stays blocked without retry. S05 remains partial: actual finding-to-source and bulk-edit keyboard/short-height/Undo/save/output journeys, original bodies, same-tab timing and earlier S03/native/operator/commercial limits are still open. No Header Save or historical pagination cause is claimed fixed. Preserve the complete ERP Full record, all legacy factories/recovery, 43 missing-original disclosures and v167 paused-caption boundary. No governed merging, provider processing, disposal, analytics, pricing or outreach is introduced.
+
+The existing 100-item PR attachment cap affects inline attachment only; ordinary review links remain usable and no prior artifact is removed. The initial local fixture failures were summarized but their raw files were overwritten by later local runs; final logs/proofs are retained. This corrects the earlier candidate wording without presenting reconstructed logs as original evidence.

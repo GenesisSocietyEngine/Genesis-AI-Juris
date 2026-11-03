@@ -1,0 +1,307 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-03",
+  "stage": "s05-evidence-preview-context",
+  "runtimeCommit": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+  "applicationInputsSha256": "1aca713846d4f39e584734122be3442a2afe8e3045ccd7eb8a8d3b33948fb1bb",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    211
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ed451f70e40c819198bf4827894a4a32",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 174,
+    "source": {
+      "commit_sha": "c295a1a968611104b40e0923b3d480e77bfb5b20"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_0000000089c481f7bb28ed72ac2ea473",
+      "content_hash": "sha256:0c5d7af664f686d5383c866801b93717a9f4c4d8190f8c6dfb3330e504babb71",
+      "size_bytes": 50718720,
+      "file_count": 600
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6ae9fb2f867c819184c52052ee58c2bc",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ed451f70e40c819198bf4827894a4a32",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-03T15:18:39.704445+00:00"
+  },
+  "sourceHelper": {
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "21f7696925a9f0cc99dc9d94455ddb0263a539e2"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-s05-evidence-c295a1a-20261103.tar"
+    }
+  },
+  "localArchive": {
+    "path": "C:/Users/User/Documents/ChatGPT/software/casevant-s05-evidence-c295a1a-20261103.tar",
+    "sha256": "7c619d9505528cd7f47bc0bc03467ecb1b2a53421f7c1148e40b84e472fc20cd",
+    "bytes": 31367661
+  },
+  "startingSource": {
+    "main": "21f7696925a9f0cc99dc9d94455ddb0263a539e2",
+    "runtime": "a3978a926f618ccc2668bcb04965ced504963954",
+    "publicVersion": 173,
+    "allApplicationInputsVerified": 581,
+    "difference": "documentation only",
+    "dirtyPaths": []
+  },
+  "candidate": {
+    "sha": "a8a5fb68c2918d329d496dbc2d38d0212e5d5ebe",
+    "runId": 41658181060,
+    "tests": 1893,
+    "passed": 1890,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0
+  },
+  "mainAcceptance": {
+    "runId": 41660080809,
+    "artifactId": 13241622799,
+    "artifactName": "verified-web-build-c295a1a968611104b40e0923b3d480e77bfb5b20-41660080809",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-c295a1a.zip",
+    "sha256": "a4e2cd46acc1a93002f6acbc608c16390934b66352962187d9e8601689e95df2",
+    "bytes": 31210199,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-c295a1a",
+    "entries": 543,
+    "tests": 1893,
+    "passed": 1890,
+    "failed": 0,
+    "skipped": 3,
+    "renderedHtmlPassed": 2,
+    "fullAuditFindings": 0,
+    "productionAuditFindings": 0,
+    "sourceInputsVerified": 581,
+    "completeSourceReceiptVerified": true
+  },
+  "localEvidence": {
+    "scope": "Actual component/projection/evidence handler with modeled hooks/authority and synthetic file sink; not live browser/API/production acceptance",
+    "focusedPassed": 72,
+    "focusedFailed": 0,
+    "newWorkflowChecks": 22,
+    "strictTypes": "passed",
+    "changedFileLint": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "contextProof": {
+      "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+      "before": {
+        "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+        "componentRef": "21f7696925a9f0cc99dc9d94455ddb0263a539e2",
+        "componentSha256": "843445a65dbfe49829e9527588f0fb1b7397581fbf796645cf8b8d1619c9dec5",
+        "controls": {
+          "buttons": 3,
+          "selects": 1
+        },
+        "pendingMoveAfterNodeChangeWrites": 1,
+        "authorityCalls": 1,
+        "beforeSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+        "afterSha256": "e59f2f0236857ccfa2f6ca6da434f11049ea97740ba3614e38507196c21af312",
+        "productionCasesTouched": false
+      },
+      "after": {
+        "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+        "componentRef": "a8a5fb68c2918d329d496dbc2d38d0212e5d5ebe",
+        "componentSha256": "3347b2dea324b6163f10e863e2dcd4dc2b11fded958cfd58ba34d49f7d358042",
+        "controls": {
+          "buttons": 2,
+          "selects": 2
+        },
+        "pendingMoveAfterNodeChangeWrites": 0,
+        "authorityCalls": 1,
+        "beforeSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+        "afterSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+        "productionCasesTouched": false
+      },
+      "browserChecks": "blocked without retry",
+      "caseOrSourceFormatsChanged": false
+    },
+    "preservation": {
+      "scope": "Exact canonical Git runtime/data/hosting diff, not a production database snapshot or browser observation",
+      "base": "21f7696925a9f0cc99dc9d94455ddb0263a539e2",
+      "main": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+      "changedRuntimePaths": [
+        "app/StudioMaterialsWorkspace.tsx",
+        "app/studio-evidence-workspace.module.css"
+      ],
+      "rootSaveReportAggregateHistoryUnchanged": true,
+      "evidenceCarrierAlgorithmUnchanged": true,
+      "sourceFactoriesBodiesArchiveSchemasAndPersistencePoliciesUnchanged": true,
+      "productionCaseOperationsPerformed": false
+    },
+    "uiContextFencesExtended": true,
+    "caseOrSourceFormatsChanged": false,
+    "rootSaveReportAndAggregateHandlersChanged": false,
+    "readingScopePreserved": true,
+    "browserPixelsOrRetrievalTimeMeasured": false,
+    "reviewCorrections": [
+      "Supported long title replaces an invalid over-limit synthetic fixture.",
+      "ZIP delivery assertion uses a bounded completion condition instead of 15ms.",
+      "Reading context stays separate from the stricter write context to preserve same-case search.",
+      "Cancel exposes status/scoped search focus; completed selections immediately invalidate captured Apply callbacks."
+    ]
+  },
+  "publicAssets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 194,
+      "verifiedCount": 194,
+      "receiptSha256": "dacaadb3653d41bd48afb18104558386035c032679886902b15c19620f756ea4",
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 194,
+      "verifiedCount": 194,
+      "receiptSha256": "69dd3e9bd6ac7b34decc6e5f6beb9f43a1651af580bae2f8046096b0f8018332",
+      "passed": true
+    }
+  ],
+  "publicRuntime": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+        "applicationInputsSha256": "1aca713846d4f39e584734122be3442a2afe8e3045ccd7eb8a8d3b33948fb1bb",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+        "applicationInputsSha256": "1aca713846d4f39e584734122be3442a2afe8e3045ccd7eb8a8d3b33948fb1bb",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "configuration": {
+    "before": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "latest_version_number": 173,
+      "current_live_url": "https://casevant.pro"
+    },
+    "after": {
+      "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "access_mode": "public",
+      "latest_version_number": 174,
+      "current_live_url": "https://casevant.pro"
+    },
+    "environment": {
+      "revision": 42,
+      "entryCount": 13,
+      "keys": [
+        "GENESIS-JURIS-Production",
+        "GENESIS_ADMIN_EMAILS",
+        "GENESIS_AI_DAILY_REQUEST_LIMIT",
+        "GENESIS_DEPLOYMENT_VERSION",
+        "GENESIS_INVITATION_FROM_EMAIL",
+        "GENESIS_INVITATION_MAIL_ENABLED",
+        "GENESIS_OPENAI_MODEL",
+        "GENESIS_PUBLIC_ORIGIN",
+        "GENESIS_RESET_FROM_EMAIL",
+        "GENESIS_WEB_COMMIT",
+        "OPENAI_API_KEY",
+        "OPEN_API_KEY",
+        "RESEND_API_KEY"
+      ]
+    },
+    "environmentEntriesUnchanged": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ],
+    "bindingsAndAudienceChanged": false
+  },
+  "nativeWorkflows": [
+    {
+      "conclusion": "",
+      "databaseId": 41660080794,
+      "name": "iOS Tax Application",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41660080697,
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41660080715,
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41660080813,
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41660080809,
+      "name": "Root Web and PDF",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41660080698,
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    }
+  ],
+  "checks": {
+    "productionCaseReadSaveReplaceDeletePerformed": false,
+    "sourceFactoriesChanged": false,
+    "persistenceSealOrAuthorityPolicyChanged": false,
+    "sourceOrReviewAcceptanceChanged": false,
+    "reportOrRecordingChanges": false
+  },
+  "browser": {
+    "status": "blocked",
+    "reason": "Explicit user direction to keep browser verification blocked; no retry",
+    "focusKeyboardNarrowOrProductionJourneyPassed": false
+  },
+  "acceptanceLimits": [
+    "Node move controls change from 3 buttons + 1 select to 2 buttons + 2 selects; total controls are unchanged. No height/retrieval/commercial claim.",
+    "Synthetic hook/authority/download-sink results do not establish live focus/scroll/keyboard/narrow, authenticated save/Undo, same-tab identity or real file delivery.",
+    "Preserve S03 legitimate unsupported-owner recovery, native cancellation, same-tab identity/source timing, original-artifact/historical pagination,43missing-original, native/operator/commercial limits and v167 paused-caption observation.",
+    "All existing cases and unsaved tabs are untouched. No governed merging, provider processing, disposal, analytics, pricing or outreach."
+  ],
+  "buildAdoption": {
+    "completedArchiveVerifiedBeforeAdoption": true,
+    "retainedPreviousCurrentManifestOnly": 173
+  },
+  "publishingNote": "Corrected candidate and exact-main web/PDF gates pass before adopting verified CI build bytes. Source/tree/all input receipts and ZIP digest match. Only v173 current-manifest assets are retained. Docs-only closure receives no duplicate runtime publication."
+}
