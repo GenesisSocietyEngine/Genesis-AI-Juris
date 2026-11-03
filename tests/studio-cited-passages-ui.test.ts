@@ -15,7 +15,7 @@ const bundle=await build({entryPoints:['app/StudioCitedPassages.tsx'],bundle:tru
 }}]});mkdirSync('.artifacts/cited-passages-ui',{recursive:true});const path=resolve('.artifacts/cited-passages-ui/component.mjs');writeFileSync(path,bundle.outputFiles[0].text);const Component=(await import(pathToFileURL(path).href)).default;
 function elements(v:unknown):Element[]{if(Array.isArray(v))return v.flatMap(elements);if(!v||typeof v!=='object'||!('props'in v))return[];const e=v as Element;return[e,...elements(e.props.children)];}
 function text(v:unknown):string{if(Array.isArray(v))return v.map(text).join(' ');if(typeof v==='string'||typeof v==='number')return String(v);return v&&typeof v==='object'&&'props'in v?text((v as Element).props.children):'';}
-function button(tree:unknown,label:string){const e=elements(tree).find(e=>e.type==='button'&&text(e).includes(label));assert.ok(e,label);return e;}
+function button(tree:unknown,label:string){const e=elements(tree).find(e=>e.type==='button'&&String(e.props['aria-label']??text(e)).includes(label));assert.ok(e,label);return e;}
 const citation:StudioMaterialCitation={id:'D01:v1:Mandate',document:'D01',version:1,section:'Mandate',text:'Exact fictional source: café — retained bytes.',verbatimInNode:true,selectedInSourceScenario:true};
 function fixture(locale:'en'|'ru'='en',returning=true){const runtime={hooks:hooks(),hold:undefined as Promise<void>|undefined,fail:false};globals.__citedUi=runtime;let context:object={},citations=[citation],returns=0;const focuses:string[]=[];
  const trigger={isConnected:true,focus(){focuses.push('trigger');},scrollIntoView(){}};const root={contains:(x:unknown)=>x===trigger},passage={focus(){focuses.push('passage');},scrollIntoView(){}};
@@ -53,5 +53,20 @@ test('node mismatch stays qualified and hash failures never imply verification o
 test('a passage that becomes unavailable in the same context rejects old reader callbacks',()=>{
  const f=fixture();try{let tree=f.render();(button(tree,'Read cited passage:').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();const oldReturn=button(tree,'Back to review finding').props.onClick as ()=>void,oldClose=button(tree,'Close passage').props.onClick as ()=>void;
  f.setCitations([]);assert.equal(f.render(),null);oldReturn();oldClose();assert.equal(f.returns,0);assert.deepEqual(f.focuses,['passage']);
+ }finally{f.close();}
+});
+
+for(const locale of ['en','ru'] as const)test(`${locale}: compact citations retain visible qualifications and full literal text`,()=>{
+ const f=fixture(locale);try{
+  f.setCitations([{...citation,verbatimInNode:false,selectedInSourceScenario:false}]);let tree=f.render();
+  const open=button(tree,locale==='en'?'Read cited passage:':'Открыть цитируемый фрагмент:');
+  assert.ok(text(open).length<String(open.props['aria-label']).length);
+  assert.ok(text(tree).includes(locale==='en'?'not accepted evidence':'не принятое доказательство'));
+  (open.props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();
+  const literal=elements(tree).find(e=>e.props.lang==='en');assert.ok(literal);assert.equal(text(literal),citation.text);
+  const details=elements(tree).filter(e=>e.type==='details');assert.equal(details.length,1);assert.equal(details[0].props.open,undefined);
+  const visible=elements(tree).filter(e=>e.type==='p'&&!elements(details[0]).includes(e)).map(text).join(' ');
+  assert.ok(visible.includes(locale==='en'?'scenario unchanged':'сценарий не изменён'));
+  assert.ok(visible.includes(locale==='en'?'Node text differs':'Текст узла отличается'));
  }finally{f.close();}
 });

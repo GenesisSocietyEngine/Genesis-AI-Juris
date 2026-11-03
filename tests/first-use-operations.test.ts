@@ -10,64 +10,47 @@ import { buildCanopyPackage } from "../app/canopy-fixture";
 import { createOperationsDiagnostic } from "../app/operations-diagnostic";
 
 const noop = () => {};
-const props = { locale: "en" as const, hasStructure: true, hasTitle: true, saved: false, busy: false, canSave: true, needsSignIn: false, onBrief: noop, onTitle: noop, onSave: noop, onReport: noop };
+const props = { locale: "en" as const, hasStructure: true, hasTitle: true, saved: false, busy: false, canSave: true, needsSignIn: false, onBrief: noop, onTitle: noop };
 
-test("first-case guidance distinguishes content, pending work and confirmed persistence", () => {
-  const unsaved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, props));
-  assert.match(unsaved, /Save this case/);
-  assert.doesNotMatch(unsaved, /href=|This version has a confirmed/);
-  const guest = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, needsSignIn: true }));
-  assert.match(guest, /Sign in and save/);
-  const profile = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, needsProfile: true }));
-  assert.match(profile, /Complete profile and save/);
-  const saving = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, busy: true }));
-  assert.match(saving, /disabled=""/);
-  assert.doesNotMatch(saving, /This version has a confirmed/);
-  const saved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, saved: true, saveConfirmedInSession: true }));
-  assert.match(saved, /Preview report/);
-  assert.doesNotMatch(saved, /href=|three checkpoints|ready to revisit|confirmed workspace save/);
-  const dirtyAgain = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, saved: false }));
-  assert.doesNotMatch(dirtyAgain, /Open saved copy/);
-});
-
-test("first-case guidance prioritizes missing content and preserves both languages", () => {
-  const empty = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, hasStructure: false, hasTitle: false }));
-  assert.match(empty, /Write the brief/);
-  const untitled = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, hasTitle: false }));
-  assert.match(untitled, /Add a title/);
-  const oversized = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, canSave: false }));
-  assert.match(oversized, /disabled=""/);
-  const ru = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale: "ru", saved: true, saveConfirmedInSession: true }));
-  assert.match(ru, /Далее: просмотрите отчёт/);
-  assert.match(ru, /Посмотреть отчёт/);
-});
-
-test("restored cases skip onboarding; fresh receipts offer one guarded report action and dirty edits restore save guidance", () => {
+test("compact coaching leaves Save/Report to the header and hides confirmed-case coaching", () => {
   for (const locale of ["en", "ru"] as const) {
-    assert.equal(renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: true })), "");
-    let reports = 0, saves = 0;
-    const fresh = StudioFirstCaseGuide({ ...props, locale, saved: true, saveConfirmedInSession: true, onReport: () => reports++, onSave: () => saves++ })!;
-    const button = fresh.props.children[1];
-    assert.equal(button.type, "button"); assert.equal(button.props.disabled, false);
-    button.props.onClick(); assert.equal(reports, 1); assert.equal(saves, 0);
-    const busy = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: true, saveConfirmedInSession: true, busy: true }));
-    assert.match(busy, /disabled=""/);
-    const dirty = renderToStaticMarkup(createElement(StudioFirstCaseGuide, { ...props, locale, saved: false, saveConfirmedInSession: true }));
-    assert.match(dirty, locale === "en" ? /Save this case/ : /Сохранить кейс/);
-    assert.doesNotMatch(dirty, /first-case-saved/);
+    const unsaved = renderToStaticMarkup(createElement(StudioFirstCaseGuide, {...props,locale}));
+    assert.doesNotMatch(unsaved, /<button|<h2|open=""|href=/);
+    assert.match(unsaved, /<details/);
+    assert.ok(unsaved.includes(locale === "en" ? "Help with this step" : "Помощь на этом шаге"));
+    assert.ok(unsaved.includes(locale === "en" ? "Saving and exporting do not grant approval" : "Сохранение и экспорт не означают утверждения"));
+    assert.equal(renderToStaticMarkup(createElement(StudioFirstCaseGuide, {...props,locale,saved:true})), "");
+    assert.notEqual(renderToStaticMarkup(createElement(StudioFirstCaseGuide, {...props,locale,saved:false})), "");
+    const oversized = renderToStaticMarkup(createElement(StudioFirstCaseGuide, {...props,locale,canSave:false,saved:true}));
+    assert.match(oversized.split("<details")[0], /id="first-case-save-limit" role="status"/);
   }
+  assert.match(renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,needsSignIn:true})), /Sign in when you use Save above/);
+  assert.match(renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,needsProfile:true})), /Complete your profile when you use Save above/);
 });
 
-test("application retains header, unsaved-input and failure guidance while using only session receipt for the compact next action", () => {
+test("compact coaching retains only targeted brief/title actions and prevents busy activation", () => {
+  let brief = 0, title = 0;
+  for(const [change,expected] of [[{hasStructure:false,hasTitle:false},"Write the brief"],[{hasTitle:false},"Add a title"]] as const) {
+    const tree = StudioFirstCaseGuide({...props,...change,onBrief:()=>brief++,onTitle:()=>title++})!;
+    const button = tree.props.children[0].props.children[1];
+    assert.equal(button.props.children,expected); button.props.onClick();
+    const busy = renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,...change,busy:true}));
+    assert.match(busy, /disabled=""/);
+  }
+  assert.equal(brief,1); assert.equal(title,1);
+});
+
+test("application retains header authority, unsaved-input and failure guidance without duplicate coaching handlers", () => {
   const app = readFileSync("app/JurisApp.tsx", "utf8");
-  assert.match(app, /saveConfirmedInSession=\{workspaceSavedAt !== null\}/);
+  const guide=app.slice(app.indexOf("<StudioFirstCaseGuide locale="),app.indexOf("/></Suspense>",app.indexOf("<StudioFirstCaseGuide locale=")));
+  assert.doesNotMatch(guide,/onSave=|onReport=|saveConfirmedInSession=/);
+  assert.match(app, /visibleStep < 5 \|\| !saveWithinEnvelope/);
   assert.match(app, /id="studio-save-status"[\s\S]*?Saved to workspace/);
   assert.match(app, /displayMode === "developer" \|\| !\["saved", "submitted"\]\.includes\(visibleWorkspaceState\)/);
   assert.match(app, /canDuplicate && !\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)/);
   assert.match(app, /\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)[\s\S]*?Retry save/);
   assert.match(app, /studio-evidence-pending/);
   assert.match(app, /savedCaseHref=\{customCaseId && \["saved", "submitted"\]\.includes\(visibleWorkspaceState\)/);
-  assert.doesNotMatch(app, /\{portableStudioActions\}\{customCaseId/);
 });
 
 test("saved-version inspection is inside the existing More actions menu and preserves the exact separate-tab destination", () => {
@@ -111,7 +94,7 @@ test("first-case pending labels distinguish checking, saving, restoring and chec
   };
   for(const locale of ["en","ru"] as const) for(const busyReason of ["checking","saving","restoring","check_failed"] as const) {
     const html=renderToStaticMarkup(createElement(StudioFirstCaseGuide,{...props,locale,busy:true,busyReason}));
-    assert.ok(html.includes(labels[locale][busyReason]));assert.match(html,/disabled=""/);
+    assert.ok(html.includes(labels[locale][busyReason]));assert.match(html,/role="status"/);assert.doesNotMatch(html,/<button/);
     assert.doesNotMatch(html,/This version has a confirmed workspace save|Сохранение этой версии в рабочем пространстве подтверждено/);
   }
 });
