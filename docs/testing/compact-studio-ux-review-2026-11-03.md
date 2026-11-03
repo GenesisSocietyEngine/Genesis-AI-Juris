@@ -33,7 +33,7 @@ Source passage SHA-256 remains `946dc16018f0e9c1f1799b873e9259d32c9150864003c004
 
 Implementation review: root diff only changes coaching mount conditions/props. Header Save/Report, CAS, save receipts, drafts, export/seal policy, source projections, factories, carriers, history, accepted-evidence state, PDF rendering and archive handling are unchanged. Reader diff changes presentation and accessible captions only; no handler/hook changes. No production case was created, replaced or deleted.
 
-Initial restricted local Node invocation failed before tests with `uv_os_get_passwd ENOMEM`; the authorized unsandboxed focused rerun passes15/15. This environmental launch failure is not a product regression. Strict types/lint and broader candidate/exact-main checks are pending at this checkpoint. Production publication is pending; no candidate is described as live.
+Initial restricted local Node invocation failed before tests with `uv_os_get_passwd ENOMEM`; the authorized unsandboxed focused rerun passes15/15. This environmental launch failure is not a product regression. Strict types pass after correcting a nullable overview-step comparison; changed-file lint has 0 errors and 7 pre-existing root warnings. The broader source/citation/Review-return set passes 50/50. Accessibility review corrected the shortened citation caption to start the accessible name verbatim; EN/RU reader checks pass 8/8. Broader corrected-candidate/exact-main checks are pending at this checkpoint. Production publication is pending; no candidate is described as live.
 
 ## Continuation and acceptance limits
 

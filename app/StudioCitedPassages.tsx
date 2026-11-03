@@ -54,7 +54,7 @@ export default function StudioCitedPassages({ citations, context, locale, onRetu
     <h4>{t("Cited passages", "Цитируемые фрагменты")}</h4>
     <p className={styles.meta}>{t("Fictional reference · English · not accepted evidence", "Вымышленный источник · английский · не принятое доказательство")}</p>
     <ul className={styles.citationList}>{citations.map(item => <li key={item.id}>
-      {item.text !== null ? <button type="button" className={styles.secondary} aria-label={`${t("Read cited passage: ", "Открыть цитируемый фрагмент: ")}${item.document} v${item.version} § ${item.section}`} onClick={event => { if (currentContext.current === context) setReading({ context, id: item.id, text: item.text!, trigger: event.currentTarget }); }}>
+      {item.text !== null ? <button type="button" className={styles.secondary} aria-label={`${t("Read ", "Открыть ")}${item.document} v${item.version} § ${item.section}${t(" — cited passage", " — цитируемый фрагмент")}`} onClick={event => { if (currentContext.current === context) setReading({ context, id: item.id, text: item.text!, trigger: event.currentTarget }); }}>
         {t("Read ", "Открыть ")}{item.document} v{item.version} § {item.section}
       </button> : <><strong>{item.document} v{item.version} § {item.section}</strong><p>{t("Exact retained passage unavailable. No substitute version has been opened.", "Точный сохранённый фрагмент недоступен. Другая версия не была подставлена.")}</p></>}
     </li>)}</ul>
