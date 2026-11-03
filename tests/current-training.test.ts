@@ -54,7 +54,7 @@ test('both locales offer no subtitle tracks or caption links and retain every sp
     assert.doesNotMatch(html,/<track\b|\.vtt|autoPlay=|autoplay=/);
     assert.match(html,/preload="none"/);assert.ok(html.includes(training.title[locale]));
     assert.ok(html.includes(locale==='en'?'No subtitles':'Без субтитров'));
-    assert.ok(html.includes(`/help/training-20261103/transcript.${locale}.md`));
+    for(const transcriptLocale of ['en','ru'])assert.ok(html.includes(`/help/training-20261103/transcript.${transcriptLocale}.md`));
     const transcript=readFileSync(`public/help/training-20261103/transcript.${locale}.md`,'utf8');
     for(const scene of training.scenes){assert.ok(html.includes(scene.narration[locale]));assert.ok(transcript.includes(scene.narration[locale]));}
     assert.match(html,/not a screen recording|Это не запись экрана/);
