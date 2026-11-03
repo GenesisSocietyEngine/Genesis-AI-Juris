@@ -9,12 +9,16 @@ import { buildCanopyPackage } from "../app/canopy-fixture";
 import { studioReviewAction } from "../app/studio-review-action";
 
 const source=ts.createSourceFile("JurisApp.tsx",readFileSync("app/JurisApp.tsx","utf8"),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-let memoryFactory="", returnExpression="", cardCallback="", focusExpression="", focusEffect="";
+let memoryFactory="", returnExpression="", cardCallback="", focusExpression="", focusEffect="", passageReturn="";
 function visit(node:ts.Node){
   if(ts.isVariableDeclaration(node)&&node.name.getText(source)==="materialReadingMemory")memoryFactory=node.initializer!.getText(source);
   if(ts.isVariableDeclaration(node)&&node.name.getText(source)==="actionFocusId")focusExpression=node.initializer!.getText(source);
   if(ts.isCallExpression(node)&&node.expression.getText(source)==="useEffect"&&node.arguments[0]?.getText(source).includes("focusActionTarget(actionFocusId)"))focusEffect=node.arguments[0].getText(source);
   if(ts.isJsxExpression(node)&&node.expression?.getText(source).startsWith("actionTarget && actionTarget.step"))returnExpression=node.expression.getText(source);
+  if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(source)==="StudioMaterialsWorkspace"){
+    const attribute=node.attributes.properties.find(p=>ts.isJsxAttribute(p)&&p.name.getText(source)==="onReturnToFinding") as ts.JsxAttribute | undefined;
+    if(attribute)passageReturn=(attribute.initializer as ts.JsxExpression).expression!.getText(source);
+  }
   if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(source)==="StudioPackageValidationCard"){
     const attribute=node.attributes.properties.find(p=>ts.isJsxAttribute(p)&&p.name.getText(source)==="onOpen") as ts.JsxAttribute;
     cardCallback=(attribute.initializer as ts.JsxExpression).expression!.getText(source);
@@ -76,4 +80,12 @@ test("actual focus effect falls back when asynchronous checks remove a returned 
   const effect=new Function("actionFocusId","focusActionTarget","MutationObserver","requestAnimationFrame","cancelAnimationFrame","document",compile(`return (${focusEffect})();`));
   const cleanup=effect(id(target,[]),(value:string)=>{calls.push(value);return true;},Observer,(run:()=>void)=>{run();return 1;},()=>{},{body:{}});
   assert.deepEqual(calls,["studio-next-actions"]);cleanup();
+});
+
+
+test("actual node-reader Review return reuses the existing parent action only for an active origin",()=>{
+ assert.ok(passageReturn);let returned=0;
+ const callback=new Function('materialReadingMemory','returnToActions',compile(`return (${passageReturn});`));
+ assert.equal(callback({reviewFinding:()=>null},()=>returned++),undefined);
+ callback({reviewFinding:()=>'orphan'},()=>returned++)();assert.equal(returned,1);
 });
