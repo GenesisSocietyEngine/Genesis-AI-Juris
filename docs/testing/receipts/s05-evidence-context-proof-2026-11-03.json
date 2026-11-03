@@ -1,0 +1,33 @@
+{
+  "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+  "before": {
+    "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+    "componentRef": "21f7696925a9f0cc99dc9d94455ddb0263a539e2",
+    "componentSha256": "843445a65dbfe49829e9527588f0fb1b7397581fbf796645cf8b8d1619c9dec5",
+    "controls": {
+      "buttons": 3,
+      "selects": 1
+    },
+    "pendingMoveAfterNodeChangeWrites": 1,
+    "authorityCalls": 1,
+    "beforeSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+    "afterSha256": "e59f2f0236857ccfa2f6ca6da434f11049ea97740ba3614e38507196c21af312",
+    "productionCasesTouched": false
+  },
+  "after": {
+    "scope": "Exact Git component or working source; actual projection/handler, modeled hooks/authority and synthetic data. Not a published old application, browser, API or production-case observation.",
+    "componentRef": "working-tree",
+    "componentSha256": "3347b2dea324b6163f10e863e2dcd4dc2b11fded958cfd58ba34d49f7d358042",
+    "controls": {
+      "buttons": 2,
+      "selects": 2
+    },
+    "pendingMoveAfterNodeChangeWrites": 0,
+    "authorityCalls": 1,
+    "beforeSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+    "afterSha256": "d3251efedcb93218c715b3cd5fa4602839d4e6c114c473aa79206bdbd0fe455c",
+    "productionCasesTouched": false
+  },
+  "browserChecks": "blocked without retry",
+  "caseOrSourceFormatsChanged": false
+}
