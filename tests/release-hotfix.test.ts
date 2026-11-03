@@ -312,7 +312,7 @@ test("late identity and catalogue responses cannot overwrite newer user intent",
   assert.match(source, /launchRequestVersion === catalogueLaunchRef\.current\) setCatalogueLoading\(false\)/);
 });
 
-test("Studio opens in Office and current captioned training preserves the earlier Five Flats demo", () => {
+test("Studio opens in Office and subtitle-free training preserves the earlier Five Flats demo", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const demoPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
   const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
@@ -324,7 +324,8 @@ test("Studio opens in Office and current captioned training preserves the earlie
   assert.match(brandCss, /color-scheme: only light/);
   assert.match(demoPage, /<TrainingVideo\/>/);
   assert.match(trainingPlayer, /Five Flats, Three Borders/);
-  assert.match(trainingPlayer, /<track kind="captions" src="\/help\/casevant-training-20261005\.en\.vtt"/);
+  assert.doesNotMatch(trainingPlayer, /<track\b/);
+  assert.match(trainingPlayer, /training-current\.json/);
   assert.match(trainingPlayer, /\/help\/casevant-training-20261005-transcript\.md/);
   assert.match(demoBuilder, /voice=slt/);
   assert.match(demoBuilder, /studio-ai-guided-demo\.en\.mp4/);

@@ -1,34 +1,51 @@
 "use client";
 
-import { useRef, useState } from "react";
-import training from "./training-content.json";
+import { useEffect, useRef, useState } from "react";
+import training from "./training-current.json";
+import { createRecordingMedia } from "./recording-media";
 
 export default function TrainingVideo({ locale = "en" }: { locale?: "en" | "ru" }) {
-  const video = useRef<HTMLVideoElement>(null);
+  const video = useRef<HTMLVideoElement>(null), pending = useRef<number | null>(null), resume = useRef(false);
+  const media = useRef<ReturnType<typeof createRecordingMedia> | null>(null), active = useRef(true);
   const [notice, setNotice] = useState("");
-  const en = locale === "en";
-  function seek(seconds: number) {
+  const en = locale === "en", time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2,"0")}`;
+  useEffect(() => { active.current = true; return () => { active.current = false; media.current?.dispose(); media.current = null; }; }, []);
+  async function seek(seconds: number, play = false) {
     if (!video.current) return;
-    video.current.currentTime = seconds;
-    video.current.focus();
-    setNotice(en ? `Chapter selected at ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}. Press Play to continue.` : "Глава выбрана. Нажмите «Воспроизвести».");
+    pending.current = seconds; resume.current = play; video.current.pause(); video.current.focus(); video.current.scrollIntoView({ block: "center", behavior: "auto" });
+    setNotice(en ? "Loading the guide…" : "Загружается руководство…");
+    media.current ??= createRecordingMedia(training.video, { fetch: (path, options) => fetch(path, options), create: blob => URL.createObjectURL(blob), revoke: url => URL.revokeObjectURL(url) });
+    try {
+      const url = await media.current.load();
+      if (!active.current || !video.current) return;
+      if (video.current.src !== url) { video.current.src = url; video.current.load(); }
+      else if (video.current.readyState > 0) applyChapter();
+    } catch { if (active.current) setNotice(en ? "Video could not load. Use the transcript or download link below." : "Видео не загрузилось. Откройте расшифровку или ссылку для скачивания."); }
   }
-  return <section className="training-player" id="training" aria-labelledby="training-title">
-    <header><span>10:00 · {en ? "ENGLISH NARRATION + CAPTIONS" : "АНГЛИЙСКАЯ ОЗВУЧКА И СУБТИТРЫ"}</span><h2 id="training-title">{en ? "CaseVant: from file to decision" : "CaseVant: от файла к решению"}</h2><p>{en ? "Follow Five Flats, Three Borders through import, evidence, the decision map and reporting. Then start your own case." : "Пройдите Five Flats, Three Borders: импорт, доказательства, карта решений и отчёт. Затем создайте свой кейс."}</p></header>
-    <video ref={video} controls preload="metadata" playsInline poster="/help/casevant-training-20261005-poster.jpg" aria-describedby="training-format" onError={() => setNotice(en ? "Video could not load. Use the transcript or download link below." : "Видео не загрузилось. Откройте расшифровку или ссылку для скачивания.")}>
-      <source src="/help/casevant-training-20261005.en.mp4" type="video/mp4"/>
-      <track kind="captions" src="/help/casevant-training-20261005.en.vtt" srcLang="en" label="English" default/>
+  function applyChapter() {
+    const player = video.current;
+    if (!player?.src.startsWith("blob:") || pending.current === null) return;
+    player.currentTime = pending.current; pending.current = null;
+    if (resume.current) { resume.current = false; void player.play().catch(() => { if (active.current) setNotice(en ? "Ready. Press Play to continue." : "Готово. Нажмите «Воспроизвести»."); }); }
+  }
+  return <section className="training-player" id="training" tabIndex={-1} aria-labelledby="training-title">
+    <header><span>{time(training.durationSeconds)} · {en ? "ENGLISH NARRATION · UPDATED 3 NOVEMBER 2026" : "АНГЛИЙСКАЯ ОЗВУЧКА · ОБНОВЛЕНО 3 НОЯБРЯ 2026"}</span><h2 id="training-title">{training.title[locale]}</h2><p>{en ? "From an independent working case to sources, evidence changes, Review, saving and reports." : "От самостоятельного рабочего кейса к источникам, изменениям материалов, проверке, сохранению и отчётам."}</p></header>
+    <video ref={video} controls preload="none" playsInline poster={training.poster} aria-label={training.title[locale]} aria-describedby="training-format" onLoadedMetadata={applyChapter}
+      onPlay={() => { if (video.current && !video.current.src.startsWith("blob:")) void seek(video.current.currentTime, true); else setNotice(en ? "Playing guide." : "Руководство воспроизводится."); }}
+      onSeeked={() => setNotice(!video.current?.paused ? (en ? "Playing guide." : "Руководство воспроизводится.") : en ? `Chapter at ${time(Math.floor(video.current?.currentTime ?? 0))}. Press Play if paused.` : `Глава: ${time(Math.floor(video.current?.currentTime ?? 0))}. Если видео на паузе, нажмите «Воспроизвести».`)}
+      onError={() => setNotice(en ? "Video could not load. Use the transcript or download link below." : "Видео не загрузилось. Откройте расшифровку или ссылку для скачивания.")}>
+      <source src={training.video} type="video/mp4"/>
       {en ? "Use the transcript or download the MP4 below." : "Откройте расшифровку или скачайте MP4 ниже."}
     </video>
-    <p className="training-format">{en ? "Updated 5 October 2026 for CaseVant: current workspace sections, Personal and Team cases, save confirmation and domain recovery." : "Обновлено 5 октября 2026 для CaseVant: актуальные разделы, личные и командные кейсы, подтверждение сохранения и переход на новый домен."} <a href={`/studio?view=help&lang=${locale}#guides`}>{en ? "Current guides" : "Актуальные инструкции"}</a></p>
-    <p id="training-format" className="training-format">{en ? "Narrated, illustrated walkthrough with one application capture and labeled account instructions. Authenticated saves, AI requests and organization-case creation are explained, not presented as recorded successful actions." : "Иллюстрированное обучение с озвучкой, одним снимком приложения и отдельными инструкциями для аккаунта. Сохранение после входа, AI-запросы и создание дела организации объясняются, а не выдаются за записанные успешные действия."}</p>
-    <p className="training-format">{en ? "Current export labels: the tutorial's Export Final case prompt is now Export case brief (.md). The dialog starts with Working brief; Prepared brief does not record human review or approval. The dated video and transcript retain their original wording." : "Актуальные названия экспорта: Export Final case prompt из урока теперь называется «Экспорт описания кейса (.md)». По умолчанию выбрано «Рабочее описание»; «Подготовленное описание» не фиксирует проверку или утверждение человеком. Видео и расшифровка сохраняют исходную формулировку."}</p>
-    <div className="training-downloads"><a href="/help/casevant-training-20261005.en.mp4" download>{en ? "Download video" : "Скачать видео"}</a><a href="/help/casevant-training-20261005-transcript.md" download>{en ? "Download transcript" : "Скачать расшифровку"}</a><a href="/help/casevant-training-20261005.en.vtt" download>{en ? "English captions" : "Английские субтитры"}</a></div>
-    <p className="visually-hidden" role="status">{notice}</p>
-    <details className="training-chapters" open><summary>{en ? "Jump to a chapter" : "Перейти к главе"}</summary><ol>{training.scenes.filter((scene,index,all) => index === 0 || scene.chapter !== all[index-1].chapter).map(scene => {
-      const seconds = (Number(scene.id)-1)*30;
-      return <li key={scene.id}><button type="button" onClick={() => seek(seconds)}><time>{Math.floor(seconds/60)}:{String(seconds%60).padStart(2,"0")}</time><span>{scene.chapter}</span></button></li>;
-    })}</ol></details>
-    <details className="training-transcript"><summary>{en ? "Read the full transcript" : "Прочитать расшифровку"}</summary>{training.scenes.map(scene => <section key={scene.id}><h3>{scene.title}{scene.kind === "instruction" ? " · Instructions" : ""}</h3><p>{scene.narration}</p></section>)}</details>
+    <p id="training-format" className="training-format">{en ? "Narrated workflow illustrations. No subtitles. For small screens, use fullscreen or read the English/Russian transcript below." : "Иллюстрации рабочего процесса с озвучкой. Без субтитров. На небольшом экране включите полный экран или прочитайте текст на английском/русском ниже."}</p>
+    <div className="training-downloads"><button type="button" className="secondary-cta" onClick={() => void seek(0, true)}>{en ? "Play video" : "Воспроизвести видео"}</button><a href={training.video} download>{en ? "Download video" : "Скачать видео"}</a><a href={`/help/training-20261103/transcript.${locale}.md`} download>{en ? "Download transcript" : "Скачать расшифровку"}</a><a href={`/studio?view=help&lang=${locale}#guides`}>{en ? "Current guides" : "Актуальные инструкции"}</a></div>
+    <p className="training-format" role="status">{notice}</p>
+    <details className="training-chapters"><summary>{en ? "Jump to a chapter" : "Перейти к главе"}</summary><ol>{training.scenes.map(scene => <li key={scene.id}><button type="button" onClick={() => void seek(scene.at)}><time>{time(scene.at)}</time><span>{scene.title[locale]}</span></button></li>)}</ol></details>
+    <details className="training-transcript"><summary>{en ? "Read the full transcript" : "Прочитать расшифровку"}</summary>{training.scenes.map(scene => <section key={scene.id}><h3>{scene.title[locale]}</h3><p>{scene.narration[locale]}</p></section>)}</details>
+    <details className="training-transcript"><summary>{en ? "About this guide and earlier material" : "О руководстве и предыдущих материалах"}</summary>
+      <p>{en ? "Instructional illustrations with offline synthetic narration, based on the v174 workflow. This is not a screen recording or proof of authenticated saves, AI execution or file delivery. Check results in your own case." : "Учебные иллюстрации с синтезированной локально озвучкой по рабочему процессу v174. Это не запись экрана и не подтверждение входа, сохранения, работы AI или получения файлов. Проверяйте результаты в своём кейсе."}</p>
+      <p>{en ? "Export case brief (.md) offers Working brief and Prepared brief. Prepared brief does not record human review or approval." : "Экспорт описания кейса (.md) предлагает рабочее и подготовленное описание. Подготовленное описание не фиксирует проверку или утверждение человеком."}</p>
+      <a href="/help/casevant-training-20261005-transcript.md" download>{en ? "Earlier Five Flats, Three Borders transcript · 5 October 2026" : "Предыдущий текст Five Flats, Three Borders · 5 октября 2026"}</a>
+    </details>
   </section>;
 }

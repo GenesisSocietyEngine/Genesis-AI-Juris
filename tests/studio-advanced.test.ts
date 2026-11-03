@@ -352,7 +352,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(css, /\.studio-submit-blocker\{/);
 });
 
-test("Help and the legacy demo route share the captioned 10-minute training with a full transcript, while legacy media remain available", () => {
+test("Help and the stable training route share the subtitle-free guide while historical media remain available", () => {
   const helpSource = readFileSync(new URL("../app/HelpCenter.tsx", import.meta.url), "utf8");
   const guidedSource = readFileSync(new URL("../app/StudioGuidedDemo.tsx", import.meta.url), "utf8");
   const trainingSource = readFileSync(new URL("../app/TrainingVideo.tsx", import.meta.url), "utf8");
@@ -360,19 +360,20 @@ test("Help and the legacy demo route share the captioned 10-minute training with
   for (const source of [helpSource, guidedSource]) assert.match(source, /<TrainingVideo locale=\{locale\}\/>/);
   assert.match(directPage, /<TrainingVideo\/>/);
   assert.match(directPage, /href="\/studio\?view=help"/);
-  assert.match(directPage, /10-minute Studio training/);
+  assert.match(directPage, /Current workflow training/);
   assert.equal((trainingSource.match(/<video\b/g) ?? []).length, 1);
-  assert.match(trainingSource, /controls preload="metadata" playsInline/);
+  assert.match(trainingSource, /controls preload="none" playsInline/);
   assert.doesNotMatch(trainingSource, /<video[^>]+autoPlay/);
   assert.match(trainingSource, /aria-describedby="training-format"/);
-  assert.match(trainingSource, /<track kind="captions" src="\/help\/casevant-training-20261005\.en\.vtt" srcLang="en" label="English" default/);
+  assert.doesNotMatch(trainingSource, /<track\b/);
   assert.match(trainingSource, /Video could not load\. Use the transcript or download link below/);
   assert.match(trainingSource, /Откройте расшифровку или скачайте MP4 ниже/);
   assert.match(trainingSource, /href="\/help\/casevant-training-20261005-transcript\.md" download/);
-  assert.match(trainingSource, /video\.current\.currentTime = seconds;\s*video\.current\.focus\(\)/, "chapter controls seek the video and return keyboard focus to it");
+  assert.match(trainingSource, /player\.currentTime = pending\.current/);
+  assert.match(trainingSource, /video\.current\.focus\(\)/);
   assert.match(trainingSource, /role="status">\{notice\}/);
   assert.match(trainingSource, /training\.scenes\.map\(scene => <section/, "the on-page transcript includes every training scene");
-  assert.match(trainingSource, /scene\.kind === "instruction" \? " · Instructions"/, "account instructions must not be presented as recorded completion");
+  assert.match(trainingSource, /not a screen recording or proof of authenticated saves/);
 
   const training = JSON.parse(readFileSync(new URL("../app/training-content.json", import.meta.url), "utf8")) as { durationSeconds: number; sceneDurationSeconds: number; canonicalTitle: string; scenes: { id: string; title: string; narration: string }[] };
   const transcript = readFileSync(new URL("../public/help/casevant-training-20261005-transcript.md", import.meta.url), "utf8");

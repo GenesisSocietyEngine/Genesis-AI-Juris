@@ -8,11 +8,12 @@ export function createRecordingMedia(path:string, io:{fetch:typeof fetch;create:
       if(url)return Promise.resolve(url);
       if(loading)return loading;
       loading=(async()=>{
-        if(!/^\/help\/scenarios-20261102\/(canopy|local-edit)\.mp4$/.test(path))throw new Error('Unknown recording');
+        const limit=path==='/help/training-20261103/guide.en.mp4'?8*1024*1024:/^\/help\/scenarios-20261102\/(canopy|local-edit)\.mp4$/.test(path)?1024*1024:0;
+        if(!limit)throw new Error('Unknown recording');
         const response=await io.fetch(path,{credentials:'omit',redirect:'error',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(15000)])});
         if(!response.ok||!/^video\/mp4(?:;|$)/i.test(response.headers.get('content-type')??''))throw new Error('Recording unavailable');
         const bytes=await response.arrayBuffer();
-        if(bytes.byteLength===0||bytes.byteLength>1024*1024)throw new Error('Recording size invalid');
+        if(bytes.byteLength===0||bytes.byteLength>limit)throw new Error('Recording size invalid');
         if(disposed)throw new Error('Recording closed');
         url=io.create(new Blob([bytes],{type:'video/mp4'}));return url;
       })().finally(()=>{loading=undefined;});

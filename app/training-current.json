@@ -1,0 +1,151 @@
+{
+  "title": {
+    "en": "CaseVant: the current workflow",
+    "ru": "CaseVant: актуальный рабочий процесс"
+  },
+  "date": "2026-11-03",
+  "sourceCommit": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+  "durationSeconds": 240,
+  "sceneDurationSeconds": 30,
+  "format": "Narrated workflow illustrations; not a screen recording or authenticated acceptance demonstration. No subtitles or burned-in narration.",
+  "video": "/help/training-20261103/guide.en.mp4",
+  "poster": "/help/training-20261103/poster.jpg",
+  "scenes": [
+    {
+      "id": "01",
+      "at": 0,
+      "title": {
+        "en": "Start with an independent case",
+        "ru": "Начните с отдельного кейса"
+      },
+      "steps": [
+        "Browse example cases",
+        "Choose a category",
+        "Open example case"
+      ],
+      "narration": {
+        "en": "Browse example cases and choose one of nine case categories. Topics and jurisdictions are separate filters. Open example case creates an independent working draft. You can also create a blank case, choose a template, or import a file. Keep existing work before replacing a draft. Project Canopy follows the same opening flow as other examples.",
+        "ru": "Откройте примеры и выберите одну из девяти категорий. Темы и юрисдикции — отдельные фильтры. Открытие примера создаёт самостоятельный рабочий черновик. Можно создать пустой кейс, выбрать шаблон или импортировать файл. Сохраните текущую работу перед заменой черновика. Canopy открывается так же, как другие примеры."
+      }
+    },
+    {
+      "id": "02",
+      "at": 30,
+      "title": {
+        "en": "Describe and review before applying",
+        "ru": "Опишите задачу и проверьте изменения"
+      },
+      "steps": [
+        "Describe your case",
+        "Review the proposal",
+        "Apply only intended changes"
+      ],
+      "narration": {
+        "en": "Describe the decision, your role, jurisdiction, deadline, known facts and desired outcome. Review proposed changes before applying them. Review without AI is a conditional local fallback; if it is not offered, edit manually in Decision. A complete canonical Markdown file uses Verify canonical case, then Apply exact case. An ordinary prompt is not exact restoration.",
+        "ru": "Опишите решение, роль, юрисдикцию, срок, известные факты и желаемый результат. Проверьте предложение до применения. Локальная проверка без AI доступна при определённых условиях; иначе редактируйте вручную в разделе «Решение». Полный канонический Markdown восстанавливается через проверку и применение точного кейса. Обычный текст не является точным восстановлением."
+      }
+    },
+    {
+      "id": "03",
+      "at": 60,
+      "title": {
+        "en": "Read the exact source",
+        "ru": "Прочитайте точный источник"
+      },
+      "steps": [
+        "Sources & evidence",
+        "Search and expand a document",
+        "Read its version and section"
+      ],
+      "narration": {
+        "en": "In Sources and evidence, search loaded titles, notes and text. Expand a document to read its full body and related nodes. A node can open its cited document version and section directly. Check missing, changed and hypothetical material before relying on it. Missing originals have no invented file. Text references and working records are not automatically accepted evidence.",
+        "ru": "В разделе «Источники и материалы» ищите по названиям, примечаниям и загруженному тексту. Раскройте документ для чтения и связанных узлов. Из узла можно открыть указанную версию и раздел источника. Проверьте пропуски, изменения и гипотезы. У отсутствующих оригиналов нет выдуманных файлов. Ссылки и рабочие записи не становятся принятыми доказательствами автоматически."
+      }
+    },
+    {
+      "id": "04",
+      "at": 90,
+      "title": {
+        "en": "Work with the decision map",
+        "ru": "Работайте с картой решений"
+      },
+      "steps": [
+        "Find a node or use List",
+        "Add from the left palette",
+        "Zoom in 10% steps"
+      ],
+      "narration": {
+        "en": "Use Decision to inspect the map or its list view. Find a node by its prefix or title. Click a type in the left Add node palette, or drag it onto the map. Zoom changes in ten percent steps. Manual placement, connections and edits belong to the working draft. Use Undo or Redo to inspect changes before saving. Hypothetical outcomes remain scenarios.",
+        "ru": "В разделе «Решение» изучайте карту или список. Найдите узел по номеру или названию. Нажмите тип в левой панели добавления или перетащите его на карту. Масштаб меняется шагами по десять процентов. Положение узлов, связи и правки относятся к черновику. Проверьте изменения через отмену и повтор до сохранения. Гипотетические исходы остаются сценариями."
+      }
+    },
+    {
+      "id": "05",
+      "at": 120,
+      "title": {
+        "en": "Preview evidence changes",
+        "ru": "Проверьте изменения материалов"
+      },
+      "steps": [
+        "Select working records",
+        "Choose action and destination",
+        "Apply, or Cancel"
+      ],
+      "narration": {
+        "en": "Select working records. Choose Attach, Move, or Disconnect. Check the count and exact destination, then Apply change. Cancel stops a pending change while access is checked. Switching case, node, language or access clears the old intent. Text stays in the library. Save separately; rearranging records does not accept or review evidence.",
+        "ru": "Выберите рабочие записи материалов. Укажите прикрепление, перенос или отсоединение; проверьте число записей, номер и название назначения. Применение меняет рабочий черновик. Во время проверки доступа можно отменить ожидавшее действие. Смена кейса, узла, языка или доступа отменяет старое намерение. Тексты остаются в библиотеке. Сохранение выполняется отдельно; перестановка записей не означает принятия или проверки доказательств."
+      }
+    },
+    {
+      "id": "06",
+      "at": 150,
+      "title": {
+        "en": "Follow a finding and return",
+        "ru": "Откройте замечание и вернитесь"
+      },
+      "steps": [
+        "Review: open a finding",
+        "Inspect node and cited passage",
+        "Back to review finding"
+      ],
+      "narration": {
+        "en": "In Review, the number to review opens completeness checks and their actions. These checks do not establish reliability or professional approval. Open a finding, inspect its node and read the cited passage when available. Use Back to review finding to return. A resolved finding or changed source context may clear that return. Keep assumptions, missing support and conditional findings explicit.",
+        "ru": "В разделе «Проверка» счётчик замечаний открывает проверки полноты и действия. Они не подтверждают достоверность или профессиональное утверждение. Откройте замечание, изучите узел и доступный цитируемый фрагмент. Вернитесь к замечанию явной кнопкой. Если замечание устранено или источник изменился, старая точка возврата может исчезнуть. Сохраняйте явные гипотезы, пропуски и условные выводы."
+      }
+    },
+    {
+      "id": "07",
+      "at": 180,
+      "title": {
+        "en": "Save, confirm and reopen",
+        "ru": "Сохраните, подтвердите и откройте снова"
+      },
+      "steps": [
+        "Save in the header",
+        "Wait for Saved to workspace",
+        "My cases → Personal"
+      ],
+      "narration": {
+        "en": "Use Save in the header. Sign in with the intended account and complete the requested profile if necessary. Wait for Saved to workspace. Reopen the saved version from My cases, Personal, and inspect its content in another tab. Keep the original tab until verified. Further edits need another confirmed save. A save conflict preserves your edits; do not overwrite another version blindly.",
+        "ru": "Используйте сохранение в заголовке. Войдите в нужный аккаунт и при необходимости заполните профиль. Дождитесь подтверждения сохранения. Откройте версию из «Мои кейсы → Личные» и проверьте содержимое в другой вкладке. Не закрывайте исходную вкладку до проверки. Новые правки требуют нового подтверждённого сохранения. При конфликте сохраняйте правки и не перезаписывайте другую версию вслепую."
+      }
+    },
+    {
+      "id": "08",
+      "at": 210,
+      "title": {
+        "en": "Inspect exports and preserve recovery",
+        "ru": "Проверьте экспорт и возможность восстановления"
+      },
+      "steps": [
+        "Reports: Base / Medium / Full",
+        "Open the actual downloaded file",
+        "Preserve the original version"
+      ],
+      "narration": {
+        "en": "Choose Base, Medium or Full analysis in Reports. Preview, download and open the actual PDF. Full analysis deliberately retains the complete record; it is not the default Base report. Case JSON requires saved-version and access checks. Preserve original files for recovery, including unsupported historical versions. Saving and exporting do not grant professional approval.",
+        "ru": "В разделе «Отчёты» выберите базовый, средний или полный анализ. Просмотрите PDF, затем скачайте и откройте сам файл. Полный анализ намеренно содержит всю запись и не является базовым отчётом по умолчанию. Для JSON действуют проверки сохранённой версии и доступа. Храните оригиналы для восстановления, включая неподдерживаемые исторические версии. Сохранение и экспорт не означают профессионального утверждения."
+      }
+    }
+  ]
+}
