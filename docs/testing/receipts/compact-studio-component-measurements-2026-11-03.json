@@ -1,0 +1,237 @@
+{
+  "scope": "Component SSR plus native closed-details visibility model; not browser pixels, interaction or retrieval timing",
+  "before": {
+    "scope": "Component SSR plus native closed-details visibility model; not browser pixels, interaction or retrieval timing",
+    "sourceRef": "6430adf709fa04ab2b41fb64f560614096417345",
+    "sourceHashes": {
+      "app/StudioFirstCaseGuide.tsx": "ed0c07dee0d8a86ff565fd75bed07d9301e6844596c43423c74855602c2ccf28",
+      "app/StudioCitedPassages.tsx": "37ea6438c96f1568edd3cb93cc1fa3461c7181f7311606ecb7990a7292030095"
+    },
+    "guide": {
+      "en": {
+        "empty": {
+          "visibleTextCharacters": 208,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "untitled": {
+          "visibleTextCharacters": 147,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "unsaved": {
+          "visibleTextCharacters": 229,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "saved": {
+          "visibleTextCharacters": 63,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 0
+        },
+        "oversized": {
+          "visibleTextCharacters": 307,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "saving": {
+          "visibleTextCharacters": 222,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        }
+      },
+      "ru": {
+        "empty": {
+          "visibleTextCharacters": 212,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "untitled": {
+          "visibleTextCharacters": 142,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "unsaved": {
+          "visibleTextCharacters": 247,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "saved": {
+          "visibleTextCharacters": 61,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 0
+        },
+        "oversized": {
+          "visibleTextCharacters": 319,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        },
+        "saving": {
+          "visibleTextCharacters": 244,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 1
+        }
+      }
+    },
+    "reader": {
+      "en": {
+        "closed": {
+          "visibleTextCharacters": 172,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 1
+        },
+        "open": {
+          "visibleTextCharacters": 572,
+          "nativeButtons": 3,
+          "disclosureSummaries": 1,
+          "headings": 2
+        }
+      },
+      "ru": {
+        "closed": {
+          "visibleTextCharacters": 187,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 1
+        },
+        "open": {
+          "visibleTextCharacters": 585,
+          "nativeButtons": 3,
+          "disclosureSummaries": 1,
+          "headings": 2
+        }
+      }
+    },
+    "sectionSha256": "946dc16018f0e9c1f1799b873e9259d32c9150864003c00428f63e98abfafbfd"
+  },
+  "after": {
+    "scope": "Component SSR plus native closed-details visibility model; not browser pixels, interaction or retrieval timing",
+    "sourceRef": "working-tree",
+    "sourceHashes": {
+      "app/StudioFirstCaseGuide.tsx": "8fb04fceb0e0af7c393cdc1180d3afbecfc5b533bf85daaa1f6dd089595b8ac2",
+      "app/StudioCitedPassages.tsx": "47188374d70324c882c7f56c6d3ff3f3194ced0bb1f3d217b0e6794e8c9cbaa7"
+    },
+    "guide": {
+      "en": {
+        "empty": {
+          "visibleTextCharacters": 76,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "untitled": {
+          "visibleTextCharacters": 53,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "unsaved": {
+          "visibleTextCharacters": 54,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "saved": {
+          "visibleTextCharacters": 0,
+          "nativeButtons": 0,
+          "disclosureSummaries": 0,
+          "headings": 0
+        },
+        "oversized": {
+          "visibleTextCharacters": 132,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "saving": {
+          "visibleTextCharacters": 62,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        }
+      },
+      "ru": {
+        "empty": {
+          "visibleTextCharacters": 75,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "untitled": {
+          "visibleTextCharacters": 51,
+          "nativeButtons": 1,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "unsaved": {
+          "visibleTextCharacters": 64,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "saved": {
+          "visibleTextCharacters": 0,
+          "nativeButtons": 0,
+          "disclosureSummaries": 0,
+          "headings": 0
+        },
+        "oversized": {
+          "visibleTextCharacters": 136,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        },
+        "saving": {
+          "visibleTextCharacters": 76,
+          "nativeButtons": 0,
+          "disclosureSummaries": 1,
+          "headings": 0
+        }
+      }
+    },
+    "reader": {
+      "en": {
+        "closed": {
+          "visibleTextCharacters": 90,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 1
+        },
+        "open": {
+          "visibleTextCharacters": 456,
+          "nativeButtons": 3,
+          "disclosureSummaries": 1,
+          "headings": 2
+        }
+      },
+      "ru": {
+        "closed": {
+          "visibleTextCharacters": 108,
+          "nativeButtons": 1,
+          "disclosureSummaries": 0,
+          "headings": 1
+        },
+        "open": {
+          "visibleTextCharacters": 489,
+          "nativeButtons": 3,
+          "disclosureSummaries": 1,
+          "headings": 2
+        }
+      }
+    },
+    "sectionSha256": "946dc16018f0e9c1f1799b873e9259d32c9150864003c00428f63e98abfafbfd"
+  }
+}

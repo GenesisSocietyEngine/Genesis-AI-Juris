@@ -15,7 +15,7 @@ const bundle=await build({entryPoints:['app/StudioCitedPassages.tsx'],bundle:tru
 }}]});mkdirSync('.artifacts/cited-passages-ui',{recursive:true});const path=resolve('.artifacts/cited-passages-ui/component.mjs');writeFileSync(path,bundle.outputFiles[0].text);const Component=(await import(pathToFileURL(path).href)).default;
 function elements(v:unknown):Element[]{if(Array.isArray(v))return v.flatMap(elements);if(!v||typeof v!=='object'||!('props'in v))return[];const e=v as Element;return[e,...elements(e.props.children)];}
 function text(v:unknown):string{if(Array.isArray(v))return v.map(text).join(' ');if(typeof v==='string'||typeof v==='number')return String(v);return v&&typeof v==='object'&&'props'in v?text((v as Element).props.children):'';}
-function button(tree:unknown,label:string){const e=elements(tree).find(e=>e.type==='button'&&text(e).includes(label));assert.ok(e,label);return e;}
+function button(tree:unknown,label:string){const e=elements(tree).find(e=>e.type==='button'&&String(e.props['aria-label']??text(e)).includes(label));assert.ok(e,label);return e;}
 const citation:StudioMaterialCitation={id:'D01:v1:Mandate',document:'D01',version:1,section:'Mandate',text:'Exact fictional source: café — retained bytes.',verbatimInNode:true,selectedInSourceScenario:true};
 function fixture(locale:'en'|'ru'='en',returning=true){const runtime={hooks:hooks(),hold:undefined as Promise<void>|undefined,fail:false};globals.__citedUi=runtime;let context:object={},citations=[citation],returns=0;const focuses:string[]=[];
  const trigger={isConnected:true,focus(){focuses.push('trigger');},scrollIntoView(){}};const root={contains:(x:unknown)=>x===trigger},passage={focus(){focuses.push('passage');},scrollIntoView(){}};
@@ -25,7 +25,7 @@ function fixture(locale:'en'|'ru'='en',returning=true){const runtime={hooks:hook
 
 for(const locale of ['en','ru'] as const)test(`${locale}: one source control opens literal text, hashes shown bytes and returns through the provided Review action`,async()=>{
  const f=fixture(locale),before=JSON.stringify(citation);
- try{let tree=f.render();assert.equal(elements(tree).filter(e=>e.props.tabIndex===-1).length,0);const open=button(tree,locale==='en'?'Read cited passage:':'Открыть цитируемый фрагмент:');(open.props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();assert.ok(text(tree).includes(citation.text!));assert.equal(f.focuses[0],'passage');
+ try{let tree=f.render();assert.equal(elements(tree).filter(e=>e.props.tabIndex===-1).length,0);const open=button(tree,locale==='en'?'Read D01':'Открыть D01');(open.props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();assert.ok(text(tree).includes(citation.text!));assert.equal(f.focuses[0],'passage');
  const hash=await materialHash(citation.text!);tree=await f.settle(t=>text(t).includes(hash));assert.equal(f.focuses.filter(x=>x==='passage').length,1,'hash completion must not refocus the reader');
  (button(tree,locale==='en'?'Back to review finding':'Вернуться к замечанию').props.onClick as ()=>void)();assert.equal(f.returns,1);assert.equal(JSON.stringify(citation),before);
  (button(tree,locale==='en'?'Close passage':'Закрыть фрагмент').props.onClick as ()=>void)();tree=f.render();assert.equal(elements(tree).filter(e=>e.props.tabIndex===-1).length,0);assert.equal(f.focuses.at(-1),'trigger');
@@ -34,24 +34,40 @@ for(const locale of ['en','ru'] as const)test(`${locale}: one source control ope
 
 test('changed source/access context conceals prior text, rejects stale callbacks and cancels a late hash',async()=>{
  const f=fixture();let release!:()=>void;f.runtime.hold=new Promise<void>(r=>release=r);
- try{let tree=f.render();(button(tree,'Read cited passage:').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();const staleReturn=button(tree,'Back to review finding').props.onClick as ()=>void,staleClose=button(tree,'Close passage').props.onClick as ()=>void;
+ try{let tree=f.render();(button(tree,'Read D01').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();const staleReturn=button(tree,'Back to review finding').props.onClick as ()=>void,staleClose=button(tree,'Close passage').props.onClick as ()=>void;
  f.replace([{...citation,text:'Different current source bytes.'}]);tree=f.render();assert.equal(elements(tree).filter(e=>e.props.tabIndex===-1).length,0);staleReturn();staleClose();assert.equal(f.returns,0);assert.deepEqual(f.focuses,['passage']);release();await new Promise(r=>setTimeout(r,10));assert.ok(!text(f.render()).includes(citation.text!));
  }finally{release?.();f.close();}
 });
 
 test('unavailable exact versions have no opening/hash action and standalone reading invents no Review origin',()=>{
  const f=fixture('en',false);try{f.setCitations([{...citation,id:'D01:v99:Mandate',version:99,text:null,verbatimInNode:false}]);let tree=f.render();assert.match(text(tree),/v\s*99/);assert.match(text(tree),/No substitute version/);assert.equal(elements(tree).filter(e=>e.type==='button').length,0);
- f.setCitations([citation]);tree=f.render();(button(tree,'Read cited passage:').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();assert.ok(!text(tree).includes('Back to review finding'));assert.ok(button(tree,'Close passage'));
+ f.setCitations([citation]);tree=f.render();(button(tree,'Read D01').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();assert.ok(!text(tree).includes('Back to review finding'));assert.ok(button(tree,'Close passage'));
  }finally{f.close();}
 });
 
 test('node mismatch stays qualified and hash failures never imply verification or approval',async()=>{
- const f=fixture();f.runtime.fail=true;try{f.setCitations([{...citation,verbatimInNode:false,selectedInSourceScenario:false}]);let tree=f.render();(button(tree,'Read cited passage:').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=await f.settle(t=>text(t).includes('Hash unavailable'));assert.match(text(tree),/not present verbatim/);assert.match(text(tree),/Other retained version/);assert.match(text(tree),/does not accept the evidence/);assert.ok(!text(tree).includes('approved source'));}finally{f.close();}
+ const f=fixture();f.runtime.fail=true;try{f.setCitations([{...citation,verbatimInNode:false,selectedInSourceScenario:false}]);let tree=f.render();(button(tree,'Read D01').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=await f.settle(t=>text(t).includes('Hash unavailable'));assert.match(text(tree),/not present verbatim/);assert.match(text(tree),/Other retained version/);assert.match(text(tree),/does not accept the evidence/);assert.ok(!text(tree).includes('approved source'));}finally{f.close();}
 });
 
 
 test('a passage that becomes unavailable in the same context rejects old reader callbacks',()=>{
- const f=fixture();try{let tree=f.render();(button(tree,'Read cited passage:').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();const oldReturn=button(tree,'Back to review finding').props.onClick as ()=>void,oldClose=button(tree,'Close passage').props.onClick as ()=>void;
+ const f=fixture();try{let tree=f.render();(button(tree,'Read D01').props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();const oldReturn=button(tree,'Back to review finding').props.onClick as ()=>void,oldClose=button(tree,'Close passage').props.onClick as ()=>void;
  f.setCitations([]);assert.equal(f.render(),null);oldReturn();oldClose();assert.equal(f.returns,0);assert.deepEqual(f.focuses,['passage']);
+ }finally{f.close();}
+});
+
+for(const locale of ['en','ru'] as const)test(`${locale}: compact citations retain visible qualifications and full literal text`,()=>{
+ const f=fixture(locale);try{
+  f.setCitations([{...citation,verbatimInNode:false,selectedInSourceScenario:false}]);let tree=f.render();
+  const open=button(tree,locale==='en'?'Read D01':'Открыть D01');
+  assert.ok(text(open).length<String(open.props['aria-label']).length);
+  assert.ok(String(open.props['aria-label']).replace(/\s/g,'').startsWith(text(open).replace(/\s/g,'')),'accessible name starts with the complete visible label');
+  assert.ok(text(tree).includes(locale==='en'?'not accepted evidence':'не принятое доказательство'));
+  (open.props.onClick as (e:unknown)=>void)({currentTarget:f.trigger});tree=f.render();
+  const literal=elements(tree).find(e=>e.props.lang==='en');assert.ok(literal);assert.equal(text(literal),citation.text);
+  const details=elements(tree).filter(e=>e.type==='details');assert.equal(details.length,1);assert.equal(details[0].props.open,undefined);
+  const visible=elements(tree).filter(e=>e.type==='p'&&!elements(details[0]).includes(e)).map(text).join(' ');
+  assert.ok(visible.includes(locale==='en'?'scenario unchanged':'сценарий не изменён'));
+  assert.ok(visible.includes(locale==='en'?'Node text differs':'Текст узла отличается'));
  }finally{f.close();}
 });

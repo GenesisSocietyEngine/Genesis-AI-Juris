@@ -74,3 +74,7 @@
   .selectionSpace{display:none}
   .selectionSpace~.fileDownload{margin-left:18px}
 }
+
+.citationList { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; margin: .5rem 0; padding: 0; }
+.citationList > li { min-width: 0; max-width: 100%; }
+.citationList button { min-height: 44px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: start; }

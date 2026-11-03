@@ -51,21 +51,23 @@ export default function StudioCitedPassages({ citations, context, locale, onRetu
     }
   }
   return <section ref={root} aria-label={t("Cited passages for this node", "Цитируемые фрагменты этого узла")}>
-    <h4>{t("Read the cited passage", "Прочитайте цитируемый фрагмент")}</h4>
-    <p className={styles.meta}>{t("Retained fictional reference text in English. Reading it does not accept the evidence or approve the conclusion.", "Сохранённый вымышленный источник на английском. Просмотр не подтверждает доказательство и не утверждает вывод.")}</p>
-    <ul className={styles.rows}>{citations.map(item => <li key={item.id}>
-      {item.text !== null ? <button type="button" className={styles.secondary} onClick={event => { if (currentContext.current === context) setReading({ context, id: item.id, text: item.text!, trigger: event.currentTarget }); }}>
-        {t("Read cited passage: ", "Открыть цитируемый фрагмент: ")}{item.document} v{item.version} § {item.section}
+    <h4>{t("Cited passages", "Цитируемые фрагменты")}</h4>
+    <p className={styles.meta}>{t("Fictional reference · English · not accepted evidence", "Вымышленный источник · английский · не принятое доказательство")}</p>
+    <ul className={styles.citationList}>{citations.map(item => <li key={item.id}>
+      {item.text !== null ? <button type="button" className={styles.secondary} aria-label={`${t("Read ", "Открыть ")}${item.document} v${item.version} § ${item.section}${t(" — cited passage", " — цитируемый фрагмент")}`} onClick={event => { if (currentContext.current === context) setReading({ context, id: item.id, text: item.text!, trigger: event.currentTarget }); }}>
+        {t("Read ", "Открыть ")}{item.document} v{item.version} § {item.section}
       </button> : <><strong>{item.document} v{item.version} § {item.section}</strong><p>{t("Exact retained passage unavailable. No substitute version has been opened.", "Точный сохранённый фрагмент недоступен. Другая версия не была подставлена.")}</p></>}
     </li>)}</ul>
     {active && <section ref={passage} tabIndex={-1} className={`${styles.notice} ${styles.reviewTitle}`} aria-label={t("Cited passage", "Цитируемый фрагмент")}>
       <h4>{active.document} v{active.version} § {active.section}</h4>
       <p className={styles.meta}>{active.selectedInSourceScenario
-        ? t("Version selected by the source scenario. Working changes still require reassessment.", "Версия выбрана исходным сценарием. Рабочие изменения требуют пересмотра.")
-        : t("Other retained version. Reading it does not change the source scenario.", "Другая сохранённая версия. Просмотр не меняет исходный сценарий.")}</p>
+        ? t("Source scenario version · reassess working changes", "Версия исходного сценария · проверьте рабочие изменения")
+        : t("Other retained version · scenario unchanged", "Другая сохранённая версия · сценарий не изменён")}</p>
       <p className={styles.materialText} lang="en">{active.text}</p>
-      {!active.verbatimInNode && <p>{t("The full cited passage is not present verbatim in this node. Review the relationship before relying on it.", "Полный цитируемый фрагмент не содержится в узле дословно. Проверьте связь перед использованием.")}</p>}
+      {!active.verbatimInNode && <p>{t("Node text differs from this passage · check the link before relying on it", "Текст узла отличается · проверьте связь перед использованием")}</p>}
       <details><summary>{t("Source identity and integrity", "Идентификатор и целостность источника")}</summary>
+        <p>{t("Retained fictional reference text in English. Reading it does not accept the evidence or approve the conclusion.", "Сохранённый вымышленный источник на английском. Просмотр не подтверждает доказательство и не утверждает вывод.")}</p>
+        {!active.verbatimInNode && <p>{t("The full cited passage is not present verbatim in this node. Review the relationship before relying on it.", "Полный цитируемый фрагмент не содержится в узле дословно. Проверьте связь перед использованием.")}</p>}
         <p>{active.document} v{active.version} § {active.section}</p>
         <p>{t("SHA-256 of the displayed section text", "SHA-256 показанного текста фрагмента")}</p>
         <p className={styles.materialText}><code>{shownHash ? shownHash.hash ?? t("Hash unavailable", "Хеш недоступен") : t("Calculating…", "Вычисление…")}</code></p>
