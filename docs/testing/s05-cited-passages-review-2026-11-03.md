@@ -1,5 +1,8 @@
 # S05 exact cited-passage reader audit — 3 November 2026
 
+**Delivered — public v172.** Runtime `254a3da269f20aecdf3abdd4776ec5df60bdeed6`; [native receipt](receipts/cited-passages-v172-2026-11-03.json). Blocked browser interaction remains an explicit acceptance limit; no fresh focus/keyboard/narrow or production journey pass is inferred. Candidate notes below are retained review history.
+
+
 ## Starting state and intended outcome
 
 Clean canonical main `17c029e227e1c7c61a77eaab1c73364da523191d` matches remote main. Existing public Sites v171 runs `9b9c50893803fa31d8e315925ad8c98d2d09f8c0`; both public release endpoints and all 580 application/hosting receipts match, with only documentation differences. Native Sites metadata and the supported source-helper opening were verified before editing. This slice owns exact citation reading in the selected-node materials panel; no production case, account or browser tab is accessed.
@@ -37,3 +40,14 @@ Require ordinary source review, full candidate and exact-main web/PDF gates, exa
 When authorized Chrome becomes available, use isolated synthetic work only: verify actor/case/source first; select a specific Review finding, its node and declared passage; observe document/version/section, literal body, selected/retained and mismatch status, focus/scroll, digest and explicit return to the same current finding. Record every deliberate opening/return action; repeat EN/RU/narrow, source/access changes, unknown version and Close/Back/Forward. One control plus one explicit return is a local interaction design, not measured production acceptance or proof of the 30-second/80% hypotheses.
 
 Reproduce further S05 gaps before changing them. Actual original-body acquisition and governed dossier source/approval review remain separate work. Keep missing-source disclosures until permitted originals exist. Manual choice and measured density/locale refinements remain separate later slices; no governed edit merging, provider processing, disposal, analytics, pricing or outreach is added. S05 remains partially delivered until its blocked acceptance is observed.
+
+
+## Final delivery review
+
+PR207 is normally integrated. Candidate and exact-main gates pass: 1867passed/0fail/3inherited skips plus2HTML, strict types/lint/history/contracts, packaged browser/Worker/tax,47-report/bilingual/tax PDF locks and zero findings in both audits. Exact-main CI digest/source/tree/all581inputs match before adoption. Existing public Sites deployment succeeds; both origins verify189/189current/retained assets and exact runtime. Audience, environment42/all13 returned entry representations and storage bindings are unchanged. Only v171 current-manifest client assets are retained.
+
+An early local adoption attempt was refused because the archive download had not completed; no output was adopted. Adoption was repeated only after successful digest verification and complete source/tree/input matching. This was an execution-order correction, not a product defect or a bypassed release gate.
+
+The62focused checks exercise the literal source/reader/root callback path, precise section digests, retained/unknown/mismatched source and record states, pending reads, scoped Close/Review return, disappearance/late-digest refusal and all existing S05/archive/carrier protections. Sources, archive entries, case formats, model/approval data, aggregates, save/CAS/seal/recovery and reports remain unchanged. No production case or browser tab was accessed. Component/DOM scheduling is modeled; fresh browser focus/scroll/keyboard/narrow/reading/action-count acceptance remains blocked without retry. No complete S05 or commercial-readiness pass is claimed.
+
+Native workflow state is recorded independently under the standing web-only rollout authorization. The existing100-item PR attachment limit affects inline attachment only; ordinary review links remain valid and no old artifact is removed. Documentation closure changes no application/hosting inputs and receives no duplicate Sites deployment. Continue the bounded S05/source-acquisition and earlier S03/operator limits under the amended instructions.
