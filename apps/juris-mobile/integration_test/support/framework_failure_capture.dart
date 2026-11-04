@@ -11,7 +11,7 @@ final class FrameworkFailureCapture {
   });
 
   final FlutterExceptionHandler delegate;
-  final Map<String, Object?> Function() snapshot;
+  final Map<String, Object?> Function(FlutterErrorDetails) snapshot;
   final Map<String, Object?> Function()? baseSnapshot;
   final void Function(Map<String, Object?>) publish;
   final List<Map<String, Object?>> _records = [];
@@ -34,8 +34,8 @@ final class FrameworkFailureCapture {
           metrics['base_snapshot_error_type'] = '${error.runtimeType}';
         }
         try {
-          metrics.addAll(
-              snapshot().map((key, value) => MapEntry(key, _jsonValue(value))));
+          metrics.addAll(snapshot(details)
+              .map((key, value) => MapEntry(key, _jsonValue(value))));
         } on Object catch (error) {
           metrics['snapshot_error_type'] = '${error.runtimeType}';
         }

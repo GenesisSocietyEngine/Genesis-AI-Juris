@@ -23,6 +23,8 @@ The collector still forwards every original framework error, marks evidence unac
 
 No production UI, input/storage format, assertions, source/PID/nonce/bundle checks, VM authentication, 900/300-second deadlines or six-phase data checks change. Do not clamp unknown geometry. Next: validate the collector tests and execute the real native journey; if the assertion recurs, use the failed frame's complete raw/derived evidence to correct only the demonstrated cause.
 
+The first candidate's real-Dialog regression fails: the widget finder cannot see the element during its initial failed build. Its two raw/optional preservation regressions pass. The revised collector receives the original error details and prioritizes Flutter's supplied `DiagnosticsDebugCreator` element, falling back to a bounded widget-tree search. [The pinned framework](https://github.com/flutter/flutter/blob/058e0af2c2/packages/flutter/lib/src/widgets/framework.dart) reports that creator before attaching the newly built child. The regression requires this exact origin and the negative derived padding; it is not weakened to accept an empty dialog list. Original failed CI run 41756651976 remains retained.
+
 ## Help activation investigation
 
 Five fresh-tab first pointer activations without prior playback succeed:

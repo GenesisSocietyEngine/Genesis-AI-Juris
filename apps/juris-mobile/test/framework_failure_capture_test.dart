@@ -20,7 +20,7 @@ void main() {
           'phase': 'legacy-write',
           'view_insets': {'bottom': -30.0, 'top': double.nan},
         },
-        snapshot: () => throw FlutterError('deactivated dialog context'),
+        snapshot: (_) => throw FlutterError('deactivated dialog context'),
         publish: (_) {},
       );
       capture.handle(original);
@@ -40,7 +40,7 @@ void main() {
       final capture = FrameworkFailureCapture(
         delegate: (_) {},
         baseSnapshot: () => throw StateError('view unavailable'),
-        snapshot: () => {
+        snapshot: (_) => {
           'dialog_view_insets': {'bottom': -30.0},
         },
         publish: (_) {},
@@ -64,7 +64,7 @@ void main() {
           originalHandler(details);
         },
         baseSnapshot: () => captureViewGeometry(tester),
-        snapshot: () => captureDialogGeometry(tester),
+        snapshot: (details) => captureDialogGeometry(tester, details),
         publish: (_) {},
       );
       FlutterError.onError = capture.handle;
@@ -87,6 +87,7 @@ void main() {
         final metrics = record['metrics'] as Map;
         expect(metrics['view_insets']['bottom'], 0.0);
         final dialog = (metrics['dialogs'] as List).single as Map;
+        expect(dialog['capture_source'], 'flutter_error_creator');
         expect(dialog['dialog_view_insets']['bottom'], -30.0);
         expect(dialog['resolved_inset_padding']['bottom'], 24.0);
         expect(dialog['derived_effective_padding']['bottom'], -6.0);
@@ -105,7 +106,7 @@ void main() {
     final original = FlutterErrorDetails(exception: AssertionError('padding'));
     final capture = FrameworkFailureCapture(
       delegate: (details) => forwarded = details,
-      snapshot: () => {
+      snapshot: (_) => {
         'device_pixel_ratio': double.nan,
         'view_insets': {'bottom': double.negativeInfinity, 'top': -30.0},
         'sizes': [double.infinity, 402.0],
@@ -131,7 +132,7 @@ void main() {
     final original = StateError('synthetic rendering failure');
     final capture = FrameworkFailureCapture(
       delegate: originalHandler,
-      snapshot: () => {},
+      snapshot: (_) => {},
       publish: (_) {},
     );
     FlutterError.onError = capture.handle;
@@ -149,7 +150,7 @@ void main() {
     Map<String, Object?>? published;
     final FrameworkFailureCapture capture = FrameworkFailureCapture(
       delegate: forwarded.add,
-      snapshot: () => {'phase': 'legacy-write', 'bottom': -30.0},
+      snapshot: (_) => {'phase': 'legacy-write', 'bottom': -30.0},
       publish: (value) => published = value,
     );
     final FlutterErrorDetails original = FlutterErrorDetails(
@@ -171,7 +172,7 @@ void main() {
     int forwards = 0;
     final capture = FrameworkFailureCapture(
       delegate: (_) => forwards++,
-      snapshot: () => {},
+      snapshot: (_) => {},
       publish: (_) {},
     );
     for (int index = 0; index < 7; index++) {
@@ -195,7 +196,7 @@ void main() {
       final original = FlutterErrorDetails(exception: StateError('primary'));
       final capture = FrameworkFailureCapture(
         delegate: (details) => forwarded = details,
-        snapshot: () => snapshotThrows ? throw StateError('metrics') : {},
+        snapshot: (_) => snapshotThrows ? throw StateError('metrics') : {},
         publish: (_) => throw StateError('publication'),
       );
       capture.handle(original);

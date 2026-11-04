@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show DiagnosticsDebugCreator;
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, Object?> _edges(dynamic value) => {
@@ -24,12 +25,40 @@ Map<String, Object?> captureViewGeometry(WidgetTester tester) {
 /// Inspect the actual Dialog elements, rather than the first AlertDialog's
 /// possibly deactivated ancestor. Optional lookup failures must not erase raw
 /// view metrics or the original framework exception.
-Map<String, Object?> captureDialogGeometry(WidgetTester tester) {
+Map<String, Object?> captureDialogGeometry(
+    WidgetTester tester, FlutterErrorDetails details) {
+  final Map<String, Object?> result = {};
+  final Map<Element, String> candidates = Map<Element, String>.identity();
+  // During first build the failing element may not yet be attached to its
+  // parent's child list. Flutter supplies that exact element in error details.
+  try {
+    for (final DiagnosticsNode node
+        in details.informationCollector?.call() ?? <DiagnosticsNode>[]) {
+      if (node is DiagnosticsDebugCreator && node.value is DebugCreator) {
+        final Element element = (node.value as DebugCreator).element;
+        if (element.mounted && element.widget is Dialog) {
+          candidates[element] = 'flutter_error_creator';
+        }
+      }
+    }
+  } on Object catch (error) {
+    result['error_creator_lookup_error_type'] = '${error.runtimeType}';
+  }
+  try {
+    for (final Element element
+        in find.byType(Dialog, skipOffstage: false).evaluate().take(4)) {
+      candidates.putIfAbsent(element, () => 'widget_tree');
+    }
+  } on Object catch (error) {
+    result['tree_lookup_error_type'] = '${error.runtimeType}';
+  }
   final List<Map<String, Object?>> dialogs = [];
-  for (final Element element
-      in find.byType(Dialog, skipOffstage: false).evaluate().take(4)) {
+  for (final MapEntry<Element, String> candidate
+      in candidates.entries.take(4)) {
+    final Element element = candidate.key;
     final Dialog widget = element.widget as Dialog;
     final Map<String, Object?> metrics = {
+      'capture_source': candidate.value,
       'mounted': element.mounted,
       if (widget.insetPadding != null)
         'widget_inset_padding': _edges(widget.insetPadding),
@@ -63,7 +92,7 @@ Map<String, Object?> captureDialogGeometry(WidgetTester tester) {
     }
     dialogs.add(metrics);
   }
-  final Map<String, Object?> result = {'dialogs': dialogs};
+  result['dialogs'] = dialogs;
   try {
     result['focused_widget_type'] =
         '${FocusManager.instance.primaryFocus?.context?.widget.runtimeType}';

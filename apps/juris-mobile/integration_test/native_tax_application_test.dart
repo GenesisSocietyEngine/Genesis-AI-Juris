@@ -80,7 +80,7 @@ void main() {
         'checkpoint': _checkpoints.current,
         ...captureViewGeometry(tester),
       },
-      snapshot: () => captureDialogGeometry(tester),
+      snapshot: (details) => captureDialogGeometry(tester, details),
       publish: (evidence) {
         binding.reportData = {
           ...?binding.reportData,
