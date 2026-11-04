@@ -213,11 +213,11 @@
       "status": "completed"
     },
     {
-      "conclusion": "",
+      "conclusion": "success",
       "databaseId": 41807362081,
       "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
       "name": "iOS Native FFI",
-      "status": "in_progress"
+      "status": "completed"
     },
     {
       "conclusion": "failure",
@@ -227,7 +227,7 @@
       "status": "completed"
     }
   ],
-  "nativeWorkflowSnapshotAt": "2026-11-04T09:58:43.259342+00:00",
+  "nativeWorkflowSnapshotAt": "2026-11-04T10:08:49.675527+00:00",
   "screenshots": [
     {
       "path": ".artifacts/sidebar-actions-20261104/prod-v176-desktop-en.jpg",
