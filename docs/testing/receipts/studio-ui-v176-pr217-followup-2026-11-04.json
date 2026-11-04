@@ -1,0 +1,90 @@
+{
+  "schema": "casevant.audit.pr217-followup.v1",
+  "date": "2026-11-04",
+  "runtimeSource": "5e5840e23ac1da4141741accc178032a3273594b",
+  "prHeadBeforeAmendment": "baacb2d68b386186c737314e0991e355e445a646",
+  "sourcePreservation": {
+    "productionWrites": 0,
+    "existingTabsClaimed": 0,
+    "previewRestarted": false
+  },
+  "responsive": {
+    "forcedViewport": {
+      "width": 390,
+      "height": 640,
+      "documentWidth": 371,
+      "scrollWidth": 371,
+      "fullCapture": "timeout after 5000ms",
+      "clippedCapture": "returned repeated image tiles; not visual acceptance",
+      "compensatedClip": "timeout after 5000ms"
+    },
+    "resetViewport": {
+      "width": 464,
+      "height": 800,
+      "documentWidth": 445,
+      "scrollWidth": 445,
+      "capture": "valid native-size EN workflow and RU file drawer images"
+    },
+    "overrideReset": true
+  },
+  "console": {
+    "initialErrors": 0,
+    "finalErrors": 4,
+    "messageClass": "asynchronous message channel closed before response",
+    "initiator": "not supplied",
+    "cause": "unattributed",
+    "productPatch": false
+  },
+  "ci": {
+    "editorRestartRun": 41812300264,
+    "attempt1": "Rust toolchain download DNS failure before application exercise; artifact upload ENOTFOUND",
+    "attempt2": "rerun requested; pending at amendment preparation",
+    "nativeSmokeRun": 41812299745,
+    "nativeSmoke": "success"
+  },
+  "artifacts": [
+    {
+      "path": ".artifacts/pr217-closure-20261104/production-reset-viewport.jpg",
+      "bytes": 43315,
+      "sha256": "336b54d6c25147b98fe6c20a0e9a48c4cccc9b044ea942c7b1d3b4516466236a",
+      "acceptance": null
+    },
+    {
+      "path": ".artifacts/pr217-closure-20261104/production-narrow-workflow-en.jpg",
+      "bytes": 33310,
+      "sha256": "72f780c2fc820f7037e45ee34ee6670a63aed03164ac8c607514ced245e33554",
+      "acceptance": null
+    },
+    {
+      "path": ".artifacts/pr217-closure-20261104/production-narrow-drawer-ru.jpg",
+      "bytes": 31421,
+      "sha256": "1d9185a6f78e05609794f37f9e1a52942ad41f606d4fa1bd45785c23ca82272e",
+      "acceptance": null
+    },
+    {
+      "path": ".artifacts/pr217-closure-20261104/narrow-clip-capture-anomaly.jpg",
+      "bytes": 64027,
+      "sha256": "8d6c9ee1a852c243961fb6b82abfa2bc11c25c39385fc43d01f3119ad0bc7f2e",
+      "acceptance": false
+    },
+    {
+      "path": ".artifacts/pr217-closure-20261104/console-custom-origin-final.json",
+      "bytes": 1218,
+      "sha256": "ee863f8917728cdcd5f93691057c88d91624f77d0c9a858bf7f5609cae940e76",
+      "acceptance": null
+    },
+    {
+      "path": ".artifacts/pr217-closure-20261104/editor-restart-failed.log",
+      "bytes": 7042,
+      "sha256": "2294e932decbe3f0160d2884fde1bbdfae436138297da7c2361f21082a3ce83a",
+      "acceptance": null
+    }
+  ],
+  "integration": {
+    "pr": 217,
+    "mergeCommit": "7e2f4b98b91675692d633f0da1ef8c0afbc4517f",
+    "mergedAt": "2026-11-04T10:29:32Z",
+    "authorization": "existing web-only authorization with Mac checks pending",
+    "newSitePublication": false
+  }
+}
