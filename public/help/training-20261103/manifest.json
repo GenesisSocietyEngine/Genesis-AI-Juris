@@ -1,0 +1,98 @@
+{
+  "format": "Narrated workflow illustrations; not a screen recording or authenticated acceptance demonstration. No subtitles or burned-in narration.",
+  "date": "2026-11-03",
+  "workflowSourceCommit": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+  "narration": "Offline Microsoft Zira Desktop synthetic voice; no provider call",
+  "scriptSha256": "0ddcb497c2493ec3259ddb4fb2262e6450734761092a069e72d37ba20971c20e",
+  "rendererSha256": "880cdc4f6b4888460bb48d3a652b5ad848c1b286396d51ad0c6a4c9e8820e9df",
+  "fullyDecoded": true,
+  "burnedInNarration": false,
+  "durationSeconds": 240.0,
+  "handlers": [
+    "vide",
+    "soun"
+  ],
+  "subtitleStreams": 0,
+  "fastStart": true,
+  "firstVideoFrameSeconds": 0.0,
+  "scenes": [
+    {
+      "id": "01",
+      "at": 0,
+      "frameSha256": "118a16ce2063b869e8a2f410e7966694cbfb7467f38deb78e8f76ce1a1265f75",
+      "speechSeconds": 25.224,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "02",
+      "at": 30,
+      "frameSha256": "c8eb21d050559bfdb9c39de222e03a2bfcd28d379e6c69241319ef1b6fa07244",
+      "speechSeconds": 26.794,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "03",
+      "at": 60,
+      "frameSha256": "e80e03b546e1d5cbe6ae869b15f1e346ecf5062a925f6cf589dc8b4381cc0068",
+      "speechSeconds": 26.695,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "04",
+      "at": 90,
+      "frameSha256": "8c0765d33b3e56a9573fff19729f61c84fb45a9c03c714ce9336c2a20f13e6e1",
+      "speechSeconds": 25.954,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "05",
+      "at": 120,
+      "frameSha256": "b4309b3565f9ffc9387ca22c5eee6d352b6cae1b81cfdf9d55ebb30aa8a53dec",
+      "speechSeconds": 26.665,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "06",
+      "at": 150,
+      "frameSha256": "e2d2f32c28560356ccec72d586c84ba4a7984ce3b82e7f9409f9eeb89421979a",
+      "speechSeconds": 26.959,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "07",
+      "at": 180,
+      "frameSha256": "6a042ae183c7f438df38a65fb91f3f5c56ae36d0d45c7bafcc18ae83cbbb2e61",
+      "speechSeconds": 27.575,
+      "frameKind": "workflow illustration, not an application screenshot"
+    },
+    {
+      "id": "08",
+      "at": 210,
+      "frameSha256": "2f241a97165b14d29cbf5fb3c6e5e422ef91358e4c4c9d5a532007dfd8f411e5",
+      "speechSeconds": 28.189,
+      "frameKind": "workflow illustration, not an application screenshot"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/help/training-20261103/guide.en.mp4",
+      "bytes": 1957405,
+      "sha256": "c71ef8335dfb2fff5adb7605cf3d1fcef2d496444a10e51d24222d220bf25a50"
+    },
+    {
+      "path": "/help/training-20261103/poster.jpg",
+      "bytes": 216448,
+      "sha256": "118a16ce2063b869e8a2f410e7966694cbfb7467f38deb78e8f76ce1a1265f75"
+    },
+    {
+      "path": "/help/training-20261103/transcript.en.md",
+      "bytes": 3524,
+      "sha256": "1ef33198196e8372fa5e4b789543e408b39c2e31954107476ca7a370eb44e0b8"
+    },
+    {
+      "path": "/help/training-20261103/transcript.ru.md",
+      "bytes": 6469,
+      "sha256": "3b287297f7525211567b7496c1841f2676ce1d6cabf843b8b3068001bbbdcfb9"
+    }
+  ]
+}

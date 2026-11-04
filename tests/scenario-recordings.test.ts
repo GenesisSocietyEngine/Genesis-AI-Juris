@@ -53,11 +53,12 @@ test('actual bilingual Help offers two native non-autoplay players, readable ste
     const current=html.slice(html.indexOf('id="recordings"'),html.indexOf('id="guides"'));
     assert.equal((current.match(/<video /g)??[]).length,2);
     assert.equal((current.match(/preload="none"/g)??[]).length,2);
-    assert.equal((current.match(/<track /g)??[]).length,4);
+    assert.equal((current.match(/<track /g)??[]).length,0);
+    assert.doesNotMatch(current,/Download captions|Скачать субтитры/);
     assert.doesNotMatch(current,/<video[^>]*autoplay/i);
     assert.match(current,/local preview|локальной версии/);
     for(const recording of recordings){assert.ok(current.includes(recording.video));assert.ok(current.includes(recording.video.replace('.mp4',`.${locale}.md`)));assert.ok(current.includes(recording.title[locale]));}
-    assert.match(html,/Earlier illustrated course|Предыдущий иллюстрированный курс/);
+    assert.match(html,/Earlier Five Flats|Предыдущий текст/);
   }
 });
 

@@ -40,7 +40,8 @@ test("Studio navigation marks saved drafts and retains training with the shared 
   assert.match(html, /aria-current="page"[^>]*>Saved Studio drafts/);
   assert.match(html, /Sign in/);
   assert.doesNotMatch(html, /Manage organizations|Users &amp; access|Sign out/);
-  assert.match(html, /10-minute training/);
+  assert.match(html, /href="\/help\/studio-demo" target="_blank"[^>]*>Workflow video · CaseVant ↗/);
+  assert.doesNotMatch(html, /10-minute training/);
 });
 
 test("workspace navigation without a verified session offers sign-in and hides organization controls", () => {

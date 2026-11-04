@@ -3,8 +3,8 @@ import Link from "next/link";
 import TrainingVideo from "../../TrainingVideo";
 
 export const metadata: Metadata = {
-  title: "10-minute Studio training | CaseVant",
-  description: "Current CaseVant training: narrated workflow, workspace sections, Personal and Team cases, captions and transcript. Updated 5 October 2026.",
+  title: "Current workflow training | CaseVant",
+  description: "Updated 3 November 2026: a four-minute narrated workflow guide, no subtitles, full English/Russian transcripts and current evidence actions.",
   alternates: { canonical: "/help/studio-demo" },
   openGraph: { title: "CaseVant — Make your case.", url: "https://casevant.pro/help/studio-demo", siteName: "CaseVant" },
 };

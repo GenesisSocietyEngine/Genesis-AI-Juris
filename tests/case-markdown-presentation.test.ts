@@ -21,7 +21,8 @@ test('export entry is neutral and dated tutorial has an explicit current-label c
     assert.doesNotMatch(menu, /Final case prompt/);
     const training = renderToStaticMarkup(createElement(TrainingVideo, { locale }));
     assert.ok(training.includes(locale === 'en' ? 'does not record human review or approval' : 'не фиксирует проверку или утверждение человеком'));
-    assert.match(training, /casevant-training-20261005\.en\.mp4/, 'historical video remains intact');
+    assert.match(training, /training-20261103\/guide\.en\.mp4/);
+    assert.ok(readFileSync(new URL('../public/help/casevant-training-20261005.en.mp4',import.meta.url)).byteLength>10000,'historical video remains intact');
   }
 });
 

@@ -17,6 +17,7 @@ function Recording({recording,locale}:{recording:typeof recordings[number];local
     pending.current=seconds;
     video.current.pause();
     video.current.focus();
+    video.current.scrollIntoView({block:"center",behavior:"auto"});
     setNotice(en?'Loading the short recording…':'Загружается короткая запись…');
     media.current??=createRecordingMedia(recording.video,{fetch:(path,options)=>fetch(path,options),create:blob=>URL.createObjectURL(blob),revoke:url=>URL.revokeObjectURL(url)});
     try {
@@ -36,12 +37,10 @@ function Recording({recording,locale}:{recording:typeof recordings[number];local
     <header><p className={styles.meta}>{time(recording.durationSeconds)} · {en?'RECORDED 2 NOVEMBER 2026':'ЗАПИСАНО 2 НОЯБРЯ 2026'}</p><h3 id={`recording-${recording.id}`}>{recording.title[locale]}</h3><p>{recording.description[locale]}</p></header>
     <video ref={video} controls playsInline preload="none" style={{aspectRatio:`${recording.width}/${recording.height}`}} poster={recording.poster} aria-label={recording.title[locale]} aria-describedby={`scope-${recording.id}`} onPlay={()=>{if(video.current&&!video.current.src.startsWith('blob:'))void seek(video.current.currentTime,true);else setNotice(en?'Playing recording.':'Запись воспроизводится.');}} onSeeked={()=>{const seconds=Math.round(video.current?.currentTime??0);setNotice(video.current?.paused?(en?`Step selected at ${time(seconds)}. Press Play to continue.`:`Выбран шаг ${time(seconds)}. Нажмите «Воспроизвести».`):(en?'Playing recording.':'Запись воспроизводится.'));}} onLoadedMetadata={applyStep} onError={()=>setNotice(en?'Video unavailable. Read the steps below or download the transcript.':'Видео недоступно. Прочитайте шаги ниже или скачайте расшифровку.')}>
       <source src={recording.video} type="video/mp4"/>
-      <track kind="captions" srcLang="en" label="English" src={recording.video.replace('.mp4','.en.vtt')} default={en}/>
-      <track kind="captions" srcLang="ru" label="Русский" src={recording.video.replace('.mp4','.ru.vtt')} default={!en}/>
       {en?'Read the steps below if video playback is unavailable.':'Если видео не воспроизводится, прочитайте шаги ниже.'}
     </video>
-    <div className={styles.body}><p id={`scope-${recording.id}`} className={styles.meta}>{en?'Edited step captures from the actual local preview. Fictional/synthetic data, English interface, no audio; EN/RU captions. Authenticated saves, AI and file delivery are not demonstrated.':'Смонтированные кадры реальной локальной версии. Вымышленные данные, английский интерфейс, без звука; субтитры EN/RU. Вход, сохранение, AI и получение файлов не показаны.'}</p>
-      <div className={styles.downloads}><a href={recording.video} download>{en?'Download video (.mp4)':'Скачать видео (.mp4)'}</a><a href={recording.video.replace('.mp4',`.${locale}.md`)} download>{en?'Download transcript (.md)':'Скачать расшифровку (.md)'}</a><a href={recording.video.replace('.mp4',`.${locale}.vtt`)} download>{en?'Download captions (.vtt)':'Скачать субтитры (.vtt)'}</a></div>
+    <div className={styles.body}><p id={`scope-${recording.id}`} className={styles.meta}>{en?'Edited step captures from the actual local preview. Fictional/synthetic data, English interface, no audio. Read the EN/RU steps below. Authenticated saves, AI and file delivery are not demonstrated.':'Смонтированные кадры реальной локальной версии. Вымышленные данные, английский интерфейс, без звука. Ниже доступны шаги на английском и русском. Вход, сохранение, AI и получение файлов не показаны.'}</p>
+      <div className={styles.downloads}><button type="button" onClick={()=>void seek(0,true)} aria-label={(en?"Play recording: ":"Воспроизвести запись: ")+recording.title[locale]}>{en?"Play recording":"Воспроизвести запись"}</button><a href={recording.video} download>{en?'Download video (.mp4)':'Скачать видео (.mp4)'}</a><a href={recording.video.replace('.mp4',`.${locale}.md`)} download>{en?'Download transcript (.md)':'Скачать расшифровку (.md)'}</a></div>
       <p role="status" className={styles.meta}>{notice}</p>
       <details><summary>{en?'Read steps or jump to a step':'Прочитать шаги или перейти к шагу'}</summary><ol>{recording.steps.map(step=><li key={step.at}><button type="button" onClick={()=>seek(step.at)} aria-label={`${en?'Select step at':'Выбрать шаг'} ${time(step.at)}`}><time>{time(step.at)}</time><span>{step.text[locale]}</span></button></li>)}</ol></details>
     </div>
@@ -51,7 +50,7 @@ function Recording({recording,locale}:{recording:typeof recordings[number];local
 export default function ScenarioRecordings({locale}:{locale:'en'|'ru'}) {
   const en=locale==='en';
   return <section id="recordings" tabIndex={-1} className={styles.section} aria-labelledby="scenario-recordings-title">
-    <header><p className={styles.eyebrow}>{en?'LEARN BY FOLLOWING A TASK':'ОБУЧЕНИЕ НА КОНКРЕТНЫХ ЗАДАЧАХ'}</p><h2 id="scenario-recordings-title">{en?'Scenario recordings':'Записи сценариев'}</h2><p>{en?'Two short walkthroughs of source inspection and local editing. Use fullscreen for screen details, read the steps below, or download the material.':'Два коротких примера проверки источников и локального редактирования. Для деталей включите полный экран, прочитайте шаги ниже или скачайте материалы.'}</p></header>
+    <header><p className={styles.eyebrow}>{en?'LEARN BY FOLLOWING A TASK':'ОБУЧЕНИЕ НА КОНКРЕТНЫХ ЗАДАЧАХ'}</p><h2 id="scenario-recordings-title">{en?'Scenario recordings':'Записи сценариев'}</h2><p>{en?'Recorded examples from 2 November. The updated workflow guide above covers newer evidence actions. Read the steps below or download the material.':'Примеры, записанные 2 ноября. Новые действия с материалами описаны в актуальном руководстве выше. Прочитайте шаги ниже или скачайте материалы.'}</p></header>
     <div className={styles.grid}>{recordings.map(recording=><Recording key={recording.id} recording={recording} locale={locale}/>)}</div>
   </section>;
 }
