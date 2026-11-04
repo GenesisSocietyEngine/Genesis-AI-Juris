@@ -67,7 +67,7 @@ test("verified member sees the shared account and organization but no owner-only
 test("optional Studio and simulation actions survive canonical navigation", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, { expandable: true, locale: "en", active: "studio", location: "/studio", onLanguage: noop, newCase: noop, importCase: noop,
     operationsActions: createElement("button", { onClick: noop }, "Restore a play session"), menu: createElement("button", { onClick: noop }, "Use dark theme") }));
-  for (const label of ["New blank case", "Import case or prompt", "Restore a play session", "Use dark theme", "Saved Studio drafts", "10-minute training"]) assert.ok(html.includes(label), label);
+  for (const label of ["New blank case", "Import case or prompt", "Restore a play session", "Use dark theme", "Saved Studio drafts", "Workflow video · CaseVant ↗"]) assert.ok(html.includes(label), label);
 });
 
 // Exercise the actual component handlers and real NavigationController without

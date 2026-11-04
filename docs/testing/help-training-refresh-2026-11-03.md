@@ -35,4 +35,8 @@ Focused Help/media suite: 39 passed, zero failures. Exact MP4 atoms contain only
 
 Strict types, lint, candidate/exact-main full web/PDF gates and publication receipts must be recorded before claiming production delivery. New production playback, chapter, locale and narrow observations must remain distinct from local checks.
 
+### CI correction — 4 November
+
+Full candidate run 41726478491 failed two navigation assertions that still expected the retired “10-minute training” label. PDF visual checks passed. Updated those assertions to the new label and preserved the stable public route/new-tab check, organization/session boundaries, optional actions and all departure/unsaved-work handler checks. The first focused suite omitted these two broader navigation files; its 39 passes did not establish full-suite acceptance. Raw failed CI output remains in `.artifacts/help-update-20261103/ci-failed-41726478491.log`. Production remains v174 until corrected candidate and exact-main gates pass.
+
 Browser access is available, but this Help slice does not close S03/S05 authenticated save/reopen/conflict or real sealed JSON/PDF acceptance. Keep legitimate unsupported-owner recovery, same-tab identity/timing, original-artifact/historical-pagination, 43 missing originals, native and operator/commercial limits explicit. Preserve v167's paused-caption observation as dated history; removing current subtitle tracks is a user preference, not a claimed diagnosis of the historical observation. No governed merging, disposal, analytics, pricing or outreach is added.
