@@ -23,3 +23,17 @@ Screenshot overview-return-en.jpg is retained under .artifacts/ux-return. Both s
 ## Next independently reviewable slice
 
 Compact Review's repeated action-card presentation while preserving every action finding ID, warning text, exact callback and Review return route. Measure the warning region before/after at equal viewport sizes; do not claim fewer controls, faster retrieval or human approval merely from denser rendering. Essential warnings remain visible; routine action-purpose text may move to a native hint with self-explanatory visible action names. Save/report/access constraints remain unchanged.
+
+## Slice 2 — compact exact-finding Review controls
+
+The Review warning list now presents each full finding text once, with its destination (Open brief, Open field, Inspect node or Developer controls). Exact action IDs and callbacks are unchanged; findings are never combined because their destinations match. Routine purpose remains supplementary title/ARIA-description text; no essential instruction depends on hover. The count, idless validation failures, checking/complete state, report restriction and save/restore/size/access conditions are retained.
+
+At equal actual local viewports, the six blank-case warning controls occupy 490.60 px rather than 917.20 px at 390 × 640 (46.5% reduction), and 304.00 px rather than 376.10 px at 1522 × 688 (19.2% reduction). All original warning text remains visible. Minimum target height is 68.10 px narrow and 44 px wide; no horizontal document overflow is observed. This measures layout, not task speed, fewer findings or professional acceptance. Source and screenshots are under .artifacts/ux-return.
+
+The actual local app passes Tab from brief to participants, Enter to its correction, Back to review finding and settled focus on action-participants. EN/RU narrow layouts are visually inspected; the Russian Overview action shows Вернуться к обзору and returns to Overview. Changing language during that correction invalidates the old origin and shows the ordinary case-action return, rather than resurrecting a stale Overview context. Both retained synthetic tabs still contain their exact unsubmitted brief/amendment after development refreshes; no user tab or saved case is edited. React review confirms instance-scoped origin memory, primitive context dependencies, native keyboard controls, no effect-driven draft writes and no added provider/network behavior.
+
+Sixty-four focused checks pass, including actual rendered warning controls and every callback in EN/RU, idless/checking/completed behavior, full draft/check byte preservation, original Review return, Overview context fences, evidence input and save constraints. The first restricted-shell attempt failed in the Windows tsx loader before any test ran (user-info ENOMEM); rerunning the exact checks outside that restriction passes. Strict typecheck passes. Final candidate CI and exact-main release verification remain required; this audit does not relabel local browser evidence as authenticated production acceptance.
+
+## PR220 closure
+
+Docs-only PR220 merged normally on 4 November 2026 at 12:22 UTC as 7c63f786777055293adec8dbb3ba424f2a7e0b69. Both prior-main native runs 41821098391 and 41821098496 reached success before integration. PR220 web/PDF, Rust, Android, Flutter and native smoke checks passed; its two Mac editor-process-restart jobs were pending at merge under standing web-only authorization. No v177 rebuild, Site version or deployment was created for PR220.

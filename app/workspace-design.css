@@ -397,3 +397,13 @@ body:has(.genesis-navigation) :focus-visible { outline: 3px solid var(--workspac
   .studio-workspace>.graph-deck { grid-column:1; grid-row:2; }
   .studio-workspace>.node-inspector { grid-column:1; grid-row:3; }
 }
+
+/* Compact Review presentation retains a separate, addressable control per finding. */
+.review-check-list { grid-column:1 / -1;display:grid;gap:8px;min-width:0; }
+.review-check-list .action-tile { padding:10px 12px;min-height:44px;gap:12px; }
+.review-check-list .action-tile strong { font:500 14px/1.5 var(--workspace-font); }
+.review-check-list .action-tile-copy>span:empty { display:none; }
+.review-check-list .action-tile-next { font-size:13px;white-space:normal;text-align:right;max-width:14rem; }
+@media(max-width:600px) {
+  .review-check-list .action-tile { flex-direction:column;align-items:stretch;gap:6px; }
+}
