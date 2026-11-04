@@ -1,0 +1,135 @@
+{
+  "schema": "casevant.sites-ui-clarity-release.v1",
+  "date": "2026-11-04",
+  "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version_number": 177,
+  "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_993d424b6d708191a8c61aab6a0ac96f",
+  "source_commit": "45ce35a75e978fc8e678c4623943e8c615860f33",
+  "source_tree": "2d7dbf96a90224cd3a6bf8161330d63d9d39daa6",
+  "deployment": {
+    "id": "appgdep_6aeb19fa84e881919e79d30233bfca71",
+    "status": "succeeded",
+    "updated_at": "2026-11-04T11:42:12.229759+00:00",
+    "native_url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "custom_url": "https://casevant.pro"
+  },
+  "audience": "public",
+  "ci": {
+    "candidate_run": 41819980375,
+    "main_run": 41821098627,
+    "passed": 1896,
+    "failed": 0,
+    "inherited_skips": 3,
+    "additional_html_checks": 2,
+    "pdf_visual": "pass; existing locks unchanged"
+  },
+  "ci_archive": {
+    "artifact": 13317387441,
+    "sha256": "6d280e6d6ffbc397b78c7b9e9c203483d08e83e21014a8a4eec05e0e23faf857",
+    "bytes": 33224389,
+    "entries": 548
+  },
+  "input_archive": {
+    "sha256": "ab8684e878292922ec02c2fb4496d2a169fade9faf968f2fa65407e7cb1571b7",
+    "bytes": 33388522,
+    "entries": 630
+  },
+  "normalized_saved_archive": {
+    "content_hash": "sha256:90bc106e6404523c5183766acc5b8749dcf14ac673ab435fd31f1cef77b74d55",
+    "size_bytes": 52920320,
+    "file_count": 603,
+    "archive_format": "tar"
+  },
+  "runtime": {
+    "inputs": 588,
+    "applicationInputsSha256": "9a8ac5fbd4a71297961a87262d427398aa50712d0645ad5c68a54093b9be0be3",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "changed_inputs": [
+      "app/StudioOverview.tsx",
+      "app/studio-overview.module.css",
+      "app/workspace-design.css"
+    ],
+    "both_origin_identity_checks": "pass"
+  },
+  "assets": {
+    "both_origins_verified": 192,
+    "current": 137,
+    "retained_from_v176_current_manifest": 55,
+    "previous_manifest_count": 137,
+    "retention_chain_extended": false
+  },
+  "environment": {
+    "revision": 42,
+    "returned_entries": 13,
+    "all_returned_representations_preserved": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ]
+  },
+  "production_browser": {
+    "case": "new blank unsaved test tab only",
+    "case_write_actions": 0,
+    "ai_actions": 0,
+    "existing_tabs_claimed": 0,
+    "brief_action_focus": "studio-case-brief",
+    "empty_case_actions": 1,
+    "visible_warnings": 6,
+    "narrow": {
+      "width": 390,
+      "height": 640,
+      "document_width": 371,
+      "scroll_width": 371,
+      "organization_width": 299,
+      "footer_width": 299,
+      "lower_columns": "299px",
+      "visual": "valid EN actions and RU drawer after temporary emulation reset"
+    },
+    "forced_emulation_capture": "5000ms timeout retained; subsequent normal capture at measured same CSS size passes",
+    "short_height": "requested 480 but observed 640; not counted as production 480 acceptance",
+    "desktop": "1903x790 DOM only; image after reset measured narrow and named accordingly",
+    "console": {
+      "initial_warnings_errors": 0,
+      "final_errors": 4,
+      "initiator": "not supplied; attribution remains open"
+    },
+    "locale_final": "en",
+    "temporary_override": "reset"
+  },
+  "preservation": {
+    "existing_cases": "untouched",
+    "original_preview_4199": "untouched",
+    "schema_authority_persistence_factories_recovery_pdf": "unchanged",
+    "governed_merge_provider_processing_analytics_pricing_outreach": false
+  },
+  "native": {
+    "main_ios_tax": 41821098391,
+    "main_ios_native": 41821098496,
+    "status_at_receipt": "running; observe terminal before docs-only main push could cancel them",
+    "standing_web_only_authorization": true
+  },
+  "notes": [
+    "Three edited Windows working files were normalized to exact committed LF bytes before adoption; no Git tree/source change.",
+    "First packaging credential expired before packaging; renewal completed one saved version and one deployment."
+  ],
+  "screenshots": [
+    {
+      "path": ".artifacts/ui-density/production-390-actions-en.jpg",
+      "sha256": "2085593adb817a155f25ad969d76da2299cbb88e2814287a5f970f5c053fe287",
+      "bytes": 35412,
+      "scope": "production; measured 390x640 CSS viewport after reset"
+    },
+    {
+      "path": ".artifacts/ui-density/production-390-ru-drawer.jpg",
+      "sha256": "5497770acadaee7e22dc3aec59b3f756c00f95d50384f5c7bd0da4ea05396c50",
+      "bytes": 18335,
+      "scope": "production; measured 390x640 CSS viewport after reset"
+    },
+    {
+      "path": ".artifacts/ui-density/production-final-390-en.jpg",
+      "sha256": "1ce09cf9f33e272016c25bd4b0b136f5d709bdcc4999b763240910b7e4361274",
+      "bytes": 32610,
+      "scope": "production; measured 390x640 CSS viewport after reset"
+    }
+  ]
+}
