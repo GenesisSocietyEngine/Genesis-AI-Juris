@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { buildCanopyPackage } from '../../app/canopy-fixture';
 import { casePublicationFingerprint } from '../../app/case-integrity';
+import type { EvidenceAttachmentPlan } from '../../app/studio-evidence-attachment';
 import type { StudioDraft } from '../../app/types';
 
 export type Element = { type: unknown; props: Record<string, unknown> & { children?: unknown } };
@@ -72,12 +73,12 @@ const path = resolve('.artifacts/materials-workflow', `component-${sourceRef ?? 
 const Component = (await import(pathToFileURL(path).href)).default as (props: Record<string, unknown>) => Element;
 
 /** Actual materials component/projection/evidence handler; modeled hooks and authority. No DOM/browser/API/storage. */
-export function fixture(locale: 'en' | 'ru' = 'en') {
+export function fixture(locale: 'en' | 'ru' = 'en', options: { plan?: EvidenceAttachmentPlan; onPlanCancel?: () => void; onEvidenceAttach?: (ids: string[], target: string) => void } = {}) {
   const runtime = hooks(); globals.__materialsWorkflow = runtime;
   const downloads: Array<{ blob: Blob; filename: string }> = []; globals.__materialsDownloads = downloads;
   let draft = structuredClone(buildCanopyPackage('base').draft), nodeId: string | undefined = 'conditional-pilot';
   let language = locale, allowed = true, epoch = 0, gate: Promise<void> | undefined, calls = 0;
-  const writes: StudioDraft[] = [], focuses: string[] = [];
+  const writes: StudioDraft[] = [], focuses: string[] = [], appliedTargets: Array<string | undefined> = [];
   const evidence = draft.nodes.find(n => n.type === 'evidence')!;
   evidence.title = 'QA synthetic evidence A';
   draft.nodes.push({ ...evidence, id: 'qa_evidence_b', title: 'QA synthetic evidence B', detail: 'Unreviewed synthetic second record — café.' });
@@ -88,15 +89,15 @@ export function fixture(locale: 'en' | 'ru' = 'en') {
   const original = JSON.stringify(draft), evidenceIds = [evidence.id, 'qa_evidence_b'];
   const render = () => {
     runtime.begin();
-    const tree = Component({ draft, locale: language, nodeId, authority: { allowed, epoch, verify: async () => { calls++; await gate; return () => allowed; } }, onNode: (id: string) => { nodeId = id; }, onApply: (expected: string, next: StudioDraft) => {
+    const tree = Component({ draft, locale: language, nodeId, attachmentPlan: options.plan, onEvidenceAttach: options.onEvidenceAttach, onPlanCancel: options.onPlanCancel, authority: { allowed, epoch, verify: async () => { calls++; await gate; return () => allowed; } }, onNode: (id: string) => { nodeId = id; }, onApply: (expected: string, next: StudioDraft, target?: string) => {
       if (!allowed || casePublicationFingerprint(draft) !== expected) return false;
-      writes.push(next); draft = next; return true;
+      writes.push(next); appliedTargets.push(target); draft = next; return true;
     } });
     const ref = tree.props.ref as { current: unknown } | undefined; if (ref) ref.current = { querySelectorAll: () => [], querySelector: () => ({ focus: () => focuses.push('search'), scrollIntoView: () => focuses.push('search-scroll') }) };
     runtime.flush(); return tree;
   };
   return {
-    render, writes, original, evidenceIds, downloads, focuses,
+    render, writes, original, evidenceIds, downloads, focuses, appliedTargets,
     get draft() { return draft; }, get verificationCalls() { return calls; },
     hold() { let release!: () => void; gate = new Promise<void>(done => { release = done; }); return release; },
     node(id?: string) { nodeId = id; }, language(value: 'en' | 'ru') { language = value; },

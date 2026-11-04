@@ -1,0 +1,49 @@
+{
+  "scope": "Local synthetic Canopy only; not production, saved-case or native drag acceptance",
+  "baseCommit": "61088d03a5e7ed5d5aceee563816ac1452b98739",
+  "workingCandidate": "pointer/modal corrections in PR223",
+  "browser": {
+    "previewPort": 4205,
+    "cancel": "Escape closes native modal, restores Attach here focus; 14 nodes/13 connections unchanged",
+    "apply": "14 nodes/14 connections; Attached here 2; Available 0",
+    "undo": "14 nodes/13 connections",
+    "narrowEN": [
+      390,
+      640
+    ],
+    "shortRU": [
+      390,
+      480
+    ],
+    "horizontalOverflow": false,
+    "RUKeyboard": "Cancel -> destination -> selected-record disclosure -> Apply; Apply scrolled visibly into view, then Escape cancels"
+  },
+  "nativePointer": "Blocked: Windows GetCursorPos access denied before candidate selection. No successful pointer drag observed. Original4204 manual comparison pending.",
+  "focusedTests": {
+    "passed": 68,
+    "failed": 0,
+    "initialEnvironmentFailure": "os.userInfo uv_os_get_passwd ENOMEM before test loading; unchanged elevated rerun passes"
+  },
+  "strictTypes": "pass",
+  "lint": {
+    "errors": 0,
+    "inheritedWarnings": 7
+  },
+  "screenshots": [
+    {
+      "file": "docs/testing/evidence-attachment-2026-11-04/attachment-applied.png",
+      "sha256": "60209f1b15390ee5e075f408b955f60d93dc89b4c5d170856b804d439883f3ac",
+      "bytes": 85068
+    },
+    {
+      "file": "docs/testing/evidence-attachment-2026-11-04/attachment-narrow.png",
+      "sha256": "bb652d0bb1f0a7d8ef7f146f2792a91b58990b02ec89ddb613616a51a4c45e5a",
+      "bytes": 34431
+    },
+    {
+      "file": "docs/testing/evidence-attachment-2026-11-04/attachment-ru-short.png",
+      "sha256": "d979f000430a7b9e24deb26d0b9236bcd50f0bf24f9d04cf40d332fcc6686daa",
+      "bytes": 26747
+    }
+  ]
+}
