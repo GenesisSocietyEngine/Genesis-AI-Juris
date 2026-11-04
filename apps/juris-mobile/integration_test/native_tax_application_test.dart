@@ -19,6 +19,7 @@ import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'support/framework_failure_capture.dart';
+import 'support/framework_failure_geometry.dart';
 
 const List<String> _phases = <String>[
   'write',
@@ -74,31 +75,12 @@ void main() {
     final FlutterExceptionHandler originalErrorHandler = FlutterError.onError!;
     final FrameworkFailureCapture frameworkFailures = FrameworkFailureCapture(
       delegate: originalErrorHandler,
-      snapshot: () {
-        final view = tester.view;
-        Map<String, Object?> insets(dynamic value) => {
-              'left': value.left,
-              'top': value.top,
-              'right': value.right,
-              'bottom': value.bottom,
-            };
-        final dialogs = find.byType(AlertDialog);
-        final media = dialogs.evaluate().isEmpty
-            ? null
-            : MediaQuery.maybeOf(tester.element(dialogs.first));
-        return {
-          'phase': phase,
-          'checkpoint': _checkpoints.current,
-          'device_pixel_ratio': view.devicePixelRatio,
-          'physical_width': view.physicalSize.width,
-          'physical_height': view.physicalSize.height,
-          'view_insets': insets(view.viewInsets),
-          'view_padding': insets(view.viewPadding),
-          if (media != null) 'dialog_view_insets': insets(media.viewInsets),
-          'focused_widget_type':
-              '${FocusManager.instance.primaryFocus?.context?.widget.runtimeType}',
-        };
+      baseSnapshot: () => {
+        'phase': phase,
+        'checkpoint': _checkpoints.current,
+        ...captureViewGeometry(tester),
       },
+      snapshot: (details) => captureDialogGeometry(tester, details),
       publish: (evidence) {
         binding.reportData = {
           ...?binding.reportData,

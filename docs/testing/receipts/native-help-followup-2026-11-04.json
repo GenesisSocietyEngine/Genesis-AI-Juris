@@ -1,0 +1,171 @@
+{
+  "schema": "casevant-native-help-followup-v1",
+  "status": "diagnostic_fix_verified_native_pr_gate_failed",
+  "date": "2026-11-04",
+  "starting_main": "8d4f97a8eea5b4ee09b1a5678c892e2774f544bb",
+  "diagnostic_candidate": "576bed89898988a1984ad974869377728b6e5d7e",
+  "public_web_runtime": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+  "site_version": "v175",
+  "sites_republication": false,
+  "web_preservation": {
+    "application_inputs_sha256": "a14649c7b6e23c8de72dd8a66502995d9e22ecb9bcf9cb54a261e97d86fb1d41",
+    "hosting_sha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "input_count": 587,
+    "all_equal": true
+  },
+  "completed_candidate_checks": {
+    "flutter": {
+      "run": 41757445908,
+      "widget_passed": 489,
+      "widget_skipped": 12,
+      "native_tax_tests_passed": 2,
+      "linux_separate_process_write_read": true
+    },
+    "web_pdf": {
+      "run": 41757446137,
+      "tests_passed": 1894,
+      "tests_failed": 0,
+      "inherited_skips": 3,
+      "additional_html_checks": 2,
+      "dependency_findings": 0
+    },
+    "rust": {
+      "run": 41757445952
+    },
+    "android": {
+      "run": 41757445953
+    }
+  },
+  "ios_candidate": {
+    "editor_restart": {
+      "run": 41757440412,
+      "event": "push",
+      "status": "success",
+      "artifact": {
+        "artifact": 13290271851,
+        "source": "576bed89898988a1984ad974869377728b6e5d7e",
+        "sha256": "9095e0f874b426bd8a6eef4f8e49edf1f2e0c731d58008cf01699c52db909356",
+        "bytes": 1582876,
+        "entries": 157
+      },
+      "independent_verifier": "tax application six-process acceptance: PASS",
+      "verification": {
+        "schema": "tax-mobile-application-verification-v2",
+        "source_sha": "576bed89898988a1984ad974869377728b6e5d7e",
+        "run_nonce": "41757440412-1",
+        "phases": [
+          "write",
+          "read",
+          "incomplete-write",
+          "incomplete-read",
+          "legacy-write",
+          "legacy-read"
+        ],
+        "pids": [
+          37156,
+          44085,
+          47404,
+          51286,
+          54173,
+          58417
+        ],
+        "same_bundle_sha256": "10c212219eaf87e4b20fa3bcfb2372ca9d594235dbceaf39beba99de7f7a25d7",
+        "complete_pairs_equal": true,
+        "fresh_native_reopen": true,
+        "incomplete_native_error": true,
+        "legacy_record_preserved": true
+      },
+      "pr_counterpart": {
+        "run": 41757445937,
+        "status": "failure",
+        "artifact": {
+          "artifact": 13290461742,
+          "source": "576bed89898988a1984ad974869377728b6e5d7e",
+          "sha256": "12e92e466dd2cf5f92ec4155de1539fe7bf6b95a4fa1910e1386632a9b55635f",
+          "bytes": 411122,
+          "entries": 47
+        },
+        "failure": "write phase host deadline, exit 124",
+        "partial_receipt_and_screenshot": true,
+        "six_phase_acceptance": false,
+        "new_padding_assertion_observed": false,
+        "cleanup": "group_probe_denied EPERM; cleanup_incomplete, group_state unknown",
+        "cause": "unconfirmed"
+      }
+    },
+    "native_lifecycle": {
+      "run": 41757445913,
+      "status": "success",
+      "artifact": {
+        "artifact": 13289304141,
+        "source": "576bed89898988a1984ad974869377728b6e5d7e",
+        "sha256": "565d53d5a708196a9b75e297a4dc8894e0931335793b372146ddaef91250815b",
+        "bytes": 180247,
+        "entries": 41
+      },
+      "retained_source_identity_verified": true,
+      "native_lifecycle_attempt": 1,
+      "native_test_passed": true,
+      "xcresult_reprocessed_locally": false,
+      "push_counterpart": {
+        "run": 41757440249,
+        "status": "success"
+      }
+    }
+  },
+  "retained_original_native_failure": {
+    "run": 41751668621,
+    "artifact_id": 13286869327,
+    "sha256": "bd4c6f23c4bc362cdaf0b268ebad02b8f3bf684cb821d306a32d7f2781dbab7a",
+    "bytes": 1534379,
+    "entries": 145,
+    "source": "8d4f97a8eea5b4ee09b1a5678c892e2774f544bb",
+    "phase": "legacy-write",
+    "checkpoint": "legacy-cancel-probe-3",
+    "application_padding_cause": "unconfirmed",
+    "confirmed_recorder_defect": "Optional dialog lookup erased raw failed-frame metrics"
+  },
+  "browser": {
+    "first_pointer_trials_passed": 5,
+    "fresh_tabs": true,
+    "cache_cleared": false,
+    "historical_miss_reproduced": false,
+    "subtitle_track_count": 0,
+    "narrow_visual_acceptance": false,
+    "capture_limit": "Viewport timeout; full-page result invalid; framing fallback denied without policy changes",
+    "captures": [
+      {
+        "local_artifact": ".artifacts/help-update-20261103/followup-chapter120-20261104.jpg",
+        "sha256": "e4d67aa8e8841bc38b7e1a640902352c51980c24b8ff0936021ca787b1338d5f",
+        "bytes": 97839,
+        "classification": "desktop_visual",
+        "observation": "EN Help at 120 seconds, paused, no subtitle tracks"
+      },
+      {
+        "local_artifact": ".artifacts/help-update-20261103/followup-russian-chapter120-20261104.jpg",
+        "sha256": "34ba3936bfe435b1ae481f274923da977c49996472972ee8bfdd03bfa4d83561",
+        "bytes": 103747,
+        "classification": "desktop_visual",
+        "observation": "RU Help at 120 seconds, paused, no subtitle tracks"
+      },
+      {
+        "local_artifact": ".artifacts/help-update-20261103/followup-actual390-en-full-20261104.jpg",
+        "sha256": "cd7c482e517043342f4be4297f500e0376ae23e263d98bc7d55b275af57d3b8b",
+        "bytes": 533127,
+        "classification": "rejected",
+        "observation": "Repeated viewport tiles; not narrow visual evidence"
+      }
+    ]
+  },
+  "preservation": {
+    "production_cases_accessed": false,
+    "existing_user_tabs_modified": false,
+    "production_ui_changed": false,
+    "authority_timeouts_assertions_changed": false
+  },
+  "integration": {
+    "pr": 215,
+    "main_contains_candidate": false,
+    "disposition": "draft; native completion failure remains open"
+  }
+}
