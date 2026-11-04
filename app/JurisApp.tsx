@@ -1,4 +1,5 @@
 "use client";
+import StudioActionsNavigation from "./StudioActionsNavigation";
 import { studioReviewAction } from "./studio-review-action";
 import { createMaterialReadingMemory } from "./studio-material-search";
 import { applyReviewedLocalPrompt, studioLocalReview, type StudioLocalReview } from "./studio-local-review";
@@ -2212,7 +2213,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
 
   return (
-    <div className={`app-shell theme-office${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
+    <StudioActionsNavigation><div className={`app-shell theme-office${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
       <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")}/>
       <input ref={playedCaseImportRef} hidden tabIndex={-1} aria-hidden="true" className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
@@ -2240,7 +2241,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       {!privatePlayConcealed && (selectedOption || resultOption) && activeScenario && stage && <Suspense fallback={<p className="page-width" role="status">{locale === "en" ? "Loading the decision…" : "Загрузка решения…"}</p>}><DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} /></Suspense>}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
       {feedbackTarget && !studioConcealed && !privatePlayConcealed && <Suspense fallback={<p className="session-toast" role="status">{locale === "en" ? "Loading feedback form…" : "Загрузка формы отзыва…"}</p>}><FeedbackDialog Icon={Icon} locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} /></Suspense>}
-    </div>
+    </div></StudioActionsNavigation>
   );
 }
 
