@@ -65,3 +65,34 @@ test('pointer gestures require movement, the same pointer and owner, and valid c
  owner.startPointer([id],4,10,10);assert.equal(owner.pointerTarget(4,50,50,target),target);assert.deepEqual(owner.endPointer(4,50,50,target),{evidenceIds:[id],targetNodeId:target});assert.equal(owner.endPointer(4,50,50,target),null);
  assert.equal(createStudioEvidenceDrag(draft,false).startPointer([id],5,0,0),false);
 });
+
+
+test('attachment chooser validates existing evidence without choosing or writing a destination',()=>{
+ const draft=buildCanopyPackage('base').draft,id=draft.nodes.find(n=>n.type==='evidence')!.id,before=JSON.stringify(draft);
+ const owner=createStudioEvidenceDrag(draft,true);
+ assert.deepEqual(owner.preview([id]),{evidenceIds:[id],targetNodeId:''});assert.equal(owner.active(),false);
+ assert.equal(owner.preview(['missing']),null);assert.equal(owner.preview([id],id),null);
+ assert.equal(createStudioEvidenceDrag(draft,false).preview([id]),null);
+ assert.equal(JSON.stringify(draft),before);
+});
+
+
+for(const locale of ['en','ru'] as const)test(`${locale}: selected evidence offers an explicit chooser distinct from moving its card`,async()=>{
+ const requested:unknown[]=[];const f=fixture(locale,{onEvidenceAttach:(ids,target)=>requested.push({ids,target})});
+ try{f.node(f.evidenceIds[0]);const before=JSON.stringify(f.draft);const tree=await f.settle();
+ click(button(tree,locale==='en'?'Attach this evidence…':'Прикрепить этот материал…'));
+ assert.deepEqual(requested,[{ids:[f.evidenceIds[0]],target:''}]);assert.equal(f.writes.length,0);assert.equal(JSON.stringify(f.draft),before);
+ assert.ok(text(tree).includes(locale==='en'?'Moving a map card only changes its position.':'Перетаскивание карточки только меняет её положение.'));
+ }finally{f.close();}
+});
+
+test('chooser Apply waits for an explicit destination and reports the actually selected node',async()=>{
+ const plan={evidenceIds:[] as string[],targetNodeId:''};const f=fixture('en',{plan});plan.evidenceIds=[f.evidenceIds[0]];f.node(undefined);
+ try{let tree=await f.settle();assert.equal(button(tree,'Apply change').props.disabled,true);assert.equal(f.writes.length,0);
+ const destination=elements(tree).find(e=>e.type==='select'&&e.props['aria-label']==='Destination node');assert.ok(destination);
+ const target=f.draft.nodes.find(n=>n.type==='outcome')!.id;
+ (destination.props.onChange as (event:unknown)=>void)({target:{value:target}});tree=f.render();click(button(tree,'Apply change'));await drain();
+ assert.equal(f.writes.length,1);assert.deepEqual(f.appliedTargets,[target]);
+ assert.ok(f.draft.links.some(l=>l.from===f.evidenceIds[0]&&l.to===target));
+ }finally{f.close();}
+});

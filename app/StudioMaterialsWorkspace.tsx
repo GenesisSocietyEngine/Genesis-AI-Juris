@@ -19,7 +19,7 @@ const DEFAULT_READING = { query: "", filter: "all", history: false, limit: 20 };
 export type MaterialsAuthority = { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
 export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding, onAddEvidence, onEvidenceReview, onEvidenceDragStart, onEvidenceDragEnd, onEvidenceAttach, evidencePointer, attachmentPlan, onPlanCancel }: {
   draft: StudioDraft; locale: "en" | "ru"; authority?: MaterialsAuthority; nodeId?: string;
-  onNode: (id: string) => void; onApply?: (expected: string, next: StudioDraft) => boolean;
+  onNode: (id: string) => void; onApply?: (expected: string, next: StudioDraft, targetNodeId?: string) => boolean;
   readingMemory?: MaterialReadingMemory;
   onReturnToFinding?: () => void;
   onAddEvidence?: () => void; onEvidenceReview?: () => void;
@@ -152,7 +152,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       const authorized = await authority.verify();
       if (!currentOperation(ticket) || !authorized()) return;
       const next = rearrangeStudioEvidence(draft, evidenceIds, mode === "attach" ? null : nodeId ?? null, mode === "detach" ? null : target);
-      if (!onApply(expected, next)) throw new Error("Changed context");
+      if (!onApply(expected, next, mode === "detach" ? undefined : target)) throw new Error("Changed context");
       intent.current = null; setBatch(freshBatch);
     } catch (error) { if (currentOperation(ticket)) setNotice(error instanceof Error && error.message === "evidence-destination-conflict"
       ? t("That destination already has this evidence connection. Choose another node; no link details were merged or removed.", "У назначения уже есть эта связь с материалом. Выберите другой узел; сведения связей не объединены и не удалены.")
@@ -175,13 +175,17 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       <p className={styles.meta}>{nodeId ? nodeLabel(nodeId) : t("Materials in this working case", "Материалы рабочего кейса")}</p>
       <p className={styles.meta}>{t("Connection only · evidence review not recorded here", "Только связь · проверка доказательств здесь не записана")}</p>
       <details><summary>{t("Attachment and review", "Прикрепление и проверка")}</summary><p>{t("Attaching a record creates a connection. It does not accept the evidence or approve a conclusion. Working text, source citations and original files are distinct; unavailable originals have no downloadable file.", "Прикрепление создаёт связь, но не подтверждает доказательство и не утверждает вывод. Рабочий текст, цитаты и оригиналы — разные материалы; недоступные оригиналы нельзя скачать.")}</p></details>
+      {nodeId && draft.nodes.some(node => node.id === nodeId && node.type === "evidence") && onEvidenceAttach && <div className={styles.attachRecord}>
+        <button type="button" className={styles.primary} disabled={!authority?.allowed || busy} onClick={() => onEvidenceAttach([nodeId], "")}>{t("Attach this evidence…", "Прикрепить этот материал…")}</button>
+        <p className={styles.meta}>{t("Choose a destination, then confirm. Moving a map card only changes its position.", "Выберите узел и подтвердите. Перетаскивание карточки только меняет её положение.")}</p>
+      </div>}
       <div className={styles.actions}>{onAddEvidence && <button type="button" disabled={!authority?.allowed || busy} onClick={onAddEvidence}>{t(nodeId ? "Add record" : "Add evidence record", "Добавить материал")}</button>}{onEvidenceReview && <button type="button" onClick={onEvidenceReview}>{t("Review", "Проверка")}</button>}</div>
     </div>{!nodeId && <button className={styles.primary} type="button" disabled={busy || !authority?.allowed || !items.length} onClick={() => void download()}>{t("Download all (.zip)", "Скачать всё (.zip)")}</button>}</header>}
     {!attachmentPlan && nodeId && <div className={styles.nodeViews} role="group" aria-label={t("Evidence attachment scope", "Область материалов")}>
       <button type="button" aria-pressed={!available} onClick={() => showNodeMaterials(false)}>{t(`Attached here (${attachedCount})`, `Прикреплено здесь (${attachedCount})`)}</button>
       <button type="button" aria-pressed={available} onClick={() => showNodeMaterials(true)}>{t(`Available in case (${availableCount})`, `Доступно в кейсе (${availableCount})`)}</button>
     </div>}
-    {available && <p className={styles.meta}>{t("Drag ⠿ onto a map node, or choose Attach here.", "Перетащите ⠿ на узел карты или нажмите «Прикрепить сюда».")}</p>}
+    {available && <p className={styles.meta}>{t("Use “Drag to attach” below, or choose Attach here. Dragging a map card only moves it.", "Используйте «Тянуть для связи» ниже или «Прикрепить сюда». Перетаскивание карточки только перемещает её.")}</p>}
     {nodeId && !available && <StudioCitedPassages key={nodeId} citations={citations} context={scope} locale={locale} onReturnToFinding={onReturnToFinding}/>}
     {!attachmentPlan && <details className={styles.searchDisclosure}><summary>{t("Search and filters", "Поиск и фильтры")}</summary>
     <div className={styles.toolbar}><label>{t("Find a material", "Найти материал")}<input type="search" value={query} maxLength={MATERIAL_SEARCH_LIMITS.query} placeholder={t("Title, note or loaded text", "Название, примечание или загруженный текст")} onChange={event => { setReading("query", event.target.value); setReading("limit", 20); }} /></label><label>{t("Show materials", "Показать материалы")}<select value={filter} onChange={event => { setReading("filter", event.target.value); setReading("limit", 20); }}><option value="all">{t("All materials", "Все материалы")}</option><option value="working">{t("Working evidence", "Рабочие материалы")}</option><option value="reference">{t("Illustrative references", "Учебные источники")}</option><option value="missing">{t("Missing originals", "Отсутствующие оригиналы")}</option><option value="url">{t("URL references only", "Только URL-ссылки")}</option><option value="unassigned">{t("Unassigned evidence", "Неприкреплённые материалы")}</option></select></label><label><input type="checkbox" checked={history} onChange={event => { setReading("history", event.target.checked); setReading("limit", 20); }} /> {t("Include retained versions", "Включить прежние версии")}</label></div>
@@ -217,10 +221,10 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       return <li key={item.id} data-material-id={item.id}>
       <div className={styles.materialLayout}>
         {item.kind === "working" && onEvidenceDragStart && !attachmentPlan && <button type="button" className={styles.dragHandle} draggable={Boolean(!evidencePointer && authority?.allowed && !busy)} disabled={!authority?.allowed || busy}
-          aria-label={t("Drag evidence: ", "Перетащить материал: ") + item.title} title={t("Drag onto a map node; review before applying", "Перетащите на узел карты; проверьте перед применением")}
+          aria-label={t("Drag to attach: ", "Тянуть для связи: ") + item.title} title={t("Drag onto a map node; review before applying", "Перетащите на узел карты; проверьте перед применением")}
           onPointerDown={evidencePointer ? event => evidencePointer.start(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]) : undefined}
           onPointerMove={evidencePointer?.move} onPointerUp={evidencePointer?.end} onPointerCancel={evidencePointer?.cancel} onLostPointerCapture={evidencePointer?.cancel}
-          onDragStart={event => { if (evidencePointer) event.preventDefault(); else onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]); }} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag", "Тянуть")}</span></button>}
+          onDragStart={event => { if (evidencePointer) event.preventDefault(); else onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]); }} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag to attach", "Тянуть для связи")}</span></button>}
         {onApply && (item.kind === "working" && item.id !== `working:${nodeId}` ? <label className={styles.materialSelect}><input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => { const checked = event.target.checked; changeBatch(current => ({ ...current, target: available ? nodeId! : current.target, selected: checked ? [...current.selected, item.id] : current.selected.filter(id => id !== item.id) })); }} /><span className={styles.selectionLabel}>{t("Select", "Выбрать")}</span></label> : <span className={`${styles.materialSelect} ${styles.selectionSpace}`} aria-hidden="true"/>)}
         <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
           <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>

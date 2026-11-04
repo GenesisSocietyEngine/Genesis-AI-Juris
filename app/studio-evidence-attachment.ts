@@ -29,6 +29,13 @@ export function createStudioEvidenceDrag(draft: StudioDraft, allowed: boolean, c
       const ids = active.ids.filter(id => !draft.links.some(link => link.from === id && link.to === target || link.to === id && link.from === target));
       return ids.length ? { evidenceIds: ids, targetNodeId: target } : null;
     },
+    preview(ids: readonly string[], target = ""): EvidenceAttachmentPlan | null {
+      const token = this.begin(ids);
+      if (!token) return null;
+      if (target) return this.drop(token, target);
+      const active = gesture; gesture = null;
+      return active ? { evidenceIds: active.ids, targetNodeId: "" } : null;
+    },
     startPointer(ids: readonly string[], id: number, x: number, y: number) {
       const token = this.begin(ids);
       if (!token || !gesture) return false;

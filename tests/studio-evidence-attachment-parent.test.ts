@@ -66,7 +66,7 @@ test('actual mouse/touch pointer handlers capture, highlight and stage the guard
  const owner=createStudioEvidenceDrag(draft,true),ref={current:owner};const plans:unknown[]=[],hover:unknown[]=[];let captured=false;
  const document={elementFromPoint:()=>({closest:()=>({dataset:{evidenceDropNode:target}})})};
  const run=new Function('evidenceDrag','evidenceDragOwner','operationPending','setEvidenceDrop','setEvidenceHover','setRelationStatus','locale','document',compile(handlers.join('\n')+';return {startEvidencePointer,moveEvidencePointer,endEvidencePointer,cancelEvidencePointer};'))(owner,ref,{current:false},(p:unknown)=>plans.push(p),(h:unknown)=>hover.push(h),()=>{},'en',document);
- const source={setPointerCapture(){captured=true;},hasPointerCapture(){return captured;},releasePointerCapture(){captured=false;}};
+ const source={focus(){},setPointerCapture(){captured=true;},hasPointerCapture(){return captured;},releasePointerCapture(){captured=false;}};
  const event={button:0,isPrimary:true,pointerId:7,clientX:1,clientY:1,currentTarget:source,preventDefault(){},stopPropagation(){}};
  run.startEvidencePointer(event,[id]);assert.equal(captured,true);assert.equal(plans.length,0);
  run.moveEvidencePointer({...event,clientX:80,clientY:90});run.endEvidencePointer({...event,clientX:80,clientY:90});assert.equal(captured,false);assert.equal(plans.length,1);assert.deepEqual((plans[0] as {plan:unknown}).plan,{evidenceIds:[id],targetNodeId:target});
