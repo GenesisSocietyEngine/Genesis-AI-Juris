@@ -50,11 +50,15 @@ test("actual parent memory dependencies discard origins on draft/locale/authorit
 
 for(const locale of ["en","ru"] as const)test(`${locale}: actual correction return names the Review origin, stays inert when rendered, and disappears after returning`,()=>{
   const memory=createMaterialReadingMemory({draft:{},locale,allowed:true});let navigations=0;
-  const render=new Function("React","locale","materialReadingMemory","actionTarget","returnToActions",compile(`return (${returnExpression});`));
+  const actualRender=new Function("React","locale","overviewActionReturn","materialReadingMemory","actionTarget","returnToActions",compile(`return (${returnExpression});`));
+  const render=(react:unknown,lang:string,memory:unknown,target:unknown,back:()=>void)=>actualRender(react,lang,{active:()=>false},memory,target,back);
   memory.rememberReview("orphan");
   const html=renderToStaticMarkup(render({createElement},locale,memory,{step:4,id:"studio-node-a"},()=>navigations++));
   assert.match(html,locale==="en"?/Back to review finding/:/Вернуться к замечанию/);assert.match(html,/<button type="button"/);assert.equal(navigations,0);
   assert.equal(renderToStaticMarkup(render({createElement},locale,memory,{step:5,id:"action-orphan"},()=>navigations++)),"");
+  const overviewHtml=renderToStaticMarkup(actualRender({createElement},locale,{active:()=>true},memory,{step:3,id:"studio-case-brief"},()=>navigations++));
+  assert.match(overviewHtml,locale==="en"?/Back to Overview/:/Вернуться к обзору/);
+  assert.equal(navigations,0);
   memory.rememberReview(null);
   assert.match(renderToStaticMarkup(render({createElement},locale,memory,{step:3,id:"studio-source-urls"},()=>navigations++)),locale==="en"?/Back to case actions/:/Вернуться к действиям/);
 });
@@ -69,7 +73,9 @@ test("actual completeness-card correction callback includes the exact Review ide
 
 test("actual focus effect falls back when asynchronous checks remove a returned finding, without retargeting fields",()=>{
   assert.ok(focusExpression&&focusEffect);
-  const id=new Function("actionTarget","checks",compile(`return (${focusExpression});`));
+  const actualId=new Function("showOverview","overviewActionReturn","actionTarget","checks",compile(`return (${focusExpression});`));
+  const id=(target:unknown,checks:unknown)=>actualId(false,{focusRequested:()=>false},target,checks);
+  assert.equal(actualId(true,{focusRequested:()=>true},null,[]),"studio-overview-actions");
   const target={step:5,id:"action-orphan"};
   assert.equal(id(target,[{id:"orphan",level:"warn"}]),"action-orphan");
   assert.equal(id(target,[{id:"orphan",level:"ok"}]),"studio-next-actions");
