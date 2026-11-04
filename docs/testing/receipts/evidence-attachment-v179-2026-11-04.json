@@ -1,0 +1,177 @@
+{
+  "schema": "casevant.sites-evidence-attachment-release.v1",
+  "date": "2026-11-04",
+  "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version_number": 179,
+  "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_6007894afd04819184c06551e51e74a8",
+  "source_commit": "88eec428f922aec28fef37f95b9014c38156a6f6",
+  "source_tree": "a4a78b349ded4d4fd7043867fbfca5f9851b8be2",
+  "deployment": {
+    "id": "appgdep_6aebac3000fc81919cb419acca053ed0",
+    "status": "succeeded",
+    "updated_at": "2026-11-04T22:06:01.363140+00:00",
+    "native_url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "custom_url": "https://casevant.pro"
+  },
+  "audience": "public",
+  "normalized_saved_archive": {
+    "archive_format": "tar",
+    "sediment_file_id": "file_00000000a07c8246b2d544d698de0d1a",
+    "content_hash": "sha256:e5b7222f172b7d1b771789fa038d4b89f19933540c1d8e07ccdd6a9977463f8f",
+    "size_bytes": 52971520,
+    "file_count": 607
+  },
+  "ci": {
+    "candidate_run": 41918194063,
+    "push_run": 41918183185,
+    "main_run": 41919791879,
+    "passed": 1923,
+    "failed": 0,
+    "inherited_skips": 3,
+    "additional_html_checks": 2,
+    "pdf_visual": "pass; existing locks unchanged",
+    "native_snapshot": "Main iOS Native FFI41919791901 and Tax Application41919791887 remain in progress; web-only authorization used. Rust, Android and Flutter pass."
+  },
+  "runtime": {
+    "inputs": 591,
+    "sourceCommit": "88eec428f922aec28fef37f95b9014c38156a6f6",
+    "applicationInputsSha256": "1a500f82b70c5c0a599fd510203912823003a29477ba6f730e0f6ec6303ef8d7",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "both_origin_identity_checks": "pass",
+    "original_ci_output_files_unchanged": 549
+  },
+  "assets": {
+    "current": 138,
+    "retained_from_v178_current_manifest": 57,
+    "previous_manifest_count": 137,
+    "each_origin_verified": 195,
+    "retention_chain_extended": false
+  },
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "allRepresentationsUnchanged": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ]
+  },
+  "production_browser": {
+    "case": "Fresh independent unsaved Canopy example; authorized Chrome session",
+    "existing_saved_case_write_actions": 0,
+    "workspace_save_actions": 0,
+    "provider_actions": 0,
+    "chooser": "explicit destination required; Cancel/Escape restores trigger focus,13links unchanged",
+    "apply": "14nodes/14links; Attached2/Available0; inspector follows actual N02",
+    "undo": "14nodes/13links",
+    "pointer": "Actual supported browser Tab.drag opens exact N02modal before writes; Cancel retains13links",
+    "already_attached": "N05preview says no change needed; Apply disabled;13links unchanged",
+    "locales": [
+      "en",
+      "ru"
+    ],
+    "short_height": {
+      "actual_css_width": 390,
+      "actual_css_height": 480,
+      "document_width": 371,
+      "dialog_width": 366,
+      "dialog_height": 408,
+      "horizontal_overflow": false,
+      "independent_scrolling": true,
+      "keyboard_apply_y": 360,
+      "keyboard_apply_bottom": 404
+    },
+    "desktop_screenshot": "captured and visually inspected; authentic unaltered browser screenshot",
+    "narrow_screenshot": "English390x480CSScapture succeeds after clearing emulation and is visually inspected; Russian narrow capture remains unavailable.",
+    "viewport": "Temporary override reset. Original1903x790CSSdesktop is briefly restored; after reset the session reports390x480. No physical-window restoration claim; retain this tooling acceptance limit.",
+    "acceptance_boundaries": "Not authenticated A/B persistence, sealed downloads, same-tab identity timing or original-artifact acceptance."
+  },
+  "source_workflow": {
+    "stale_opening_rejected": true,
+    "recovered_by": "Cancelled old helper; fresh opening-only helper returned exact88eec428receipt; new packaging helper used that receipt. No approval bypass or duplicate Site version."
+  },
+  "preservation": {
+    "existing_cases_and_tabs": "preserved",
+    "protected_preview": "Original4204user-moved draft retained; agent-owned temporary diagnostics in CaseVant-evidence-20261104/app/JurisApp.tsx remain isolated and unshipped to avoid refreshing that tab",
+    "all_carriers_factories_recovery_pdf_locks": "preserved",
+    "missing_original_disclosures": 43,
+    "remaining_limits": "S03/S05 legitimate owner recovery, same-tab identity/source timing, historical/original artifacts/pagination, source bodies, native/operator/commercial readiness remain separate."
+  },
+  "verified_ci_artifact": {
+    "run": 41919791879,
+    "artifact": 13367726174,
+    "source": "88eec428f922aec28fef37f95b9014c38156a6f6",
+    "sha256": "a92abf5e7879df25574d7e1d2e6ee140a22b81c79c234ee4247545586cfc35af",
+    "bytes": 33236056,
+    "entries": 550,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-evidence-final-20261104\\.artifacts\\verified-main-88eec42"
+  },
+  "raw_package": {
+    "path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-release-20261104\\casevant-evidence-88eec42.tar",
+    "sha256": "fc2afb3e4322f70317d308b82449e27822f5c403aae3fda3f5ec2645199f5952",
+    "bytes": 33400540,
+    "entries": 634,
+    "files": 607,
+    "allFilesMatchVerifiedLocalDist": true,
+    "source": "88eec428f922aec28fef37f95b9014c38156a6f6",
+    "originalCIOutputFilesUnchanged": 549
+  },
+  "production_screenshot": {
+    "file": "docs/testing/evidence-attachment-2026-11-04/production-drag-preview.png",
+    "sha256": "0b330634a763159789efeebbfd5eb05857dd5dfe34c85890383b6c2317fcf4ef",
+    "bytes": 109568,
+    "altered": false
+  },
+  "native_workflow_snapshot": [
+    {
+      "conclusion": "",
+      "databaseId": 41919791901,
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41919791767,
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41919791815,
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41919791838,
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41919791887,
+      "name": "iOS Tax Application",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41919791879,
+      "name": "Root Web and PDF",
+      "status": "completed"
+    }
+  ],
+  "production_narrow_screenshot": {
+    "file": "docs/testing/evidence-attachment-2026-11-04/production-en-narrow.png",
+    "sha256": "648ea7d7d9d90c8f037afff32f9ac835d8290f852c5bc87802efd6f119165f46",
+    "bytes": 25349,
+    "image_pixels": [
+      65536,
+      4292542531
+    ],
+    "actual_css_viewport": [
+      390,
+      480
+    ],
+    "altered": false
+  }
+}
