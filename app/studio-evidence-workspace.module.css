@@ -82,3 +82,8 @@
 .batchControls { display: flex; flex-wrap: wrap; gap: 10px; }
 .batchControls > label { flex: 1 1 190px; min-width: 0; }
 .batchPreview { overflow-wrap: anywhere; }
+
+.nodeViews{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.nodeViews>button{flex:1 1 180px;text-align:left}.nodeViews>button[aria-pressed=true]{background:#dff7ee;border-color:#08777e;color:#07575d;font-weight:650}
+.searchDisclosure{border:1px solid #bed4e3;border-radius:8px;padding:0 10px}.searchDisclosure>summary{font-size:.85rem}.compact .header p{font-size:.8rem}.compact .header .actions>button{flex:1 1 100%;padding:8px}.surface .dragHandle{padding:8px;cursor:grab;font-size:.8rem;min-height:44px}.dragHandle:active{cursor:grabbing}.compact .dragHandle{flex-basis:100%;text-align:left}
+
+.compact .header .actions>button{flex:1 1 80px}.compact .dragHandle{flex:0 0 44px;text-align:center}.compact .dragHandle>span{display:none}.compact .materialSelect{flex:1 1 100px}.compact .header details{margin:0}.compact .header details>summary{padding:6px 0;font-size:.8rem}

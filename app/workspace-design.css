@@ -407,3 +407,10 @@ body:has(.genesis-navigation) :focus-visible { outline: 3px solid var(--workspac
 @media(max-width:600px) {
   .review-check-list .action-tile { flex-direction:column;align-items:stretch;gap:6px; }
 }
+
+.graph-node-shell.evidence-drop-target{outline:4px dashed #08777e;outline-offset:7px;border-radius:12px}.evidence-drop-label{position:absolute;bottom:100%;left:0;z-index:4;background:#08777e;color:#fff;padding:5px 8px;border-radius:6px;font:600 12px/1.4 var(--sans)}
+.evidence-attachment-dialog{box-sizing:border-box;width:min(760px,calc(100vw - 24px));max-height:85vh;overflow:auto;border:1px solid var(--rule);border-radius:14px;padding:20px;background:var(--panel);color:var(--ink)}.evidence-attachment-dialog::backdrop{background:#12334588}.evidence-attachment-heading{display:flex;gap:16px;justify-content:space-between;align-items:start}.evidence-attachment-heading h2{font-size:1.25rem;margin:0}.evidence-attachment-heading>button{min-height:44px;padding:8px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+
+.node-context>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--accent);font-size:.85rem}.node-context>summary::before{content:"›";margin-right:8px}.node-context[open]>summary::before{content:"⌄"}
+
+.evidence-attachment-dialog fieldset{position:static}

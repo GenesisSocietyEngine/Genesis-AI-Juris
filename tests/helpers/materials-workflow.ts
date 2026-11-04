@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { buildCanopyPackage } from '../../app/canopy-fixture';
 import { casePublicationFingerprint } from '../../app/case-integrity';
+import type { EvidenceAttachmentPlan } from '../../app/studio-evidence-attachment';
 import type { StudioDraft } from '../../app/types';
 
 export type Element = { type: unknown; props: Record<string, unknown> & { children?: unknown } };
@@ -72,7 +73,7 @@ const path = resolve('.artifacts/materials-workflow', `component-${sourceRef ?? 
 const Component = (await import(pathToFileURL(path).href)).default as (props: Record<string, unknown>) => Element;
 
 /** Actual materials component/projection/evidence handler; modeled hooks and authority. No DOM/browser/API/storage. */
-export function fixture(locale: 'en' | 'ru' = 'en') {
+export function fixture(locale: 'en' | 'ru' = 'en', options: { plan?: EvidenceAttachmentPlan; onPlanCancel?: () => void } = {}) {
   const runtime = hooks(); globals.__materialsWorkflow = runtime;
   const downloads: Array<{ blob: Blob; filename: string }> = []; globals.__materialsDownloads = downloads;
   let draft = structuredClone(buildCanopyPackage('base').draft), nodeId: string | undefined = 'conditional-pilot';
@@ -88,7 +89,7 @@ export function fixture(locale: 'en' | 'ru' = 'en') {
   const original = JSON.stringify(draft), evidenceIds = [evidence.id, 'qa_evidence_b'];
   const render = () => {
     runtime.begin();
-    const tree = Component({ draft, locale: language, nodeId, authority: { allowed, epoch, verify: async () => { calls++; await gate; return () => allowed; } }, onNode: (id: string) => { nodeId = id; }, onApply: (expected: string, next: StudioDraft) => {
+    const tree = Component({ draft, locale: language, nodeId, attachmentPlan: options.plan, onPlanCancel: options.onPlanCancel, authority: { allowed, epoch, verify: async () => { calls++; await gate; return () => allowed; } }, onNode: (id: string) => { nodeId = id; }, onApply: (expected: string, next: StudioDraft) => {
       if (!allowed || casePublicationFingerprint(draft) !== expected) return false;
       writes.push(next); draft = next; return true;
     } });
