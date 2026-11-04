@@ -1,0 +1,219 @@
+{
+  "schema": "casevant.sites-overview-return-review-density-release.v1",
+  "date": "2026-11-04",
+  "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version_number": 178,
+  "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_77df5712bc308191bc66907aa43570b7",
+  "source_commit": "56de2ccc31fbfd98fb3e36a154607c1a257d2d72",
+  "source_tree": "f01ce400e9079750c9b07573a0ba89ba1986b58a",
+  "deployment": {
+    "id": "appgdep_6aeb29e87a3081919cbbee312e3c55ba",
+    "status": "succeeded",
+    "updated_at": "2026-11-04T12:51:20.846035+00:00",
+    "native_url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "custom_url": "https://casevant.pro"
+  },
+  "audience": "public",
+  "ci": {
+    "candidate_run": 41828965124,
+    "push_run": 41828958156,
+    "main_run": 41830458472,
+    "passed": 1907,
+    "failed": 0,
+    "inherited_skips": 3,
+    "additional_html_checks": 2,
+    "pdf_visual": "pass; existing locks unchanged"
+  },
+  "normalized_saved_archive": {
+    "archive_format": "tar",
+    "sediment_file_id": "file_00000000a840822fb6d6a1255ae4291a",
+    "content_hash": "sha256:fb0373581a811d90621460e01d10f01e982945d4bfaac17e6c212770a83b5f93",
+    "size_bytes": 52910080,
+    "file_count": 601
+  },
+  "runtime": {
+    "inputs": 589,
+    "applicationInputsSha256": "1c3f8e2c4046ba123dbcf4bb01c6acce422e4b6db0837172f2509d319268424b",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "changed_inputs": [
+      "app/ActionTile.tsx",
+      "app/JurisApp.tsx",
+      "app/StudioActionPanel.tsx",
+      "app/StudioOverview.tsx",
+      "app/studio-overview-return.ts",
+      "app/workspace-design.css"
+    ],
+    "both_origin_identity_checks": "pass"
+  },
+  "assets": {
+    "both_origins_verified": 190,
+    "current": 137,
+    "retained_from_v177_current_manifest": 53,
+    "previous_manifest_count": 137,
+    "retention_chain_extended": false
+  },
+  "environment": {
+    "revision": 42,
+    "returned_entries": 13,
+    "all_returned_representations_preserved": true,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ]
+  },
+  "production_browser": {
+    "case": "new blank unsaved test tab only",
+    "existing_tabs_claimed": 0,
+    "case_write_actions": 0,
+    "ai_actions": 0,
+    "brief_keyboard_focus": "studio-case-brief",
+    "overview_return_focus": "Write case brief",
+    "review_return_focus": "action-participants",
+    "finding_controls": 6,
+    "locales": [
+      "en",
+      "ru"
+    ],
+    "narrow_dom": {
+      "width": 390,
+      "height": 640,
+      "document_width": 371,
+      "scroll_width": 371,
+      "min_target_height": 68.5
+    },
+    "short_height": {
+      "width": 390,
+      "height": 480,
+      "focus": "action-nodes:position",
+      "fully_visible": true,
+      "document_width": 371,
+      "scroll_width": 371
+    },
+    "visual": "valid production desktop 1903x860; production narrow screenshots timed out both forced and after reset",
+    "console": "no errors/warnings returned in current scoped test (limit 20); earlier message-channel attribution remains open",
+    "locale_final": "en",
+    "temporary_override": "reset"
+  },
+  "local_browser": {
+    "ordinary_input_retained": true,
+    "canopy_context_amendment_retained": true,
+    "narrow_en_ru_visual": "pass; 390x640",
+    "short_height_keyboard": "pass; 390x480",
+    "density": {
+      "narrow_before": 917.2,
+      "narrow_after": 490.6,
+      "narrow_reduction_percent": 46.5,
+      "wide_before": 376.1,
+      "wide_after": 304,
+      "wide_reduction_percent": 19.2
+    },
+    "scope": "local application, not authenticated stored-case acceptance"
+  },
+  "preservation": {
+    "existing_cases": "untouched",
+    "unsaved_user_tabs": "untouched",
+    "retained_synthetic_tabs": "handoff marked",
+    "protected_previews_4199_4201": "untouched",
+    "schema_authority_persistence_factories_recovery_pdf": "unchanged",
+    "governed_merge_provider_processing_disposal_analytics_pricing_outreach": false
+  },
+  "pr220": {
+    "merged_commit": "7c63f786777055293adec8dbb3ba424f2a7e0b69",
+    "all_checks_final": "pass",
+    "duplicate_runtime_release": false
+  },
+  "limitations": [
+    "Review return remains subject to inherited draft-bound reading-memory invalidation; exact finding controls/callbacks are retained, not a new edit-surviving Review-origin capability.",
+    "One immediate post-return menu activation was not observed open; settled retry worked. Timing/cause unconfirmed.",
+    "S03/S05, legitimate unsupported-owner recovery, same-tab identity/timing, original artifacts/historical pagination, 43 missing originals, v167 caption-boundary history, operator/commercial acceptance remain separate."
+  ],
+  "notes": [
+    "First packaging credential expired; renewed for same Site through authorized hidden stdin.",
+    "An extra local archive assertion assumed root metadata; corrected to helper dist/.openai layout and verified every file against adopted CI dist before deployment."
+  ],
+  "ci_archive": {
+    "run": 41830458472,
+    "artifact": 13322348908,
+    "source": "56de2ccc31fbfd98fb3e36a154607c1a257d2d72",
+    "sha256": "0e8e7f6c0d3e4350ef768a43bcf2f86593f490684ba34ef586f510db28f99512",
+    "bytes": 33225504,
+    "entries": 548,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-ux-return-20261104\\.artifacts\\verified-main-56de2cc"
+  },
+  "input_archive": {
+    "path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-release-20261104\\casevant-v178.tar",
+    "sha256": "53a707ceec4918b309c682429960db65ccb434a5fe88ecb8a39b91d090acfd20",
+    "bytes": 33388244,
+    "entries": 628,
+    "files": 601,
+    "allFilesMatchVerifiedLocalDist": true
+  },
+  "native": {
+    "main_runs": [
+      {
+        "conclusion": "",
+        "databaseId": 41830458331,
+        "status": "in_progress",
+        "workflowName": "iOS Tax Application"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 41830458320,
+        "status": "completed",
+        "workflowName": "Rust CI"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 41830458339,
+        "status": "completed",
+        "workflowName": "Android Native FFI"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 41830458399,
+        "status": "completed",
+        "workflowName": "Flutter Mobile UI"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 41830458472,
+        "status": "completed",
+        "workflowName": "Root Web and PDF"
+      },
+      {
+        "conclusion": "",
+        "databaseId": 41830458342,
+        "status": "in_progress",
+        "workflowName": "iOS Native FFI"
+      }
+    ],
+    "standing_web_only_authorization": true,
+    "receipt_integration": "observe main native terminal before docs-only main push could cancel it"
+  },
+  "screenshots": [
+    {
+      "path": ".artifacts/ux-return/production-compact-en.jpg",
+      "sha256": "2a0579e42648b4c8849043aa55d2ff729bf1294ab2d5a9593263019ed1688f12",
+      "bytes": 106904,
+      "scope": "production desktop 1903x860; narrow production images unavailable"
+    },
+    {
+      "path": ".artifacts/ux-return/review-compact-en-narrow.jpg",
+      "sha256": "dff35079189c800542362b7e50100f52a24b1cd606324ce6e2b403a6d0cce1e5",
+      "bytes": 21444,
+      "scope": "local application 390x640"
+    },
+    {
+      "path": ".artifacts/ux-return/review-compact-ru-narrow.jpg",
+      "sha256": "0e48739870014b200197cbe6bd15f1c3475db3c6f7d0ebd6d569f3499edd0f80",
+      "bytes": 34313,
+      "scope": "local application 390x640"
+    },
+    {
+      "path": ".artifacts/ux-return/review-keyboard-short-height.jpg",
+      "sha256": "16a87f555b2231a54011e15fec02d3577953549ee588b24ebbd94fe0ae4e03fa",
+      "bytes": 24097,
+      "scope": "local application 390x480"
+    }
+  ]
+}
