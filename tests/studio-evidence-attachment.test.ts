@@ -96,3 +96,14 @@ test('chooser Apply waits for an explicit destination and reports the actually s
  assert.ok(f.draft.links.some(l=>l.from===f.evidenceIds[0]&&l.to===target));
  }finally{f.close();}
 });
+
+
+test('already-attached chooser destination disables Apply with no verification, writes or false success',async()=>{
+ const plan={evidenceIds:[] as string[],targetNodeId:''};const f=fixture('en',{plan});const id=f.evidenceIds[0];plan.evidenceIds=[id];
+ const link=f.draft.links.find(l=>l.from===id||l.to===id)!;plan.targetNodeId=link.from===id?link.to:link.from;f.node(undefined);
+ try{const before=JSON.stringify(f.draft),tree=await f.settle();assert.equal(button(tree,'Apply change').props.disabled,true);
+ assert.ok(text(tree).includes('already attached here. No change is needed.'));
+ (button(tree,'Apply change').props.onClick as ()=>void)();await drain();
+ assert.equal(f.writes.length,0);assert.equal(f.verificationCalls,0);assert.equal(JSON.stringify(f.draft),before);
+ }finally{f.close();}
+});

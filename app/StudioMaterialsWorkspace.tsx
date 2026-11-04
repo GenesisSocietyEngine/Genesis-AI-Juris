@@ -144,8 +144,9 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     } catch { if (current()) setNotice(t("Download could not be prepared. Your case is unchanged.", "Не удалось подготовить скачивание. Кейс не изменён.")); }
     finally { finishOperation(ticket); }
   }
+  const attachmentIds = mode === "attach" && target ? evidenceIds.filter(id => !draft.links.some(link => link.from === id && link.to === target || link.to === id && link.from === target)) : evidenceIds;
   async function arrange() {
-    if (!authority?.allowed || !onApply || loaded?.scope !== scope || readFailure || !evidenceIds.length || mode !== "detach" && !target || mode !== "attach" && !nodeId) return;
+    if (!authority?.allowed || !onApply || loaded?.scope !== scope || readFailure || !evidenceIds.length || mode === "attach" && !attachmentIds.length || mode !== "detach" && !target || mode !== "attach" && !nodeId) return;
     const ticket = beginOperation(); if (!ticket) return;
     const expected = casePublicationFingerprint(draft);
     try {
@@ -164,11 +165,12 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     return index < 0 ? "" : `N${String(index + 1).padStart(2, "0")} · ${draft.nodes[index].title}`;
   };
   const destination = target && draft.nodes.some(node => node.id === target && (mode === "attach" || node.id !== nodeId) && !evidenceIds.includes(node.id)) ? nodeLabel(target) : "";
-  const ready = evidenceIds.length > 0 && (mode === "detach" ? Boolean(nodeId) : Boolean(destination));
-  const recordCount = `${evidenceIds.length} record${evidenceIds.length === 1 ? "" : "s"}`;
-  const preview = mode === "detach" ? t(`Disconnect ${recordCount} from ${nodeLabel(nodeId!)}.`, `Отсоединить ${evidenceIds.length} записей от ${nodeLabel(nodeId!)}.`)
+  const ready = evidenceIds.length > 0 && (mode !== "attach" || attachmentIds.length > 0) && (mode === "detach" ? Boolean(nodeId) : Boolean(destination));
+  const changeCount = mode === "attach" ? attachmentIds.length : evidenceIds.length;
+  const recordCount = `${changeCount} record${changeCount === 1 ? "" : "s"}`;
+  const preview = mode === "attach" && destination && !attachmentIds.length ? t("These records are already attached here. No change is needed.", "Эти материалы уже прикреплены здесь. Изменения не нужны.") : mode === "detach" ? t(`Disconnect ${recordCount} from ${nodeLabel(nodeId!)}.`, `Отсоединить ${evidenceIds.length} записей от ${nodeLabel(nodeId!)}.`)
           : destination ? mode === "move" ? t(`Move ${recordCount} from ${nodeLabel(nodeId!)} to ${destination}.`, `Перенести ${evidenceIds.length} записей из ${nodeLabel(nodeId!)} в ${destination}.`)
-            : t(`Attach ${recordCount} to ${destination}; keep existing connections.`, `Прикрепить ${evidenceIds.length} записей к ${destination}; сохранить существующие связи.`)
+            : t(`Attach ${recordCount} to ${destination}; keep existing connections.`, `Прикрепить ${changeCount} записей к ${destination}; сохранить существующие связи.`)
           : t("Choose a destination to preview the change.", "Выберите назначение для предпросмотра изменения.");
   return <section ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
     {!attachmentPlan && <header className={styles.header}><div><h3>{nodeId ? t("Node evidence", "Материалы узла") : t("Case materials library", "Библиотека материалов кейса")}</h3>
