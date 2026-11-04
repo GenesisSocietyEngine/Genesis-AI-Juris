@@ -1,0 +1,104 @@
+{
+  "schema": "casevant.ui-clarity-audit.v1",
+  "date": "2026-11-04",
+  "baseSource": "ef8513624e9739b317ae50f8b2b7c7f8dd5d4502",
+  "deployedSource": "5e5840e23ac1da4141741accc178032a3273594b",
+  "productionBaseline": {
+    "viewport": [
+      390,
+      640
+    ],
+    "lowerWidth": 299,
+    "organizationWidth": 149.59375,
+    "footerWidth": 133.40625,
+    "footerGridColumn": "2",
+    "footerGridRow": "1"
+  },
+  "syntheticCandidate": {
+    "viewport": [
+      390,
+      640
+    ],
+    "documentWidth": 375,
+    "scrollWidth": 375,
+    "lowerWidth": 303.35,
+    "organizationWidth": 303.35,
+    "footerWidth": 303.35,
+    "footerGridColumn": "auto",
+    "footerGridRow": "auto",
+    "actions": 1,
+    "visibleWarnings": 6,
+    "actionHeight": 44,
+    "scope": "actual components; synthetic session and callback sink; no persistence authority"
+  },
+  "focusedTests": {
+    "passed": 28,
+    "failed": 0
+  },
+  "artifacts": [
+    {
+      "path": ".artifacts/ui-density/narrow-ru-drawer.jpg",
+      "sha256": "94a23961c804ecf78339af7ef362e68410f73c266d470007c267819434e4b46e",
+      "bytes": 22493,
+      "scope": "local synthetic components"
+    },
+    {
+      "path": ".artifacts/ui-density/narrow-ru-actions.jpg",
+      "sha256": "bb8f3fbe8a4a00dd4a50554a9c116b176b6c717904404a7c12e4c5bf75c658b5",
+      "bytes": 41974,
+      "scope": "local synthetic components"
+    },
+    {
+      "path": ".artifacts/ui-density/application-narrow-actions-en.jpg",
+      "sha256": "934e00bab26b15a897ea4b36fe049a6dfc1a7aa35d0924b85bd0e8d39e023323",
+      "bytes": 37729,
+      "scope": "local application; unauthenticated blank test draft"
+    },
+    {
+      "path": ".artifacts/ui-density/short-en-drawer.jpg",
+      "sha256": "5847e92eb13cc9198b93fcae7af5493ce85488a0ba89c284eb14e9d96671d446",
+      "bytes": 19296,
+      "scope": "local synthetic component"
+    },
+    {
+      "path": ".artifacts/ui-density/short-en-canopy.jpg",
+      "sha256": "b5f5a15484541b72e9c40e2448f38f408204e77d6c40154285f46e086997e28b",
+      "bytes": 24724,
+      "scope": "local synthetic component"
+    },
+    {
+      "path": ".artifacts/ui-density/application-desktop-en.jpg",
+      "sha256": "14b17edef847f4dcf73969cfbc129bb28f084d19c9eba7ca2f6b09bc5c4f39ab",
+      "bytes": 80145,
+      "scope": "local unauthenticated application"
+    }
+  ],
+  "typecheck": "pass",
+  "touchedLint": "pass",
+  "shortSyntheticViewport": {
+    "width": 390,
+    "height": 480,
+    "documentWidth": 375,
+    "scrollWidth": 375,
+    "keyboard": "Tab reaches More; Escape returns Menu",
+    "languages": [
+      "en",
+      "ru"
+    ]
+  },
+  "desktopApplicationViewport": {
+    "width": 1280,
+    "height": 800,
+    "documentWidth": 1265,
+    "scrollWidth": 1265
+  },
+  "nonEmptyActions": [
+    "Review case context",
+    "Add evidence"
+  ],
+  "distinctEvidenceCallback": {
+    "step": 3,
+    "id": "studio-evidence-composer",
+    "nodeType": "evidence"
+  }
+}

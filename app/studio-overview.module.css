@@ -89,3 +89,10 @@
   .briefBar { align-items: flex-start; flex-direction: column; gap: 12px; }
   .briefBar button { flex-shrink: 1; }
 }
+
+/* One destination per action; every structural warning remains visible. */
+.actions > li { padding: 12px; margin: 0 0 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); }
+.actions > li:first-child { padding-top: 12px; }
+.workspace .nextAction { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; color: var(--cyan); border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 5%, var(--panel)); font-weight: 600; }
+.actionChecks { margin: 10px 0 0; padding-left: 18px; }
+.actions .actionChecks > li { border: 0; padding: 3px 0; font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
