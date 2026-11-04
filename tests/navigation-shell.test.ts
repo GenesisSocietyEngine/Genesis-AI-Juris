@@ -64,21 +64,23 @@ test("verified member sees the shared account and organization but no owner-only
   }
 });
 
-test("optional Studio and simulation actions survive canonical navigation", () => {
+test("duplicate Studio links are removed while simulation and account actions survive", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, { expandable: true, locale: "en", active: "studio", location: "/studio", onLanguage: noop, newCase: noop, importCase: noop,
     operationsActions: createElement("button", { onClick: noop }, "Restore a play session"), menu: createElement("button", { onClick: noop }, "Use dark theme") }));
-  for (const label of ["New blank case", "Import case or prompt", "Restore a play session", "Use dark theme", "Saved Studio drafts", "Workflow video · CaseVant ↗"]) assert.ok(html.includes(label), label);
+  assert.doesNotMatch(html, /New blank case|Import case or prompt/);
+  assert.match(html, /studio-sidebar-actions/);
+  for (const label of ["Restore a play session", "Use dark theme", "Saved Studio drafts", "Workflow video · CaseVant ↗"]) assert.ok(html.includes(label), label);
 });
 
 // Exercise the actual component handlers and real NavigationController without
 // claiming DOM layout/focus or browser acceptance. AST extraction avoids
 // reproducing their departure logic or adding test-only production exports.
 const source = ts.createSourceFile("LegacyGenesisNavigation.tsx", readFileSync("app/LegacyGenesisNavigation.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const wanted = new Set(["depart", "cancelPending", "guardedLink", "follow", "studioAction"]);
+const wanted = new Set(["depart", "cancelPending", "guardedLink", "follow"]);
 const functions = new Map<string, string>();
 function visit(node: ts.Node) { if (ts.isFunctionDeclaration(node) && node.name && wanted.has(node.name.text)) functions.set(node.name.text, node.getText(source)); ts.forEachChild(node, visit); }
 visit(source); assert.equal(functions.size, wanted.size);
-const bundle = await build({ stdin: { loader: "ts", resolveDir: resolve("app"), contents: `import {isWorkspaceDepartureClick} from './departure-click'; export default function({navigation,allowDeparture,onNavigate,closeDrawer,window,document,requestAnimationFrame}) { const locale='en'; let pending=null; const setPending=value=>{pending=typeof value==='function'?value(pending):value;}; ${[...functions.values()].join("\n")} return {depart,cancelPending,guardedLink,follow,studioAction,get pending(){return pending;}}; }` }, bundle: true, write: false, platform: "node", format: "esm" });
+const bundle = await build({ stdin: { loader: "ts", resolveDir: resolve("app"), contents: `import {isWorkspaceDepartureClick} from './departure-click'; export default function({navigation,allowDeparture,onNavigate,closeDrawer,window,document,requestAnimationFrame}) { const locale='en'; let pending=null; const setPending=value=>{pending=typeof value==='function'?value(pending):value;}; ${[...functions.values()].join("\n")} return {depart,cancelPending,guardedLink,follow,get pending(){return pending;}}; }` }, bundle: true, write: false, platform: "node", format: "esm" });
 const generated = resolve(".artifacts/navigation-shell/handlers.mjs"); mkdirSync(resolve(".artifacts/navigation-shell"), { recursive: true }); writeFileSync(generated, bundle.outputFiles[0].text);
 const handlers = (await import(pathToFileURL(generated).href)).default;
 
@@ -106,9 +108,8 @@ test("actual handlers retain Studio pending guard without intercepting modified/
   assert.equal(newWindow.defaultPrevented, false); assert.equal(h.guardCalls(), 0);
   const normal = click(); h.h.follow(normal, "templates"); assert.equal(normal.defaultPrevented, true); assert.deepEqual(h.views, []);
   const page = click("/account"); h.h.guardedLink(page); assert.equal(page.defaultPrevented, true); assert.deepEqual(h.leaves, []);
-  let actions = 0; h.h.studioAction(() => actions++); assert.equal(actions, 0);
-  h.setAllowed(true); h.h.studioAction(() => actions++); h.h.follow(click(), "templates");
-  assert.equal(actions, 1); assert.deepEqual(h.views, ["templates"]);
+  h.setAllowed(true); h.h.follow(click(), "templates");
+  assert.deepEqual(h.views, ["templates"]);
 });
 
 test("actual shared departure preserves Stay, explicit Discard and uncertain-write protection", async () => {

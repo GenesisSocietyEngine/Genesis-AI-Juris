@@ -317,13 +317,9 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /useState<"user" \| "developer">\("user"\)/, "User view must be the default Studio surface");
   assert.match(appSource, /Вид пользователя/);
   assert.match(appSource, /Вид разработчика/);
-  assert.match(appSource, /studio-more-actions/, "secondary User-view commands must be grouped under More actions");
-  assert.match(appSource, /document\.addEventListener\("pointerdown", closeMoreActionsOnOutsidePointer, true\)/, "clicking outside closes More actions");
-  assert.match(appSource, /event\.key !== "Escape" \|\| !menu\?\.open/, "Escape closes More actions only while it is open");
-  assert.match(appSource, /menu\.querySelector<HTMLElement>\("summary"\)\?\.focus\(\)/, "Escape restores focus to the More actions trigger");
-  assert.match(css, /\.studio-hero:has\(\.studio-more-actions\[open\]\)\{z-index:140\}/, "an open actions menu raises its parent stacking context above later Studio panels");
-  assert.match(css, /\.studio-more-actions>\.studio-more-menu\{[^}]*z-index:151[^}]*background:var\(--strong\)/, "the actions menu is an opaque top-layer surface");
-  assert.match(moreActionsSource, /"Case prompt" : "Промпт кейса"/, "the portable case prompt remains a named More actions group");
+  assert.doesNotMatch(appSource, /className="studio-more-actions"/, "secondary commands live in the sidebar, without a duplicate popup");
+  assert.match(moreActionsSource, /"Case briefs" : "Описание кейса"/);
+  assert.match(moreActionsSource, /"Files & backups" : "Файлы и копии"/);
   assert.match(moreActionsSource, /<CaseMarkdownActions locale=\{locale\} loadDisabled=\{!canDuplicate\} exportDisabled=\{!canDuplicate \|\| !exportReady\}/, "portable prompt actions preserve inspection and export-readiness restrictions");
   assert.match(outcomeParametersSource, /Outcome recalculation parameters/);
   assert.match(outcomeParametersSource, /Financial & financing/);

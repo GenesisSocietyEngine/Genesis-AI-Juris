@@ -1,8 +1,9 @@
 "use client";
 
+import { useStudioActionsNavigation } from "./StudioActionsNavigation";
 import { pendingSignOutMessage } from "./session-boundary";
 
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { workspaceDestination, workspaceSignInPath } from "./workspace-navigation";
 import { useNavigationController, useNavigationSession } from "./NavigationSession";
 import { isWorkspaceDepartureClick } from "./departure-click";
@@ -50,7 +51,8 @@ export type GenesisNavigationProps = {
   operationsActions?: ReactNode;
 };
 
-export default function GenesisNavigation({ locale, location, active, onNavigate, onLanguage, menu, returnTo, allowDeparture, newCase, importCase, operationsActions }: GenesisNavigationProps) {
+export default function GenesisNavigation({ locale, location, active, onNavigate, onLanguage, menu, returnTo, allowDeparture, operationsActions }: GenesisNavigationProps) {
+  const { setTarget } = useStudioActionsNavigation();
   const moreRef = useRef<HTMLDetailsElement>(null);
   const organizationRef = useRef<HTMLDetailsElement>(null);
   const drawerRef = useRef<HTMLDialogElement>(null);
@@ -65,7 +67,16 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   const organizationLabel = session.selected ? organizationDisplayLabel(session.selected, session.organizations, locale) : (en ? "No organization selected" : "Организация не выбрана");
   const href = (path: string) => workspaceDestination(path, location);
   function closeMore() { if (moreRef.current) moreRef.current.open = false; }
-  function closeDrawer(focus = false) { drawerRef.current?.close();setDrawerOpen(false);if(focus)menuButton.current?.focus(); }
+  const closeDrawer = useCallback((focus = false) => { drawerRef.current?.close();setDrawerOpen(false);if(focus)menuButton.current?.focus(); }, []);
+  const studioActionsSlot = useCallback((node: HTMLDivElement | null) => {
+    setTarget(node);
+    if (!node) return;
+    // Portal events follow the editor's React tree. Listen on this owned DOM
+    // slot so mobile navigation closes before the original action opens a dialog.
+    const dismiss = (event: Event) => { if (event.target instanceof Element && event.target.closest("button,a")) closeDrawer(); };
+    node.addEventListener("click", dismiss, true);
+    return () => { node.removeEventListener("click", dismiss, true); setTarget(null); };
+  }, [setTarget, closeDrawer]);
   useEffect(()=>{const media=window.matchMedia("(max-width: 800px)");const update=()=>{setMobile(media.matches);setDrawerOpen(false);};update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update);},[]);
   useEffect(()=>{if(pending)confirmRef.current?.showModal();else confirmRef.current?.close();},[pending]);
   function cancelPending() { pending?.plan?.cancel?.(); setPending(null); }
@@ -110,24 +121,19 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     event.preventDefault(); closeDrawer();onNavigate(view);
     requestAnimationFrame(()=>{const main=document.querySelector<HTMLElement>("main h1, main");if(main){main.tabIndex=-1;main.focus();}});
   }
-  function studioAction(action: () => void) {
-    if(allowDeparture&&!allowDeparture())return;
-    action();closeDrawer();
-  }
   const contents=<>
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
       {WORKSPACE_PAGES.map(item => {
         const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos") || (active === "community" && item.view === "matters");
-        return <details className="genesis-nav-group" key={`${item.view}-${selected}`} open={selected}>
+        return <Fragment key={`${item.view}-${selected}`}><details className="genesis-nav-group" open={selected}>
           <summary><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
           <div className="genesis-nav-children">
             <a href={href(item.path)} aria-current={selected && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : item.view === "demos" ? "Browse demo cases" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : item.view === "demos" ? "Каталог демо-кейсов" : `Открыть: ${item.ru}`)}</a>
-            {item.view === "studio" && <>{newCase && <button type="button" onClick={() => studioAction(newCase)}>{en ? "New blank case" : "Новый пустой кейс"}</button>}{importCase && <button type="button" onClick={() => studioAction(importCase)}>{en ? "Import case or prompt" : "Импорт кейса или промпта"}</button>}</>}
             {item.view === "matters" && <a href={href("/studio?view=community")} aria-current={active === "community" ? "page" : undefined} onClick={event => follow(event,"community")}>{en ? "Saved Studio drafts" : "Черновики Studio"}</a>}
             {item.view === "play" && operationsActions}
           </div>
-        </details>;
+        </details>{item.view === "studio" && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
     </nav>
     <div className="genesis-nav-lower">

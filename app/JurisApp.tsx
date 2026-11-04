@@ -1,4 +1,5 @@
 "use client";
+import StudioActionsNavigation from "./StudioActionsNavigation";
 import { studioReviewAction } from "./studio-review-action";
 import { createMaterialReadingMemory } from "./studio-material-search";
 import { applyReviewedLocalPrompt, studioLocalReview, type StudioLocalReview } from "./studio-local-review";
@@ -2212,7 +2213,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
 
   return (
-    <div className={`app-shell theme-office${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
+    <StudioActionsNavigation><div className={`app-shell theme-office${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
       <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")}/>
       <input ref={playedCaseImportRef} hidden tabIndex={-1} aria-hidden="true" className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
@@ -2240,7 +2241,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       {!privatePlayConcealed && (selectedOption || resultOption) && activeScenario && stage && <Suspense fallback={<p className="page-width" role="status">{locale === "en" ? "Loading the decision…" : "Загрузка решения…"}</p>}><DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} /></Suspense>}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
       {feedbackTarget && !studioConcealed && !privatePlayConcealed && <Suspense fallback={<p className="session-toast" role="status">{locale === "en" ? "Loading feedback form…" : "Загрузка формы отзыва…"}</p>}><FeedbackDialog Icon={Icon} locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} /></Suspense>}
-    </div>
+    </div></StudioActionsNavigation>
   );
 }
 
@@ -2462,7 +2463,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const graphDeckRef = useRef<HTMLElement | null>(null);
   const graphViewportRef = useRef<HTMLDivElement | null>(null);
   const paletteDragRef = useRef<{ type: StudioNodeType; draft: StudioDraft; scope: string | null } | null>(null);
-  const moreActionsRef = useRef<HTMLDetailsElement | null>(null);
   const pendingAuthActionRef = useRef<"save" | "submit">(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("resume_action") === "submit" ? "submit" : "save");
   const saveOperationRef = useRef(0);
   const saveInFlightRef = useRef(false);
@@ -2580,27 +2580,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   useEffect(() => {
     graphBoundsRef.current = graphBounds;
   }, [graphBounds]);
-  useEffect(() => {
-    function closeMoreActionsOnOutsidePointer(event: PointerEvent) {
-      const menu = moreActionsRef.current;
-      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
-        menu.open = false;
-      }
-    }
-    function closeMoreActionsOnEscape(event: KeyboardEvent) {
-      const menu = moreActionsRef.current;
-      if (event.key !== "Escape" || !menu?.open) return;
-      const focusWasInside = document.activeElement instanceof Node && menu.contains(document.activeElement);
-      menu.open = false;
-      if (focusWasInside) menu.querySelector<HTMLElement>("summary")?.focus();
-    }
-    document.addEventListener("pointerdown", closeMoreActionsOnOutsidePointer, true);
-    document.addEventListener("keydown", closeMoreActionsOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeMoreActionsOnOutsidePointer, true);
-      document.removeEventListener("keydown", closeMoreActionsOnEscape);
-    };
-  }, []);
   const readGraph = useCallback(() => {
     const viewport = graphViewportRef.current;
     const width = graphBoundsRef.current.width;
@@ -3028,7 +3007,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     setPromptLimitNotice(false);
     setPrompt(value);
     selectGuidedStep(1);
-    moreActionsRef.current?.removeAttribute("open");
     setCaseReportStatus(locale === "en" ? "Prompt loaded. Review the description, then verify or analyse it before applying any changes." : "Промпт загружен. Проверьте описание, затем проверьте или проанализируйте его перед применением изменений.");
     window.requestAnimationFrame(() => document.getElementById("studio-case-brief")?.focus());
   }
@@ -3049,7 +3027,6 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
           clearTransientEditorSelection();
           setCanonicalCandidate(null);
           setCaseReportStatus("");
-          moreActionsRef.current?.removeAttribute("open");
           selectGuidedStep(!restored.title.trim() && !restored.nodes.length && !restored.links.length ? 1 : 4);
         });
       } else if (kind === "prompt") {
@@ -3526,7 +3503,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       onCreate={() => { if (startBlankDraft()) setEditorOpened(true); }} onImport={() => importRef.current?.click()} onBrowseDemos={browseDemos} onContinue={enterEditor}/></Suspense>
     <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" aria-label={locale === "en" ? "Import case or prompt" : "Импортировать кейс или промпт"} onChange={(event) => { const file = event.target.files?.[0]; if (file) { enterEditor(); void loadStudioFile(file); } event.target.value = ""; }}/>
   </>;
-  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} savedCaseHref={customCaseId && ["saved", "submitted"].includes(visibleWorkspaceState) ? savedStudioPath(customCaseId, "run_compare", locale) : undefined} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={browseDemos} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
+  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} savedCaseHref={customCaseId && ["saved", "submitted"].includes(visibleWorkspaceState) ? savedStudioPath(customCaseId, "run_compare", locale) : undefined} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={browseDemos} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus} markdownFile={loadStudioFile}/></Suspense>;
   const reportUnavailable = !canDuplicate || !draft.title.trim() || !draft.nodes.length;
   const reportRequirements = <>
     <p role="status">{!canDuplicate
@@ -3567,7 +3544,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
           <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !saveWithinEnvelope || restorePending || workspaceState === "saving"} aria-describedby="studio-save-status"><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : restorePending ? (locale === "en" ? "Preparing workspace…" : "Подготовка рабочего пространства…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
           <button className="secondary-cta report-cta" disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} aria-describedby={reportUnavailable ? "studio-report-requirements" : undefined} onClick={() => void openCaseReport()} title={locale === "en" ? "Preview a preliminary report; independent approval is separate" : "Предпросмотр предварительного отчёта; независимое утверждение выполняется отдельно"}><Icon name="download"/>{locale === "en" ? "Create analytical report" : "Сформировать аналитический отчёт"}</button>
           {displayMode === "developer" && <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={restorePending || Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>}
-          {displayMode === "developer" ? portableStudioActions : <details ref={moreActionsRef} className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
+          {portableStudioActions}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" onChange={(event) => { const file=event.target.files?.[0]; if(file) void loadStudioFile(file); event.target.value=""; }}/>
         </div>
         {!restorePending && !derivationsSettled && derivationError && <div id="studio-save-readiness" className="studio-submit-blocker" role="status"><span>{locale === "en" ? "Analysis checks could not finish. Your edits remain open. Saving a working draft does not complete these checks." : "Не удалось завершить проверку модели. Правки остаются открытыми. Сохранение черновика не завершает эти проверки."}</span><button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button></div>}

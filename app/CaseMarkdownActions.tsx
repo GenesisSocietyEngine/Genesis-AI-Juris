@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { readStudioPromptFile, studioPromptFileError } from "./studio-prompt-file";
 
-export default function CaseMarkdownActions({locale,loadDisabled,exportDisabled,loaded,opened,failed}:{locale:"en"|"ru";loadDisabled:boolean;exportDisabled:boolean;loaded:(value:string)=>void;opened:()=>void;failed:(message:string)=>void}){
+export default function CaseMarkdownActions({locale,loadDisabled,exportDisabled,loaded,opened,failed,loadFile}:{locale:"en"|"ru";loadDisabled:boolean;exportDisabled:boolean;loaded:(value:string)=>void;opened:()=>void;failed:(message:string)=>void;loadFile?:(file:File)=>void|Promise<void>}){
   const input=useRef<HTMLInputElement|null>(null);
   async function load(file:File){
     try { loaded(await readStudioPromptFile(file)); }
@@ -19,6 +19,6 @@ export default function CaseMarkdownActions({locale,loadDisabled,exportDisabled,
   return <>
     <button className="secondary-cta" onClick={()=>input.current?.click()} disabled={loadDisabled}>{locale==="en"?"Import case prompt (.md)":"Импорт промпта кейса (.md)"}</button>
     <button className="secondary-cta markdown-export-action" onClick={(event)=>void open(event.currentTarget)} disabled={exportDisabled}>{locale==="en"?"Export case brief (.md)":"Экспорт описания кейса (.md)"}</button>
-    <input ref={input} className="visually-hidden" type="file" accept=".md,text/markdown,text/plain" onChange={(event)=>{const file=event.target.files?.[0];if(file)void load(file);event.target.value="";}}/>
+    <input ref={input} className="visually-hidden" type="file" accept=".md,text/markdown,text/plain" onChange={(event)=>{const file=event.target.files?.[0];if(file&&!loadDisabled){if(loadFile)void loadFile(file);else void load(file);}event.target.value="";}}/>
   </>;
 }
