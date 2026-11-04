@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import StudioActionsNavigation from "./StudioActionsNavigation";
 import { NavigationController } from "./navigation-controller";
 import { clearOrganizationSelection } from "./organization-client";
 import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceDraftV2Key, studioDeviceScope } from "./studio-device-storage";
@@ -61,7 +62,7 @@ export default function NavigationSession({ children, controller: supplied }: {c
     return () => {removeHistory();window.removeEventListener("beforeunload", warn);document.removeEventListener("click",follow,true);};
   }, [controller]);
   return <NavigationSessionContext.Provider value={controller}>
-    <div inert={state.busy || state.endingSession || state.phase === "leaving" ? true : undefined} hidden={state.endingSession}>{children}</div>
+    <div inert={state.busy || state.endingSession || state.phase === "leaving" ? true : undefined} hidden={state.endingSession}><StudioActionsNavigation>{children}</StudioActionsNavigation></div>
     {state.endingSession?<main className="studio-entry"><h1>{en?"Signing out":"Выход"}</h1><p role="status">{state.busy?(en?"Ending your session…":"Завершение сеанса…"):(en?"Sign-out could not be confirmed. Retry.":"Не удалось подтвердить выход. Повторите.")}</p>{!state.busy&&<button type="button" onClick={()=>void controller.signOut(en?"en":"ru")}>{en?"Retry sign out":"Повторить выход"}</button>}</main>:state.busy&&<div className="genesis-navigation-progress"><p role="status">{en?"Checking the selected organization…":"Проверка выбранной организации…"}</p>{controller.canSignOut&&<button type="button" onClick={()=>void controller.signOut(en?"en":"ru")}>{en?"Sign out now":"Выйти сейчас"}</button>}</div>}
   </NavigationSessionContext.Provider>;
 }

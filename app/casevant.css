@@ -260,3 +260,13 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .first-case-compact summary { display: list-item; min-height: 44px; align-content: center; box-sizing: border-box; }
 .first-case-compact summary:focus-visible { outline: 3px solid var(--workspace-accent); outline-offset: 2px; }
 .first-case-compact #first-case-save-limit { flex-basis: 100%; }
+
+/* Current editor commands share the sidebar and mobile drawer; no popup overlay. */
+.studio-sidebar-actions:empty { display: none; }
+.studio-sidebar-action-groups { min-width: 0; }
+.studio-sidebar-group > summary { font-size: .8125rem; padding-inline: .5rem; }
+.studio-sidebar-group .genesis-nav-children { margin-left: .4rem; }
+.studio-sidebar-group .secondary-cta { width: 100%; justify-content: flex-start; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.studio-sidebar-group small { display: block; padding: .4rem .5rem; font-size: .75rem; line-height: 1.5; color: var(--workspace-muted); }
+.studio-sidebar-group button:disabled { opacity: .55; cursor: not-allowed; }
+.studio-sidebar-group summary:focus-visible, .studio-sidebar-group button:focus-visible, .studio-sidebar-group a:focus-visible { outline: 2px solid var(--workspace-accent); outline-offset: 2px; }
