@@ -1,0 +1,276 @@
+{
+  "schema": "casevant-studio-ui-release-v1",
+  "date": "2026-11-04",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version": 176,
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_00d01b1b58b48191abc76eaea65c0b3e",
+  "runtimeSource": "5e5840e23ac1da4141741accc178032a3273594b",
+  "sourceTree": "15a32c0580a9239fbc998ea7b6d82c7bfbad6c3c",
+  "applicationInputsSha256": "bf23b5504eea6819b0d33072ea9e58b570b23525811760814de06ef88bb748f8",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "runtimeInputCount": 588,
+  "deployment": {
+    "id": "appgdep_6aeafddc2e888191898971bca4345305",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "updatedAt": "2026-11-04T09:42:14.636597+00:00",
+    "envRevision": 42
+  },
+  "nativeSavedArchive": {
+    "format": "tar",
+    "contentHash": "sha256:bc06844d3f7dd05f523cd95918ec374ce6c2edfef942f1b9d1dfd8a627981331",
+    "bytes": 52930560,
+    "files": 605
+  },
+  "sourceHelper": {
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "commit_sha": "5e5840e23ac1da4141741accc178032a3273594b",
+    "archive": "C:/Users/User/Documents/ChatGPT/software/CaseVant-release-20261104/casevant-v176.tar"
+  },
+  "preservation": {
+    "audienceBefore": "public",
+    "audienceAfter": "public",
+    "environmentRevision": 42,
+    "returnedEnvironmentRepresentations": 13,
+    "returnedEnvironmentRepresentationsEqual": true,
+    "storageBindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "runtimePolicyOrCaseSchemaChanged": false,
+    "nativePR215Included": false
+  },
+  "ci": {
+    "candidate": {
+      "source": "576891b833904d245a43318b1160435d0d5596f8",
+      "webPdfRun": 41805816254,
+      "status": "success"
+    },
+    "main": {
+      "source": "5e5840e23ac1da4141741accc178032a3273594b",
+      "webPdfRun": 41807361963,
+      "status": "success"
+    },
+    "testsPassed": 1895,
+    "testsFailed": 0,
+    "inheritedSkips": 3,
+    "additionalHtmlChecks": 2,
+    "focusedUiTests": 39,
+    "pdfLocks": "unchanged",
+    "completeDependencyAuditFindings": 0,
+    "productionDependencyAuditFindings": 0
+  },
+  "retention": {
+    "policy": "immediately-previous-current-manifest-only",
+    "previousSource": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+    "previousCurrentAssets": 137,
+    "currentAssets": 137,
+    "additionallyRetainedAssets": 57,
+    "total": 194
+  },
+  "browser": {
+    "surface": "fresh production tab in the existing authorized Chrome owner session",
+    "savedRowsOpened": 0,
+    "caseMutationButtonsActivated": 0,
+    "existingUserTabsClaimedOrReloaded": 0,
+    "englishAndRussianNavigationObserved": true,
+    "selectedOverviewAndFramedControlsObserved": true,
+    "nativeHelpEnterEscapeObserved": true,
+    "narrow": {
+      "cssWidth": 390,
+      "cssHeight": 640,
+      "pageWidth": 371,
+      "workflowControlHeight": 44,
+      "interactionAndDomChecks": true,
+      "productionScreenshot": false,
+      "captureLimit": "Page.captureScreenshot timeout at 5000ms",
+      "localNarrowScreenshots": true
+    },
+    "overrideReset": true,
+    "finalLocale": "en",
+    "finalNormalCssViewport": {
+      "width": 1903,
+      "height": 790
+    },
+    "previewTabAndServerRetained": true,
+    "authenticatedSaveOrExportAcceptance": false,
+    "console": {
+      "returnedErrors": 8,
+      "message": "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received",
+      "attribution": "unconfirmed; only page URL supplied, no stack",
+      "applicationBrowserRuntimeMessagingCallSiteFound": false,
+      "searchScope": "app, worker and public source only; does not cover injected extensions/dependencies",
+      "suppressionAdded": false
+    }
+  },
+  "limits": [
+    "Production narrow screenshot capture is blocked; local screenshots do not substitute for it.",
+    "S03/S05 persistence, legitimate owner recovery, same-tab identity/timing and historical-artifact acceptance remain separate.",
+    "43 missing-original disclosures, case/source identities, all carriers/factories/recovery and PDF locks remain.",
+    "Native PR215 remains an independent unmerged diagnostic checkpoint.",
+    "No governed merging, provider processing, disposal, analytics, pricing or outreach added.",
+    "Eight returned browser message-channel errors lack source attribution; do not infer or suppress a product defect."
+  ],
+  "ciArchive": {
+    "runId": 41807361963,
+    "artifactId": 13312000574,
+    "artifactName": "verified-web-build-5e5840e23ac1da4141741accc178032a3273594b-41807361963",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-5e5840e.zip",
+    "sha256": "609a967806e868750761fb7d0b776736782fd847e9c5afd9fc40a3403747114e",
+    "bytes": 33222780,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-5e5840e",
+    "entries": 548
+  },
+  "rawHelperArchive": {
+    "source": "5e5840e23ac1da4141741accc178032a3273594b",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-release-20261104\\casevant-v176.tar",
+    "sha256": "12c6413c4738766c02a3de5b189a677578ce83b76e8082f053835a8a32314ad2",
+    "bytes": 33387751,
+    "entries": 632,
+    "runtimeInputs": 588,
+    "allRuntimeInputsVerified": true,
+    "bindingsPreserved": true
+  },
+  "runtimeVerification": [
+    {
+      "origin": "https://casevant.pro",
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "5e5840e23ac1da4141741accc178032a3273594b",
+        "applicationInputsSha256": "bf23b5504eea6819b0d33072ea9e58b570b23525811760814de06ef88bb748f8",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "5e5840e23ac1da4141741accc178032a3273594b",
+        "applicationInputsSha256": "bf23b5504eea6819b0d33072ea9e58b570b23525811760814de06ef88bb748f8",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "verified": true
+    }
+  ],
+  "publicAssetVerification": [
+    {
+      "origin": "https://casevant.pro",
+      "passed": true,
+      "assetCount": 194,
+      "verifiedCount": 194,
+      "expectedBuild": {
+        "sourceCommit": "5e5840e23ac1da4141741accc178032a3273594b",
+        "previousSourceCommit": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+        "applicationInputsSha256": "bf23b5504eea6819b0d33072ea9e58b570b23525811760814de06ef88bb748f8",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 57
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "passed": true,
+      "assetCount": 194,
+      "verifiedCount": 194,
+      "expectedBuild": {
+        "sourceCommit": "5e5840e23ac1da4141741accc178032a3273594b",
+        "previousSourceCommit": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+        "applicationInputsSha256": "bf23b5504eea6819b0d33072ea9e58b570b23525811760814de06ef88bb748f8",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 137,
+        "retainedPreviousAssetCount": 57
+      }
+    }
+  ],
+  "nativeWorkflowSnapshot": [
+    {
+      "conclusion": "success",
+      "databaseId": 41807362022,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41807362250,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41807361936,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41807361963,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "Root Web and PDF",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41807362081,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 41807361978,
+      "headSha": "5e5840e23ac1da4141741accc178032a3273594b",
+      "name": "iOS Tax Application",
+      "status": "completed"
+    }
+  ],
+  "nativeWorkflowSnapshotAt": "2026-11-04T09:58:43.259342+00:00",
+  "screenshots": [
+    {
+      "path": ".artifacts/sidebar-actions-20261104/prod-v176-desktop-en.jpg",
+      "sha256": "cf2303caad0ec491ed137af7edba4cc5dd0ab524b18a40d434b302884b523740",
+      "bytes": 90307,
+      "scope": "production desktop"
+    },
+    {
+      "path": ".artifacts/sidebar-actions-20261104/prod-v176-final.jpg",
+      "sha256": "f2d2a1636dd3a8a194abc7898e538202144c9f0d7e96e0e006ccd62a934035c8",
+      "bytes": 88888,
+      "scope": "production desktop final"
+    },
+    {
+      "path": ".artifacts/sidebar-actions-20261104/polished-drawer-ru.jpg",
+      "sha256": "c6969ee0ad3d3243da77e79b67d07725b7921e34aeccbfb939b9ae601932325c",
+      "bytes": 22444,
+      "scope": "local narrow only"
+    },
+    {
+      "path": ".artifacts/sidebar-actions-20261104/polished-workflow-ru-narrow.jpg",
+      "sha256": "273c78bf36643384b54caa88b5db8cae5ff9f47ed1cba39c3cf678760ff24092",
+      "bytes": 26227,
+      "scope": "local narrow only"
+    }
+  ],
+  "packagingNote": "First archive-location check refused the ignored .artifacts target before adoption. Successful package uses an archive outside the checkout. One saved version and one deployment only.",
+  "nativeFailure": {
+    "run": 41807361978,
+    "class": "simctl launch timeout after 30 seconds; no application checkpoint observed",
+    "newPaddingAssertionObserved": false,
+    "diagnosticFailures": [
+      "simulator screenshot command timeout after 1 second",
+      "PermissionError EPERM"
+    ],
+    "artifact": {
+      "artifact": 13311289701,
+      "source": "5e5840e23ac1da4141741accc178032a3273594b",
+      "sha256": "4c874918e1af149a83144520efd9de0962d96a4bc2f8d569733eb622a0dd61ba",
+      "bytes": 147086,
+      "entries": 27
+    },
+    "nativeDartSourceChangedByUiRelease": false,
+    "closedByUiRelease": false
+  }
+}
