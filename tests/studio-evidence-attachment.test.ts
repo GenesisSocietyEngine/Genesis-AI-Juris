@@ -56,3 +56,12 @@ test('read-only available evidence remains inspectable without an attachment wri
  const attach=elements(tree).find(e=>e.type==='button'&&text(e)==='Attach here…');assert.ok(attach);assert.equal(attach.props.disabled,true);assert.equal(f.verificationCalls,0);assert.equal(f.writes.length,0);
  }finally{f.close();}
 });
+
+
+test('pointer gestures require movement, the same pointer and owner, and valid current evidence',()=>{
+ const draft=buildCanopyPackage('base').draft,id=draft.nodes.find(n=>n.type==='evidence')!.id,target=draft.nodes.find(n=>n.type==='outcome')!.id;
+ const owner=createStudioEvidenceDrag(draft,true);assert.equal(owner.startPointer([id],1,10,10),true);assert.equal(owner.pointerTarget(1,12,12,target),null);assert.equal(owner.endPointer(1,12,12,target),null,'tap is not an attachment');
+ owner.startPointer([id],2,10,10);assert.equal(owner.endPointer(3,50,50,target),null,'foreign pointer cannot complete');assert.equal(owner.cancelPointer(3),false);assert.equal(owner.cancelPointer(2),true);assert.equal(owner.endPointer(2,50,50,target),null);
+ owner.startPointer([id],4,10,10);assert.equal(owner.pointerTarget(4,50,50,target),target);assert.deepEqual(owner.endPointer(4,50,50,target),{evidenceIds:[id],targetNodeId:target});assert.equal(owner.endPointer(4,50,50,target),null);
+ assert.equal(createStudioEvidenceDrag(draft,false).startPointer([id],5,0,0),false);
+});

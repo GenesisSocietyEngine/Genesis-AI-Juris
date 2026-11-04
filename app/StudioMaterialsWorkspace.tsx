@@ -17,7 +17,7 @@ type MaterialOperation = { scope: object; batch: EvidenceBatch };
 const DEFAULT_READING = { query: "", filter: "all", history: false, limit: 20 };
 
 export type MaterialsAuthority = { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
-export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding, onAddEvidence, onEvidenceReview, onEvidenceDragStart, onEvidenceDragEnd, attachmentPlan, onPlanCancel }: {
+export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding, onAddEvidence, onEvidenceReview, onEvidenceDragStart, onEvidenceDragEnd, onEvidenceAttach, evidencePointer, attachmentPlan, onPlanCancel }: {
   draft: StudioDraft; locale: "en" | "ru"; authority?: MaterialsAuthority; nodeId?: string;
   onNode: (id: string) => void; onApply?: (expected: string, next: StudioDraft) => boolean;
   readingMemory?: MaterialReadingMemory;
@@ -25,6 +25,13 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   onAddEvidence?: () => void; onEvidenceReview?: () => void;
   onEvidenceDragStart?: (event: React.DragEvent<HTMLButtonElement>, ids: string[]) => void;
   onEvidenceDragEnd?: () => void;
+  onEvidenceAttach?: (ids: string[], target: string) => void;
+  evidencePointer?: {
+    start: (event: React.PointerEvent<HTMLButtonElement>, ids: string[]) => void;
+    move: (event: React.PointerEvent<HTMLButtonElement>) => void;
+    end: (event: React.PointerEvent<HTMLButtonElement>) => void;
+    cancel: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  };
   attachmentPlan?: { evidenceIds: string[]; targetNodeId: string };
   onPlanCancel?: () => void;
 }) {
@@ -174,8 +181,9 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       <button type="button" aria-pressed={!available} onClick={() => showNodeMaterials(false)}>{t(`Attached here (${attachedCount})`, `Прикреплено здесь (${attachedCount})`)}</button>
       <button type="button" aria-pressed={available} onClick={() => showNodeMaterials(true)}>{t(`Available in case (${availableCount})`, `Доступно в кейсе (${availableCount})`)}</button>
     </div>}
+    {available && <p className={styles.meta}>{t("Drag ⠿ onto a map node, or choose Attach here.", "Перетащите ⠿ на узел карты или нажмите «Прикрепить сюда».")}</p>}
     {nodeId && !available && <StudioCitedPassages key={nodeId} citations={citations} context={scope} locale={locale} onReturnToFinding={onReturnToFinding}/>}
-    {!attachmentPlan && <details className={styles.searchDisclosure} open={!nodeId ? true : undefined}><summary>{t("Search and filters", "Поиск и фильтры")}</summary>
+    {!attachmentPlan && <details className={styles.searchDisclosure}><summary>{t("Search and filters", "Поиск и фильтры")}</summary>
     <div className={styles.toolbar}><label>{t("Find a material", "Найти материал")}<input type="search" value={query} maxLength={MATERIAL_SEARCH_LIMITS.query} placeholder={t("Title, note or loaded text", "Название, примечание или загруженный текст")} onChange={event => { setReading("query", event.target.value); setReading("limit", 20); }} /></label><label>{t("Show materials", "Показать материалы")}<select value={filter} onChange={event => { setReading("filter", event.target.value); setReading("limit", 20); }}><option value="all">{t("All materials", "Все материалы")}</option><option value="working">{t("Working evidence", "Рабочие материалы")}</option><option value="reference">{t("Illustrative references", "Учебные источники")}</option><option value="missing">{t("Missing originals", "Отсутствующие оригиналы")}</option><option value="url">{t("URL references only", "Только URL-ссылки")}</option><option value="unassigned">{t("Unassigned evidence", "Неприкреплённые материалы")}</option></select></label><label><input type="checkbox" checked={history} onChange={event => { setReading("history", event.target.checked); setReading("limit", 20); }} /> {t("Include retained versions", "Включить прежние версии")}</label></div>
     <p className={styles.meta}>{t("Searches loaded titles, notes and text. Missing originals and URL-only sources have no body to search.", "Поиск по загруженным названиям, примечаниям и тексту. Отсутствующие оригиналы и URL — без текста.")}</p>
     {index.limitedMaterials > 0 && <p className={styles.notice}>{t(`Search is limited for ${index.limitedMaterials} materials: at most 1,000 materials, 4,096 title/note characters per material, 200,000 characters per body and 2,000,000 body characters in total. Open or download full text to inspect the rest.`, `Поиск ограничен для ${index.limitedMaterials} материалов: до 1 000 материалов, 4 096 символов названия/примечания на материал, 200 000 символов на текст и 2 000 000 символов текстов всего. Остальное доступно в полном тексте или скачанном файле.`)}</p>}
@@ -208,9 +216,11 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
       const linked = item.nodeIds.filter(id => id !== nodeId && item.id !== `working:${id}`);
       return <li key={item.id} data-material-id={item.id}>
       <div className={styles.materialLayout}>
-        {item.kind === "working" && onEvidenceDragStart && !attachmentPlan && <button type="button" className={styles.dragHandle} draggable={Boolean(authority?.allowed && !busy)} disabled={!authority?.allowed || busy}
+        {item.kind === "working" && onEvidenceDragStart && !attachmentPlan && <button type="button" className={styles.dragHandle} draggable={Boolean(!evidencePointer && authority?.allowed && !busy)} disabled={!authority?.allowed || busy}
           aria-label={t("Drag evidence: ", "Перетащить материал: ") + item.title} title={t("Drag onto a map node; review before applying", "Перетащите на узел карты; проверьте перед применением")}
-          onDragStart={event => onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)])} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag", "Тянуть")}</span></button>}
+          onPointerDown={evidencePointer ? event => evidencePointer.start(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]) : undefined}
+          onPointerMove={evidencePointer?.move} onPointerUp={evidencePointer?.end} onPointerCancel={evidencePointer?.cancel} onLostPointerCapture={evidencePointer?.cancel}
+          onDragStart={event => { if (evidencePointer) event.preventDefault(); else onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]); }} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag", "Тянуть")}</span></button>}
         {onApply && (item.kind === "working" && item.id !== `working:${nodeId}` ? <label className={styles.materialSelect}><input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => { const checked = event.target.checked; changeBatch(current => ({ ...current, target: available ? nodeId! : current.target, selected: checked ? [...current.selected, item.id] : current.selected.filter(id => id !== item.id) })); }} /><span className={styles.selectionLabel}>{t("Select", "Выбрать")}</span></label> : <span className={`${styles.materialSelect} ${styles.selectionSpace}`} aria-hidden="true"/>)}
         <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
           <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>
@@ -221,7 +231,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
             {!linked.length && <p className={styles.meta}>{t("No related nodes recorded.", "Связанные узлы не записаны.")}</p>}
           </div>
         </details>
-        {available && onApply && <button type="button" className={styles.secondary} disabled={!authority?.allowed || busy} onClick={() => changeBatch(current => ({ ...current, selected: [item.id], target: nodeId!, mode: "attach" }))}>{t("Attach here…", "Прикрепить сюда…")}</button>}
+        {available && onApply && <button type="button" className={styles.secondary} disabled={!authority?.allowed || busy} onClick={() => { if (onEvidenceAttach) onEvidenceAttach([item.id.slice("working:".length)], nodeId!); else changeBatch(current => ({ ...current, selected: [item.id], target: nodeId!, mode: "attach" })); }}>{t("Attach here…", "Прикрепить сюда…")}</button>}
         {item.text !== null && <button className={`${styles.secondary} ${styles.fileDownload}`} disabled={!authority?.allowed || busy} type="button" onClick={() => void download(item)} aria-label={t("Download text: ", "Скачать текст: ") + item.title}>{t("Download text", "Скачать текст")}</button>}
       </div>
       {passage && <div className={styles.passage}><p className={styles.meta}>{item.id}{passage.section ? ` · § ${passage.section}` : ""} · {t("Text position", "Позиция в тексте")} {passage.from + 1}–{passage.to}</p><p>{passage.leading ? "…" : ""}{passage.before}<mark>{passage.exact}</mark>{passage.after}{passage.trailing ? "…" : ""}</p></div>}
