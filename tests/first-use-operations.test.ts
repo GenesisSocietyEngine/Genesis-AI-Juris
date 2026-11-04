@@ -69,9 +69,9 @@ test("sidebar groups retain bilingual labels, protection and readiness without a
   const base = {grouped:true,canDuplicate:false,exportReady:true,feedbackLabel:"Feedback",importLabel:"Import",exportLabel:"Export",startExample:noop,startTax:noop,requestFeedback:noop,importJson:noop,exportJson:noop,saveDevice:noop,markdownLoaded:noop,markdownOpened:noop,markdownFailed:noop};
   for (const locale of ["en", "ru"] as const) {
     const html = renderToStaticMarkup(createElement(StudioUserMoreActions, {...base,locale}));
-    assert.equal((html.match(/<details /g) ?? []).length, 3);
+    assert.equal((html.match(/class="genesis-nav-group studio-sidebar-group"/g) ?? []).length, 3);
     assert.equal((html.match(/ disabled=""/g) ?? []).length, 5);
-    for (const label of locale === "en" ? ["Start or review", "Case briefs", "Case files &amp; backups"] : ["Старт и рецензия", "Описание кейса", "Файлы и резервные копии"]) assert.ok(html.includes(label));
+    for (const label of locale === "en" ? ["Start or review", "Case briefs", "Files &amp; backups"] : ["Старт и рецензия", "Описание кейса", "Файлы и копии"]) assert.ok(html.includes(label));
     assert.equal(renderToStaticMarkup(createElement(StudioPortalActions, {...base,locale})), "", "the unmounted sidebar has no duplicate commands or retained owner");
   }
 });

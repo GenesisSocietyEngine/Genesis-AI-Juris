@@ -319,7 +319,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Вид разработчика/);
   assert.doesNotMatch(appSource, /className="studio-more-actions"/, "secondary commands live in the sidebar, without a duplicate popup");
   assert.match(moreActionsSource, /"Case briefs" : "Описание кейса"/);
-  assert.match(moreActionsSource, /"Case files & backups" : "Файлы и резервные копии"/);
+  assert.match(moreActionsSource, /"Files & backups" : "Файлы и копии"/);
   assert.match(moreActionsSource, /<CaseMarkdownActions locale=\{locale\} loadDisabled=\{!canDuplicate\} exportDisabled=\{!canDuplicate \|\| !exportReady\}/, "portable prompt actions preserve inspection and export-readiness restrictions");
   assert.match(outcomeParametersSource, /Outcome recalculation parameters/);
   assert.match(outcomeParametersSource, /Financial & financing/);

@@ -2,7 +2,7 @@
 
 ## Outcome and source
 
-Remove the duplicate sidebar New blank case and Import case or prompt links. Replace the working editor's More actions popup with three native disclosure groups under Case Studio: Start or review, Case briefs, and Case files & backups. Keep their subactions directly below their headings; preserve primary New draft, Save to workspace and analytical report controls.
+Remove the duplicate sidebar New blank case and Import case or prompt links. Replace the working editor's More actions popup with three native disclosure groups immediately after Case Studio: Start or review, Case briefs, and Files & backups. Use one rail depth, matching icons and one open action group at a time. Keep their compact subactions directly below their headings; preserve primary New draft, Save to workspace and analytical report controls.
 
 Canonical base is `8d4f97a8eea5b4ee09b1a5678c892e2774f544bb`. Both public origins reverify v175 runtime `e6addb90fe3ab60eb16b1f079868c1530fec6ebd`, application hash `a14649c7b6e23c8de72dd8a66502995d9e22ecb9bcf9cb54a261e97d86fb1d41` and hosting hash `20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe`. Main differs from the deployed runtime in documentation only. Sites opening verifies the selected existing project and checkout; its first network-restricted attempt fails, the network-enabled retry succeeds. Native diagnostic PR215 remains an independent unmerged draft.
 
@@ -31,3 +31,17 @@ Full web/PDF CI, ordinary PR integration, exact-main build provenance, existing 
 ## Continuation
 
 Do not duplicate this navigation in the header or reintroduce removed sidebar creation/import links. Keep the entry screen's primary actions and current case handlers. Any future mobile or source-context amendment must demonstrate disposal of stale commands and retain working-case/file authority boundaries. Continue independent S03/S05 acceptance and all existing missing-original, owner recovery, historical-artifact, native and commercial limits; no disposal, governed merging, provider processing, analytics, pricing or outreach is added.
+
+## User-led visual refinement and UI audit
+
+The initial preview was correctly identified as too deeply indented and text-heavy. The same PR now flattens the action groups beside the main navigation, aligns their icon/text columns and uses single-depth child controls. Native named disclosures keep only one action group open, reducing rail scrolling. Compact subactions have a consistent subtle border and restrained hover/focus accent rather than large bold cards. Routine brief/file explanations move to small native help disclosures: hover shows their browser-native hint; click/Enter/tap exposes the same full text. Help remains usable without hover. Access, save, validation and confidentiality warnings remain visible in their existing flows.
+
+The five workflow section controls now all have a visible frame, equal spacing, consistent hover/focus treatment and a stronger selected fill/border/inset line. Existing aria-pressed state, click owners and URLs are unchanged. Short EN/RU purpose hints use native titles, while their visible names remain self-explanatory. Reduced-motion preferences remove the added color transition. This is a bounded Studio navigation audit, not a claim that every editing form or S03/S05 acceptance row is complete.
+
+Further independent refinement should measure the source/Review/return task paths and dense editing forms before changing their carriers or validation. Keep essential authority and missing-evidence warnings visible; do not hide them as cosmetic hover text. The older nested-rail screenshots are superseded visual drafts, not acceptance of this final refinement. Recheck the flattened rail and workflow frames at desktop/narrow EN/RU before publication.
+
+### Final refinement observations
+
+The revised action groups and primary navigation have equal measured width (182 CSS px in the normal browser configuration). Only the selected group is open. Routine notes are absent from the painted rail until requested; the same full explanation is exposed as native Help/title and by disclosure. Actual keyboard Tab focuses Sources & evidence with a visible teal outline. All five workflow controls have a 1px frame; selected Overview has the accent frame/fill/inset marker. At measured 390 × 640, document width is 375, four controls are 156.8 × 44 and Reports is 321.6 × 44. Russian file actions each measure 44px high and fit the full drawer width. A fresh screenshot after a visibility check confirms the expanded Russian actions; the immediate preceding capture had lagged one painted frame and was replaced rather than counted.
+
+Final typecheck and touched navigation/action/tab/Markdown lint pass. Focused checks remain 39/39. Normal and narrow screenshots are `polished-desktop-en.jpg`, `polished-drawer-ru.jpg` and `polished-workflow-ru-narrow.jpg` under the ignored task directory. Earlier nested-rail screenshots are retained as superseded drafts. No claim of production, authenticated save or actual pointer-hover-tooltip timing is made from these local checks. Full final-candidate and exact-main CI remain release gates.

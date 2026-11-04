@@ -3,7 +3,7 @@
 import { useStudioActionsNavigation } from "./StudioActionsNavigation";
 import { pendingSignOutMessage } from "./session-boundary";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { workspaceDestination, workspaceSignInPath } from "./workspace-navigation";
 import { useNavigationController, useNavigationSession } from "./NavigationSession";
 import { isWorkspaceDepartureClick } from "./departure-click";
@@ -126,15 +126,14 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
       {WORKSPACE_PAGES.map(item => {
         const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos") || (active === "community" && item.view === "matters");
-        return <details className="genesis-nav-group" key={`${item.view}-${selected}`} open={selected}>
+        return <Fragment key={`${item.view}-${selected}`}><details className="genesis-nav-group" open={selected}>
           <summary><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
           <div className="genesis-nav-children">
             <a href={href(item.path)} aria-current={selected && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : item.view === "demos" ? "Browse demo cases" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : item.view === "demos" ? "Каталог демо-кейсов" : `Открыть: ${item.ru}`)}</a>
-            {item.view === "studio" && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}
             {item.view === "matters" && <a href={href("/studio?view=community")} aria-current={active === "community" ? "page" : undefined} onClick={event => follow(event,"community")}>{en ? "Saved Studio drafts" : "Черновики Studio"}</a>}
             {item.view === "play" && operationsActions}
           </div>
-        </details>;
+        </details>{item.view === "studio" && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
     </nav>
     <div className="genesis-nav-lower">
