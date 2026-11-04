@@ -3,7 +3,8 @@
 export default function ActionTile({ title, detail, status, next = "Open", onClick, id, hint, disabled = false }: {
   title: string; detail: string; status?: string; next?: string; onClick: () => void; id?: string; hint?: string; disabled?: boolean;
 }) {
-  return <button type="button" id={id} title={hint} aria-description={hint} className="action-tile" onClick={onClick} disabled={disabled}>
+  return <button type="button" id={id} title={hint} aria-describedby={hint && id ? `${id}-purpose` : undefined} className="action-tile" onClick={onClick} disabled={disabled}>
+    {hint && id && <span id={`${id}-purpose`} hidden>{hint}</span>}
     <span className="action-tile-copy"><strong>{title}</strong><span>{detail}</span>{status && <small>{status}</small>}</span>
     <span className="action-tile-next">{next}<span aria-hidden="true"> →</span></span>
   </button>;

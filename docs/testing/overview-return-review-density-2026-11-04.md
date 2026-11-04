@@ -26,7 +26,7 @@ Compact Review's repeated action-card presentation while preserving every action
 
 ## Slice 2 — compact exact-finding Review controls
 
-The Review warning list now presents each full finding text once, with its destination (Open brief, Open field, Inspect node or Developer controls). Exact action IDs and callbacks are unchanged; findings are never combined because their destinations match. Routine purpose remains supplementary title/ARIA-description text; no essential instruction depends on hover. The count, idless validation failures, checking/complete state, report restriction and save/restore/size/access conditions are retained.
+The Review warning list now presents each full finding text once, with its destination (Open brief, Open field, Inspect node or Developer controls). Exact action IDs and callbacks are unchanged; findings are never combined because their destinations match. Routine purpose remains supplementary title/ARIA-describedby text; no essential instruction depends on hover. The count, idless validation failures, checking/complete state, report restriction and save/restore/size/access conditions are retained.
 
 At equal actual local viewports, the six blank-case warning controls occupy 490.60 px rather than 917.20 px at 390 × 640 (46.5% reduction), and 304.00 px rather than 376.10 px at 1522 × 688 (19.2% reduction). All original warning text remains visible. Minimum target height is 68.10 px narrow and 44 px wide; no horizontal document overflow is observed. This measures layout, not task speed, fewer findings or professional acceptance. Source and screenshots are under .artifacts/ux-return.
 
@@ -37,3 +37,5 @@ Sixty-four focused checks pass, including actual rendered warning controls and e
 ## PR220 closure
 
 Docs-only PR220 merged normally on 4 November 2026 at 12:22 UTC as 7c63f786777055293adec8dbb3ba424f2a7e0b69. Both prior-main native runs 41821098391 and 41821098496 reached success before integration. PR220 web/PDF, Rust, Android, Flutter and native smoke checks passed; its two Mac editor-process-restart jobs were pending at merge under standing web-only authorization. No v177 rebuild, Site version or deployment was created for PR220.
+
+Post-step review caught the installed accessibility lint rule rejecting aria-description on button. The implementation now uses the established aria-describedby relationship to hidden supplementary purpose text, with the full warning and destination still visible. This removes the new warning rather than suppressing lint.
