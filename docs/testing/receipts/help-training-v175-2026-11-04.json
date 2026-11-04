@@ -1,0 +1,319 @@
+{
+  "schema": "casevant.release-review.v1",
+  "date": "2026-11-04",
+  "stage": "help-training-without-subtitles",
+  "runtimeCommit": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+  "applicationInputsSha256": "a14649c7b6e23c8de72dd8a66502995d9e22ecb9bcf9cb54a261e97d86fb1d41",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "pullRequests": [
+    213
+  ],
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_f0af01d67d248191a74c2019a53f5d36",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 175,
+    "source": {
+      "commit_sha": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000ae6881f48ba7f89e9b25c5f8",
+      "content_hash": "sha256:7e0479b8688171d34e3ffd932eb176504f06c3e0d3921a73a93cc065240f3d88",
+      "size_bytes": 52951040,
+      "file_count": 607
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aea828ddc0c8191a5197a21c83b11f5",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_f0af01d67d248191a74c2019a53f5d36",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-04T00:56:09.233983+00:00"
+  },
+  "sourceHelper": {
+    "opening": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd"
+    },
+    "packaging": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "checkout_path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02",
+      "commit_sha": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+      "archive": "C:/Users/User/Documents/ChatGPT/software/casevant-help-training-e6addb9-20261104.tar"
+    }
+  },
+  "startingSource": {
+    "canonicalMain": "6ae48313792144b7003c975186bcb7b69f93c337",
+    "runtime": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+    "publicVersion": 174
+  },
+  "candidate": {
+    "sha": "2aee75b8a10c25fa2338f548548226dbcc021254",
+    "runId": 41747681238,
+    "tests": 1897,
+    "passed": 1894,
+    "failed": 0,
+    "skipped": 3,
+    "htmlChecks": 2,
+    "pdfVisual": "success",
+    "completeAuditFindings": 0,
+    "productionAuditFindings": 0
+  },
+  "exactMain": {
+    "sha": "e6addb90fe3ab60eb16b1f079868c1530fec6ebd",
+    "runId": 41749025998,
+    "tests": 1897,
+    "passed": 1894,
+    "failed": 0,
+    "skipped": 3,
+    "htmlChecks": 2,
+    "pdfVisual": "success",
+    "completeAuditFindings": 0,
+    "productionAuditFindings": 0,
+    "tree": "17641e6eb00bd93e64059b8ec58ec2e7c86b829f",
+    "inputReceipts": 587
+  },
+  "assetVerification": {
+    "origins": [
+      "https://casevant.pro",
+      "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+    ],
+    "perOrigin": {
+      "current": 137,
+      "retained": 59,
+      "total": 196,
+      "verified": 196
+    },
+    "retainedSource": "c295a1a968611104b40e0923b3d480e77bfb5b20",
+    "retentionChainCopied": false,
+    "deployedIdentityVerified": true,
+    "newPublicMediaAssetsPerOrigin": 5,
+    "allMediaBytesHashesVerified": true
+  },
+  "preservation": {
+    "audience": "public",
+    "audienceUnchanged": true,
+    "environment": {
+      "revision": 42,
+      "returnedEntriesCompared": 13,
+      "allReturnedRepresentationsEqual": true
+    },
+    "storageBindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS",
+      "hostingConfigUnchanged": true
+    },
+    "cases": "No case was opened, edited, saved or deleted during this release verification.",
+    "tabs": "Only agent-created Help/training tabs were controlled; temporary narrow tabs closed and a normal English Help tab restored."
+  },
+  "browser": {
+    "surface": "Fresh agent-created authorized Chrome Help and standalone training tabs; no case acceptance inferred.",
+    "productionBaseline": {
+      "players": 3,
+      "subtitleTracks": 5
+    },
+    "current": {
+      "players": 3,
+      "subtitleTracks": 0,
+      "guideDurationSeconds": 240,
+      "guideFirstExplicitPlay": {
+        "time": 15.624622,
+        "paused": false,
+        "readyState": 4,
+        "sourceKind": "blob"
+      },
+      "nativeSpacePause": true,
+      "chapter120": {
+        "time": 120,
+        "paused": true,
+        "focusedElement": "VIDEO",
+        "visibleFrame": "05 Preview evidence changes"
+      },
+      "standaloneNativeFirstPlay": {
+        "time": 4.688523,
+        "paused": false,
+        "readyState": 4,
+        "sourceKind": "blob"
+      },
+      "recordingFirstPlay": [
+        {
+          "id": "canopy",
+          "time": 10.989,
+          "paused": false,
+          "readyState": 4,
+          "textTracks": 0
+        },
+        {
+          "id": "local-edit",
+          "time": 4.9707,
+          "paused": false,
+          "readyState": 4,
+          "textTracks": 0
+        }
+      ],
+      "transcripts": {
+        "enChapters": 8,
+        "ruChapters": 8,
+        "bothDownloadsAvailable": true
+      },
+      "narrow": {
+        "actualCssViewport": {
+          "width": 390,
+          "height": 480
+        },
+        "enPageWidth": 371,
+        "ruPageWidth": 371,
+        "guidePlayHeight": 46.875,
+        "recordingPlayHeight": 44,
+        "horizontalOverflowObserved": false,
+        "visualCapture": "Two screenshot attempts at the narrow override timed out; no narrow visual-pass claim.",
+        "sizing": "The 390×480 override initially produced a 488×600 CSS viewport under existing browser scaling. A 312×384 temporary override produced the measured 390×480 CSS viewport; no browser zoom setting changed."
+      },
+      "finalViewport": {
+        "width": 1903,
+        "height": 790,
+        "locale": "en",
+        "temporaryTabsClosed": true,
+        "overrideReset": true
+      },
+      "finalKeyboardChapter": {
+        "time": 120,
+        "readyState": 4,
+        "paused": true,
+        "focusedElement": "VIDEO",
+        "notice": "Chapter at 2:00. Press Play if paused."
+      }
+    },
+    "limits": [
+      "Help observations do not close authenticated S03/S05 case acceptance.",
+      "One immediate automated fresh-tab direct chapter click had no visible effect (readyState 0 and empty notice); state-based keyboard activation was then observed loading. No hydration, input-delivery or product root cause is established.",
+      "Narrow screenshots timed out; DOM dimensions, controls and transcript access were observed.",
+      "Historical v167 paused-caption observation remains dated history, not diagnosed by removing current subtitles."
+    ]
+  },
+  "approvalReview": {
+    "initialPackagingRejected": "Retained opening named d24bc3a while the verified build named e6addb9.",
+    "resolution": "Cancelled the old helper; started a fresh helper explicitly bound to verified main. Its returned e6addb9 opening was then used for the successful package. No bypass."
+  },
+  "remainingLimits": [
+    "legitimate unsupported-owner recovery",
+    "same-tab identity/source timing",
+    "original-artifact/historical pagination",
+    "43 missing-original disclosures",
+    "native/operator/commercial acceptance"
+  ],
+  "screenshots": [
+    {
+      "bytes": 87697,
+      "path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\help-update-20261103\\prod-v175-chapter-120.jpg",
+      "sha256": "6bdc15a1f1699f3090a61d3d85c7295eaea4a1482eecc6135473521ecf10488f"
+    },
+    {
+      "bytes": 89962,
+      "path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\help-update-20261103\\prod-v175-final.jpg",
+      "sha256": "aa02f179252f11b7156ef3d4fc7c38042e1b414447f78d60180efedc2d952787"
+    }
+  ],
+  "localArchive": {
+    "sha256": "2527909e8c180e5f798f7859df7770462735248b3525c7217945db1cd12fe888",
+    "bytes": 33389879,
+    "path": "C:\\Users\\User\\Documents\\ChatGPT\\software\\casevant-help-training-e6addb9-20261104.tar"
+  },
+  "mainWorkflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 41749026018,
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41749025881,
+      "name": "iOS Tax Application",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "",
+      "databaseId": 41749026118,
+      "name": "iOS Native FFI",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41749025998,
+      "name": "Root Web and PDF",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41749025918,
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41749026021,
+      "name": "Android Native FFI",
+      "status": "completed"
+    }
+  ],
+  "buildArtifact": {
+    "runId": 41749025998,
+    "artifactId": 13285221778,
+    "artifactName": "verified-web-build-e6addb90fe3ab60eb16b1f079868c1530fec6ebd-41749025998",
+    "archive": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-e6addb9.zip",
+    "sha256": "3c2a5244fbfec93507ec5c51a0979e9bf4fea8261c460b491003ea68af986610",
+    "bytes": 33220685,
+    "destination": "C:\\Users\\User\\Documents\\ChatGPT\\software\\CaseVant-audit-2026-11-02\\.artifacts\\verified-main-e6addb9",
+    "entries": 548
+  },
+  "candidateWorkflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 41747681266,
+      "name": "Flutter Mobile UI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41747681276,
+      "name": "Rust CI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41747681253,
+      "name": "Android Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41747681238,
+      "name": "Root Web and PDF",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41747681268,
+      "name": "iOS Native FFI",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 41747681207,
+      "name": "iOS Tax Application",
+      "status": "completed"
+    }
+  ]
+}
