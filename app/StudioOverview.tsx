@@ -1,6 +1,6 @@
 "use client";
 
-import type { StudioDraft } from "./types";
+import type { StudioDraft, StudioNodeType } from "./types";
 import type { StudioActionTarget } from "./StudioActionPanel";
 import type { StudioWorkflowStep } from "./studio-workflow";
 import { studioOverview, studioOverviewAction } from "./studio-overview";
@@ -16,8 +16,46 @@ export type StudioOverviewProps = {
   onAction?: (target: StudioActionTarget) => void;
 };
 
+function overviewDestinationLabel(target: StudioActionTarget, locale: "en" | "ru") {
+  const labels: Record<string, [string, string]> = {
+    "studio-case-brief": ["Write case brief", "Описать кейс"],
+    "studio-title": ["Add case title", "Добавить название"],
+    "studio-publishable-context": ["Review case context", "Проверить контекст"],
+    "studio-case-identity": ["Review case identity", "Проверить ID кейса"],
+    "studio-case-version": ["Review case version", "Проверить версию"],
+    "studio-role": ["Set responsible role", "Указать ответственную роль"],
+    "studio-jurisdiction": ["Set jurisdiction", "Указать юрисдикцию"],
+    "studio-legal-date": ["Set review date", "Указать дату проверки"],
+    "studio-source-urls": ["Add source links", "Добавить ссылки"],
+    "studio-compliance": ["Review compliance", "Проверить соответствие"],
+    "studio-connect-node": ["Connect records", "Связать записи"],
+  };
+  if (target.nodeId) return locale === "en" ? "Inspect affected record" : "Проверить запись";
+  if (target.nodeType) {
+    const records: Record<StudioNodeType, [string, string]> = {
+      trigger: ["Add route start", "Добавить начало маршрута"], actor: ["Add participant", "Добавить участника"],
+      fact: ["Add fact", "Добавить факт"], evidence: ["Add evidence", "Добавить доказательство"],
+      deadline: ["Add deadline", "Добавить срок"], decision: ["Add decision", "Добавить решение"],
+      outcome: ["Add outcome", "Добавить исход"], entity: ["Add entity", "Добавить субъект"],
+      tax_rule: ["Add tax rule", "Добавить налоговое правило"], cash_flow: ["Add cash flow", "Добавить денежный поток"],
+    };
+    return records[target.nodeType][locale === "en" ? 0 : 1];
+  }
+  return labels[target.id]?.[locale === "en" ? 0 : 1] ?? (locale === "en" ? "Open decision map" : "Открыть карту решений");
+}
+
 export default function StudioOverview({ draft, locale, onStep, onNode, onAction }: StudioOverviewProps) {
   const model = studioOverview(draft, locale);
+  // Group presentation by the exact existing destination, never by warning wording.
+  // All warnings stay visible; only redundant navigation controls are consolidated.
+  const actions = new Map<string, { target: StudioActionTarget; checks: typeof model.blockers }>();
+  for (const check of model.blockers) {
+    const target = studioOverviewAction(draft, check);
+    const key = JSON.stringify(target);
+    const existing = actions.get(key);
+    if (existing) existing.checks.push(check);
+    else actions.set(key, { target, checks: [check] });
+  }
   const questions = caseReviewQuestions(draft);
   const playbook = caseTypePlaybook(draft.caseType);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
@@ -34,7 +72,10 @@ export default function StudioOverview({ draft, locale, onStep, onNode, onAction
     {model.recommendation.conditions && <section className={styles.block}><h3>{t("Basis and unresolved conditions", "Основания и нерешённые условия")}</h3><p lang="en">{model.recommendation.conditions}</p></section>}
     {questions.length > 0 && <section className={styles.block} aria-labelledby="studio-review-questions-title"><h3 id="studio-review-questions-title">{t("Questions for this review", "Вопросы для проверки")}</h3><p className={styles.muted}>{t("Authored fictional review scaffold. Check the mandate and supporting sources before recording findings or instructions.", "Авторская вымышленная структура проверки. Сверьте поручение и источники до фиксации выводов или указаний.")}</p><div className={styles.questionGrid}>{questions.map(node => <article key={node.id} className={styles.questionCard}><h4><button type="button" onClick={() => onNode(node.id)}>{node.title}</button></h4><p>{node.detail}</p></article>)}</div></section>}
     <div className={styles.columns}>
-      <section className={styles.block}><h3>{t("Next actions", "Следующие действия")}</h3>{model.blockers.length ? <ul className={styles.actions}>{model.blockers.map((check, index) => <li key={check.id ?? index}><p>{check.text}</p><button type="button" onClick={() => open(studioOverviewAction(draft, check))}>{t("Open the relevant control", "Открыть нужное поле")}</button></li>)}</ul> : <p>{t("Structure checks are complete. Review the underlying evidence and reasoning; completeness does not establish professional approval.", "Проверки структуры пройдены. Проверьте материалы и обоснование: полнота не означает профессионального утверждения.")}</p>}</section>
+      <section className={styles.block}><h3>{t("Next actions", "Следующие действия")}</h3>{model.blockers.length ? <ul className={styles.actions}>{[...actions].map(([key, item]) => <li key={key}>
+        <button type="button" className={styles.nextAction} data-overview-action={item.target.id} onClick={() => open(item.target)}><span>{overviewDestinationLabel(item.target, locale)}</span><span aria-hidden="true">→</span></button>
+        <ul className={styles.actionChecks}>{item.checks.map((check, index) => <li key={check.id ?? index}>{check.text}</li>)}</ul>
+      </li>)}</ul> : <p>{t("Structure checks are complete. Review the underlying evidence and reasoning; completeness does not establish professional approval.", "Проверки структуры пройдены. Проверьте материалы и обоснование: полнота не означает профессионального утверждения.")}</p>}</section>
       <section className={styles.block}><h3>{t("Possible outcomes", "Возможные исходы")}</h3>{model.outcomes.length ? <details><summary>{t(`Review ${model.outcomes.length} outcome and scenario records`, `Просмотреть записи исходов и сценариев: ${model.outcomes.length}`)}</summary><ul className={styles.outcomes}>{model.outcomes.map(node => <li key={node.id}><button type="button" onClick={() => onNode(node.id)}>{node.title}</button><p>{node.detail}</p></li>)}</ul></details> : <><p>{t("No outcome is recorded yet.", "Исходы пока не записаны.")}</p><button type="button" onClick={() => onStep(4)}>{t("Open decision map", "Открыть карту решений")}</button></>}</section>
     </div>
     {draft.nodes.length > 0 && <StudioWorkspaceRecords key={draft.caseId} draft={draft} locale={locale} onNode={onNode}/>}

@@ -206,9 +206,10 @@ test("actual Overview renders honest states and preserves exact gap/outcome call
   const props: StudioOverviewProps = { draft: base, locale: "en", onStep: step => steps.push(step), onNode: id => nodes.push(id), onAction: target => actions.push(target) };
   const tree = StudioOverview(props);
   const buttons = elements(tree).filter(element => element.type === "button");
-  for (const button of buttons.filter(element => element.props.children === "Open the relevant control")) (button.props.onClick as () => void)();
+  for (const button of buttons.filter(element => typeof element.props["data-overview-action"] === "string")) (button.props.onClick as () => void)();
   assert.ok(actions.some(value => (value as { id: string }).id === "studio-publishable-context"));
   assert.ok(actions.some(value => (value as { id: string }).id === "studio-evidence-composer"));
+  assert.deepEqual(new Set(actions.map(value => JSON.stringify(value))), new Set(studioOverview(base, "en").blockers.map(check => JSON.stringify(studioOverviewAction(base, check)))), "grouping retains distinct node types and every exact callback target");
   const outcome = buttons.find(element => element.props.children === "Conditional 90-day transition pilot")!;
   (outcome.props.onClick as () => void)(); assert.deepEqual(nodes, ["conditional-pilot"]);
   const source = buttons.find(element => element.props.children === "Inspect sources and evidence")!;
@@ -259,5 +260,25 @@ test('converted evidence panels distinguish assumptions and link the actual auth
     const legacyHtml = renderToStaticMarkup(createElement(StudioSourcesPanel, { draft: legacy, locale, onStep() {}, onNode() {} }));
     assert.match(legacyHtml, locale === 'en' ? /Authored fact record/ : /Авторская запись факта/);
     assert.ok(!legacyHtml.includes(locale === 'en' ? 'Assumed statement — requires verification' : 'Допущение — требует проверки'));
+  }
+});
+
+
+test("Overview consolidates identical empty-case destinations without hiding warnings or changing the draft", async () => {
+  const { StudioOverview } = await components;
+  const empty = { ...structuredClone(base), caseId: "untitled_case", title: "", premise: "", nodes: [], links: [] };
+  const before = JSON.stringify(empty);
+  for (const locale of ["en", "ru"] as const) {
+    const opened: unknown[] = [];
+    const props: StudioOverviewProps = { draft: empty, locale, onStep() {}, onNode() {}, onAction: target => opened.push(target) };
+    const tree = StudioOverview(props);
+    const actions = elements(tree).filter(element => element.type === "button" && element.props["data-overview-action"]);
+    assert.equal(actions.length, 1, "all empty-case checks already route to the brief builder");
+    (actions[0]!.props.onClick as () => void)();
+    assert.deepEqual(opened, [{ step: 1, id: "studio-case-brief" }]);
+    const html = renderToStaticMarkup(createElement(StudioOverview, props));
+    for (const check of studioOverview(empty, locale).blockers) assert.ok(html.includes(check.text), check.text);
+    assert.doesNotMatch(html, /Open the relevant control|Открыть нужное поле/);
+    assert.equal(JSON.stringify(empty), before);
   }
 });
