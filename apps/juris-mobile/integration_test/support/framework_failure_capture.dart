@@ -7,10 +7,12 @@ final class FrameworkFailureCapture {
     required this.delegate,
     required this.snapshot,
     required this.publish,
+    this.baseSnapshot,
   });
 
   final FlutterExceptionHandler delegate;
   final Map<String, Object?> Function() snapshot;
+  final Map<String, Object?> Function()? baseSnapshot;
   final void Function(Map<String, Object?>) publish;
   final List<Map<String, Object?>> _records = [];
   int _omitted = 0;
@@ -24,12 +26,18 @@ final class FrameworkFailureCapture {
   void handle(FlutterErrorDetails details) {
     try {
       if (_records.length < 4) {
-        Map<String, Object?> metrics;
+        final Map<String, Object?> metrics = {};
         try {
-          metrics =
-              snapshot().map((key, value) => MapEntry(key, _jsonValue(value)));
+          metrics.addAll((baseSnapshot?.call() ?? {})
+              .map((key, value) => MapEntry(key, _jsonValue(value))));
         } on Object catch (error) {
-          metrics = {'snapshot_error_type': '${error.runtimeType}'};
+          metrics['base_snapshot_error_type'] = '${error.runtimeType}';
+        }
+        try {
+          metrics.addAll(
+              snapshot().map((key, value) => MapEntry(key, _jsonValue(value))));
+        } on Object catch (error) {
+          metrics['snapshot_error_type'] = '${error.runtimeType}';
         }
         _records.add({
           'captured_at': DateTime.now().toUtc().toIso8601String(),

@@ -1,11 +1,103 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../integration_test/support/framework_failure_capture.dart';
+import '../integration_test/support/framework_failure_geometry.dart';
 
 void main() {
+  test(
+    'optional ancestry failure retains raw geometry and the original error',
+    () {
+      FlutterErrorDetails? forwarded;
+      final original = FlutterErrorDetails(
+        exception: AssertionError('padding'),
+      );
+      final capture = FrameworkFailureCapture(
+        delegate: (details) => forwarded = details,
+        baseSnapshot: () => {
+          'phase': 'legacy-write',
+          'view_insets': {'bottom': -30.0, 'top': double.nan},
+        },
+        snapshot: () => throw FlutterError('deactivated dialog context'),
+        publish: (_) {},
+      );
+      capture.handle(original);
+      expect(forwarded, same(original));
+      final metrics =
+          ((capture.evidence['records'] as List).single as Map)['metrics'];
+      expect(metrics['phase'], 'legacy-write');
+      expect(metrics['view_insets'], {'bottom': -30.0, 'top': 'NaN'});
+      expect(metrics['snapshot_error_type'], 'FlutterError');
+      expect(capture.evidence['acceptance'], isFalse);
+    },
+  );
+
+  test(
+    'raw snapshot failure does not discard available dialog diagnostics',
+    () {
+      final capture = FrameworkFailureCapture(
+        delegate: (_) {},
+        baseSnapshot: () => throw StateError('view unavailable'),
+        snapshot: () => {
+          'dialog_view_insets': {'bottom': -30.0},
+        },
+        publish: (_) {},
+      );
+      capture.handle(FlutterErrorDetails(exception: AssertionError('padding')));
+      final metrics =
+          ((capture.evidence['records'] as List).single as Map)['metrics'];
+      expect(metrics['base_snapshot_error_type'], 'StateError');
+      expect(metrics['dialog_view_insets'], {'bottom': -30.0});
+    },
+  );
+
+  testWidgets(
+    'real Dialog assertion keeps raw and derived geometry unmodified',
+    (tester) async {
+      final originalHandler = FlutterError.onError!;
+      FlutterErrorDetails? forwarded;
+      final capture = FrameworkFailureCapture(
+        delegate: (details) {
+          forwarded = details;
+          originalHandler(details);
+        },
+        baseSnapshot: () => captureViewGeometry(tester),
+        snapshot: () => captureDialogGeometry(tester),
+        publish: (_) {},
+      );
+      FlutterError.onError = capture.handle;
+      try {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(800, 600),
+                viewInsets: EdgeInsets.only(bottom: -30),
+              ),
+              child: Dialog(child: Text('Synthetic invalid dialog geometry')),
+            ),
+          ),
+        );
+        final exception = tester.takeException();
+        expect(exception, isA<AssertionError>());
+        expect(exception, same(forwarded!.exception));
+        final record = (capture.evidence['records'] as List).first as Map;
+        final metrics = record['metrics'] as Map;
+        expect(metrics['view_insets']['bottom'], 0.0);
+        final dialog = (metrics['dialogs'] as List).single as Map;
+        expect(dialog['dialog_view_insets']['bottom'], -30.0);
+        expect(dialog['resolved_inset_padding']['bottom'], 24.0);
+        expect(dialog['derived_effective_padding']['bottom'], -6.0);
+        expect(record['stack'], contains('Dialog.build'));
+        expect(capture.evidence['acceptance'], isFalse);
+      } finally {
+        FlutterError.onError = originalHandler;
+      }
+    },
+  );
+
   test('non-finite geometry remains serializable without losing original error',
       () {
     FlutterErrorDetails? forwarded;
