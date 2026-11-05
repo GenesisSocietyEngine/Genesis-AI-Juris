@@ -282,3 +282,6 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 
 .studio-sidebar-hint > summary::-webkit-details-marker { display: none; }
 .studio-sidebar-hint > summary span { flex-shrink: 0; color: var(--workspace-accent); }
+
+/* Next major: direct destinations, consistent icon rhythm. */
+.casevant-primary-link{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;text-decoration:none;color:inherit;font-size:14px;font-weight:550;min-height:44px}.casevant-primary-link svg{flex-shrink:0}.casevant-primary-link:hover{background:rgba(35,126,132,.09)}.casevant-primary-link[aria-current=page]{background:#e1f0ef;color:#145c61;box-shadow:inset 3px 0 #20888d}.casevant-primary-link:focus-visible{outline:3px solid #2b969d;outline-offset:2px}

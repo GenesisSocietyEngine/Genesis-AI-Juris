@@ -1,0 +1,76 @@
+/** Operational work is separate from hypothetical decision-graph consequences. */
+export type PracticeItem = {
+  id: string; kind: "task" | "event"; title: string; description: string;
+  dueDate: string | null; assignee: string | null; priority: "low" | "normal" | "high";
+  status: "open" | "completed"; checklist: { title: string; done: boolean }[];
+  workflow: string | null;
+};
+export type PracticePlan = { revision: number; items: PracticeItem[] };
+export const EMPTY_PLAN: PracticePlan = { revision: 0, items: [] };
+export function parsePracticePlan(value: unknown): PracticePlan {
+  if(!value || typeof value!=="object" || Array.isArray(value))throw new Error("Unsupported work plan.");
+  const plan=value as PracticePlan;
+  if(Object.keys(plan).some(key=>key!=="revision"&&key!=="items") || !Number.isSafeInteger(plan.revision)||plan.revision<0||!Array.isArray(plan.items)||plan.items.length>200)throw new Error("Unsupported work plan.");
+  const ids=new Set<string>();
+  for(const item of plan.items){
+    if(!item||typeof item.id!=="string"||!item.id||item.id.length>120||ids.has(item.id)||(item.workflow!==null&&(typeof item.workflow!=="string"||item.workflow.length>200)))throw new Error("Unsupported work identity.");
+    const {id,workflow,...fields}=item;void workflow;validatePracticeItem(fields);ids.add(id);
+  }
+  return plan;
+}
+export function practiceWorkflowLabel(id: string, locale: "en"|"ru" = "en") {
+  const template=PRACTICE_WORKFLOWS.find(w=>w.id===id.split(":")[0]);
+  return template ? locale==="ru" ? template.id==="intake-v1"?"Приём клиента":"Проверка дела и отчётность" : template.title : id;
+}
+export const PRACTICE_WORKFLOWS = [
+  { id: "intake-v1", title: "Client intake", steps: [
+    { title: "Review intake and identify missing information", days: 0, kind: "task" },
+    { title: "Confirm scope and responsible team", days: 1, kind: "task" },
+    { title: "Kickoff meeting", days: 2, kind: "event" },
+    { title: "Prepare initial case plan", days: 3, kind: "task" },
+  ] },
+  { id: "review-v1", title: "Case review and reporting", steps: [
+    { title: "Review documents and outstanding requests", days: 0, kind: "task" },
+    { title: "Review AI flow proposals and alternative outcomes", days: 1, kind: "task" },
+    { title: "Team review meeting", days: 2, kind: "event" },
+    { title: "Prepare outcome report for approval", days: 3, kind: "task" },
+  ] },
+] as const;
+export function validPracticeDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+export function workflowPreview(templateId: string, anchor: string) {
+  const template = PRACTICE_WORKFLOWS.find(item => item.id === templateId);
+  if (!template || !validPracticeDate(anchor)) throw new Error("Choose a workflow and a valid anchor date.");
+  return template.steps.map(step => ({ title: step.title, kind: step.kind, dueDate: new Date(Date.parse(anchor) + step.days * 86_400_000).toISOString().slice(0, 10) }));
+}
+export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | "workflow"> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter a task or event.");
+  const item = value as Record<string, unknown>;
+  if (Object.keys(item).some(key => !["kind", "title", "description", "dueDate", "assignee", "priority", "status", "checklist"].includes(key))) throw new Error("Unsupported work-item field.");
+  if (item.kind !== "task" && item.kind !== "event") throw new Error("Choose task or event.");
+  if (typeof item.title !== "string" || !item.title.trim() || item.title.length > 240) throw new Error("Enter a title of up to 240 characters.");
+  if (typeof item.description !== "string" || item.description.length > 4000) throw new Error("Use up to 4,000 description characters.");
+  if (item.dueDate !== null && !validPracticeDate(item.dueDate)) throw new Error("Choose a valid date.");
+  if (item.kind === "event" && item.dueDate === null) throw new Error("An all-day event needs a date.");
+  if (item.assignee !== null && (typeof item.assignee !== "string" || item.assignee.length > 120)) throw new Error("Choose a case participant.");
+  if (!["low", "normal", "high"].includes(String(item.priority)) || !["open", "completed"].includes(String(item.status))) throw new Error("Choose a valid priority and status.");
+  if (!Array.isArray(item.checklist) || item.checklist.length > 30 || item.checklist.some(row => !row || typeof row.title !== "string" || !row.title.trim() || row.title.length > 240 || typeof row.done !== "boolean")) throw new Error("Use at most 30 named checklist items.");
+  return { kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
+}
+export function changePracticePlan(plan: PracticePlan, command: Record<string, unknown>, newId: () => string): PracticePlan {
+  const items = [...plan.items];
+  if (command.action === "apply_workflow") {
+    const preview = workflowPreview(String(command.templateId), String(command.anchor));
+    if (items.some(item => item.workflow === `${command.templateId}:${command.anchor}`)) throw new Error("This workflow is already applied for that anchor date.");
+    items.push(...preview.map(step => ({ ...step, id: newId(), description: "", assignee: typeof command.assignee === "string" ? command.assignee : null, priority: "normal" as const, status: "open" as const, checklist: [], workflow: `${command.templateId}:${command.anchor}` })));
+  } else if (command.action === "create") {
+    items.push({ ...validatePracticeItem(command.item), id: newId(), workflow: null });
+  } else if (command.action === "update") {
+    const index = items.findIndex(item => item.id === command.id);
+    if (index < 0) throw new Error("This item is not in the current case plan.");
+    items[index] = { ...validatePracticeItem(command.item), id: items[index].id, workflow: items[index].workflow };
+  } else throw new Error("Choose a supported work action.");
+  if (items.length > 200) throw new Error("This case plan supports up to 200 work items.");
+  return { revision: plan.revision + 1, items };
+}
