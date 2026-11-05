@@ -1,4 +1,4 @@
-import { eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { auditEvents, authAuditEvents, authRateLimitEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, dossierParticipants, dossiers, localAccounts, playSessions, updateReads, users } from "../../../db/schema";
 import { clearSessionCookie } from "../../auth-crypto";
@@ -106,31 +106,38 @@ export async function DELETE(request: Request) {
       }, 409);
     }
   }
+  // Originals and their append-only metadata must never be orphaned by legacy account cleanup.
+  // Repeated inside every atomic batch mutation to fence a concurrent first upload.
+  const fileRetentionGuard = sql`not exists(select 1 from audit_events where actor_email=${email} and object_type='studio_personal_files')`;
+  const retainedFiles = () => db.get<{blocked:number}>(sql`select not (${fileRetentionGuard}) as blocked`);
+  const retentionResponse = () => authJson({error: "Account deletion requires an operator-managed personal document retention or disposal process. Your cases and originals are preserved.", code: "personal_document_retention_required"}, 409);
+  if ((await retainedFiles())?.blocked) return retentionResponse();
   const [localAccount] = await db.select({ id: localAccounts.id }).from(localAccounts).where(eq(localAccounts.userEmail, email)).limit(1);
   const emailSubjectHash = await authSubjectHash(`email:${email}`);
   const ownedCustomCases = await db.select({ id: customCases.id }).from(customCases).where(eq(customCases.ownerEmail, email));
   const ownedIds = ownedCustomCases.map((item) => item.id);
   const authAuditDelete = localAccount
-    ? db.delete(authAuditEvents).where(or(eq(authAuditEvents.accountId, localAccount.id), eq(authAuditEvents.subjectHash, emailSubjectHash))!)
-    : db.delete(authAuditEvents).where(eq(authAuditEvents.subjectHash, emailSubjectHash));
+    ? db.delete(authAuditEvents).where(and(fileRetentionGuard, or(eq(authAuditEvents.accountId, localAccount.id), eq(authAuditEvents.subjectHash, emailSubjectHash))!))
+    : db.delete(authAuditEvents).where(and(fileRetentionGuard, eq(authAuditEvents.subjectHash, emailSubjectHash)));
   await db.batch([
-    db.delete(caseSubscriptions).where(eq(caseSubscriptions.userEmail, email)),
-    db.delete(updateReads).where(eq(updateReads.userEmail, email)),
-    db.delete(caseFeedback).where(eq(caseFeedback.userEmail, email)),
+    db.delete(caseSubscriptions).where(and(fileRetentionGuard, eq(caseSubscriptions.userEmail, email))),
+    db.delete(updateReads).where(and(fileRetentionGuard, eq(updateReads.userEmail, email))),
+    db.delete(caseFeedback).where(and(fileRetentionGuard, eq(caseFeedback.userEmail, email))),
     ...(ownedIds.length ? [
-      db.delete(caseFeedback).where(inArray(caseFeedback.customCaseId, ownedIds)),
-      db.delete(customCaseGrants).where(inArray(customCaseGrants.customCaseId, ownedIds)),
-      db.delete(caseDrafts).where(inArray(caseDrafts.customCaseId, ownedIds)),
+      db.delete(caseFeedback).where(and(fileRetentionGuard, inArray(caseFeedback.customCaseId, ownedIds))),
+      db.delete(customCaseGrants).where(and(fileRetentionGuard, inArray(customCaseGrants.customCaseId, ownedIds))),
+      db.delete(caseDrafts).where(and(fileRetentionGuard, inArray(caseDrafts.customCaseId, ownedIds))),
     ] : []),
-    db.delete(customCaseGrants).where(eq(customCaseGrants.recipientEmail, email)),
-    db.delete(caseDrafts).where(eq(caseDrafts.userEmail, email)),
-    db.delete(playSessions).where(eq(playSessions.userEmail, email)),
-    ...(ownedIds.length ? [db.delete(customCases).where(inArray(customCases.id, ownedIds))] : []),
-    db.delete(auditEvents).where(eq(auditEvents.actorEmail, email)),
+    db.delete(customCaseGrants).where(and(fileRetentionGuard, eq(customCaseGrants.recipientEmail, email))),
+    db.delete(caseDrafts).where(and(fileRetentionGuard, eq(caseDrafts.userEmail, email))),
+    db.delete(playSessions).where(and(fileRetentionGuard, eq(playSessions.userEmail, email))),
+    ...(ownedIds.length ? [db.delete(customCases).where(and(fileRetentionGuard, inArray(customCases.id, ownedIds)))] : []),
+    db.delete(auditEvents).where(and(fileRetentionGuard, eq(auditEvents.actorEmail, email))),
     authAuditDelete,
-    db.delete(authRateLimitEvents).where(eq(authRateLimitEvents.subjectHash, emailSubjectHash)),
-    db.delete(users).where(eq(users.email, email)),
+    db.delete(authRateLimitEvents).where(and(fileRetentionGuard, eq(authRateLimitEvents.subjectHash, emailSubjectHash))),
+    db.delete(users).where(and(fileRetentionGuard, eq(users.email, email))),
   ]);
+  if ((await retainedFiles())?.blocked) return retentionResponse();
   return authJson({ deleted: true }, 200, clearSessionCookie());
 }
 
