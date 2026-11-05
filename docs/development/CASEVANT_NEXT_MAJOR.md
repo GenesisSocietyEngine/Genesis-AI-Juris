@@ -38,3 +38,9 @@ The existing AI proposal/review/apply pipeline, Studio case carriers, example fi
 Operational revision changes do not increment a decision-package revision or certify evidence. Current outcome reports do not include operational tasks. Workflow dates are calendar-day planning aids, never calculated statutory deadlines. The first calendar is an agenda of all-day events and dated tasks; it does not send reminders or synchronize external calendars.
 
 This is a development branch, not a claim of complete MyCase parity or production acceptance. Keep deployment and integration gates separate from local implementation checks.
+
+## Firm work continuation — 6 November 2026
+
+The next branch slice implements `/work`: complete paginated aggregation across explicitly accessible cases, task filters and a date-based firm agenda. Organization owners/administrators can configure and archive versioned workflow templates; case contributors preview and apply a saved version. Applied work retains its original template title/version. AI-assisted decision flows and case outcome reports remain independent.
+
+See [review and migration limits](../testing/FIRM_WORK_AND_TEMPLATES_REVIEW.md). This advances firm aggregation and configurable templates from the priorities above; stage boards, contact directories, timed scheduling and external integrations remain future work.

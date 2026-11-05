@@ -12,8 +12,8 @@ let routes:Record<string,{GET:Handler;POST:Handler}>;
 const storage=new AsyncLocalStorage<Request>();
 const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database};__practiceHeaders:()=>Headers};
 let organization:string, foreignOrganization:string, caseId:string;
-async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>) {
-  const request=new Request("https://practice.test/api/work",{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
+async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="") {
+  const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
   return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:caseId})}));
 }
 before(async()=>{
@@ -22,7 +22,7 @@ before(async()=>{
   const journal=JSON.parse(readFileSync("drizzle/meta/_journal.json","utf8"));
   for(const entry of journal.entries)for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();
   runtime.__practiceEnv={DB:db};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -51,4 +51,39 @@ test("practice handlers persist exact work, replay original results, reject conf
   const after=await (await call("detail")).json();
   const stable=(value:unknown)=>JSON.parse(JSON.stringify(value,(key,v)=>key==="evaluated_at"?undefined:v));
   assert.deepEqual(stable(after),stable(before),"Operational work must not rewrite decision evidence or revision");
+});
+
+
+test("firm feed paginates authorized cases and template versions are scoped, immutable and replayable", {timeout:120000}, async()=>{
+  const fields={title:"Synthetic hearing",archived:false,steps:[{title:"Prepare sources",kind:"task",days:-3},{title:"Review hearing",kind:"event",days:0}]};
+  const command={action:"create",template:fields,expectedRevision:0,operationKey:"template-original"};
+  let response=await call("templates","POST",command);assert.equal(response.status,200,await response.clone().text());
+  const first=await response.json() as {library:{revision:number;templates:Array<{id:string;version:number}>}};
+  response=await call("templates","POST",command);assert.deepEqual(await response.json(),first);
+  assert.equal((await call("templates","POST",{...command,template:{...fields,title:"Different"}})).status,409);
+  assert.equal((await call("templates","POST",{...command,operationKey:"template-stale"})).status,409);
+  assert.equal((await call("templates","POST",command,"practice-owner@example.test",organization,{origin:"https://foreign.test","sec-fetch-site":"cross-site"})).status,403);
+  const template=first.library.templates[0];
+  const apply={action:"apply_workflow",templateId:template.id,templateVersion:1,anchor:"2026-11-20",assignee:null,expectedRevision:2,operationKey:"custom-apply-original"};
+  response=await call("practice","POST",apply);assert.equal(response.status,200,await response.clone().text());const applied=await response.json() as {plan:{items:Array<{workflowTitle?:string;dueDate:string}>}};
+  assert.equal(applied.plan.items.at(-2)!.dueDate,"2026-11-17");
+  response=await call("templates","POST",{action:"update",id:template.id,template:{...fields,title:"New title",archived:true},expectedRevision:1,operationKey:"template-archive"});assert.equal(response.status,200,await response.clone().text());
+  response=await call("practice","POST",apply);assert.deepEqual(await response.json(),applied,"Retry returns original receipt even after archival");
+  assert.equal((await call("practice","POST",{...apply,expectedRevision:3,operationKey:"custom-archived"})).status,409);
+  response=await call("practice");const current=await response.json() as typeof applied;assert.equal(current.plan.items.at(-1)!.workflowTitle,fields.title);
+  await assert.rejects(db.prepare("UPDATE organization_workflow_revisions SET library='{}' WHERE organization_id=?").bind(organization).run(),/immutable/);
+  const outsider=await db.prepare("SELECT id,actor_id FROM users WHERE email=?").bind("practice-outsider@example.test").first<{id:number;actor_id:string}>();
+  await db.prepare("INSERT INTO organization_memberships(organization_id,user_id,actor_id,role,status,revision,created_at) VALUES(?,?,?,'member','active',1,?)").bind(organization,outsider!.id,outsider!.actor_id,new Date().toISOString()).run();
+  response=await call("firm","GET",undefined,"practice-outsider@example.test",organization);assert.equal(response.status,200);assert.equal((await response.json() as {cases:unknown[]}).cases.length,0,"Org membership does not grant case access");
+  assert.equal((await call("templates","POST",command,"practice-outsider@example.test",organization)).status,403);
+  response=await call("templates","GET",undefined,"practice-outsider@example.test",foreignOrganization);assert.equal((await response.json() as {library:{revision:number}}).library.revision,0);
+  assert.equal((await call("practice","POST",{...apply,expectedRevision:0,operationKey:"foreign-template"},"practice-outsider@example.test",foreignOrganization)).status,404);
+  for(let index=0;index<26;index++) {response=await call("dossiers","POST",{title:`Synthetic paging ${index}`,jurisdictions:["Test"],classification:"internal"});assert.equal(response.status,201,await response.clone().text());}
+  response=await call("firm");assert.equal(response.status,200,await response.clone().text());const page=await response.json() as {scope:string;cases:Array<{id:string}>;nextCursor:string};assert.equal(page.cases.length,25);assert.ok(page.nextCursor);
+  response=await call("firm","GET",undefined,"practice-owner@example.test",organization,undefined,"?cursor="+encodeURIComponent(page.nextCursor));assert.equal(response.status,200);const last=await response.json() as {cases:Array<{id:string}>;nextCursor:null};assert.equal(last.cases.length,2);assert.equal(last.nextCursor,null);assert.equal(new Set([...page.cases,...last.cases].map(c=>c.id)).size,27);
+  assert.equal((await call("firm","GET",undefined,"practice-outsider@example.test",foreignOrganization,undefined,"?cursor="+encodeURIComponent(page.nextCursor))).status,400);
+  response=await call("participants","POST",{actorId:outsider!.actor_id,role:"viewer",expectedRevision:1});assert.equal(response.status,201,await response.clone().text());
+  response=await call("firm","GET",undefined,"practice-outsider@example.test",organization);assert.equal((await response.json() as {cases:unknown[]}).cases.length,1);
+  await db.prepare("UPDATE organization_memberships SET status='suspended',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(organization,outsider!.actor_id).run();
+  assert.equal((await call("firm","GET",undefined,"practice-outsider@example.test",organization)).status,404);
 });

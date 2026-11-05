@@ -1,9 +1,10 @@
+import type { WorkflowTemplate } from "../work/workflow-templates";
 /** Operational work is separate from hypothetical decision-graph consequences. */
 export type PracticeItem = {
   id: string; kind: "task" | "event"; title: string; description: string;
   dueDate: string | null; assignee: string | null; priority: "low" | "normal" | "high";
   status: "open" | "completed"; checklist: { title: string; done: boolean }[];
-  workflow: string | null;
+  workflow: string | null; workflowTitle?: string;
 };
 export type PracticePlan = { revision: number; items: PracticeItem[] };
 export const EMPTY_PLAN: PracticePlan = { revision: 0, items: [] };
@@ -14,7 +15,7 @@ export function parsePracticePlan(value: unknown): PracticePlan {
   const ids=new Set<string>();
   for(const item of plan.items){
     if(!item||typeof item.id!=="string"||!item.id||item.id.length>120||ids.has(item.id)||(item.workflow!==null&&(typeof item.workflow!=="string"||item.workflow.length>200)))throw new Error("Unsupported work identity.");
-    const {id,workflow,...fields}=item;void workflow;validatePracticeItem(fields);ids.add(id);
+    const {id,workflow,workflowTitle,...fields}=item;void workflow; if(workflowTitle!==undefined && (typeof workflowTitle!=="string" || workflowTitle.length>100))throw new Error("Unsupported workflow title.");validatePracticeItem(fields);ids.add(id);
   }
   return plan;
 }
@@ -39,10 +40,14 @@ export const PRACTICE_WORKFLOWS = [
 export function validPracticeDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 }
-export function workflowPreview(templateId: string, anchor: string) {
-  const template = PRACTICE_WORKFLOWS.find(item => item.id === templateId);
+export function workflowPreview(templateId: string, anchor: string, configured?: WorkflowTemplate) {
+  const template = configured ?? PRACTICE_WORKFLOWS.find(item => item.id === templateId);
   if (!template || !validPracticeDate(anchor)) throw new Error("Choose a workflow and a valid anchor date.");
-  return template.steps.map(step => ({ title: step.title, kind: step.kind, dueDate: new Date(Date.parse(anchor) + step.days * 86_400_000).toISOString().slice(0, 10) }));
+  return template.steps.map(step => {
+    const dueDate = new Date(Date.parse(anchor) + step.days * 86_400_000).toISOString().slice(0, 10);
+    if (!validPracticeDate(dueDate)) throw new Error("A step falls outside the supported date range.");
+    return { title: step.title, kind: step.kind, dueDate };
+  });
 }
 export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | "workflow"> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter a task or event.");
@@ -58,18 +63,20 @@ export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | 
   if (!Array.isArray(item.checklist) || item.checklist.length > 30 || item.checklist.some(row => !row || typeof row.title !== "string" || !row.title.trim() || row.title.length > 240 || typeof row.done !== "boolean")) throw new Error("Use at most 30 named checklist items.");
   return { kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
 }
-export function changePracticePlan(plan: PracticePlan, command: Record<string, unknown>, newId: () => string): PracticePlan {
+export function changePracticePlan(plan: PracticePlan, command: Record<string, unknown>, newId: () => string, configured?: WorkflowTemplate): PracticePlan {
   const items = [...plan.items];
   if (command.action === "apply_workflow") {
-    const preview = workflowPreview(String(command.templateId), String(command.anchor));
-    if (items.some(item => item.workflow === `${command.templateId}:${command.anchor}`)) throw new Error("This workflow is already applied for that anchor date.");
-    items.push(...preview.map(step => ({ ...step, id: newId(), description: "", assignee: typeof command.assignee === "string" ? command.assignee : null, priority: "normal" as const, status: "open" as const, checklist: [], workflow: `${command.templateId}:${command.anchor}` })));
+    if (configured && (configured.archived || configured.id !== command.templateId || configured.version !== command.templateVersion)) throw new Error("Template changed. Refresh and preview it again.");
+    const preview = workflowPreview(String(command.templateId), String(command.anchor), configured);
+    const workflow = `${command.templateId}${configured ? `@${configured.version}` : ""}:${command.anchor}`;
+    if (items.some(item => item.workflow === workflow)) throw new Error("This workflow is already applied for that anchor date.");
+    items.push(...preview.map(step => ({ ...step, id: newId(), description: "", assignee: typeof command.assignee === "string" ? command.assignee : null, priority: "normal" as const, status: "open" as const, checklist: [], workflow, ...(configured ? {workflowTitle: configured.title} : {}) })));
   } else if (command.action === "create") {
     items.push({ ...validatePracticeItem(command.item), id: newId(), workflow: null });
   } else if (command.action === "update") {
     const index = items.findIndex(item => item.id === command.id);
     if (index < 0) throw new Error("This item is not in the current case plan.");
-    items[index] = { ...validatePracticeItem(command.item), id: items[index].id, workflow: items[index].workflow };
+    items[index] = { ...validatePracticeItem(command.item), id: items[index].id, workflow: items[index].workflow, ...(items[index].workflowTitle ? {workflowTitle:items[index].workflowTitle} : {}) };
   } else throw new Error("Choose a supported work action.");
   if (items.length > 200) throw new Error("This case plan supports up to 200 work items.");
   return { revision: plan.revision + 1, items };

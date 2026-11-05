@@ -1,3 +1,4 @@
+import { readWorkflowLibrary, type WorkflowTemplate } from "../work/workflow-templates";
 import { enrollmentRoster, unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
 import { EMPTY_PLAN, parsePracticePlan, type PracticePlan } from "./practice-plan";
 import { WorkingNotesController } from "./working-notes-controller";
@@ -45,6 +46,17 @@ export class WorkspaceController {
       if(this.current(ticket))this.practice={...this.practice,pending:error instanceof WorkspaceApiError && [400,403,404,409].includes(error.status)?null:pending,issue:error instanceof WorkspaceApiError ? String(object(error.payload).error ?? "Could not save work.") : "Save not confirmed. Retry the original change to recover its receipt."};
       return false;
     } finally {if(this.current(ticket))this.publish({mutationKey:null});}
+  }
+  workflowTemplates: {items:WorkflowTemplate[];issue:string;loading:boolean} = {items:[],issue:"",loading:false};
+  async loadWorkflowTemplates() {
+    if(this.state.authority!=="granted")return;
+    const ticket=this.capture();this.workflowTemplates={...this.workflowTemplates,loading:true,issue:""};this.publish({});
+    try {
+      const response=await this.request("/api/work/templates",undefined,ticket) as {library:unknown};
+      if(!this.current(ticket))return;
+      this.workflowTemplates={items:readWorkflowLibrary(response.library).templates.filter(t=>!t.archived),loading:false,issue:""};
+    } catch {if(this.current(ticket))this.workflowTemplates={items:[],loading:false,issue:"Custom templates unavailable. Refresh templates to retry."};}
+    finally {if(this.current(ticket))this.publish({});}
   }
   private state: State = { enrollmentCompletion: 0, roster: unavailableEnrollmentRoster(), visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
   private listeners = new Set<() => void>();
@@ -123,12 +135,14 @@ export class WorkspaceController {
   enter(caseId: string) {
     if (this.state.visit?.caseId === caseId && this.state.authority !== "case_denied") return;
     this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
+    this.workflowTemplates={items:[],loading:false,issue:""};
     this.clearNotebook(); this.clearReviews(); this.denied.clear(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     const visit = { ...this.options.identity, caseId, generation: ++this.generation };
     this.publish({ roster: unavailableEnrollmentRoster(), visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
   }
   private denyCase(account = false) {
     this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
+    this.workflowTemplates={items:[],loading:false,issue:""};
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++; this.clearNotebook(); this.clearReviews(); this.clearDrafts(); this.denied.clear();
     this.publish({ roster: unavailableEnrollmentRoster(), authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, targetActive: false, targetNotice: "", panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
   }

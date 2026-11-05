@@ -12,6 +12,7 @@ import { organizationDisplayLabel } from "./organization-label";
 
 export const WORKSPACE_PAGES = [
   { path: "/matters", view: "matters", en: "My cases", ru: "Мои кейсы", icon: "cases" },
+  { path: "/work", view: "work", en: "Firm work", ru: "Работа организации", icon: "calendar" },
   { path: "/studio", view: "studio", en: "AI Case Studio", ru: "ИИ Студия кейсов", icon: "flow" },
   { path: "/studio?view=demos", view: "demos", en: "Demo", ru: "Демо", icon: "demo" },
   { path: "/templates", view: "templates", en: "Templates", ru: "Шаблоны", icon: "template" },
@@ -117,7 +118,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }, []);
   function follow(event: MouseEvent<HTMLAnchorElement>, view: string) {
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    if (!onNavigate || view === "matters") { guardedLink(event);return; }
+    if (!onNavigate || ["matters", "work"].includes(view)) { guardedLink(event);return; }
     if(event.defaultPrevented)return;
     if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}

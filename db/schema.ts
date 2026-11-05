@@ -8,6 +8,13 @@ export const dossierPracticeRevisions = sqliteTable("dossier_practice_revisions"
   plan: text("plan").notNull(), occurredAt: text("occurred_at").notNull(),
 }, t => [uniqueIndex("practice_revision_unique").on(t.dossierId,t.revision), uniqueIndex("practice_operation_unique").on(t.dossierId,t.actorRef,t.operationKey)]);
 
+export const organizationWorkflowRevisions = sqliteTable("organization_workflow_revisions", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  revision: integer("revision").notNull(), actorRef: text("actor_ref").notNull(),
+  operationKey: text("operation_key").notNull(), requestDigest: text("request_digest").notNull(),
+  library: text("library").notNull(), occurredAt: text("occurred_at").notNull(),
+}, t => [uniqueIndex("workflow_revision_unique").on(t.organizationId,t.revision), uniqueIndex("workflow_operation_unique").on(t.organizationId,t.actorRef,t.operationKey)]);
+
 // P1 validation workspaces. Confidential data planes still require the frozen
 // per-tenant resource manifest and are never enabled by these shared-DB rows.
 export const organizations = sqliteTable("organizations", {
