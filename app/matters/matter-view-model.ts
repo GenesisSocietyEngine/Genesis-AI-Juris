@@ -179,6 +179,7 @@ export interface ProposalItem {
 }
 
 export interface RequestItem {
+  requestedFromParticipantId?: string | null;
   satisfyingDocumentId?: string | null;
   satisfyingEvidenceLinkId?: string | null;
   id: string;
@@ -575,6 +576,7 @@ export function normalizeRequests(payload: unknown): { requests: RequestItem[]; 
     id: textValue(request, ["information_request_id", "informationRequestId", "request_id", "requestId", "id"]),
     question: boundedText(textValue(request, ["question", "requested_item", "requestedItem", "title"], "Information requested"), 1_000),
     ownerActorId: nullableText(request, ["owner_actor_id", "ownerActorId"]),
+    requestedFromParticipantId: nullableText(request, ["requested_from_participant_id", "requestedFromParticipantId"]),
     requestedFrom: nullableText(request, ["requested_from_display_name", "requestedFromDisplayName", "requested_from_participant_id", "requestedFromParticipantId"]),
     priority: textValue(request, ["priority"], "normal"),
     dueAt: nullableText(request, ["due_at", "dueAt"]),
