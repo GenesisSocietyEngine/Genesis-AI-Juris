@@ -27,7 +27,8 @@ test("source action cards expose four named destinations and keep technical audi
     }
     assert.match(html, locale === "en" ? /Source history and technical details/ : /История источников и технические сведения/);
     assert.doesNotMatch(html, /Provenance and projection register|Declared template reference|Check for template updates/);
-    assert.doesNotMatch(html, /<details[^>]* open=/);
+    assert.equal((html.match(/<details[^>]* open=/g) ?? []).length, 1, "only library search starts expanded; source history and technical audits remain collapsed");
+    assert.match(html, /<details class="searchDisclosure" open=/);
     assert.equal(JSON.stringify(draft), before, "source navigation renders without changing the working copy");
   }
 });

@@ -45,11 +45,16 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   const [view, setView] = useState({ scope: readingScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit });
   const active = view.scope === readingScope ? view : { scope: readingScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit };
   const { query, filter, history, limit } = active;
+  const [reader, setReader] = useState<{ scope: object; id: string } | null>(remembered && readingMemory?.read()?.readerId ? { scope, id: readingMemory.read()!.readerId! } : null);
+  const readerHeading = useRef<HTMLHeadingElement>(null);
+  const readerText = useRef<HTMLDivElement>(null);
+  const readerTrigger = useRef<HTMLButtonElement | null>(null);
+  const readerFocus = useRef(false);
   function setReading<K extends keyof typeof DEFAULT_READING>(key: K, value: typeof DEFAULT_READING[K] | ((previous: typeof DEFAULT_READING[K]) => typeof DEFAULT_READING[K])) {
     setView(previous => { const current = previous.scope === readingScope ? previous : active; return { ...current, [key]: typeof value === "function" ? value(current[key]) : value }; });
   }
   const root = useRef<HTMLElement>(null);
-  useLayoutEffect(() => { readingMemory?.write({ query, filter, history, limit, returnTo: remembered ? readingMemory.read()?.returnTo : undefined }); }, [readingMemory, query, filter, history, limit, remembered]);
+  useLayoutEffect(() => { readingMemory?.write({ query, filter, history, limit, readerId: reader?.scope === scope ? reader.id : undefined, returnTo: remembered ? readingMemory.read()?.returnTo : undefined }); }, [readingMemory, query, filter, history, limit, remembered, reader, scope]);
   const freshBatch: EvidenceBatch = { scope, selected: [], target: "", mode: "attach" };
   const [batch, setBatch] = useState<EvidenceBatch>(freshBatch);
   const activeBatch = batch.scope === scope ? batch : freshBatch;
@@ -107,6 +112,29 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   const index = useMemo(() => indexStudioMaterials(items.filter(item => (!nodeId || (available ? item.kind === "working" && !item.nodeIds.includes(nodeId) : item.id !== `working:${nodeId}` && item.nodeIds.includes(nodeId))) && (history || item.selected || item.nodeIds.length > 0)
     && (filter === "unassigned" ? item.kind === "working" && item.nodeIds.length === 1 : filter === "all" || item.kind === filter))), [items, nodeId, available, history, filter]);
   const filtered = useMemo(() => searchStudioMaterials(index, query).filter(result => !attachmentPlan || selected.includes(result.item.id)), [index, query, attachmentPlan, selected]);
+  const reading = reader?.scope === scope ? filtered.find(result => result.item.id === reader.id) : undefined;
+  useLayoutEffect(() => {
+    const content = readerText.current;
+    if (reading && content) {
+      content.scrollTop = 0;
+      const match = content.querySelector("mark");
+      if (match) content.scrollTop = Math.max(0, match.getBoundingClientRect().top - content.getBoundingClientRect().top - content.clientHeight / 3);
+    }
+    if (reading && readerFocus.current) {
+      readerFocus.current = false;
+      readerHeading.current?.focus({ preventScroll: true });
+      readerHeading.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
+  }, [reading]);
+  function openReader(id: string, trigger: HTMLButtonElement) {
+    readerTrigger.current = trigger;
+    readerFocus.current = true;
+    setReader({ scope, id });
+  }
+  function closeReader() {
+    setReader(null);
+    if (readerTrigger.current?.isConnected) readerTrigger.current.focus();
+  }
   useLayoutEffect(() => {
     if (loading || readFailure || !root.current || !remembered) return;
     const target = readingMemory?.takeReturn();
@@ -122,7 +150,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     }
   }, [readingMemory, loading, readFailure, remembered]);
   function openNode(id: string, key: string, button: HTMLButtonElement) {
-    readingMemory?.write({ query, filter, history, limit, returnTo: { key, scrollY: window.scrollY, viewportTop: button.getBoundingClientRect().top } });
+    readingMemory?.write({ query, filter, history, limit, readerId: reader?.scope === scope ? reader.id : undefined, returnTo: { key, scrollY: window.scrollY, viewportTop: button.getBoundingClientRect().top } });
     onNode(id);
   }
   const evidenceIds = selected.flatMap(id => { const item = items.find(item => item.id === id); return item?.kind === "working" ? [item.id.slice("working:".length)] : []; });
@@ -172,7 +200,8 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
           : destination ? mode === "move" ? t(`Move ${recordCount} from ${nodeLabel(nodeId!)} to ${destination}.`, `Перенести ${evidenceIds.length} записей из ${nodeLabel(nodeId!)} в ${destination}.`)
             : t(`Attach ${recordCount} to ${destination}; keep existing connections.`, `Прикрепить ${changeCount} записей к ${destination}; сохранить существующие связи.`)
           : t("Choose a destination to preview the change.", "Выберите назначение для предпросмотра изменения.");
-  return <section ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
+  const fullLibrary = !nodeId && !attachmentPlan;
+  return <section ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""} ${fullLibrary ? styles.library : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
     {!attachmentPlan && <header className={styles.header}><div><h3>{nodeId ? t("Node evidence", "Материалы узла") : t("Case materials library", "Библиотека материалов кейса")}</h3>
       <p className={styles.meta}>{nodeId ? nodeLabel(nodeId) : t("Materials in this working case", "Материалы рабочего кейса")}</p>
       <p className={styles.meta}>{t("Connection only · evidence review not recorded here", "Только связь · проверка доказательств здесь не записана")}</p>
@@ -189,7 +218,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
     </div>}
     {available && <p className={styles.meta}>{t("Use “Drag to attach” below, or choose Attach here. Dragging a map card only moves it.", "Используйте «Тянуть для связи» ниже или «Прикрепить сюда». Перетаскивание карточки только перемещает её.")}</p>}
     {nodeId && !available && <StudioCitedPassages key={nodeId} citations={citations} context={scope} locale={locale} onReturnToFinding={onReturnToFinding}/>}
-    {!attachmentPlan && <details className={styles.searchDisclosure}><summary>{t("Search and filters", "Поиск и фильтры")}</summary>
+    {!attachmentPlan && <details className={styles.searchDisclosure} open={fullLibrary || undefined}><summary>{t("Search and filters", "Поиск и фильтры")}</summary>
     <div className={styles.toolbar}><label>{t("Find a material", "Найти материал")}<input type="search" value={query} maxLength={MATERIAL_SEARCH_LIMITS.query} placeholder={t("Title, note or loaded text", "Название, примечание или загруженный текст")} onChange={event => { setReading("query", event.target.value); setReading("limit", 20); }} /></label><label>{t("Show materials", "Показать материалы")}<select value={filter} onChange={event => { setReading("filter", event.target.value); setReading("limit", 20); }}><option value="all">{t("All materials", "Все материалы")}</option><option value="working">{t("Working evidence", "Рабочие материалы")}</option><option value="reference">{t("Illustrative references", "Учебные источники")}</option><option value="missing">{t("Missing originals", "Отсутствующие оригиналы")}</option><option value="url">{t("URL references only", "Только URL-ссылки")}</option><option value="unassigned">{t("Unassigned evidence", "Неприкреплённые материалы")}</option></select></label><label><input type="checkbox" checked={history} onChange={event => { setReading("history", event.target.checked); setReading("limit", 20); }} /> {t("Include retained versions", "Включить прежние версии")}</label></div>
     <p className={styles.meta}>{t("Searches loaded titles, notes and text. Missing originals and URL-only sources have no body to search.", "Поиск по загруженным названиям, примечаниям и тексту. Отсутствующие оригиналы и URL — без текста.")}</p>
     {index.limitedMaterials > 0 && <p className={styles.notice}>{t(`Search is limited for ${index.limitedMaterials} materials: at most 1,000 materials, 4,096 title/note characters per material, 200,000 characters per body and 2,000,000 body characters in total. Open or download full text to inspect the rest.`, `Поиск ограничен для ${index.limitedMaterials} материалов: до 1 000 материалов, 4 096 символов названия/примечания на материал, 200 000 символов на текст и 2 000 000 символов текстов всего. Остальное доступно в полном тексте или скачанном файле.`)}</p>}
@@ -218,9 +247,12 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
         <button type="button" className={styles.secondary} onClick={clearSelection}>{busy ? t("Cancel", "Отмена") : t("Clear selection", "Снять выбор")}</button>
       </div>
     </fieldset>}
+    <div className={fullLibrary ? styles.librarySplit : undefined}>
+    <div className={fullLibrary ? styles.inventory : undefined}>
+    {fullLibrary && <div className={styles.inventoryHeading}><span>{t("MATERIAL / SOURCE", "МАТЕРИАЛ / ИСТОЧНИК")}</span><span>{t("OPEN", "ОТКРЫТЬ")}</span></div>}
     <ul className={`${styles.rows} ${styles.materialList}`}>{filtered.slice(0, limit).map(({item, passage}) => {
       const linked = item.nodeIds.filter(id => id !== nodeId && item.id !== `working:${id}`);
-      return <li key={item.id} data-material-id={item.id}>
+      return <li key={item.id} data-material-id={item.id} data-reading={fullLibrary && reading?.item.id === item.id || undefined}>
       <div className={styles.materialLayout}>
         {item.kind === "working" && onEvidenceDragStart && !attachmentPlan && <button type="button" className={styles.dragHandle} draggable={Boolean(!evidencePointer && authority?.allowed && !busy)} disabled={!authority?.allowed || busy}
           aria-label={t("Drag to attach: ", "Тянуть для связи: ") + item.title} title={t("Drag onto a map node; review before applying", "Перетащите на узел карты; проверьте перед применением")}
@@ -228,7 +260,11 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
           onPointerMove={evidencePointer?.move} onPointerUp={evidencePointer?.end} onPointerCancel={evidencePointer?.cancel} onLostPointerCapture={evidencePointer?.cancel}
           onDragStart={event => { if (evidencePointer) event.preventDefault(); else onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]); }} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag to attach", "Тянуть для связи")}</span></button>}
         {onApply && (item.kind === "working" && item.id !== `working:${nodeId}` ? <label className={styles.materialSelect}><input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => { const checked = event.target.checked; changeBatch(current => ({ ...current, target: available ? nodeId! : current.target, selected: checked ? [...current.selected, item.id] : current.selected.filter(id => id !== item.id) })); }} /><span className={styles.selectionLabel}>{t("Select", "Выбрать")}</span></label> : <span className={`${styles.materialSelect} ${styles.selectionSpace}`} aria-hidden="true"/>)}
-        <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
+        {fullLibrary ? <button type="button" className={styles.readerRow} aria-pressed={reading?.item.id === item.id} aria-controls="material-reader" onClick={event => openReader(item.id, event.currentTarget)}>
+          <span className={styles.fileIcon} aria-hidden="true">{item.kind === "missing" ? "?" : item.kind === "url" ? "↗" : "▤"}</span>
+          <span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span><small>{t(`${linked.length} related nodes`, `Связанных узлов: ${linked.length}`)}</small></span>
+          <span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")} →</span>
+        </button> : <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
           <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>
           <div className={styles.materialBody}>
             {item.text !== null && <p className={styles.materialText}>{passage ? <>{item.text.slice(0, passage.from)}<mark tabIndex={-1}>{item.text.slice(passage.from, passage.to)}</mark>{item.text.slice(passage.to)}</> : item.text}</p>}
@@ -236,13 +272,33 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
             <div className={styles.actions}>{linked.map(id => <button className={styles.secondary} key={id} type="button" data-material-node={`${item.id}→${id}`} onClick={event => openNode(id, `${item.id}→${id}`, event.currentTarget)}>N{String(draft.nodes.findIndex(node => node.id === id) + 1).padStart(2, "0")} · {draft.nodes.find(node => node.id === id)?.title}</button>)}</div>
             {!linked.length && <p className={styles.meta}>{t("No related nodes recorded.", "Связанные узлы не записаны.")}</p>}
           </div>
-        </details>
+        </details>}
         {available && onApply && <button type="button" className={styles.secondary} disabled={!authority?.allowed || busy} onClick={() => { if (onEvidenceAttach) onEvidenceAttach([item.id.slice("working:".length)], nodeId!); else changeBatch(current => ({ ...current, selected: [item.id], target: nodeId!, mode: "attach" })); }}>{t("Attach here…", "Прикрепить сюда…")}</button>}
-        {item.text !== null && <button className={`${styles.secondary} ${styles.fileDownload}`} disabled={!authority?.allowed || busy} type="button" onClick={() => void download(item)} aria-label={t("Download text: ", "Скачать текст: ") + item.title}>{t("Download text", "Скачать текст")}</button>}
+        {!fullLibrary && item.text !== null && <button className={`${styles.secondary} ${styles.fileDownload}`} disabled={!authority?.allowed || busy} type="button" onClick={() => void download(item)} aria-label={t("Download text: ", "Скачать текст: ") + item.title}>{t("Download text", "Скачать текст")}</button>}
       </div>
       {passage && <div className={styles.passage}><p className={styles.meta}>{item.id}{passage.section ? ` · § ${passage.section}` : ""} · {t("Text position", "Позиция в тексте")} {passage.from + 1}–{passage.to}</p><p>{passage.leading ? "…" : ""}{passage.before}<mark>{passage.exact}</mark>{passage.after}{passage.trailing ? "…" : ""}</p></div>}
     </li>;})}</ul>
     {filtered.length > limit && <button type="button" className={styles.secondary} onClick={() => setReading("limit", value => value + 20)}>{t("Show 20 more", "Показать ещё 20")}</button>}
-
+    </div>
+    {fullLibrary && <aside id="material-reader" className={styles.reader} aria-label={t("Material reader", "Просмотр материала")}>
+      {reading ? <>
+        <div className={styles.readerTop}><span>{t("DOCUMENT WORKSPACE", "РАБОТА С ДОКУМЕНТОМ")}</span><button type="button" onClick={closeReader}>{t("Close reader", "Закрыть просмотр")}</button></div>
+        <h4 ref={readerHeading} tabIndex={-1}>{reading.item.title}</h4>
+        <p className={styles.meta}>{reading.item.note}</p>
+        <div className={styles.readerIdentity}><span>{reading.item.id}</span><span>{reading.item.text === null ? t("No attached text", "Текст не приложен") : t("Full available text", "Весь доступный текст")}</span></div>
+        <div className={styles.actions}>
+          {reading.item.text !== null && <button type="button" className={styles.secondary} disabled={!authority?.allowed || busy} onClick={() => void download(reading.item)}>{t("Download text", "Скачать текст")}</button>}
+          {reading.item.kind === "working" && <button type="button" className={styles.primary} disabled={!authority?.allowed || busy || !onApply} data-material-node={`${reading.item.id}→${reading.item.id.slice(8)}`} onClick={event => openNode(reading.item.id.slice(8), `${reading.item.id}→${reading.item.id.slice(8)}`, event.currentTarget)}>{t("Edit working record", "Редактировать рабочую запись")}</button>}
+        </div>
+        {reading.item.kind === "working" && <p className={styles.meta}>{t("Edits use the case editor. Save the case to keep changes.", "Изменения вносятся в редакторе дела. Сохраните кейс после редактирования.")}</p>}
+        <div ref={readerText} className={styles.readerText} tabIndex={0} role="region" aria-label={t("Full material text", "Полный текст материала")}>
+          {reading.item.text === null ? <p>{reading.item.note}</p> : <p className={styles.materialText}>{reading.passage ? <>{reading.item.text.slice(0, reading.passage.from)}<mark>{reading.item.text.slice(reading.passage.from, reading.passage.to)}</mark>{reading.item.text.slice(reading.passage.to)}</> : reading.item.text}</p>}
+        </div>
+        <div className={styles.readerLinks}><strong>{t("Connected case records", "Связанные записи дела")}</strong><div className={styles.actions}>{reading.item.nodeIds.filter(id => reading.item.id !== `working:${id}`).map(id => <button type="button" className={styles.secondary} key={id} data-material-node={`${reading.item.id}→${id}`} onClick={event => openNode(id, `${reading.item.id}→${id}`, event.currentTarget)}>{nodeLabel(id)}</button>)}</div>
+          {!reading.item.nodeIds.some(id => reading.item.id !== `working:${id}`) && <p className={styles.meta}>{t("No related nodes recorded.", "Связанные узлы не записаны.")}</p>}
+        </div>
+      </> : <div className={styles.readerEmpty}><span aria-hidden="true">▤</span><h4>{t("Select a material to read", "Выберите материал для просмотра")}</h4><p>{t("Keep the case library in view while reading source text, checking connections or opening a working record for editing.", "Просматривайте текст и связи или открывайте рабочую запись для редактирования, сохраняя библиотеку на экране.")}</p></div>}
+    </aside>}
+    </div>
   </section>;
 }
