@@ -1,0 +1,43 @@
+{
+  "scope": "Fresh local unsaved Canopy; no account save or production writes",
+  "candidateCommit": "faf6e381fda3b67509cb9a7f8af9e20ce2678143",
+  "previewPort": 4205,
+  "chooser": {
+    "evidence": "commissioning / N06",
+    "initialTarget": "none",
+    "initialApplyEnabled": false,
+    "cancel": "13 links unchanged; explicit button focus restored",
+    "applyTarget": "mandate / N02",
+    "result": "14 nodes / 14 links; inspector follows N02; Undo restores13"
+  },
+  "pointer": {
+    "api": "Supported browser Tab.drag; real browser input, not injected events",
+    "attempts": 2,
+    "target": "mandate / N02",
+    "previewBeforeWrite": true,
+    "cancelLinks": 13,
+    "applyLinks": 14,
+    "undoLinks": 13,
+    "cancelFocus": "Available in case scope control; exact handle restoration not claimed"
+  },
+  "movement": {
+    "method": "ArrowRight on N06 map card",
+    "beforeLeft": "174.5px",
+    "afterLeft": "179.5px",
+    "links": 13,
+    "attachmentPreview": false,
+    "undoLeft": "174.5px"
+  },
+  "noOp": {
+    "target": "crop / N05",
+    "applyEnabled": false,
+    "preview": "These records are already attached here. No change is needed.",
+    "links": 13
+  },
+  "captureLimits": [
+    "Fresh CDP screenshots time out",
+    "Native screenshot mismatches target context; rejected, not stored or acted on",
+    "Viewport override does not reliably produce requested CSS dimensions; no fresh390pxclaim"
+  ],
+  "preservation": "Original4204user-moved draft and all existing cases/tabs untouched"
+}
