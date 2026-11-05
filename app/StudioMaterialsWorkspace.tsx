@@ -17,10 +17,12 @@ type MaterialOperation = { scope: object; batch: EvidenceBatch };
 const DEFAULT_READING = { query: "", filter: "all", history: false, limit: 20 };
 
 export type MaterialsAuthority = { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
-export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding, onAddEvidence, onEvidenceReview, onEvidenceDragStart, onEvidenceDragEnd, onEvidenceAttach, evidencePointer, attachmentPlan, onPlanCancel }: {
+export default function StudioMaterialsWorkspace({ draft, locale, authority, nodeId, onNode, onApply, readingMemory, onReturnToFinding, onAddEvidence, onEvidenceReview, onEvidenceDragStart, onEvidenceDragEnd, onEvidenceAttach, evidencePointer, attachmentPlan, onPlanCancel, viewIdentity, compactHeader }:   {
   draft: StudioDraft; locale: "en" | "ru"; authority?: MaterialsAuthority; nodeId?: string;
   onNode: (id: string) => void; onApply?: (expected: string, next: StudioDraft, targetNodeId?: string) => boolean;
   readingMemory?: MaterialReadingMemory;
+  viewIdentity?: object;
+  compactHeader?: boolean;
   onReturnToFinding?: () => void;
   onAddEvidence?: () => void; onEvidenceReview?: () => void;
   onEvidenceDragStart?: (event: React.DragEvent<HTMLButtonElement>, ids: string[]) => void;
@@ -42,11 +44,12 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
   const [loaded, setLoaded] = useState<{ scope: object; items: StudioMaterial[]; failure?: string } | null>(null);
   const remembered = readingMemory?.context.draft === draft && readingMemory.context.locale === locale && readingMemory.context.epoch === authority?.epoch && readingMemory.context.allowed === authority?.allowed;
   const initial = remembered ? readingMemory?.read() ?? DEFAULT_READING : DEFAULT_READING;
-  const [view, setView] = useState({ scope: readingScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit });
-  const active = view.scope === readingScope ? view : { scope: readingScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit };
+  const viewScope = viewIdentity ?? readingScope;
+  const [view, setView] = useState({ scope: viewScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit });
+  const active = view.scope === viewScope ? view : { scope: viewScope, query: initial.query, filter: initial.filter, history: initial.history, limit: initial.limit };
   const { query, filter, history, limit } = active;
   function setReading<K extends keyof typeof DEFAULT_READING>(key: K, value: typeof DEFAULT_READING[K] | ((previous: typeof DEFAULT_READING[K]) => typeof DEFAULT_READING[K])) {
-    setView(previous => { const current = previous.scope === readingScope ? previous : active; return { ...current, [key]: typeof value === "function" ? value(current[key]) : value }; });
+    setView(previous => { const current = previous.scope === viewScope ? previous : active; return { ...current, [key]: typeof value === "function" ? value(current[key]) : value }; });
   }
   const root = useRef<HTMLElement>(null);
   useLayoutEffect(() => { readingMemory?.write({ query, filter, history, limit, returnTo: remembered ? readingMemory.read()?.returnTo : undefined }); }, [readingMemory, query, filter, history, limit, remembered]);
@@ -172,8 +175,8 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
           : destination ? mode === "move" ? t(`Move ${recordCount} from ${nodeLabel(nodeId!)} to ${destination}.`, `Перенести ${evidenceIds.length} записей из ${nodeLabel(nodeId!)} в ${destination}.`)
             : t(`Attach ${recordCount} to ${destination}; keep existing connections.`, `Прикрепить ${changeCount} записей к ${destination}; сохранить существующие связи.`)
           : t("Choose a destination to preview the change.", "Выберите назначение для предпросмотра изменения.");
-  return <section ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
-    {!attachmentPlan && <header className={styles.header}><div><h3>{nodeId ? t("Node evidence", "Материалы узла") : t("Case materials library", "Библиотека материалов кейса")}</h3>
+  return <section data-materials-workspace ref={root} className={`${styles.surface} ${nodeId ? styles.compact : ""}`} aria-label={t("Case materials library", "Библиотека материалов кейса")}>
+    {!attachmentPlan && !compactHeader && <header className={styles.header}><div><h3>{nodeId ? t("Node evidence", "Материалы узла") : t("Case materials library", "Библиотека материалов кейса")}</h3>
       <p className={styles.meta}>{nodeId ? nodeLabel(nodeId) : t("Materials in this working case", "Материалы рабочего кейса")}</p>
       <p className={styles.meta}>{t("Connection only · evidence review not recorded here", "Только связь · проверка доказательств здесь не записана")}</p>
       <details><summary>{t("Attachment and review", "Прикрепление и проверка")}</summary><p>{t("Attaching a record creates a connection. It does not accept the evidence or approve a conclusion. Working text, source citations and original files are distinct; unavailable originals have no downloadable file.", "Прикрепление создаёт связь, но не подтверждает доказательство и не утверждает вывод. Рабочий текст, цитаты и оригиналы — разные материалы; недоступные оригиналы нельзя скачать.")}</p></details>
@@ -181,7 +184,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
         <button type="button" className={styles.primary} disabled={!authority?.allowed || busy} onClick={() => onEvidenceAttach([nodeId], "")}>{t("Attach this evidence…", "Прикрепить этот материал…")}</button>
         <p className={styles.meta}>{t("Choose a destination, then confirm. Moving a map card only changes its position.", "Выберите узел и подтвердите. Перетаскивание карточки только меняет её положение.")}</p>
       </div>}
-      <div className={styles.actions}>{onAddEvidence && <button type="button" disabled={!authority?.allowed || busy} onClick={onAddEvidence}>{t(nodeId ? "Add record" : "Add evidence record", "Добавить материал")}</button>}{onEvidenceReview && <button type="button" onClick={onEvidenceReview}>{t("Review", "Проверка")}</button>}</div>
+      <div className={styles.actions}>{onAddEvidence && <button type="button" disabled={!authority?.allowed || busy} onClick={onAddEvidence}>{t("Add note", "Добавить заметку")}</button>}{onEvidenceReview && <button type="button" onClick={onEvidenceReview}>{t("Review", "Проверка")}</button>}</div>
     </div>{!nodeId && <button className={styles.primary} type="button" disabled={busy || !authority?.allowed || !items.length} onClick={() => void download()}>{t("Download all (.zip)", "Скачать всё (.zip)")}</button>}</header>}
     {!attachmentPlan && nodeId && <div className={styles.nodeViews} role="group" aria-label={t("Evidence attachment scope", "Область материалов")}>
       <button type="button" aria-pressed={!available} onClick={() => showNodeMaterials(false)}>{t(`Attached here (${attachedCount})`, `Прикреплено здесь (${attachedCount})`)}</button>
@@ -229,7 +232,7 @@ export default function StudioMaterialsWorkspace({ draft, locale, authority, nod
           onDragStart={event => { if (evidencePointer) event.preventDefault(); else onEvidenceDragStart(event, selected.includes(item.id) ? evidenceIds : [item.id.slice("working:".length)]); }} onDragEnd={onEvidenceDragEnd}>⠿ <span>{t("Drag to attach", "Тянуть для связи")}</span></button>}
         {onApply && (item.kind === "working" && item.id !== `working:${nodeId}` ? <label className={styles.materialSelect}><input type="checkbox" disabled={!authority?.allowed || busy} aria-label={t("Select ", "Выбрать ") + item.title} checked={selected.includes(item.id)} onChange={event => { const checked = event.target.checked; changeBatch(current => ({ ...current, target: available ? nodeId! : current.target, selected: checked ? [...current.selected, item.id] : current.selected.filter(id => id !== item.id) })); }} /><span className={styles.selectionLabel}>{t("Select", "Выбрать")}</span></label> : <span className={`${styles.materialSelect} ${styles.selectionSpace}`} aria-hidden="true"/>)}
         <details className={styles.materialDetails} onToggle={event => { if (event.currentTarget.open && passage && !event.currentTarget.querySelector("[data-material-node]:focus")) { const match = event.currentTarget.querySelector<HTMLElement>("mark"); match?.focus({preventScroll:true}); match?.scrollIntoView({block:"center"}); } }}>
-          <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>
+          <summary><span className={styles.disclosureMarker} aria-hidden="true">›</span><span className={styles.materialTitle}><strong>{item.title}</strong><span className={styles.meta}>{compactHeader&&item.kind==="working"?t("Note · review separate","Заметка · проверка отдельно"):item.note}</span></span><span className={styles.readLabel}>{item.text === null ? t("Details", "Подробнее") : passage ? t("Read matching passage", "Открыть найденный фрагмент") : t("Read text", "Прочитать текст")}<small>{t(`${linked.length} related ${linked.length === 1 ? "node" : "nodes"}`, `Связанных узлов: ${linked.length}`)}</small></span></summary>
           <div className={styles.materialBody}>
             {item.text !== null && <p className={styles.materialText}>{passage ? <>{item.text.slice(0, passage.from)}<mark tabIndex={-1}>{item.text.slice(passage.from, passage.to)}</mark>{item.text.slice(passage.to)}</> : item.text}</p>}
             <p className={styles.meta}>{t("Related nodes", "Связанные узлы")}</p>

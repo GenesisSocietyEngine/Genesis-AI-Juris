@@ -14,8 +14,10 @@ import StudioMaterialsWorkspace from "./StudioMaterialsWorkspace";
 import StudioProvenanceRegister from "./StudioProvenanceRegister";
 import type { MaterialReadingMemory } from "./studio-material-search";
 
-export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAction, packetAuthority, onUpgrade, onMaterialsChange, readingMemory }: StudioOverviewProps & {
+export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAction, packetAuthority, onUpgrade, onMaterialsChange, readingMemory, onAddNote, onOpenMaterials }: StudioOverviewProps & {
   readingMemory?: MaterialReadingMemory;
+  onAddNote?:()=>void;
+  onOpenMaterials?:()=>void;
   onMaterialsChange?: (expected: string, next: StudioOverviewProps["draft"]) => boolean;
   onUpgrade?: (expectedFingerprint: string, next: StudioOverviewProps["draft"]) => boolean;
   packetAuthority?: { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
@@ -67,7 +69,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
     <p className={styles.muted}>{t("Reference material and case records still need independent review.", "Источники и записи дела требуют независимой проверки.")}</p>
     {notice && <p role="alert" className={styles.notice}>{notice}</p>}
     <section className={styles.block} aria-labelledby="studio-source-documents"><h3 className={styles.sourceTarget} id="studio-source-documents" tabIndex={-1}>{t("Source documents and references", "Документы и ссылки")}</h3>
-    <StudioMaterialsWorkspace draft={draft} locale={locale} authority={packetAuthority} onNode={onNode} onApply={onMaterialsChange} readingMemory={readingMemory} onAddEvidence={onAction ? () => onAction({step:3,id:"studio-evidence-composer",nodeType:"evidence"}) : undefined}/>
+    {onOpenMaterials?<button type="button" onClick={onOpenMaterials}>{t("Open documents & notes", "Открыть документы и заметки")}</button>:<StudioMaterialsWorkspace draft={draft} locale={locale} authority={packetAuthority} onNode={onNode} onApply={onMaterialsChange} readingMemory={readingMemory} onAddEvidence={onAddNote ?? (onAction ? () => onAction({step:3,id:"studio-evidence-composer",nodeType:"evidence"}) : undefined)}/>}
     <details><summary>{t("Reference packet details and history", "Сведения и история пакета источников")}</summary>
     <StudioConvertedSourcePacket key={"packet-" + (packetAuthority?.epoch ?? 0)} draft={draft} locale={locale} onNode={onNode} authority={packetAuthority}/>
     {model.referenceScenario && model.sourcePacket.length > 0 && <section className={styles.block}><h3>{t("Retained fictional source packet", "Сохранённый пакет вымышленных источников")}</h3><p>{t(`${model.documentCount} document identities · ${model.sourcePacket.length} immutable versions. Open the version cited by the record; a later version does not silently replace it.`, `Документов: ${model.documentCount}; неизменяемых версий: ${model.sourcePacket.length}. Открывайте указанную в записи версию: новая версия не подставляется автоматически.`)}</p>{model.sourcePacket.map(source => <details className={styles.source} key={`${source.id}:${source.version}`}><summary>{source.id} v{source.version} — {source.title}</summary>{Object.entries(source.sections).map(([section, text]) => <div className={styles.fragment} tabIndex={-1} id={studioSourceFragmentId(source.id, source.version, section)} key={section} lang="en"><h4>§ {section}</h4><p>{text}</p>{activeReturn?.id === studioSourceFragmentId(source.id, source.version, section) && <div className={styles.sourceReturn} lang={locale}><p>{t("Cited by: ", "Ссылается запись: ")}{activeReturn.title}</p><button type="button" onClick={returnToReference}>{t("← Back to citing record", "← Вернуться к записи со ссылкой")}</button></div>}</div>)}</details>)}</section>}

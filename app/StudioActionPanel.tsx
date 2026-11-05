@@ -53,7 +53,8 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
   </section>;
 }
 
-export function StudioEvidenceComposer({ draft, type, locale, canEdit, value, onChange, onClear, onSave }: {
+export function StudioEvidenceComposer({ draft, type, locale, canEdit, value, onChange, onClear, onSave, compactNote }: {
+  compactNote?: boolean;
   draft: StudioDraft; type: StudioNodeType; locale: "en" | "ru"; canEdit: boolean;
   value: StudioEvidenceInput; onChange: (patch: Partial<StudioEvidenceInput>) => void; onClear: () => void;
   onSave: (value: { type: StudioNodeType; title: string; detail: string; relatedId: string }) => void;
@@ -61,15 +62,15 @@ export function StudioEvidenceComposer({ draft, type, locale, canEdit, value, on
   const en = locale === "en";
   const routeStart = type === "trigger";
   return <section id="studio-evidence-composer" className="action-editor page-width" tabIndex={-1}>
-    <h2>{routeStart ? (en ? "Add a route start" : "Добавьте начало маршрута") : (en ? "Add a connected case item" : "Добавьте связанный элемент кейса")}</h2>
+    <h2>{compactNote ? (en ? "Add note" : "Добавить заметку") : routeStart ? (en ? "Add a route start" : "Добавьте начало маршрута") : (en ? "Add a connected case item" : "Добавьте связанный элемент кейса")}</h2>
     <p>{routeStart ? (en ? "Describe the event that starts this route. A new Trigger will connect to the existing first step you choose below: Trigger → first step. Existing connections are retained." : "Опишите событие начала маршрута. Новый триггер будет связан с выбранным первым шагом: триггер → первый шаг. Существующие связи сохраняются.") : en ? "Record the source or reasoning and choose the step it supports. This adds to your working draft; it does not certify the evidence." : "Укажите источник или обоснование и выберите связанный шаг. Запись добавляется в черновик, но не подтверждает достоверность доказательств."}</p>
     {!canEdit ? <p>{en ? "An editable working copy is required." : "Требуется редактируемая рабочая копия."}</p> : <form onSubmit={event => { event.preventDefault(); onSave({ type, title: value.title.trim(), detail: value.detail.trim(), relatedId: value.relatedId }); }}>
-      <p>{en ? "This form stays in this tab when you change sections. Add the item before saving or exporting the case." : "Форма остаётся в этой вкладке при смене разделов. Добавьте элемент перед сохранением или экспортом кейса."}</p>
-      <label><span>{routeStart ? (en ? "Route start title" : "Название начала маршрута") : (en ? "Item title" : "Название элемента")}</span><input name="title" required maxLength={160} value={value.title} onChange={event => onChange({ title: event.target.value })}/></label>
-      <label><span>{routeStart ? (en ? "What starts this route?" : "Что запускает маршрут?") : (en ? "Source and explanation" : "Источник и пояснение")}</span><textarea name="detail" required maxLength={8000} value={value.detail} onChange={event => onChange({ detail: event.target.value })}/></label>
+      <p>{compactNote ? (en ? "Notes are text. Documents keep their original files separately." : "Заметки — текст. Оригиналы документов хранятся отдельно.") : en ? "This form stays in this tab when you change sections. Add the item before saving or exporting the case." : "Форма остаётся в этой вкладке при смене разделов. Добавьте элемент перед сохранением или экспортом кейса."}</p>
+      <label><span>{routeStart ? (en ? "Route start title" : "Название начала маршрута") : (compactNote ? (en ? "Note title" : "Название заметки") : en ? "Item title" : "Название элемента")}</span><input name="title" required maxLength={160} value={value.title} onChange={event => onChange({ title: event.target.value })}/></label>
+      <label><span>{routeStart ? (en ? "What starts this route?" : "Что запускает маршрут?") : (compactNote ? (en ? "Note" : "Заметка") : en ? "Source and explanation" : "Источник и пояснение")}</span><textarea name="detail" required maxLength={8000} value={value.detail} onChange={event => onChange({ detail: event.target.value })}/></label>
       <label><span>{routeStart ? (en ? "First step after this Trigger" : "Первый шаг после триггера") : (en ? "Connect to this step" : "Связать с шагом")}</span><select name="relatedId" required value={draft.nodes.some(node => node.id === value.relatedId) ? value.relatedId : ""} onChange={event => onChange({ relatedId: event.target.value })}><option value="">{routeStart ? (en ? "Choose the first step" : "Выберите первый шаг") : (en ? "Choose the related step" : "Выберите связанный шаг")}</option>{draft.nodes.map((node, index) => <option key={node.id} value={node.id}>N{String(index + 1).padStart(2, "0")} · {node.title}</option>)}</select></label>
       {value.relatedId && !draft.nodes.some(node => node.id === value.relatedId) && <p role="alert">{en ? "The previously selected step is no longer in this case. Choose another step." : "Выбранного ранее шага больше нет в кейсе. Выберите другой шаг."}</p>}
-      <button className="primary-cta" disabled={draft.nodes.length >= 200 || draft.links.length >= 500 || !draft.nodes.length}>{routeStart ? (en ? "Add Trigger and return to actions" : "Добавить триггер и вернуться к действиям") : (en ? "Add item and return to actions" : "Добавить и вернуться к действиям")}</button>
+      <button className="primary-cta" disabled={draft.nodes.length >= 200 || draft.links.length >= 500 || !draft.nodes.length}>{compactNote ? (en ? "Add note" : "Добавить заметку") : routeStart ? (en ? "Add Trigger and return to actions" : "Добавить триггер и вернуться к действиям") : (en ? "Add item and return to actions" : "Добавить и вернуться к действиям")}</button>
       <button type="button" className="secondary-cta" onClick={onClear}>{en ? "Discard this unadded item" : "Отменить недобавленный элемент"}</button>
       {(draft.nodes.length >= 200 || draft.links.length >= 500) && <p>{en ? "The case item or connection limit is reached. Combine or remove an item on the decision map first." : "Достигнут лимит элементов или связей. Сначала объедините или удалите элемент на карте."}</p>}
     </form>}
