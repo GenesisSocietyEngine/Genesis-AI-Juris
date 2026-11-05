@@ -1,0 +1,6 @@
+.brief{display:flex;gap:24px;align-items:center;justify-content:space-between;padding:18px;border:1px solid var(--rule);border-radius:12px;background:var(--panel);overflow-wrap:anywhere}
+.brief p{margin:6px 0;font-size:14px;line-height:1.5}
+.brief small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.action{flex:0 0 230px;display:grid;gap:8px}
+.action button{white-space:normal;min-height:44px}
+@media(max-width:680px){.brief{align-items:stretch;flex-direction:column;gap:14px}.action{flex-basis:auto}}

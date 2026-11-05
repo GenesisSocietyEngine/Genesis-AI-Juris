@@ -146,6 +146,7 @@ const StudioExpandedGraph = lazy(() => import("./StudioExpandedGraph"));
 const StudioNodeSummary = lazy(() => import("./StudioNodeSummary"));
 const FeedbackDialog = lazy(() => import("./FeedbackDialog"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
+const StudioCaseFlowBrief = lazy(() => import("./StudioCaseFlowBrief"));
 const StudioLocalPlanReview = lazy(() => import("./StudioLocalPlanReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
 const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
@@ -3672,6 +3673,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       <div className="prompt-label"><span>{locale === "en" ? "Describe the case or the change you need" : "Опишите кейс или нужное изменение"}</span>{displayMode === "developer" && <code>AI PLAN · REVIEW · APPLY</code>}</div>
       <textarea id="studio-case-brief" value={prompt} maxLength={STUDIO_PROMPT_CHARACTER_LIMIT} placeholder={locale === "en" ? "Describe, paste, or load a canonical .md case." : "Опишите, вставьте или загрузите канонический .md кейс."} onPaste={(event) => { const input=event.currentTarget; const finalLength=input.value.length-(input.selectionEnd-input.selectionStart)+event.clipboardData.getData("text").length; if(finalLength>STUDIO_PROMPT_CHARACTER_LIMIT)setPromptLimitNotice(true); }} onChange={(event) => { aiAbortRef.current?.abort(); setAIState("idle"); setAIResult(null); setCanonicalCandidate(null); setAIError(""); if(event.target.value.length<STUDIO_PROMPT_CHARACTER_LIMIT)setPromptLimitNotice(false); setPrompt(event.target.value); }} aria-label={text.prompt}/>
       {(displayMode === "developer" || promptLimitNotice) && <div className={`prompt-counter ${promptLimitNotice ? "limit" : ""}`} role={promptLimitNotice ? "alert" : undefined}><span>{prompt.length.toLocaleString()} / 64,000 {locale === "en" ? "characters" : "символов"}</span>{promptLimitNotice && <b>{locale === "en" ? "The text exceeds 64,000 characters." : "Текст превышает 64 000 символов."}</b>}</div>}
+      {!canonicalPrompt && <Suspense fallback={null}><StudioCaseFlowBrief prompt={prompt} locale={locale} disabled={!canDuplicate || restorePending || aiState === "analysing"} onPrepare={value => { if (!operationPending.current && !restorePending) loadCasePrompt(value); }}/></Suspense>}
       <div className="prompt-actions">
         {canonicalCandidate
           ? <Suspense fallback={null}><CanonicalReadyAction locale={locale} review={() => document.getElementById("canonical-case-review")?.scrollIntoView({behavior:"smooth",block:"start"})}/></Suspense>

@@ -6,7 +6,7 @@ CaseVant should support the whole journey from an enquiry through case work, doc
 
 ## Reference model
 
-The signed-in MyCase workspace was inspected in Edge. Observed screens include the dashboard, four-stage case creation wizard and case details workspace. The computer locked before detailed document, billing and workflow inspection could finish. Those areas below are supported by official documentation or marked for acceptance discovery; a visible navigation link is not evidence that its integration is configured.
+The signed-in MyCase workspace was inspected in Edge. Observed screens include the dashboard, four-stage case creation wizard, case register/details, document creation menu, applied workflow, tasks, calendar, contacts/staff, communications and billing/time entry. The follow-up used MyCase's built-in sample matter without submitting changes. See [screen-specific findings and acceptance requirements](../testing/mycase-inspection-2026-11-05.md). Empty document inventories and unconfigured integrations limit end-to-end inspection; a visible navigation link is not evidence that its integration works.
 
 | Reference | Pattern to adapt in CaseVant |
 | --- | --- |
@@ -94,7 +94,7 @@ Release each coherent phase through a reviewed branch, focused tests, type/lint/
 
 ## Next backlog
 
-1. Finish signed-in MyCase Documents, Workflows, Tasks, Billing and client-sharing inspection when Windows is unlocked; add screen-specific acceptance details without copying client data into fixtures.
-2. Complete P0 verification and source delivery; record exact results in `docs/testing/case-document-workspace-2026-11-05.md`.
+1. Validate populated document version/preview and client-sharing scenarios in an explicitly synthetic environment; record provider/subscription requirements separately.
+2. P0 is integrated through PR226 at `d411fc631eb2bfe2a9eb892a2a75323fbd393d69` after all six candidate workflows passed. Complete exact-main release verification and preserve the independent native/application evidence.
 3. Specify P1 contact and case schemas, role permissions, migration mappings and a saved-case/dossier linking contract.
 4. Prototype the P3 structured flow brief using synthetic sources, alongside P2 task contracts, before enabling graph-to-task publication.
