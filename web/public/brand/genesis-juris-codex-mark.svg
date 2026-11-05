@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Genesis Juris Codex monogram</title>
+  <desc id="desc">An open codex formed by two legal columns around a golden source seal.</desc>
+  <rect width="128" height="128" rx="22" fill="#071522"/>
+  <path d="M21 22h35v59c0 16-12 25-27 25H21V93h8c8 0 13-4 13-12V35H21V22Z" fill="#E8EDF1"/>
+  <path d="M107 22H72v59c0 16 12 25 27 25h8V93h-8c-8 0-13-4-13-12V35h21V22Z" fill="#E8EDF1"/>
+  <path d="M56 22h16v70c0 9-3 17-8 23-5-6-8-14-8-23V22Z" fill="#163C62"/>
+  <path d="M28 42h14M28 55h14M86 42h14M86 55h14" stroke="#CDAA5A" stroke-width="4" stroke-linecap="square"/>
+  <circle cx="64" cy="74" r="10" fill="#CDAA5A"/>
+  <circle cx="64" cy="74" r="4" fill="#071522"/>
+  <path d="M22 107h84" stroke="#CDAA5A" stroke-width="3"/>
+</svg>
