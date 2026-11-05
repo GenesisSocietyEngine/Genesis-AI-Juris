@@ -476,11 +476,32 @@ def stopped(pid, seconds=5):
 
 
 def validate_receipt(receipt, phase, source, nonce, pid):
-    require(receipt.get("schema") == "tax-mobile-application-acceptance-v2", "Wrong receipt schema")
+    require(receipt.get("schema") == "tax-mobile-application-acceptance-v3", "Wrong receipt schema")
+    validate_import_probe(receipt, phase)
     require(receipt.get("phase") == receipt.get("completed_phase") == phase, "Wrong completed phase")
     require(receipt.get("source_sha") == source and receipt.get("run_nonce") == nonce, "Wrong receipt source/nonce")
     require(receipt.get("pid") == pid and type(receipt.get("pid")) is int, "Receipt PID differs from launch")
     require(receipt.get("selected_test") == TEST, "Selected test absent")
+
+
+def validate_import_probe(receipt, phase):
+    require(receipt.get("import_probe_policy") == "cold-first-isolated-cancel-v1", "Wrong Import probe policy")
+    if phase == "incomplete-read":
+        expected = {
+            "rounds": 3, "imports": 0, "calculations": 0, "workspace_writes": 0,
+            "saved_workspace_unchanged": True, "saved_tax_unchanged": True,
+        }
+        actual = receipt.get("cancel_probe")
+        require(type(actual) is dict and actual == expected and
+                all(type(actual[key]) is type(value) for key, value in expected.items()),
+                "Cancellation proof missing or mutated")
+    else:
+        require("cancel_probe" not in receipt, "Cancellation proof belongs to a separate process")
+    if phase == "legacy-write":
+        require(type(receipt.get("legacy_dialog_opens_before_import")) is int and
+                receipt["legacy_dialog_opens_before_import"] == 1, "Legacy Import was not cold-first")
+    else:
+        require("legacy_dialog_opens_before_import" not in receipt, "Cold-first proof belongs to legacy-write")
 
 
 def build_command(source, nonce, device):
