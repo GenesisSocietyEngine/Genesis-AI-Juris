@@ -91,3 +91,28 @@
 .surface .dragHandle{touch-action:none;user-select:none}
 
 .attachRecord{margin:12px 0;padding:10px;border:1px solid #75bcb1;border-radius:9px;background:#e7f9f5}.attachRecord>button{width:100%}
+
+/* A document inventory and a persistent reading surface, within the case. */
+.library{background:#f7fafc;border:1px solid #c7d6df;border-radius:10px;padding:20px;box-shadow:none}
+.library .header h3{font-size:1.25rem;margin-top:0}.library .header details{margin:0}
+.library .searchDisclosure{background:#fff;border-color:#d5e0e7;margin-top:16px}
+.library .searchDisclosure>summary{padding:8px 0;min-height:36px}
+.library .toolbar{margin:4px 0 10px}.library .toolbar label:first-child{flex:2 1 220px}
+.librarySplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,1.15fr);gap:16px;align-items:start}
+.inventory{min-width:0}.inventoryHeading{display:flex;justify-content:space-between;padding:12px 14px;background:#eaf0f4;color:#456171;font-size:.68rem;font-weight:750;letter-spacing:.06em;border:1px solid #c7d6df;border-radius:8px 8px 0 0}
+.library .materialList{margin:0;border-radius:0 0 8px 8px}.library .materialList>li{padding:4px 8px}
+.library .materialList>li[data-reading=true]{background:#e6f5f3;box-shadow:inset 3px 0 #08777e}
+.library .materialLayout{align-items:center;gap:4px}.library .materialSelect{min-width:28px;min-height:44px}
+.library .readerRow{display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:10px 4px;color:inherit}
+.readerRow .readLabel{flex:0 0 65px;font-size:.72rem}.readerRow .materialTitle>small{color:#536b78;font-size:.72rem}.fileIcon{display:grid;place-items:center;flex:0 0 30px;height:38px;background:#edf3f8;color:#33708b;border:1px solid #cad9e3;border-radius:4px;font-size:1.2rem}
+.reader{min-width:0;background:#fff;border:1px solid #c7d6df;border-radius:8px;position:sticky;top:88px;overflow:hidden}
+.readerTop{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px;background:#edf3f7;color:#456171;font-size:.65rem;font-weight:700;letter-spacing:.06em}
+.readerTop>button{font-size:.75rem;min-height:36px;padding:6px 10px}.reader h4{font-size:1.15rem;line-height:1.45;margin:18px 20px 6px;overflow-wrap:anywhere}.reader h4:focus{outline:3px solid #245bcc;outline-offset:3px}.reader>p,.reader>.actions{margin-left:20px;margin-right:20px}
+.readerIdentity{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin:12px 20px;color:#536b78;font-size:.7rem;overflow-wrap:anywhere}
+.readerText{max-height:55vh;overflow:auto;padding:10px 22px 22px;margin-top:16px;border-top:1px solid #dce5eb;background:#fff;scrollbar-gutter:stable}.readerText:focus-visible{outline:3px solid #245bcc;outline-offset:-3px}.readerText .materialText{font-size:.92rem;line-height:1.85}
+.readerLinks{padding:16px 20px;border-top:1px solid #dce5eb;background:#f8fafc;font-size:.8rem}.readerLinks button{font-size:.8rem;text-align:left}.readerEmpty{min-height:320px;padding:40px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#536b78}.readerEmpty>span{font-size:3rem;color:#83a4b6}.readerEmpty h4{margin:12px 0}.readerEmpty p{max-width:34ch}
+:global(.theme-after-hours) .library{background:#10243c;border-color:#55778c}:global(.theme-after-hours) .reader,:global(.theme-after-hours) .readerText,:global(.theme-after-hours) .library .searchDisclosure{background:#143149;border-color:#55778c}
+:global(.theme-after-hours) .readerTop,:global(.theme-after-hours) .readerLinks,:global(.theme-after-hours) .inventoryHeading{background:#1c3c51;color:#d6e8f2;border-color:#55778c}:global(.theme-after-hours) .library .materialList>li[data-reading=true]{background:#174d51}:global(.theme-after-hours) .readerIdentity,:global(.theme-after-hours) .readerEmpty,:global(.theme-after-hours) .readerRow .materialTitle>small{color:#c2d2df}
+@media(max-width:1000px){.librarySplit{grid-template-columns:minmax(0,1fr)}.reader{position:static}.readerEmpty{min-height:160px}.readerText{max-height:60vh}}
+@media(max-width:640px){.library{padding:12px}.library .materialLayout{flex-wrap:nowrap}.library .materialSelect{flex:0 0 24px}.library .selectionLabel{display:none}.readerRow .readLabel{flex-basis:55px;padding:0}.library .materialTitle{flex:1}.fileIcon{display:none}.reader h4{margin:14px 14px 6px}.reader>p,.reader>.actions,.readerIdentity{margin-left:14px;margin-right:14px}.readerText,.readerLinks{padding:14px}}
+@media(max-height:600px){.reader{position:static}}

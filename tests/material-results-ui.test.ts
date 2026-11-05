@@ -90,16 +90,19 @@ test("body-only results expose literal passage, exact section, reset and retaine
     tree=f.render(); assert.match(statuses(tree),/2 matching materials/);
     assert.match(text(tree),/Thresholds/);
     assert.ok(elements(tree).some(e=>e.type==='mark' && text(e)==='450 packs'));
-    assert.ok(elements(tree).some(e=>e.type==='summary' && text(e).includes('Read matching passage')));
+    assert.ok(elements(tree).some(e=>e.type==='button' && text(e).includes('Read matching passage')));
     const selector=elements(tree).find(e=>e.type==='select')!;
     (selector.props.onChange as (event:unknown)=>void)({target:{value:'reference'}});
     (elements(tree).find(e=>e.type==='input' && e.props.type==='checkbox')!.props.onChange as (event:unknown)=>void)({target:{checked:true}});
     tree=f.render();
+    const result=elements(tree).find(e=>e.type==='button' && e.props['aria-controls']==='material-reader')!;
+    (result.props.onClick as (event:unknown)=>void)({currentTarget:{isConnected:true,focus(){}}}); tree=f.render();
     const linked=elements(tree).find(e=>e.type==='button' && typeof e.props['data-material-node']==='string')!;
     (linked.props.onClick as (event:unknown)=>void)({currentTarget:{getBoundingClientRect:()=>({top:160})}});
     assert.equal(memory.read()?.returnTo?.scrollY,420);
     assert.equal(memory.read()?.returnTo?.viewportTop,160);
     assert.equal(memory.read()?.query,'450 packs');
+    assert.ok(memory.read()?.readerId);
     f.close(); f=fixture('en',draft,memory);
     tree=await f.settle(tree=>statuses(tree).includes('2 matching materials'));
     assert.equal(elements(tree).find(e=>e.type==='input' && e.props.type==='search')?.props.value,'450 packs');
@@ -158,21 +161,24 @@ test("missing-original filter counts are actual records and never fabricate down
   } finally {f.close();}
 });
 
-test("compact inventory keeps status and downloads outside collapsed text-and-node disclosures", async () => {
+test("library selection exposes the exact source in one reader and preserves the original draft", async () => {
   const draft=buildCanopyPackage('base').draft,before=JSON.stringify(draft),f=fixture('en',draft);
   try {
-    const tree=await f.settle(tree=>statuses(tree).includes('10 matching materials'));
+    let tree=await f.settle(tree=>statuses(tree).includes('10 matching materials'));
     const rows=elements(tree).filter(e=>e.type==='li' && typeof e.props['data-material-id']==='string');
     assert.equal(rows.length,10);
     for(const row of rows){
-      const details=elements(row).filter(e=>e.type==='details');assert.equal(details.length,1);assert.notEqual(details[0].props.open,true);
-      const summary=elements(details[0]).find(e=>e.type==='summary')!;
-      assert.match(text(summary),/review is separate|Fictional reference/);
-      assert.match(text(summary),/Read text/);assert.match(text(summary),/related nodes?/);
-      assert.ok(elements(row).some(e=>e.type==='button' && text(e)==='Download text'));
-      assert.ok(!elements(details[0]).some(e=>e.type==='button' && text(e)==='Download text'),'download is available without expanding');
-      const hasLinks=elements(details[0]).some(e=>e.type==='button' && typeof e.props['data-material-node']==='string');
-      if(text(summary).includes('0 related nodes')){assert.equal(hasLinks,false);assert.match(text(details[0]),/No related nodes recorded/);}else assert.ok(hasLinks);
+      const entry=elements(row).find(e=>e.type==='button' && e.props['aria-controls']==='material-reader')!;
+      assert.ok(entry);assert.match(text(entry),/review is separate|Fictional reference/);
+      assert.match(text(entry),/Read text/);assert.match(text(entry),/related nodes?/);
+      let focused=false;
+      (entry.props.onClick as (event:unknown)=>void)({currentTarget:{isConnected:true,focus(){focused=true;}}});tree=f.render();
+      const reader=elements(tree).find(e=>e.type==='aside' && e.props.id==='material-reader')!;
+      assert.match(text(reader),/Full available text/);
+      assert.ok(text(reader).includes(String(row.props['data-material-id'])));
+      assert.ok(elements(reader).some(e=>e.type==='button' && text(e)==='Download text'));
+      (control(reader,'button','Close reader').props.onClick as ()=>void)();tree=f.render();
+      assert.equal(focused,true);assert.match(text(tree),/Select a material to read/);
     }
     assert.equal(JSON.stringify(draft),before);
   } finally {f.close();}

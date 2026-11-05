@@ -57,7 +57,7 @@ export function searchStudioMaterials(index: ReturnType<typeof indexStudioMateri
   });
 }
 
-export type MaterialReadingState = { query: string; filter: string; history: boolean; limit: number; returnTo?: { key: string; scrollY: number; viewportTop?: number } };
+export type MaterialReadingState = { query: string; filter: string; history: boolean; limit: number; readerId?: string; returnTo?: { key: string; scrollY: number; viewportTop?: number } };
 /** Owned by the current application context; discarded on draft/locale/authority changes. */
 export function createMaterialReadingMemory(context: { draft: object; locale: string; epoch?: number; allowed?: boolean }) {
   let current: MaterialReadingState | null = null;

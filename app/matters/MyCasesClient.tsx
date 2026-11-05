@@ -135,7 +135,11 @@ export function StudioCaseGroup({ title, cases, locale, location }: { title: str
       <div className={styles.identity}><h4><a data-saved-case-title={item.id} href={href}>{item.title}</a></h4><p><span className={styles.badge}>{en ? "Draft" : "Черновик"}</span> <span>#{item.id} · v{item.currentVersion}</span></p></div>
       <div className={styles.access}><p>{item.ownerDisplayName}</p><small>{item.access === "owner" ? (en ? "Owner" : "Владелец") : item.access === "shared" ? (en ? "Shared access" : "Предоставлен доступ") : (en ? "Administrator access" : "Доступ администратора")}</small><small>{item.isPrivate ? (en ? "Private" : "Приватный") : (en ? "Restricted sharing" : "Ограниченный доступ")}</small></div>
       <div className={styles.updated}><small>{en ? "Updated · UTC" : "Обновлён · UTC"}</small>{updatedAt !== null ? <time dateTime={new Date(updatedAt).toISOString()} title={item.updatedAt}>{studioUpdatedLabel(item.updatedAt, locale)}</time> : <span>{en ? "Date unavailable" : "Дата недоступна"}</span>}</div>
+      <nav className={styles.caseLinks} aria-label={(en ? "Open case section: " : "Открыть раздел дела: ") + item.title}>
+        <a href={workspaceDestination(`/studio?custom_case=${item.id}&studio_step=case_map&studio_panel=overview`, location)}>{en ? "Overview" : "Обзор"}</a>
+        <a href={workspaceDestination(`/studio?custom_case=${item.id}&studio_step=facts_assumptions`, location)}>{en ? "Documents & sources" : "Документы и источники"}</a>
       <a className={styles.open} href={href}><span>{item.access === "owner" ? (en ? "Edit in Studio" : "Редактировать в Studio") : (en ? "Open in Studio" : "Открыть в Studio")}</span><span className={styles.srOnly}>: {item.title} · #{item.id}</span><span aria-hidden="true"> →</span></a>
+      </nav>
     </li>;
   })}</ul></section>;
 }
