@@ -1,0 +1,13 @@
+.queue { min-width: 0; }
+.queue > h3 { margin: 0; }
+.queue > p { color: #526269; line-height: 1.5; }
+.filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding: 1rem; border: 1px solid #d4dfde; border-radius: .75rem; background: #f7faf9; }
+.filters label { display: grid; align-content: start; gap: .35rem; min-width: 0; font-size: .86rem; font-weight: 600; }
+.filters input, .filters select, .filters button { box-sizing: border-box; width: 100%; min-width: 0; min-height: 2.75rem; padding: .6rem; border: 1px solid #b9c9c7; border-radius: .4rem; color: #183a3c; background: white; font: inherit; }
+.filters button { cursor: pointer; }
+.filters :focus-visible { outline: 2px solid #127b71; outline-offset: 2px; }
+.group, .target { display: grid; gap: .75rem; margin-top: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
+.group > h4, .target > h4 { margin: 0; padding: .65rem .8rem; border-left: 3px solid #347b73; background: #eaf2f0; }
+.group > h4 span { float: right; }
+.target { padding: .75rem; border: 1px solid #b9c9c7; border-radius: .5rem; }
+@media (max-width: 680px) { .filters { grid-template-columns: minmax(0, 1fr); } }

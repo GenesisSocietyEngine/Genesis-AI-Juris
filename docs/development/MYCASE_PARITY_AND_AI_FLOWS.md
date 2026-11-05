@@ -2,6 +2,8 @@
 
 Development plan · 5 November 2026
 
+Current continuation: see the [implementation register](MYCASE_IMPLEMENTATION_REGISTER.md) for v180 delivery status, additional MyCase task/reminder observations, the request-queue refactor and ordered remaining work. The older baseline table below remains a historical gap inventory, not a claim that every observation was implemented.
+
 CaseVant should support the whole journey from an enquiry through case work, documents, billing and closure, with a source-linked decision flow at the centre of each case. MyCase defines the functional baseline; Filevine and NetDocuments inform the document workspace. This is a staged product programme. The first implementation improves case navigation and document reading; it does not establish full MyCase parity.
 
 ## Reference model
