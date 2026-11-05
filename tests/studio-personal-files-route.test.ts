@@ -138,3 +138,23 @@ test('concurrent first-file ledger insertion fences every account-cleanup mutati
  assert.ok(await d1.prepare('select id from custom_case_grants where recipient_email=?').bind(email).first());
  assert.ok(await d1.prepare("select id from audit_events where object_type='studio_personal_files' and object_id='77'").first());
 });
+
+test('link overflow is refused before appending metadata; originals and registry stay recoverable',async()=>{
+ await d1.prepare('update case_drafts set payload=? where version=?').bind(JSON.stringify(currentDraft),currentDraft.version).run();
+ const original=await registry(),file=original.files[0];
+ const actor=await d1.prepare('select actor_id as id from users where email=?').bind(emails.owner).first<{id:string}>();
+ await d1.prepare("insert into audit_events(actor_email,event_type,object_type,object_id,detail) values(?,'studio_file_links','studio_personal_files','1',?)").bind(emails.owner,JSON.stringify({actorId:actor!.id,changes:[{fileId:file.id,nodeIds:Array.from({length:200},(_,i)=>'qa_retained_'+i)}]})).run();
+ const before=await registry(),oldBytes=await bytes(file.id);
+ await read(await call('owner','PATCH',change(before,[file.id],currentDraft.nodes[0].id)),409);
+ assert.equal((await registry()).revision,before.revision);assert.deepEqual(await bytes(file.id),oldBytes);
+});
+test('bounded ledger reserves finalization space and refuses new mutations without losing recovery',async()=>{
+ const initial=await registry(),file=initial.files[0],oldBytes=await bytes(file.id);
+ const actor=await d1.prepare('select actor_id as id from users where email=?').bind(emails.owner).first<{id:string}>();
+ const count=await d1.prepare("select count(*) as n from audit_events where object_type='studio_personal_files' and object_id='1'").first<{n:number}>();
+ await d1.prepare("with recursive n(x) as (select 1 union all select x+1 from n where x<?) insert into audit_events(actor_email,event_type,object_type,object_id,detail) select ?,'studio_file_ready','studio_personal_files','1',? from n").bind(900-count!.n,emails.owner,JSON.stringify({actorId:actor!.id,fileId:file.id})).run();
+ const before=await registry(),objects=await bucket.list();
+ await read(await call('owner','PATCH',change(before,[file.id],currentDraft.nodes[0].id)),409);
+ await read(await call('owner','POST',form(before.revision)),409);
+ assert.equal((await registry()).revision,before.revision);assert.equal((await bucket.list()).objects.length,objects.objects.length);assert.deepEqual(await bytes(file.id),oldBytes);
+});

@@ -2412,15 +2412,15 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   const materialsOwner = useMemo(()=>({caseId:draft.caseId,version:draft.version,source:overviewSourceKey,customCaseId,scope:reportReceiptStorageScope,locale,epoch:reportAuthority.epoch,allowed:canDuplicate&&reportAuthority.allowed&&!restorePending}),[draft.caseId,draft.version,overviewSourceKey,customCaseId,reportReceiptStorageScope,locale,reportAuthority.epoch,canDuplicate,reportAuthority.allowed,restorePending]);
   const [materialsBusy,setMaterialsBusy]=useState(false);
   const setPersonalFilesBusy=useCallback((busy:boolean)=>{operationPending.current=busy;setMaterialsBusy(busy);},[operationPending]);
-  const [personalMaterialCounts,setPersonalMaterialCounts]=useState<{owner:typeof materialsOwner;counts:Record<string,number>}|null>(null);
-  const rememberPersonalFiles=useCallback((files:import("./studio-personal-files").PersonalStudioFile[])=>{const counts:Record<string,number>={};for(const f of files)if(f.status==="ready")for(const id of f.nodeIds)counts[id]=(counts[id]??0)+1;setPersonalMaterialCounts({owner:materialsOwner,counts});},[materialsOwner]);
+  const [personalMaterialCounts,setPersonalMaterialCounts]=useState<{owner:typeof materialsOwner;counts:Record<string,number>;revision:number}|null>(null);
+  const rememberPersonalFiles=useCallback((files:import("./studio-personal-files").PersonalStudioFile[],revision:number)=>{const counts:Record<string,number>={};for(const f of files)if(f.status==="ready")for(const id of f.nodeIds)counts[id]=(counts[id]??0)+1;setPersonalMaterialCounts(previous=>previous?.owner===materialsOwner&&previous.revision>revision?previous:{owner:materialsOwner,counts,revision});},[materialsOwner]);
   useEffect(()=>{
     if(!materialsOwner.customCaseId||!materialsOwner.scope)return;
     let active=true;const controller=new AbortController();
     const query=new URLSearchParams({customCaseId:String(materialsOwner.customCaseId),expectedScope:materialsOwner.scope});
     void fetch('/api/custom-cases/files?'+query,{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async response=>{
       if(!response.ok)return;const {parsePersonalFiles}=await import('./studio-personal-files');
-      const registry=parsePersonalFiles(await response.json());if(active&&registry)rememberPersonalFiles(registry.files);
+      const registry=parsePersonalFiles(await response.json());if(active&&registry)rememberPersonalFiles(registry.files,registry.revision);
     }).catch(()=>{});
     return()=>{active=false;controller.abort();};
   },[materialsOwner,rememberPersonalFiles]);
