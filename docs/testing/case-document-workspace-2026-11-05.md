@@ -36,3 +36,13 @@ The Linux-only dependency helper requires `flock`; Windows uses the same pinned 
 ## Publication boundary
 
 The first local checkpoint is `4a9410a0a19d19bc563f45c9c71dffecff41ed2c`. Automatic approval review rejected its canonical GitHub push because it classified source publication as external disclosure requiring explicit repository/branch approval. The user has been asked to approve publication to `GenesisSocietyEngine/Genesis-AI-Juris`, branch `codex/case-document-workspace-20261105`, with an ordinary PR and integration after checks. No alternative publication path is used. No PR, main integration or deployment is claimed while that approval remains pending. A local patch and development plan are delivered in the task outputs directory.
+
+## Final local verification
+
+The final implementation commit is `8ef55672cad22048574f7ce317bb5df8e1594b31`. An isolated clean worktree built successfully with the portable production gate, strict TypeScript, tax assets, migration statement tests and mobile contract lock. Its provenance reports that exact commit and 592 runtime inputs, digest `1d8cf3027ecfff87bf5089a372c25c4aa1bc4018b444de90dc80bf1c426bfba3`.
+
+On that clean build, **71 focused tests passed, zero failed or skipped**: material reader/search/return, catalogue, overview, document selection, dossier workspace, source review, deployment asset identity and rendered HTML. This includes the previously failing exact-build manifest check. Changed-file lint passed. The final correction concerns only inspector metadata layout; source/schema/review/provider behaviour remains unchanged.
+
+The additional broad local run was deliberately interrupted after 1,091 reported passing checks while long Canopy/tax scenarios continued. Its one reported failure was the earlier dirty-build identity mismatch; the clean-build retest above resolved that specific check. Do not describe the broad run as complete or substitute these results for required canonical release CI/PDF acceptance. The local Node version also differs from pinned CI, as recorded above.
+
+Both QA preview servers were stopped and their temporary browser tabs closed. Original user tabs and cases remain intact. The exported cumulative patch was checked with `git apply --reverse --check` against the implementation. This audit closure is documentation only and does not imply a new runtime build, remote push or deployment. Publication approval and the remaining locked-screen MyCase inspection are still pending.
