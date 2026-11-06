@@ -16,11 +16,11 @@ export const WORKSPACE_PAGES = [
   { path: "/work?view=calendar", view: "calendar", en: "Calendar", ru: "Календарь", icon: "calendar" },
   { path: "/work?view=tasks", view: "tasks", en: "Tasks", ru: "Задачи", icon: "tasks" },
   { path: "/matters", view: "matters", en: "Cases", ru: "Дела", icon: "cases" },
+  { path: "/studio?studio_panel=workbench", view: "studio", en: "AI Studio", ru: "ИИ Студия", icon: "studio" },
   { path: "/work?view=people", view: "people", en: "People", ru: "Участники", icon: "people" },
   { path: "/work?view=workflows", view: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
 ] as const;
 const SECONDARY_PAGES = [
-  {path:"/studio",view:"studio",en:"AI Case Studio",ru:"ИИ Студия кейсов",icon:"flow"},
   {path:"/studio?view=community",view:"community",en:"Saved Studio drafts",ru:"Черновики Studio",icon:"document"},
   {path:"/studio?view=demos",view:"demos",en:"Demo",ru:"Демо",icon:"demo"},
   {path:"/templates",view:"templates",en:"Templates",ru:"Шаблоны",icon:"template"},
@@ -120,13 +120,13 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         const isWork = active === "/work" || active === "work" || active === "/";
         const workView = new URL(location,"https://workspace.invalid").searchParams.get("view") ?? "home";
         const selected = isWork ? item.view === (workView === "cases" ? "home" : workView) : active === item.view || active === item.path;
-        return <a key={item.view} className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>;
+        return <Fragment key={item.view}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
       <details className="genesis-nav-group" open={SECONDARY_PAGES.some(item=>item.view===active||item.path===active)||active==="library"||active==="/canopy"}>
         <summary><WorkspaceIcon name="grid"/><span>{en?"Tools & library":"Инструменты и библиотека"}</span><span aria-hidden="true">⌄</span></summary>
         <div className="genesis-nav-children">{SECONDARY_PAGES.map(item=>{
           const selected=active===item.view||active===item.path||((active==="library"||active==="/canopy")&&item.view==="demos");
-          return <Fragment key={item.view}><a href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="play"&&operationsActions}{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+          return <Fragment key={item.view}><a href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="play"&&operationsActions}</Fragment>;
         })}</div>
       </details>
     </nav>

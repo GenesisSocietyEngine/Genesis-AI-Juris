@@ -9,7 +9,7 @@ import { parseStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/st
 
 // Execute the actual application handlers, including their shared calls.
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openOverview", "openStudioAction", "openOverviewAction", "openOverviewNode", "returnToActions", "undoStudioEdit", "redoStudioEdit", "timelineShortcut"];
+const names = ["restoreGuidedStepFromHistory", "selectGuidedStep", "openWorkbench", "openOverview", "openStudioAction", "openOverviewAction", "openOverviewNode", "returnToActions", "undoStudioEdit", "redoStudioEdit", "timelineShortcut"];
 const handlers = new Map<string, string>();
 function visit(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name && names.includes(node.name.text)) handlers.set(node.name.text, node.getText(source));
@@ -22,6 +22,7 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
   let href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=run_compare";
   const input = { title: "QA synthetic retained evidence", detail: "Unadded input", relatedId: "source-node" };
   const state = { target: { step: 3, id: "studio-evidence-composer", nodeType: "evidence" } as null | Record<string, unknown>, notice: "Temporary action notice", step: 3, overview: false, selected: "source-node", presentation: "list", zoom: 0.5, mode: "user", input, draft: buildCanopyPackage("base").draft, undo: [{ id: "earlier-revision" }], pushes: [] as string[], travels: [] as string[] };
+  const workbench = { selected: true, editorOpened: false };
   const checks = [{ id: "orphan", level: "warn" }, { id: "route", level: "warn" }];
   let memory = createMaterialReadingMemory({draft:state.draft,locale:"en",epoch:1,allowed:true});
   const originContext = { caseId: state.draft.caseId, version: state.draft.version, sourceKey: "synthetic-source", storedCaseId: 48, scope: "synthetic-account", locale: "en", epoch: 1, allowed: true };
@@ -37,6 +38,8 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
     URL, parseStudioWorkflowStep, serializedStudioWorkflowStep, restorePending: options.pending ?? false, guidedDraftIsEmpty: options.empty ?? false,
     window: { location: { get href() { return href; } }, history: { state: { retained: true }, pushState(_state: unknown, _title: string, url: URL) { href = url.href; state.pushes.push(href); } } },
     setGuidedStep: (value: number) => { state.step = value; },
+    setWorkbenchSelected: (value: boolean) => { workbench.selected = value; },
+    setEditorOpened: (value: boolean) => { workbench.editorOpened = value; },
     setOverviewSelected: (value: boolean) => { state.overview = value; },
     setActionTarget: (value: null | Record<string, unknown>) => { state.target = value; },
     setActionNotice: (value: string) => { state.notice = value; },
@@ -50,11 +53,11 @@ function harness(options: { pending?: boolean; empty?: boolean } = {}) {
     HTMLElement: Element, HTMLInputElement: Input, HTMLTextAreaElement: Textarea, HTMLSelectElement: Select,
   };
   const actions = new Function(...Object.keys(scope), compiled)(...Object.values(scope)) as {
-    restoreGuidedStepFromHistory: () => void; selectGuidedStep: (step: number) => void; openOverview: () => void;
+    openWorkbench: () => void; restoreGuidedStepFromHistory: () => void; selectGuidedStep: (step: number) => void; openOverview: () => void;
     openStudioAction: (target: Record<string, unknown>) => void; openOverviewAction: (target: Record<string, unknown>) => void; openOverviewNode: (nodeId: string, overviewOrigin?: boolean) => void; returnToActions: (message?: string) => void;
     undoStudioEdit: () => void; redoStudioEdit: () => void; timelineShortcut: (event: Record<string, unknown>) => void;
   };
-  return { state, actions, checks, currentReview: () => memory.reviewFinding(), overviewOrigin: () => origin.active(), overviewFocus: () => origin.focusRequested(), replaceContext: (change: object) => { memory = createMaterialReadingMemory({draft:state.draft,locale:"en",epoch:1,allowed:true,...change}); origin = createOverviewActionReturnMemory({...originContext,...change}); }, inputElement: new Input(), navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
+  return { state, workbench, actions, checks, currentReview: () => memory.reviewFinding(), overviewOrigin: () => origin.active(), overviewFocus: () => origin.focusRequested(), replaceContext: (change: object) => { memory = createMaterialReadingMemory({draft:state.draft,locale:"en",epoch:1,allowed:true,...change}); origin = createOverviewActionReturnMemory({...originContext,...change}); }, inputElement: new Input(), navigate: (step: string) => { href = "https://synthetic.invalid/studio?custom_case=48&lang=en&studio_step=" + step; } };
 }
 
 test("browser history leaves the correction normally and preserves unadded input, records and Undo", () => {
@@ -82,6 +85,23 @@ test("ordinary section and Overview navigation clear stale action notices and ta
   }
 });
 
+test("Workbench entry clears only navigation targets and preserves the exact current work", () => {
+  const { state, workbench, actions } = harness();
+  const retained = JSON.stringify({ input: state.input, draft: state.draft, undo: state.undo, selected: state.selected });
+  actions.openWorkbench();
+  assert.equal(workbench.selected, true); assert.equal(workbench.editorOpened, true);
+  assert.equal(state.overview, false); assert.equal(state.target, null); assert.equal(state.notice, "");
+  assert.equal(state.pushes.length, 1);
+  const destination = new URL(state.pushes[0]);
+  assert.equal(destination.searchParams.get("studio_panel"), "workbench");
+  assert.equal(destination.searchParams.get("custom_case"), "48");
+  assert.equal(JSON.stringify({ input: state.input, draft: state.draft, undo: state.undo, selected: state.selected }), retained);
+  actions.selectGuidedStep(3);
+  assert.equal(workbench.selected, false);
+  actions.openOverview();
+  assert.equal(workbench.selected, false);
+});
+
 test("explicit correction and Return still install their exact target after section cleanup", () => {
   const { state, actions } = harness();
   const target = { step: 4, id: "studio-node-existing", nodeId: "existing" };
@@ -91,6 +111,30 @@ test("explicit correction and Return still install their exact target after sect
   assert.deepEqual(state.target, { step: 5, id: "studio-next-actions" }); assert.equal(state.step, 5);
   assert.equal(state.notice, "Item added; save when ready.");
   assert.equal(state.input.title, "QA synthetic retained evidence");
+});
+
+for (const id of ["ai-plan-review", "canonical-case-review"]) test(`Workbench ${id} action opens the pending review without changing the case`, () => {
+  const h = harness();
+  const before = JSON.stringify({ input: h.state.input, draft: h.state.draft, undo: h.state.undo });
+  let callback: ts.ArrowFunction | undefined;
+  function find(node: ts.Node) {
+    if (ts.isJsxAttribute(node) && ["onClick", "review"].includes(node.name.getText(source))
+      && node.initializer && ts.isJsxExpression(node.initializer)
+      && node.initializer.expression && ts.isArrowFunction(node.initializer.expression)
+      && node.initializer.expression.getText(source).includes(`"${id}"`)) callback = node.initializer.expression;
+    ts.forEachChild(node, find);
+  }
+  find(source);
+  assert.ok(callback, "the visible review action has a callback");
+  const actual = ts.transpileModule(`return (${callback.getText(source)})();`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  new Function("openStudioAction", actual)(h.actions.openStudioAction);
+  assert.equal(h.workbench.selected, false);
+  assert.equal(h.state.step, 2);
+  assert.deepEqual(h.state.target, { step: 2, id }, "existing deferred focus waits for the review to mount");
+  const url = new URL(h.state.pushes[0]);
+  assert.equal(url.searchParams.get("studio_step"), "review_ai_draft");
+  assert.equal(url.searchParams.get("custom_case"), "48");
+  assert.equal(JSON.stringify({ input: h.state.input, draft: h.state.draft, undo: h.state.undo }), before);
 });
 
 test("pending restore and unrecognized history do not cancel the current correction; empty case routes to brief", () => {

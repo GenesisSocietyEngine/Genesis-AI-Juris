@@ -61,6 +61,18 @@ test('opening a saved case selects Studio even when the mounted entry was Commun
   assert.equal(params.lang, 'en');
 });
 
+test('saving from Workbench retains its panel, exact saved identity and governed-case return context', () => {
+  const origin = '/studio?organization=org_a&studio_panel=workbench&return_to=%2Fmatters%3Fdossier%3Ddossier_a%26organization%3Dorg_a';
+  const destination = new URL(savedStudioPath(42, 'facts_assumptions', 'en', 'workbench', origin), 'https://workspace.invalid');
+  assert.equal(destination.searchParams.get('studio_panel'), 'workbench');
+  assert.equal(destination.searchParams.get('custom_case'), '42');
+  assert.equal(destination.searchParams.get('studio_step'), 'facts_assumptions');
+  assert.equal(destination.searchParams.get('organization'), 'org_a');
+  assert.equal(destination.searchParams.get('dossier'), null);
+  assert.equal(destination.searchParams.get('return_to'), '/matters?dossier=dossier_a&organization=org_a');
+  assert.equal(new URL(savedStudioPath(42, 'describe', 'en', 'unrecognized'), 'https://workspace.invalid').searchParams.get('studio_panel'), null);
+});
+
 
 test('confirmed save status survives pending analysis without confirming later input or changed visibility', () => {
   const saved={...draft},later={...saved,title:'Later unsaved edits'};

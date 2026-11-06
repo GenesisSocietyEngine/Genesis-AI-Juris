@@ -4,6 +4,7 @@ import "./workspace-design.css";
 import "./demo-catalogue.css";
 import "./casevant.css";
 import "./outlook-controls.css";
+import "./studio-workbench.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
 import NavigationSession from "./NavigationSession";
 

@@ -327,7 +327,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(cashFlowEditorSource, /Purchase price/);
   assert.match(cashFlowEditorSource, /Loan-to-value/);
   assert.match(appSource, /const \[guidedStep, setGuidedStep\] = useState<GuidedStudioStep>\(1\)/, "Guided Studio must start at the plain-language brief");
-  assert.match(appSource, /const visibleStep = showOverview \? null : guidedStep/, "Overview must not expose the editor's underlying guided step");
+  assert.match(appSource, /const visibleStep = showOverview \|\| showWorkbench \? null : guidedStep/, "Overview and Workbench must not expose the editor's underlying guided step");
   assert.match(appSource, /\(displayMode === "developer" \|\| visibleStep === 3\) && <><details id="studio-case-settings"[^>]*open=\{displayMode === "developer" \|\| trainingWorkflow \? true : undefined\}/, "Sources-stage settings stay in a disclosure while Developer and Training retain their open controls");
   assert.match(appSource, /aria-describedby=\{submitBlocker \? "studio-submit-blocker"/, "a disabled submission must expose its concrete blocker");
   assert.match(appSource, /inert=\{!canDuplicate\}/, "inspection-only authoring regions must be removed from keyboard interaction");
