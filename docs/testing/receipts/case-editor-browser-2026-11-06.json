@@ -1,0 +1,47 @@
+{
+  "schema": "casevant.case-editor-browser.v1",
+  "date": "2026-11-06",
+  "environment": "Local real React workspace with in-memory synthetic transport",
+  "method": "Documented CUA browser interactions and read-only DOM observations",
+  "productionWrites": 0,
+  "myCaseWrites": 0,
+  "providerRequests": 0,
+  "desktop": {
+    "width": 1280,
+    "headerCommandHeight": 36,
+    "cancelHeight": 36,
+    "saveHeight": 36,
+    "entryFocus": "case-edit-name",
+    "afterSaveFocus": "case-edit-command",
+    "afterDiscardFocus": "case-edit-command",
+    "technicalContentVisibleByDefault": false
+  },
+  "narrow": {
+    "width": 390,
+    "height": 640,
+    "locale": "ru",
+    "longText": true,
+    "horizontalOverflow": false,
+    "headerCommandHeight": 44,
+    "cancelHeight": 44,
+    "saveHeight": 44,
+    "tabFromName": "caseJurisdictions"
+  },
+  "journeys": {
+    "sectionSwitchRetainsNameAndPriority": "passed",
+    "cancelFocusesKeepEditing": "passed",
+    "explicitDiscardSendsNoWrite": "passed",
+    "saveClosesAndUpdatesOnce": "passed",
+    "concurrentChangeRetainsDraftAndBlocksSave": "passed",
+    "useLatestRequiresExplicitDiscard": "passed",
+    "lostResponseReadbackDoesNotReplayWrite": "passed",
+    "roleDowngradeRetainsDraftAndDisablesFieldsetAndSave": "passed"
+  },
+  "reviewCorrections": [
+    "Return focus waits for the case refresh to finish and the header command to become enabled",
+    "Narrow Russian commands stack to preserve equal heights",
+    "Editor command font rule overrides the surrounding inherited shell font",
+    "Opening a new edit clears an obsolete success notice"
+  ],
+  "limits": "Synthetic controller/component/browser acceptance is not a production save, real permission change, AI-provider execution or full-suite Russian localization. Existing real cases and user tabs were preserved. Temporary viewport override was reset."
+}

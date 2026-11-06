@@ -45,4 +45,18 @@ Product owner additionally requested a maintained `current_progress.md` and retr
 
 ## Release and remaining limits
 
-Not yet released. The broader module roadmap (Library, standalone firm work, CRM, finance, portal and sync) remains separate.
+This was the pre-release checkpoint; final delivery is recorded below. The broader module roadmap (Library, standalone firm work, CRM, finance, portal and sync) remains separate.
+
+## Delivered — public v190
+
+PR243 merged normally as c66826d0f63062e2284036f3ff0f7902138ab250. Candidate 42292959322 and exact-main 42294604056 pass complete web/PDF checks: 1,999 passes, 3 inherited skips, zero failures and 2 HTML checks. Strict types, lint, packaged browser/Worker/report execution, both dependency audits and unchanged PDF baselines pass. The 87 focused local checks overlap with the full suite and are not added to it.
+
+The exact-main artifact's ZIP digest, source/tree and all 640 runtime inputs match. Adopted CI bytes without rebuilding; retained only v189's current immutable assets. Both live origins verify exact runtime/application/hosting identity and all 198 current/retained assets. Public audience/access revision 2, environment revision 42/all 13 returned representations and DB/DOSSIER_DOCUMENTS remain unchanged. Receipt: receipts/case-editor-v190-2026-11-06.json.
+
+Signed-in production read-only acceptance passed on the existing synthetic case: preserved field values and revision 2, Edit case entry focus, disabled unchanged Save, Cancel return focus and collapsed technical details. Commands measured 36px at 1280px and 44px at actual 390px with no page overflow. Live saving/conflicts were not exercised; those flows passed in the real-component synthetic preview. The temporary viewport reset reloaded the case view; it returned to the same unchanged Overview.
+
+The five-minute error-filtered Worker sample contains three canceled GET requests on `/api/work` and `/api/work/templates`; those events report no exception or failed response. This bounded sample is not proof that all production errors are absent. The separate [synthetic browser receipt](receipts/case-editor-browser-2026-11-06.json) records interaction coverage and limits without storing account credentials or reference-site data.
+
+Native status at this checkpoint: Rust, Android and Flutter CI passed; iOS Native FFI and iOS Tax Application remain in progress at this checkpoint, with native acceptance separate. These remain separate from the authorized web release. No real case record, MyCase record or provider request was changed during acceptance. Existing saved drafts, source bodies, reports and user tabs were preserved.
+
+The case editor is delivered for currently supported fields. Case number/type/owner are read-only; practice area, office, description/custom fields and broader Library/standalone firm work/CRM/finance/portal/sync need their own contracts and acceptance. Current-progress summary and detailed historical ledger are linked. Do not rebuild/redeploy for documentation closure.
