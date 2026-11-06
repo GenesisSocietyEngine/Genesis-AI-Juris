@@ -1,0 +1,9 @@
+# Cycle 5 — case next-work overview
+
+Outcome and acceptance: reproduce the useful next-task/event retrieval pattern observed in MyCase's case register within CaseVant's compact list and reading pane. Keep every accessible case, including empty cases; distinguish overdue tasks from upcoming dated tasks and include ongoing timed events. Show recorded open/completed, overdue-task, unassigned and undated counts with direct ordinary case destinations.
+
+The pure summary uses the display timezone for today, fixed all-day dates and exclusive timed-event ends. Completed items do not become overdue or unassigned work. An undated item is not silently scheduled. Counts describe saved operational work, not a prediction or legal deadline calculation. The existing complete authorized scan supplies all records; no database/API/permission mutation is introduced. AI-assisted proposal/review/apply and outcome-report source remain unchanged.
+
+Validation: 13 focused case-summary, workflow, date and firm-controller tests pass; targeted lint and portable production build pass. Tests include UTC-midnight timezone differences, ongoing cross-day events at their exact end, mixed statuses/dates and zero-work cases. Synthetic browser inspection: 27 cases; attention scope gives exactly the overdue/unassigned and undated cases; selecting either shows matching counts and case-specific links. Clear/search retains the zero-work case and removes previous detail. Russian 390px controls and selected reading pane fit without horizontal clipping; focus reaches the pane and all destination labels remain visible. Preview additions are opt-in synthetic fixtures.
+
+Release requires full candidate/exact-main web/PDF checks, exact-source publication and fresh live audit. No production business records or provider calls were used for local acceptance. Full CRM, billing, communications delivery, external sync and client-portal parity remain in the implementation roadmap.

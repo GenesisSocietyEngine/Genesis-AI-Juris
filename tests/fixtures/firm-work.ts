@@ -4,7 +4,7 @@ import { changeWorkflowLibrary, EMPTY_LIBRARY } from "../../app/work/workflow-te
 
 import { zonedMoment } from "../../app/matters/practice-scheduling";
 
-export function firmHarness(options: {scheduling?:boolean;applications?:boolean} = {}) {
+export function firmHarness(options: {scheduling?:boolean;applications?:boolean;overview?:boolean} = {}) {
   const actor = "actor_synthetic_firm_owner";
   const org = { id: "org_synthetic_firm_workspace", name: "Synthetic firm", kind: "team", status: "active", role: "org_owner", revision: 1, membershipRevision: 1, actorId: actor, selection: `org_synthetic_firm_workspace.1.1.${actor}` };
   const session = { authenticated: true, identity: { displayName: "Synthetic owner", email: "firm@example.test", authSource: "chatgpt" }, actorId: actor, organizations: [org], selected: org, profileRequired: false };
@@ -17,6 +17,7 @@ export function firmHarness(options: {scheduling?:boolean;applications?:boolean}
     cases[1].plan={revision:1,schedulingVersion:1,items:[{...cases[1].plan.items[0],reminder:{...zonedMoment("2027-01-01T09:00","Europe/Paris"),state:"active"}}]};
   }
   if(options.applications){cases[0].plan.items[0].workflow="intake-v1:2026-11-06";cases[1].plan.items[0].workflow="intake-v1:2026-11-06";cases[1].plan.items[0].status="completed";}
+  if(options.overview){cases[2].plan.items[0].dueDate="2026-11-01";cases[2].plan.items[0].assignee=null;cases[24].plan.items=[];}
   const transport = async (path: string, init?: RequestInit) => {
     if (path.startsWith("/api/work/templates")) {
       if (init?.method !== "POST") return Response.json({ library, canManage: true });

@@ -28,6 +28,16 @@ CaseVant v181 production loads authenticated firm Tasks, Calendar and Workflow t
 
 Every important category above stays in the implementation backlog until actually accepted. Five UI iterations are not a claim of complete MyCase feature parity; unfinished integration categories must remain explicit rather than be replaced with placeholder screens.
 
+## Implementation order after the five UI cycles
+
+1. **Operational depth:** standalone people/companies with duplicate review and case links; intake forms and reusable document templates; case stage/lead/status updates; saved views and named workflow anchors. Preserve existing participant identities and generated-work history through additive migrations. Acceptance includes import dry-run, rejected rows, undo/recovery, permissions and concurrent edits.
+2. **Calendar and delivery:** Outlook/Google synchronization and recipient-specific reminder delivery. Specify source of truth, timezone/DST boundaries, cancellation, retries, duplicate suppression and observable failed delivery. A reminder shown in the app is not an email or push notification.
+3. **Client collaboration:** explicitly shared portal documents/events, client uploads and message threads; internal material must remain private by default. Verify recipient visibility, revoked sessions, attachment access and delivery history before publication. Add signatures only with a selected provider and recorded signing evidence.
+4. **Practice finance:** time/expense capture, invoice drafts, payments and accounting exports are separate from outcome economics. Define currencies, rounding, tax treatment, adjustments, trust/client-money segregation where supported, permissions and audit history before adding write paths. Payment posting requires provider-backed reconciliation and duplicate protection, not a successful UI toast.
+5. **AI and reporting advantage:** evaluate reviewed workflow proposals and outcome comparisons against source-linked examples, retaining human apply and explicit uncertainty. Extend operational reports from complete authorized records; distinguish estimates, saved facts and financial ledger totals. Test provider failures and absence of configuration without losing drafts. Do not describe MyCase as lacking AI.
+
+Each tranche needs its own data model, complete user journey, migration/recovery evidence, server authorization tests and production acceptance. The current five-cycle programme supplies navigation and retrieval improvements, not substitutes for these models or integrations.
+
 ### Published reference capability check
 
 The 6 November official-documentation review complements the observed trial UI. MyCase's [Case Assistant](https://supportcenter.mycase.com/en/articles/12267713-8am-iq-case-assistant) documents case-scoped natural-language retrieval across documents, notes, tasks, events and other operational records, governed by a firm AI setting. This capability was not invoked in the trial during our audit. Its [Document Assistant](https://supportcenter.mycase.com/en/articles/9370119-8am-iq-document-assistant) documents text-document summaries and an OCR prerequisite for scanned inputs. Treat these as documented capabilities, not measured accuracy or a universal entitlement.
