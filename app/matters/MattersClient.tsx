@@ -321,7 +321,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
 
     {state.authority === "granted" && workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
     <div className={styles.workspaceLayout}>
-      <details className={styles.catalogue} open={!selectedId}>
+      <details className={styles.catalogue} open>
         <summary className={styles.casePickerSummary}><WorkspaceIcon name="cases"/><strong>Cases</strong><span>Choose or create a case</span></summary>
         <div className={styles.casePickerBody}>
         <div className={styles.catalogueHeading}>

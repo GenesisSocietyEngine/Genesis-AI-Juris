@@ -44,3 +44,9 @@ This is a development branch, not a claim of complete MyCase parity or productio
 The next branch slice implements `/work`: complete paginated aggregation across explicitly accessible cases, task filters and a date-based firm agenda. Organization owners/administrators can configure and archive versioned workflow templates; case contributors preview and apply a saved version. Applied work retains its original template title/version. AI-assisted decision flows and case outcome reports remain independent.
 
 See [review and migration limits](../testing/FIRM_WORK_AND_TEMPLATES_REVIEW.md). This advances firm aggregation and configurable templates from the priorities above; stage boards, contact directories, timed scheduling and external integrations remain future work.
+
+## Timed scheduling and application layout — 6 November 2026
+
+Timed events now retain explicit IANA zones and UTC instants, with daylight-saving validation and display-zone selection. Tasks support finite daily/weekly/monthly series with a preview. Shared in-app reminders support due/upcoming views, dismissal and one-hour snooze; no external notification delivery or calendar synchronization is included.
+
+The UI direction is now Outlook-style: compact navigation and command bars, contiguous case/work rows, and a selected-work reading pane. Existing AI-assisted building and outcome reporting remain separate. See [review, verification and migration requirements](../testing/SCHEDULING_AND_OUTLOOK_REVIEW.md). Migration 0026 must precede rollout and remains in place on rollback to prevent older clients discarding scheduling metadata.

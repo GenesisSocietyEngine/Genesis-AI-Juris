@@ -21,6 +21,7 @@ export const WORKSPACE_PAGES = [
 
 export function WorkspaceIcon({ name }: { name: string }) {
   const paths: Record<string, ReactNode> = {
+    reminder: <><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4"/></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18M7 15h2m4 0h2m-8 3h2"/></>,
     flow: <><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5 17v-5h14v5"/></>,
     report: <><path d="M4 3h12l4 4v14H4Z"/><path d="M8 17v-4m4 4V9m4 8v-6"/></>,

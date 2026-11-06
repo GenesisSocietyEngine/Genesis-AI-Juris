@@ -5,6 +5,7 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { zonedMoment } from "../app/matters/practice-scheduling";
 import { Miniflare } from "miniflare";
 type Handler=(request:Request,context:{params:Promise<{dossierId:string}>})=>Promise<Response>;
 let mf:Miniflare, db:D1Database;
@@ -86,4 +87,32 @@ test("firm feed paginates authorized cases and template versions are scoped, imm
   response=await call("firm","GET",undefined,"practice-outsider@example.test",organization);assert.equal((await response.json() as {cases:unknown[]}).cases.length,1);
   await db.prepare("UPDATE organization_memberships SET status='suspended',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(organization,outsider!.actor_id).run();
   assert.equal((await call("firm","GET",undefined,"practice-outsider@example.test",organization)).status,404);
+});
+
+
+test("timed events, recurrence and reminder receipts persist without changing case outcomes",async()=>{
+  const before=await (await call("detail")).json();
+  let plan=(await (await call("practice")).json() as {plan:{revision:number;items:Array<{id:string;reminder?:{state:string;at:string}}>;schedulingVersion?:number}}).plan;
+  const timing={start:zonedMoment("2026-11-30T23:30","America/New_York"),end:zonedMoment("2026-12-01T01:00","America/New_York")};
+  const item={kind:"event",title:"Synthetic timed review",description:"",dueDate:"2026-11-30",assignee:null,priority:"normal",status:"open",checklist:[],timing,reminder:{...zonedMoment("2026-11-30T23:15","America/New_York"),state:"active"}};
+  const command={action:"create",expectedRevision:plan.revision,operationKey:"timed-event-original",item};
+  let response=await call("practice","POST",command);assert.equal(response.status,200,await response.clone().text());const original=await response.json() as {plan:typeof plan};plan=original.plan;assert.equal(plan.schedulingVersion,1);
+  assert.deepEqual(await (await call("practice","POST",command)).json(),original);
+  assert.equal((await call("practice","POST",{...command,operationKey:"timed-stale"})).status,409);
+  const bad={...item,timing:{...timing,start:{...timing.start,at:"2026-11-30T23:30:00.000Z"}}};assert.equal((await call("practice","POST",{...command,item:bad,expectedRevision:plan.revision,operationKey:"timed-forgery"})).status,400);
+  const recurring={kind:"task",title:"Synthetic recurring review",description:"",dueDate:"2026-01-31",assignee:null,priority:"normal",status:"open",checklist:[],reminder:{...zonedMoment("2026-01-31T09:00","Europe/Paris"),state:"active"}};
+  response=await call("practice","POST",{action:"create_series",expectedRevision:plan.revision,operationKey:"recurrence-original",item:recurring,recurrence:{frequency:"monthly",interval:1,count:3}});assert.equal(response.status,200,await response.clone().text());plan=(await response.json() as {plan:typeof plan}).plan;
+  const id=plan.items.at(-3)!.id;
+  const dismiss={action:"reminder",id,reminderAction:"dismiss",expectedRevision:plan.revision,operationKey:"reminder-dismiss-original"};
+  response=await call("practice","POST",dismiss);assert.equal(response.status,200,await response.clone().text());const dismissed=await response.json() as {plan:typeof plan};assert.equal(dismissed.plan.items.find(i=>i.id===id)!.reminder!.state,"dismissed");
+  assert.deepEqual(await (await call("practice","POST",dismiss)).json(),dismissed);plan=dismissed.plan;
+  response=await call("practice","POST",{...dismiss,reminderAction:"snooze",expectedRevision:plan.revision,operationKey:"reminder-snooze-original"});assert.equal(response.status,200,await response.clone().text());plan=(await response.json() as {plan:typeof plan}).plan;
+  const reminder=plan.items.find(i=>i.id===id)!.reminder!;assert.equal(reminder.state,"active");assert.ok(Date.parse(reminder.at)>Date.now()+3500000);
+  const {reminder:ignored,...legacyItem}=recurring;void ignored;
+  assert.equal((await call("practice","POST",{action:"update",id,item:legacyItem,expectedRevision:plan.revision,operationKey:"old-client-update"})).status,400);
+  const owner=await db.prepare("SELECT actor_id FROM users WHERE email=?").bind("practice-owner@example.test").first<{actor_id:string}>();
+  await assert.rejects(db.prepare("INSERT INTO dossier_practice_revisions(dossier_id,revision,actor_ref,operation_key,request_digest,plan,occurred_at) VALUES(?,?,?,?,?,?,?)").bind(caseId,plan.revision+1,owner!.actor_id,"old-handler-downgrade","synthetic",JSON.stringify({revision:plan.revision+1,items:[]}),new Date().toISOString()).run(),/upgrade_required/);
+  response=await call("firm");assert.equal(response.status,200,await response.clone().text());
+  const stable=(value:unknown)=>JSON.parse(JSON.stringify(value,(key,v)=>key==="evaluated_at"?undefined:v));
+  assert.deepEqual(stable(await (await call("detail")).json()),stable(before));
 });

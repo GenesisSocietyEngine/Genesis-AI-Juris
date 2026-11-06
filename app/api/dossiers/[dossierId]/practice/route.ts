@@ -3,7 +3,7 @@ import { dossierPracticeRevisions as revisions, dossierParticipants, organizatio
 import { canonicalDossierJson } from "../../../../dossier-contract";
 import { boundedDossierText, canonicalDossierTimestamp, dossierJson, dossierSha256, finalizeDossierRead, isResponse, newDossierOpaqueId, requireDossierAccess, resolveDossierServerContext } from "../../../../dossier-server";
 import { isSameOriginMutation, readJsonObject } from "../../../../request-security";
-import { changePracticePlan, EMPTY_PLAN, type PracticePlan } from "../../../../matters/practice-plan";
+import { changePracticePlan, parsePracticePlan, EMPTY_PLAN, type PracticePlan } from "../../../../matters/practice-plan";
 import { readWorkflowLibrary, type WorkflowTemplate } from "../../../../work/workflow-templates";
 export const dynamic = "force-dynamic";
 type Route = {params: Promise<{dossierId:string}>};
@@ -12,7 +12,7 @@ export async function GET(request: Request, route: Route) {
   const access = await requireDossierAccess(context, (await route.params).dossierId, "read"); if (isResponse(access)) return access;
   const key = new URL(request.url).searchParams.get("operation");
   const [row] = await context.db.select().from(revisions).where(and(eq(revisions.dossierId, access.dossier.id), key ? eq(revisions.operationKey, key) : undefined, key ? eq(revisions.actorRef, context.actor.actorId) : undefined)).orderBy(desc(revisions.revision)).limit(1);
-  return finalizeDossierRead(context, access, dossierJson({plan: row ? JSON.parse(row.plan) : EMPTY_PLAN, operation: row?.operationKey ?? null, occurredAt: row?.occurredAt ?? null, found: Boolean(row)}));
+  return finalizeDossierRead(context, access, dossierJson({plan: row ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN, operation: row?.operationKey ?? null, occurredAt: row?.occurredAt ?? null, found: Boolean(row)}));
 }
 export async function POST(request: Request, route: Route) {
   if (!isSameOriginMutation(request)) return dossierJson({error:"Cross-site change rejected."},403);
@@ -25,7 +25,7 @@ export async function POST(request: Request, route: Route) {
   try {
     key = boundedDossierText(payload.operationKey,"Operation key",8,120);
     if(key !== payload.operationKey || !Number.isSafeInteger(payload.expectedRevision) || Number(payload.expectedRevision)<0) throw new Error();
-    const allowed = ["action","operationKey","expectedRevision",...(payload.action === "apply_workflow" ? ["templateId","templateVersion","anchor","assignee"] : payload.action === "update" ? ["id","item"] : ["item"])];
+    const allowed = ["action","operationKey","expectedRevision",...(payload.action === "apply_workflow" ? ["templateId","templateVersion","anchor","assignee"] : payload.action === "update" ? ["id","item"] : payload.action === "create_series" ? ["item","recurrence"] : payload.action === "reminder" ? ["id","reminderAction"] : ["item"])];
     if(Object.keys(payload).some(field=>!allowed.includes(field))) throw new Error();
     digest = await dossierSha256(canonicalDossierJson(payload));
   } catch { return dossierJson({error:"Invalid work action or revision."},400); }
@@ -33,7 +33,7 @@ export async function POST(request: Request, route: Route) {
   const reply = (row: typeof revisions.$inferSelect) => row.requestDigest === digest ? finalizeDossierRead(context,access,dossierJson({plan:JSON.parse(row.plan),operation:row.operationKey,occurredAt:row.occurredAt,found:true})) : dossierJson({error:"This key belongs to a different change."},409);
   const prior = await findOriginal(); if (prior) return reply(prior);
   const [latest] = await context.db.select().from(revisions).where(eq(revisions.dossierId,access.dossier.id)).orderBy(desc(revisions.revision)).limit(1);
-  const plan: PracticePlan = latest ? JSON.parse(latest.plan) : EMPTY_PLAN;
+  const plan: PracticePlan = latest ? parsePracticePlan(JSON.parse(latest.plan)) : EMPTY_PLAN;
   if(plan.revision !== payload.expectedRevision) return dossierJson({error:"The work plan changed. Refresh and compare before saving.",code:"revision_conflict"},409);
   let configured: WorkflowTemplate | undefined;
   let templateLibraryRevision: number | undefined;

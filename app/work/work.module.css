@@ -9,3 +9,20 @@
 .editor{padding:24px;border:1px solid #bccfd3;background:#f7fbfc;border-radius:8px;margin:22px 0}.editor fieldset{border:0;padding:0;display:grid;gap:20px;min-width:0}.workspace .check{flex-direction:row;align-items:center}.check input{width:18px;min-height:18px}.steps{padding-left:24px;display:grid;gap:20px}.steps li{display:grid;grid-template-columns:minmax(160px,1fr) 160px 150px auto;gap:12px;align-items:end}.actions{display:flex;gap:8px;flex-wrap:wrap}.templates summary{cursor:pointer;padding-top:12px}
 @media(max-width:800px){.workspace{padding:18px}.heading{align-items:flex-start}.steps li{grid-template-columns:1fr 1fr}.steps li>label:first-child{grid-column:1/-1}.editor{padding:16px}.filters{grid-template-columns:1fr 1fr}}
 @media(max-width:440px){.workspace{padding:12px}.heading{flex-wrap:wrap}.filters,.steps li{grid-template-columns:1fr}.steps{padding-left:8px}.tabs{gap:0}.tabs button{padding:10px 8px;font-size:13px}.templates>li{flex-wrap:wrap}}
+/* Outlook-style command surface and list/reading panes. */
+.workspace{max-width:none;margin:0;padding:18px 22px;font-size:14px;background:#fff;min-width:0}
+.workspace h1{font-size:22px;margin:0}.heading p{margin:4px 0;color:#617079;font-size:13px}.eyebrow{letter-spacing:0;font-size:11px}
+.workspace button,.workspace input,.workspace select{border-radius:3px;min-height:34px;padding:6px 10px}
+.tabs{margin:14px 0 0;gap:4px;background:#f5f5f5;border-block:1px solid #e1e1e1}.tabs button{min-height:40px}.tabs button[aria-current=page]{background:white;border-bottom-color:#0f6cbd;color:#0f6cbd}
+.filters{gap:10px;margin:12px 0}.workspace label{gap:4px;font-weight:500;font-size:12px}
+.workPanes{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,.9fr);border-top:1px solid #ddd;min-height:55vh}
+.workResults{min-width:0}.workList>li{display:block;border:0;border-bottom:1px solid #e5e5e5;border-radius:0;padding:0;margin:0}
+.workspace .workRow{display:flex;width:100%;gap:10px;justify-content:flex-start;align-items:flex-start;text-align:left;border:0;border-radius:0;padding:12px 10px;background:transparent;color:#242424}
+.workRow>svg{flex-shrink:0;margin-top:2px}.workRow>span{min-width:0;flex:1;overflow-wrap:anywhere}.workRow strong{font-size:14px;font-weight:600}.workRow .rowDate{flex:.8;font-size:12px}.workRow small{font-size:12px}
+.workspace .workRow:hover{background:#f5f5f5}.workspace .workRow[aria-pressed=true]{background:#e8f1fa;box-shadow:inset 3px 0 #0f6cbd}
+.readingPane{padding:20px 24px;border-left:1px solid #ddd;min-width:0;overflow-wrap:anywhere}.readingPane h2{font-size:22px;font-weight:600}.readingPane .actions{justify-content:space-between;margin-bottom:26px}.description{white-space:pre-wrap}
+.templates>li{margin:0;border:0;border-bottom:1px solid #ddd;border-radius:0;padding:12px}.editor{border-radius:0;background:#fafafa;padding:18px}.date{font-size:13px;background:#f5f5f5;margin:0;padding:8px 10px}
+@media(max-width:1000px){.workPanes{grid-template-columns:minmax(0,1fr)}.readingPane{border-left:0;border-top:1px solid #ddd;grid-row:1;padding:14px}.readingPane .actions{margin-bottom:12px}}
+@media(max-width:600px){.workspace{padding:12px}.workspace button,.workspace input,.workspace select{min-height:44px}.workRow .rowDate{flex:1}.workRow{flex-wrap:wrap}.filters{grid-template-columns:minmax(0,1fr)}.tabs button{font-size:12px;padding:8px}}
+.readingPane{scroll-margin-top:100px}.readingPane:focus{outline:2px solid #0f6cbd;outline-offset:-2px}
+@media(min-width:1001px){.readingPane{position:sticky;top:0;align-self:start;max-height:90vh;overflow:auto}.workResults{max-height:70vh;overflow:auto}}
