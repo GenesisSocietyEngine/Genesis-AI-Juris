@@ -1,12 +1,16 @@
 # Current progress — CaseVant
 
-Updated: 6 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
+Updated: 7 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
 
-## Active follow-on — UI/UX reference audit and saving clarity
+## Delivered follow-on — saving clarity and case continuity
 
-Implemented and under release verification; public v190 remains unchanged. Fresh signed-in MyCase comparison and the user's screenshot led to explicit saved-case versus unsent-input status, a centered dialog with conditional Save and continue / Review choices, and compact case details with readable type labels. Case overview and AI Studio, including browser Back/Forward, now keep the same editor, prompt and graph; other suite links retain the exact saved draft and governed return context. A browser-discovered first-save timing defect was repaired before publication. Eighty-six focused checks and actual synthetic browser save/conflict/context/focus/390px checks pass; final clean candidate/exact-main web/PDF CI is still required (two old route assertions were updated after the first full run; the local full run also hit sandbox loopback/Git restrictions). No production case, prompt, authority, report or hosting binding changed. [Audit and acceptance](docs/testing/ui-reference-save-clarity-2026-11-06.md).
+**Public v191**, runtime `f6c685f2f733cb5a9218485679705f7a606dd3a0`, merged through [PR245](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/245). Case overview, AI Studio and their Back/Forward history keep the current draft, prompt and graph. Shared module links retain the exact saved draft and governed return context. The header distinguishes saved case content from unsent prompts/unadded items; the centered dialog offers confirmed Save and continue or direct Review, with safe failure/cancellation behavior. Case details are compact, type labels readable and the case title is the sole primary heading.
 
-## Retrospective summary — 29 September to 6 November 2026
+Validation: 86 focused checks and actual synthetic save/conflict/context/focus/narrow/history journeys; full candidate/exact-main CI **2,012 passed, zero failed, 3 inherited skips, plus 2 HTML checks**, unchanged PDF baselines and zero-finding audits. Both origins verify all 228 assets and exact runtime. Fresh signed-in production read-only checks preserve synthetic Studio case 51's exact title, 14 records and 13 connections through Case overview, AI Studio, Back/Forward and Calendar → Case overview → Studio. The prompt and canvas are visible, with explicit confirmed-case saving feedback. The governed case has one H1, readable General matter labels, collapsed details/checks and technical details; its case sections now start at y574.70 at 1280×720 (the same live case previously y807.75). Edit opens on the case-name field, unchanged Save is disabled and Cancel restores its command focus. No production case writes or provider requests. Non-empty prompt retention, save/conflict/continuation and 390px Russian dialog checks were exercised in the real-component synthetic preview, separately from live read-only acceptance. Audience, environment42 and storage bindings are preserved. [Audit](docs/testing/ui-reference-save-clarity-2026-11-06.md) · [Receipt](docs/testing/receipts/save-clarity-v191-2026-11-07.json).
+
+The retrospective through 7 November 2026 remains below. Broader module/native limitations remain separate; next work follows the maintained comparison roadmap. Rust, Android, Flutter and iOS Tax Application CI passed; iOS Native FFI remains in progress at this checkpoint, with native application acceptance separate.
+
+## Retrospective summary — 29 September to 7 November 2026
 
 This is a summary of the main changes, reconstructed from canonical main's dated integration history and the linked review/release records. Dates group the work; merging code is not, by itself, evidence of production or native acceptance. Historical audit limitations remain valid unless a later record explicitly closes them.
 
@@ -23,15 +27,16 @@ This is a summary of the main changes, reconstructed from canonical main's dated
 | **4–5 November** | Refreshed Help/training, Studio sidebar/actions and compact Review findings; improved Overview return and evidence attachment selection. Added the case document workspace, case-flow brief and request queue. | Connected documents, evidence and operational case work more directly, preserving approvals, historical outputs and draft continuity. [Evidence attachment audit](docs/testing/evidence-attachment-ux-audit-2026-11-04.md); canonical integrations PRs 213–228. |
 | **6 November — work suite** | Completed five MyCase-informed cycles: work triage, original icons and visual month calendar, People, applied Workflows, and case next-work overview. Corrected decision-map entry through AI Case Studio and published-map selection. | Published and audited v182–v187, with exact-source/both-origin evidence and explicit remaining module gaps. [Five-cycle ledger](docs/testing/MYCASE_FIVE_CYCLES_REVIEW.md), [comparison/next order](docs/development/MYCASE_COMPETITIVE_CYCLES.md); PRs 229–238. |
 | **6 November — Outlook UI and Studio** | Added **Home** as the normal starting screen with authorized work counts, overdue tasks, upcoming events and quick actions. Standardized Outlook-style controls, original graphical elements, color accents, reading panes and text statuses. Made **AI Studio** a primary suite destination beside Case overview; its default Workbench brings prompt, real case indicators and document-flow canvas together, with saved Workbench/pending-proposal continuity. | **Delivered public v188 and v189**. [Home/Outlook release](docs/testing/outlook-workspace-2026-11-06.md), [integrated Studio release](docs/testing/integrated-ai-studio-2026-11-06.md); PRs 239–242. |
-| **6 November — current slice** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | **Delivered public v190** after exact-main CI and both-origin verification. See current task below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
+| **6 November — case editor** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | **Delivered public v190** after exact-main CI and both-origin verification. See the v190 evidence below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
+| **7 November 2026 — saving and case continuity** | Clear saved-content versus unsent-input status, centered Save and continue / Review dialog, in-place Case overview and AI Studio, exact saved-case return links and Back/Forward continuity. Compact case hierarchy and readable labels. | **Delivered public v191** with 2,012 full-suite passes and both-origin verification. [Audit](docs/testing/ui-reference-save-clarity-2026-11-06.md). |
 
-Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v190; the remaining roadmap is tracked below.
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v191; the remaining roadmap is tracked below.
 
-## Current task
+## Previous delivery — case editor v190
 
-Refactor the case editor in the shared Outlook-style suite: consistent commands, clear statuses, technical details hidden by default. [PR243](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/243) is merged as `c66826d0f63062e2284036f3ff0f7902138ab250` (candidate `003370a6512cf0d09719fcdc3666a61ebb82b838`). The merged runtime is verified and live as v190.
+Refactor the case editor in the shared Outlook-style suite: consistent commands, clear statuses, technical details hidden by default. [PR243](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/243) is merged as `c66826d0f63062e2284036f3ff0f7902138ab250` (candidate `003370a6512cf0d09719fcdc3666a61ebb82b838`). That runtime was published and verified as v190; the current delivery is recorded above.
 
-## Delivered in the current release
+## v190 implementation
 
 - Prominent Edit case command and focused bilingual form for supported name, jurisdictions, priority and confidentiality; read-only reference/type/owner context.
 - Save & close, guarded Cancel/Discard, draft retention across sections, distinct saving/conflict/unconfirmed states.
@@ -39,7 +44,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 - Metadata saves preserve unrelated workspace drafts. Case status remains a separate action. Technical controls and revision information are collapsed.
 - Fresh signed-in MyCase sample-editor review completed without changing or saving reference data.
 
-## Verification
+## v190 verification
 
 - **87 focused checks passed**, including 24 new editor/controller cases and workspace, organization, practice and saved-case continuity regressions.
 - TypeScript and scoped lint passed with zero errors/warnings. No dependency changes.
@@ -47,9 +52,9 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 - Actual 390×640 Russian/long-text checks passed with no horizontal overflow. Commands measure 36px desktop / 44px narrow. Focus and CSS findings were corrected and retested; technical controls stay collapsed.
 - Local build and candidate/exact-main web/PDF CI passed: 1,999 tests passed, 3 inherited skips, no failures, plus 2 HTML checks; unchanged PDF baselines. Both origins verify the runtime and all 198 current/retained assets.
 
-## Production
+## v190 production evidence
 
-**Live public v190** at [CaseVant](https://casevant.pro), runtime `c66826d0f63062e2284036f3ff0f7902138ab250`. PR243 is integrated in main. Public audience, environment revision 42, D1/R2 bindings and all existing cases/drafts/reports are preserved. Signed-in production read-only acceptance passed on the existing synthetic case: preserved field values and revision 2, Edit case entry focus, disabled unchanged Save, Cancel return focus and collapsed technical details. Commands measured 36px at 1280px and 44px at actual 390px with no page overflow. Live saving/conflicts were not exercised; those flows passed in the real-component synthetic preview. The temporary viewport reset reloaded the case view; it returned to the same unchanged Overview. Rust, Android and Flutter CI passed; iOS Native FFI and iOS Tax Application remain in progress at this checkpoint, with native acceptance separate.
+**Previous public v190** at [CaseVant](https://casevant.pro), runtime `c66826d0f63062e2284036f3ff0f7902138ab250`. PR243 is integrated in main. Public audience, environment revision 42, D1/R2 bindings and all existing cases/drafts/reports are preserved. Signed-in production read-only acceptance passed on the existing synthetic case: preserved field values and revision 2, Edit case entry focus, disabled unchanged Save, Cancel return focus and collapsed technical details. Commands measured 36px at 1280px and 44px at actual 390px with no page overflow. Live saving/conflicts were not exercised; those flows passed in the real-component synthetic preview. The temporary viewport reset reloaded the case view; it returned to the same unchanged Overview. Rust, Android and Flutter CI passed; iOS Native FFI and iOS Tax Application remain in progress at this checkpoint, with native acceptance separate.
 
 ## Next
 
