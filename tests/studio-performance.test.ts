@@ -87,7 +87,7 @@ test("Studio schedules heavy derivations for idle time and never renders all end
 
 test("opening a saved or imported graph stays readable without changing its signed source", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  const viewportEffect = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[readGraph, graphViewportKey, displayMode, visibleStep\]\);/)?.[0];
+  const viewportEffect = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[readGraph, graphViewportKey, displayMode, visibleStep, showWorkbench\]\);/)?.[0];
   assert.ok(viewportEffect, "saved and imported graphs have a viewport-only opening effect");
   assert.match(viewportEffect, /requestAnimationFrame\(readGraph\)/);
   assert.match(viewportEffect, /cancelAnimationFrame\(readingFrame\)/, "case switches cancel a pending reading-view setup");

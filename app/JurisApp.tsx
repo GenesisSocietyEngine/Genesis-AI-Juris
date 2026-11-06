@@ -3639,7 +3639,7 @@ function StudioView({ standalone = false, checksReady, evidenceBuffers, onEviden
 
       <section className="studio-hero studio-compact-hero page-width">
         <div>
-          <div className="studio-case-breadcrumb"><button type="button" onClick={() => { const url = new URL(window.location.href); url.searchParams.delete("studio_step"); url.searchParams.delete("studio_panel"); window.history.pushState(window.history.state, "", url); setOverviewSelected(false); if (standalone) openWorkbench(); else setEditorOpened(false); }}>{locale === "en" ? "Case Studio" : "Студия кейсов"}</button><span aria-hidden="true">/</span><span>{locale === "en" ? "Working draft" : "Рабочий черновик"}</span></div>
+          <div className="studio-case-breadcrumb"><button type="button" onClick={() => { if (standalone) { openWorkbench(); return; } const url = new URL(window.location.href); url.searchParams.delete("studio_step"); url.searchParams.delete("studio_panel"); window.history.pushState(window.history.state, "", url); setOverviewSelected(false); setEditorOpened(false); }}>{locale === "en" ? "Case Studio" : "Студия кейсов"}</button><span aria-hidden="true">/</span><span>{locale === "en" ? "Working draft" : "Рабочий черновик"}</span></div>
           <h1>{draft.title.trim() || (locale === "en" ? "Describe your case" : "Опишите свой кейс")}</h1>
           <p id="studio-save-status" data-state={visibleWorkspaceState} className="studio-save-status" role="status">
             <span>{locale === "en" ? "Studio draft" : "Черновик Studio"} · </span>

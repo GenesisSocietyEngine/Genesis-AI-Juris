@@ -340,7 +340,7 @@ test("standalone Studio exposes persistent professional destinations", () => {
   const shell = readFileSync(new URL("../app/GenesisNavigation.tsx", import.meta.url), "utf8");
   assert.match(navigation, /<GenesisNavigation/);
   assert.match(shell, /<LegacyGenesisNavigation/);
-  for (const destination of ["/account", "/organizations", "/matters", "/studio"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
+  for (const destination of ["/account", "/organizations", "/matters", "/studio?studio_panel=workbench"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
   assert.match(appSource, /<AppNavigation/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
   assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
@@ -352,7 +352,7 @@ test("account uses the shared navigation without losing professional destination
   const sharedNavigation = readFileSync(new URL("../app/LegacyGenesisNavigation.tsx", import.meta.url), "utf8");
   assert.match(accountSource, /<WorkspaceNavigation active="\/account"/);
   assert.match(navigationSource, /<GenesisNavigation/);
-  for (const destination of ["/matters", "/templates", "/studio", "/canopy", "/organizations", "/account"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
+  for (const destination of ["/matters", "/templates", "/studio?studio_panel=workbench", "/canopy", "/organizations", "/account"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
 });
 
 function contrastRatio(foreground: string, background: string) {
