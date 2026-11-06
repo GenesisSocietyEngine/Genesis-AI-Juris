@@ -1,0 +1,22 @@
+# MyCase live re-study and module amendment — 6 November 2026
+
+Read-only reference study in an isolated MyCase tab; no reference records were changed. Case edit and event forms were cancelled unchanged. This evidence updates the implementation plan, not a claim of feature parity.
+
+| Journey | Live reference observed | CaseVant amendment |
+| --- | --- | --- |
+| Home | Quick Add case/task/event/document/note; due-today, overdue and incomplete tasks; today's hourly events; recent activity; open case summaries | Make Home the ordinary starting route, use compact lists and useful quick actions, preserve permission-scoped counts and explicit loading/error states. Avoid marketing/setup tiles as the primary work surface. |
+| Tasks | Firm-wide table with case status, assignee, completion, case and due filters; grouped overdue/upcoming rows; checklist progress, priority, reminders and edit controls | Dedicated Tasks navigation and consistent case/firm editing. Add an explicit standalone firm-work scope, never an invented placeholder case. Preserve recurrence, reminders and workflow execution. |
+| Calendar | Month grid, date navigation, staff/type/location/case filters, task toggle; Add event has case or standalone scope, start/end, all-day, repeat, location, description, reminders, privacy/sharing | Dedicated Calendar navigation, actual day/week time layout alongside month/agenda; unified event editor and display timezone. Persist standalone events with firm permissions. Do not imply external calendar sync or notification delivery. |
+| Documents | Separate Case documents and Firm documents under Documents; Templates and Trash; firm page supports folders and drag/drop; Add document offers single/batch upload, template and blank page | One Documents / Library module with Case documents, Firm documents, Templates and Demo. Firm documents require real organization-scoped storage, authorization and version history, not a filtered case list. Preserve originals, secure downloads, review state and case evidence relationships. |
+| Case edit | Focused Edit Case modal: name/number/practice area/stage/opened/office/description; optional custom fields and Cancel / Save & close | Compact grouped case editor with current authority/revision conflict handling, draft retention and explicit save. Keep lifecycle transitions and evidence review distinct from metadata editing. |
+| Decision map | General reference principle: use named business objects and progressive disclosure | Urgent PR237 replaces routine technical ID/hash entry with named published-map selection; advanced linking remains collapsed. A snapshot is report evidence, not a generated map. |
+
+## Delivery order and acceptance
+
+1. Publish and verify the reported decision-map correction separately so the urgent fix is reviewable.
+2. Home and navigation: Home, Calendar, Tasks, Cases, People, Documents / Library, AI Case Studio, Reports. Templates and Demo belong in Library; scenario testing remains available within Studio rather than the main rail. Preserve existing links, return destinations, authority checks and unsaved-draft departure guards.
+3. Unified case/firm tasks and calendar: persistent scopes and migrations, member assignment and permissions, scheduling/recurrence/reminders, named editors, filtering and direct creation. Test lost-response recovery, conflicting edits, DST/folds/gaps and cross-organization denial.
+4. Real Firm document storage and Library: schema/storage/API authorization, versioned upload/download, folders/search, Case versus Firm scopes, Templates and Demo integration. Test upload failures and duplicate recovery, inaccessible case isolation, scope changes, original preservation and secure downloads. No fake documents or successful placeholders.
+5. Neat case edit, end-to-end regression and live UI audit: desktop/narrow/keyboard/long labels, preserved AI proposal-review-apply and case outcome reports, ordinary merge, exact-source deploy and read-only production audit.
+
+Remaining work in steps 2–5 is not implemented by PR237. Billing, payment processing and client-portal communications remain outside the confirmed core-case/AI/outcome scope. Every implementation uses live reference exploration in addition to user screenshots.
