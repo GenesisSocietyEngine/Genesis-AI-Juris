@@ -14,9 +14,10 @@ test("both Studio shells retain public routes and operation actions without inve
       navigate: noop, openOperations: noop, restoreSession: noop, exportSession: noop,
       hasActiveScenario: true, toggleLocale: noop,
     }));
-    assert.match(markup, /aria-current="page"[^>]*>.*?(Case Studio|Студия кейсов)/);
+    assert.match(markup, /aria-current="page"[^>]*>.*?(AI Studio|ИИ Студия)/);
     for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
-    for (const route of ["/studio", "/templates", "/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    for (const route of ["/templates", "/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    assert.ok(markup.includes(`href="/studio?studio_panel=workbench&amp;organization=org_example&amp;lang=${locale}"`));
     assert.ok(markup.includes(locale === "en" ? "Sign in" : "Войти"));
     assert.doesNotMatch(markup, /Manage organizations|Users &amp; access|Sign out/);
     assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");

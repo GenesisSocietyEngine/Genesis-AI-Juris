@@ -71,10 +71,10 @@ test("guided Studio renders numbered bilingual stages and explicit input and nex
 });
 
 test("guided stages progressively disclose the existing canonical editor", () => {
-  assert.match(appSource, /visibleStep === 1\) && <section className="prompt-deck/);
+  assert.match(appSource, /visibleStep === 1 \|\| showWorkbench\) && <section className="prompt-deck/);
   assert.match(appSource, /visibleStep === 2\) && activeAIResult/);
   assert.match(appSource, /visibleStep === 3\) && <><details id="studio-case-settings"/);
-  assert.match(appSource, /visibleStep === 4\) && <section className="studio-workspace"/);
+  assert.match(appSource, /visibleStep === 4 \|\| showWorkbench\) && <section className="studio-workspace"/);
   assert.match(appSource, /visibleStep === 5 && packageRequiresPlayableRoute\)\) && <StudioSimulationPanelLoader/);
   const simulationSource = readFileSync(new URL("../app/StudioSimulationPanel.tsx", import.meta.url), "utf8");
   assert.match(simulationSource, /<details className="studio-simulation-tools page-width" open=\{trainingWorkflow \|\| displayMode === "developer" \? true : undefined\}/, "the deferred view retains deliberate Training/developer disclosure");

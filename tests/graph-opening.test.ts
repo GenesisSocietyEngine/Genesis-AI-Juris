@@ -36,8 +36,8 @@ test('actual opening controller keeps tall and wide maps readable without shrink
 test('reading controller tolerates a departed viewport and opening never invokes whole-map Fit', () => {
   const actual = actualReadingView(null, { width: 1285, height: 13802 });
   actual.read(); while (actual.frames.length) actual.frames.shift()!();
-  const opening = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[readGraph, graphViewportKey, displayMode, visibleStep\]\);/)?.[0];
+  const opening = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[readGraph, graphViewportKey, displayMode, visibleStep, showWorkbench\]\);/)?.[0];
   assert.ok(opening); assert.match(opening, /requestAnimationFrame\(readGraph\)/);
-  assert.match(opening, /displayMode !== "developer" && visibleStep !== 4/, 'apply the reading position when the graph is actually mounted');
+  assert.match(opening, /displayMode !== "developer" && visibleStep !== 4 && !showWorkbench/, 'apply the reading position when the graph is actually mounted in a stage or the workbench');
   assert.doesNotMatch(opening, /requestAnimationFrame\(fitGraph\)|setDraft|layoutStudioNodes/);
 });

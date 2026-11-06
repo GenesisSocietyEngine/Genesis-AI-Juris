@@ -11,6 +11,7 @@ import { useWorkClock } from "../matters/use-work-clock";
 import styles from "./work.module.css";
 import CalendarMonth from "./CalendarMonth";
 import HomeDashboard from "./HomeDashboard";
+import WorkTabs from "./WorkTabs";
 import StatusBadge from "../StatusBadge";
 import WorkReadingPane from "./WorkReadingPane";
 import { distinctLabels, readableDate, workState, workStateLabel } from "./work-presentation";
@@ -69,7 +70,7 @@ export default function WorkClient({ controller: supplied }: { controller?: Work
 
   return <main className={styles.workspace}>
     <header className={styles.heading}><div><p className={styles.eyebrow}>{session.selected?.name}</p><h1 ref={heading} tabIndex={-1}>{viewTitle}</h1></div><button disabled={state.loading || state.saving || state.locked} onClick={()=>void controller.refresh()}><WorkspaceIcon name="refresh"/>{t("Refresh", "Обновить")}</button></header>
-    <nav className={styles.tabs} aria-label={t("Firm work views", "Виды работы организации")}>{(["home", "tasks", "calendar", "reminders", "templates", "people", "workflows", "cases"] as const).map(view=><button key={view} aria-current={mode===view?"page":undefined} onClick={()=>changeMode(view)}><WorkspaceIcon name={view==="workflows"?"flow":view==="templates"?"template":view==="reminders"?"reminder":view}/>{view==="home"?t("Home","Главная"):view==="tasks"?t("Tasks", "Задачи"):view==="calendar"?t("Calendar", "Календарь"):view==="reminders"?t("Reminders", "Напоминания"):view==="people"?t("People", "Участники"):view==="workflows"?t("Workflows", "Процессы"):view==="cases"?t("Case overview", "Обзор дел"):t("Workflow templates", "Шаблоны процессов")}</button>)}</nav>
+    <WorkTabs locale={locale} active={mode} location={location} onView={changeMode}/>
     {state.loading&&<p role="status">{state.loaded?t("Refreshing; showing the last complete view…", "Обновление; показаны последние загруженные данные…"):t("Loading all accessible cases…", "Загрузка всех доступных дел…")}</p>}
     {state.issue&&<p role="alert" className={styles.issue}>{state.issue}</p>}
     {state.notice&&<p role="status">{state.notice}</p>}
