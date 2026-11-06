@@ -22,10 +22,17 @@ CaseVant v181 production loads authenticated firm Tasks, Calendar and Workflow t
 | Communications | Email, messages, call log, text, comments | Existing case collaboration/history is not mailbox/SMS delivery. Track those as gaps, with explicit recipient review, delivery status and consent requirements. |
 | Billing/payments/accounting | Time, expenses, invoice drafts, trust reports, payment plans | Not implemented as practice accounting. Never present hypothetical case amounts or tax calculations as invoices, a ledger or trust accounting. Requires independent currency/tax/audit/permission design and payment-provider acceptance. |
 | Reports | Operational/productivity/financial reports | Case outcome and evidence/decision reports preserved. Operational summaries must label recorded scope and completeness; financial report parity is not claimed. |
-| AI differentiation | Not assessed in the visible reference | Preserve CaseVant proposal → review → apply, source/evidence linkage, scenario comparisons and outcome reports. AI suggestions must not silently persist tasks or certify evidence/outcomes. |
+| AI differentiation | Official documentation confirms document summaries and Advanced-tier case Q&A | Preserve CaseVant proposal → review → apply, source/evidence linkage, scenario comparisons and outcome reports. Merely having AI is not a competitive differentiator. AI suggestions must not silently persist tasks or certify evidence/outcomes. |
+| Client portal | Official documentation describes explicitly shared documents/events, secure messages and optional payment access | Case participation is not a client portal. Require recipient-specific visibility, secure client upload, shared-item history and message delivery acceptance before claiming parity. No implicit sharing of every internal case record. |
 | Access/history | Firm/client membership surfaced | Preserve server authorization, account/org fences, pagination completeness, immutable revisions, idempotent retries and unsaved-work guards in every cycle. |
 
 Every important category above stays in the implementation backlog until actually accepted. Five UI iterations are not a claim of complete MyCase feature parity; unfinished integration categories must remain explicit rather than be replaced with placeholder screens.
+
+### Published reference capability check
+
+The 6 November official-documentation review complements the observed trial UI. MyCase's [Case Assistant](https://supportcenter.mycase.com/en/articles/12267713-8am-iq-case-assistant) documents case-scoped natural-language retrieval across documents, notes, tasks, events and other operational records, governed by a firm AI setting. This capability was not invoked in the trial during our audit. Its [Document Assistant](https://supportcenter.mycase.com/en/articles/9370119-8am-iq-document-assistant) documents text-document summaries and an OCR prerequisite for scanned inputs. Treat these as documented capabilities, not measured accuracy or a universal entitlement.
+
+The [feature catalogue](https://www.mycase.com/features/) also identifies intake, signatures, document automation, external calendar connections, time/expenses and financial operations. The [client portal guide](https://supportcenter.mycase.com/en/articles/9369919-mycase-client-portal-overview) distinguishes shared client-visible material from internal firm records. CaseVant must retain that distinction in any future portal implementation. These references support the gap checklist; they do not authorize sending CaseVant data to MyCase or any AI provider.
 
 ## Five-cycle ledger and acceptance
 
