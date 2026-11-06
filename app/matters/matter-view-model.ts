@@ -1,9 +1,12 @@
 export const MATTER_DESTINATIONS = [
   { key: "overview", label: "Overview", shortLabel: "Overview" },
+  { key: "tasks", label: "Tasks", shortLabel: "Tasks" },
+  { key: "calendar", label: "Calendar", shortLabel: "Calendar" },
+  { key: "workflows", label: "Workflows", shortLabel: "Workflows" },
   { key: "documents", label: "Documents & evidence", shortLabel: "Documents" },
   { key: "evidence", label: "Evidence review", shortLabel: "Evidence" },
   { key: "decision-packages", label: "Decision package", shortLabel: "Decision" },
-  { key: "requests", label: "Tasks & reviews", shortLabel: "Tasks" },
+  { key: "requests", label: "Requests & deadlines", shortLabel: "Requests" },
   { key: "outputs", label: "Reports", shortLabel: "Reports" },
   { key: "activity", label: "Audit", shortLabel: "Audit" },
 ] as const;

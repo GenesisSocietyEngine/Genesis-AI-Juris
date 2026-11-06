@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import { stageCasePrompt } from "./case-prompt-departure";
 import WorkingNotes from "./WorkingNotes";
+import PracticeWorkspace from "./PracticeWorkspace";
+import { WorkspaceIcon } from "../GenesisNavigation";
 import RequestQueue from "./RequestQueue";
 import ParticipantEnrollment from "./ParticipantEnrollment";
 import { unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
@@ -319,7 +321,9 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
 
     {state.authority === "granted" && workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
     <div className={styles.workspaceLayout}>
-      <aside className={styles.catalogue} aria-labelledby="matter-catalogue-title">
+      <details className={styles.catalogue} open>
+        <summary className={styles.casePickerSummary}><WorkspaceIcon name="cases"/><strong>Cases</strong><span>Choose or create a case</span></summary>
+        <div className={styles.casePickerBody}>
         <div className={styles.catalogueHeading}>
           <div><p className={styles.eyebrow}>CASE LIBRARY</p><h1 id="matter-catalogue-title">My cases</h1><p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
@@ -374,15 +378,10 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           })}
         </div>
         {catalogue.length >= 200 ? <p className={styles.catalogueLimit}>Catalogue view is bounded to 200 matters. Refine safe metadata filters to narrow the list.</p> : catalogueCursor && <button type="button" className={styles.catalogueMore} onClick={() => void loadMoreCatalogue()} disabled={mutationKey !== null}>{mutationKey === "catalogue-more" ? "Loading matters…" : "Load more authorised matters"}</button>}
-      </aside>
+        </div>
+      </details>
 
       <section className={styles.content} id="matter-workspace" aria-label="Selected matter workspace">
-        <div className={styles.mobileSelectors}>
-          <label className={styles.field}><span>Open matter</span><select value={selectedId ?? ""} onChange={(event) => { if (event.target.value) void loadMatter(event.target.value); }} disabled={catalogue.length === 0}>
-            {catalogue.length === 0 && <option value="">No authorised matters</option>}
-            {catalogue.map((matter) => <option key={matter.id} value={matter.id}>{matter.reference} — {matter.title}</option>)}
-          </select></label>
-        </div>
 
         {createOpen && <section className={styles.createPanel} id="create-matter-panel" aria-labelledby="create-matter-title">
           <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>NEW GOVERNED RECORD</p><h2 id="create-matter-title">Create a pilot matter</h2></div><button type="button" className={styles.textButton} onClick={() => setCreateOpen(false)}>Close</button></div>
@@ -407,8 +406,8 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && loadIssue && <IssueState issue={loadIssue} onRetry={() => void loadMatter(selectedId)}/>}
 
         {workspacePhase === "ready" && workspace && <>
-          <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => document.getElementById("matter-catalogue-title")?.scrollIntoView({ block: "start" })}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
-          <MatterHero matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
+          <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => { const title=document.getElementById("matter-catalogue-title"); const picker=title?.closest("details"); if(picker)picker.open=true;title?.scrollIntoView({block:"start"}); }}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
+          <MatterHero compact={destination !== "overview"} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
           <SectionNavigation destination={destination} onChange={setDestination}/>
           {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>Return to the originating report →</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
           {state.collection.availability !== "current" && <p className={styles.pilotNotice} role="status">{state.updating ? "Updating case actions…" : "Showing the last verified case. Action totals and readiness are not current."} <button type="button" onClick={() => void owner.load()} disabled={state.updating}>Update case actions</button></p>}
@@ -424,6 +423,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
             {destination === "decision-packages" && <DecisionPackagesSection onNavigate={openAction} focusedPackageId={actionTarget?.caseId === selectedId ? actionTarget.packageRefId : undefined} matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
             {destination === "requests" && <RequestsSection focusedDeadlineId={actionTarget?.id.startsWith("deadline-") ? actionTarget.id.slice(9) : undefined} onOpenDisposition={(kind, id) => openAction({ destination: kind === "deadline" ? "requests" : "evidence", id: (kind === "deadline" ? "deadline-" : "source-") + id })} key={`${workspace.matter.id}:${actionTarget?.caseId === selectedId ? actionTarget.requestId ?? "" : ""}`} focusedRequestId={actionTarget?.caseId === selectedId ? actionTarget.requestId : undefined} onNavigate={openAction} onUpdateDeadline={(fields) => void mutate(dossierPath, "deadline-update", fields, "Key deadline saved. Case readiness has been refreshed.", "PUT")} matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
             {destination === "outputs" && <OutputsSection onNavigate={openAction} matter={workspace.matter} outputs={workspace.outputs} snapshots={workspace.snapshots} issue={workspace.issues.outputs} view={view} mutationKey={mutationKey} onGenerate={(fields) => void mutate(dossierPath + "/outputs", "output-generate", fields, "Governed output request recorded against an immutable snapshot.")} onApprove={(output) => void mutate(dossierPath + "/outputs", "output-approve-" + output.id, { action: "approve", outputId: output.id }, "Reviewer approval recorded for the snapshot-bound output.")}/>}
+            {(["tasks", "calendar", "workflows"] as const).map(mode => destination === mode ? <PracticeWorkspace key={mode} owner={owner} mode={mode}/> : null)}
             {destination === "activity" && <ActivitySection onNavigate={openAction} activity={workspace.activity} cursor={workspace.activityCursor} issue={workspace.issues.activity} view={view} mutationKey={mutationKey} onLoadMore={() => void loadMoreActivity()}/>}
           </div>
           </>}
@@ -437,7 +437,7 @@ export function WorkspaceAccessState({ authority, onRetry, signInHref }: { autho
   return <main className={styles.shell}><section role="alert" className={styles.issueState}><h1>{authority === "session_expired" ? "Sign in to continue your case" : authority === "account_changed" ? "The active account changed" : "This case is no longer available"}</h1><p>Private case content is hidden. Access must be confirmed before it can be shown again.</p>{authority === "session_expired" && <p>Drafts and pending operations are retained only in this open workspace. Reloading or full-page sign-in can discard this recovery state.</p>}<a href={signInHref} target="_top">Sign in with the intended account</a><button type="button" onClick={onRetry}>Check access again</button><a href="/matters">Return to my cases</a></section></main>;
 }
 
-function MatterHero({ matter, view, setView, onOpenActions }: { matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void }) {
+function MatterHero({ matter, view, setView, onOpenActions, compact = false }: { matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void; compact?: boolean }) {
   const readiness = readinessSummary(matter.readiness);
   return <header className={styles.matterHero}>
     <div className={styles.heroTop}>
@@ -446,13 +446,15 @@ function MatterHero({ matter, view, setView, onOpenActions }: { matter: MatterDe
         <h1>{matter.title}</h1>
         <p>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
       </div>
-      <fieldset className={styles.viewToggle}>
-        <legend>Workspace detail</legend>
-        <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>User view</button>
-        <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>Developer view</button>
-      </fieldset>
     </div>
 
+    <details className={styles.caseChecks} key={compact ? "compact" : "overview"} open={!compact}>
+    <summary>Case details & checks · {statusLabel(matter.status)} · {readiness.headline}</summary>
+    <fieldset className={styles.viewToggle}>
+      <legend>Workspace detail</legend>
+      <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>User view</button>
+      <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>Developer view</button>
+    </fieldset>
     <dl className={styles.heroFacts}>
       <div><dt>Owner</dt><dd>{matter.ownerName}</dd></div>
       <div><dt>Lifecycle status</dt><dd><span className={styles.stateToken}>{statusLabel(matter.status)}</span>{matter.statusReason && <small>{matter.statusReason}</small>}</dd></div>
@@ -468,6 +470,7 @@ function MatterHero({ matter, view, setView, onOpenActions }: { matter: MatterDe
       </section>
     </div>
 
+    </details>
     {view === "developer" && <dl className={styles.developerStrip} aria-label="Developer matter diagnostics">
       <div><dt>Dossier ID</dt><dd><code>{matter.id}</code></dd></div>
       <div><dt>Owner actor ID</dt><dd><code>{matter.ownerActorId ?? "not returned"}</code></dd></div>
@@ -489,7 +492,7 @@ export function SectionNavigation({ destination, onChange }: { destination: Matt
         onChange(next.key);
         document.getElementById("tab-" + next.key)?.focus();
       }}>
-        <span>{String(index + 1).padStart(2, "0")}</span>{item.label}
+        <WorkspaceIcon name={item.key === "calendar" ? "calendar" : item.key === "tasks" || item.key === "requests" ? "tasks" : item.key === "workflows" || item.key === "decision-packages" ? "flow" : item.key === "outputs" ? "report" : item.key === "overview" ? "cases" : "studio"}/>{item.label}
       </button>)}
     </div>
     <label className={styles.mobileSectionSelect}><span>Workspace section</span><select value={destination} onChange={(event) => onChange(event.target.value as MatterDestination)}>{MATTER_DESTINATIONS.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>

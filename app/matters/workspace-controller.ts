@@ -1,4 +1,6 @@
+import { readWorkflowLibrary, type WorkflowTemplate } from "../work/workflow-templates";
 import { enrollmentRoster, unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
+import { EMPTY_PLAN, parsePracticePlan, type PracticePlan } from "./practice-plan";
 import { WorkingNotesController } from "./working-notes-controller";
 import { buildMatterActionCollection, enterActionQueue, resolveExactAction, type ActionCollection, type ExactActionFailure, type QueueState } from "./action-collection";
 import { DispositionRecoveryController } from "./disposition-recovery-controller";
@@ -16,6 +18,46 @@ const aborted = () => new DOMException("Obsolete workspace response", "AbortErro
 /** The actual workspace owner. UI panels borrow state from this object; they
  * cannot own or replace an unresolved server operation when they unmount. */
 export class WorkspaceController {
+  practice: { plan: PracticePlan; loaded: boolean; loading: boolean; pending: Record<string, unknown> | null; issue: string } = { plan: EMPTY_PLAN, loaded: false, loading: false, pending: null, issue: "" };
+  async loadPractice() {
+    if (this.state.authority !== "granted" || this.practice.loading) return;
+    const ticket = this.capture();
+    this.practice = {...this.practice, loading:true, issue:""}; this.publish({});
+    try {
+      const data = await this.request(`/api/dossiers/${encodeURIComponent(ticket.visit!.caseId)}/practice`,{},ticket) as {plan:PracticePlan};
+      if(this.current(ticket)) this.practice = {...this.practice,plan:parsePracticePlan(data.plan),loaded:true};
+    } catch(error) { if(this.current(ticket)) { this.practice = {...this.practice,loaded:false,issue:error instanceof WorkspaceApiError && error.status === 503 ? "Work storage is unavailable." : "Could not read the work plan. Refresh to retry."}; if(error instanceof WorkspaceApiError && [403,404].includes(error.status))await this.load(); } }
+    finally { if(this.current(ticket)){this.practice={...this.practice,loading:false};this.publish({});} }
+  }
+  async savePractice(command?: Record<string,unknown>) {
+    if(this.busy || this.practice.loading || this.state.authority!=="granted" || !this.state.bundle?.matter.permissions.canWrite || (!this.practice.loaded && !this.practice.pending)) return false;
+    const ticket=this.capture();
+    const pending=this.practice.pending ?? (command ? {...command,expectedRevision:command.expectedRevision ?? this.practice.plan.revision,operationKey:this.options.newKey?.() ?? crypto.randomUUID()} : null);
+    if(!pending)return false;
+    this.practice={...this.practice,pending,issue:""};this.publish({mutationKey:"practice"});
+    try {
+      const result=await this.request(`/api/dossiers/${encodeURIComponent(ticket.visit!.caseId)}/practice`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pending)},ticket) as {plan:PracticePlan;operation:string};
+      if(!this.current(ticket))return false;
+      if(result.operation!==pending.operationKey)throw new Error("Mismatched receipt");
+      this.practice={plan:parsePracticePlan(result.plan),loaded:true,loading:false,pending:null,issue:""};
+      this.publish({notice:"Work saved. Task completion does not approve evidence or an outcome."});
+      await this.loadPractice(); return true;
+    } catch(error) {
+      if(this.current(ticket))this.practice={...this.practice,pending:error instanceof WorkspaceApiError && [400,403,404,409].includes(error.status)?null:pending,issue:error instanceof WorkspaceApiError ? String(object(error.payload).error ?? "Could not save work.") : "Save not confirmed. Retry the original change to recover its receipt."};
+      return false;
+    } finally {if(this.current(ticket))this.publish({mutationKey:null});}
+  }
+  workflowTemplates: {items:WorkflowTemplate[];issue:string;loading:boolean} = {items:[],issue:"",loading:false};
+  async loadWorkflowTemplates() {
+    if(this.state.authority!=="granted")return;
+    const ticket=this.capture();this.workflowTemplates={...this.workflowTemplates,loading:true,issue:""};this.publish({});
+    try {
+      const response=await this.request("/api/work/templates",undefined,ticket) as {library:unknown};
+      if(!this.current(ticket))return;
+      this.workflowTemplates={items:readWorkflowLibrary(response.library).templates.filter(t=>!t.archived),loading:false,issue:""};
+    } catch {if(this.current(ticket))this.workflowTemplates={items:[],loading:false,issue:"Custom templates unavailable. Refresh templates to retry."};}
+    finally {if(this.current(ticket))this.publish({});}
+  }
   private state: State = { enrollmentCompletion: 0, roster: unavailableEnrollmentRoster(), visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
   private listeners = new Set<() => void>();
   private generation = 0;
@@ -45,11 +87,13 @@ export class WorkspaceController {
   draft(key: string) { return this.draftValues.get(key); }
   clearDrafts() { this.draftValues.clear(); this.draftInitial.clear(); }
   departureRisk(): "clear" | "dirty" | "pending" {
+    if (this.practice.pending) return "pending";
     const reviews = [...this.reviews.values()].map(review => review.getSnapshot());
     if (this.busy || this.notebook?.pending || reviews.some(s => s.operation && !s.receipt && !["validation", "conflict", "resource_denied", "case_denied"].includes(s.phase))) return "pending";
     return this.notebook?.dirty || this.draftValues.size || reviews.some(s => !s.receipt && s.draft && (s.draft.reason !== "" || s.draft.support !== "" || s.draft.status !== "completed")) ? "dirty" : "clear";
   }
   reviewBeforeLeaving() {
+    if(this.practice.pending){this.navigate("tasks");return;}
     if (this.notebook?.pending) { this.notebook.selectPending(); this.openNotes(); return; }
     const pending = [...this.reviews.entries()].find(([, review]) => { const s = review.getSnapshot(); return s.operation && !s.receipt; });
     if (pending) void this.openReview(pending[0].startsWith("deadline:") ? "deadline" : "citation", pending[1].scope.recordId);
@@ -90,16 +134,21 @@ export class WorkspaceController {
   }
   enter(caseId: string) {
     if (this.state.visit?.caseId === caseId && this.state.authority !== "case_denied") return;
+    this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
+    this.workflowTemplates={items:[],loading:false,issue:""};
     this.clearNotebook(); this.clearReviews(); this.denied.clear(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     const visit = { ...this.options.identity, caseId, generation: ++this.generation };
     this.publish({ roster: unavailableEnrollmentRoster(), visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
   }
   private denyCase(account = false) {
+    this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
+    this.workflowTemplates={items:[],loading:false,issue:""};
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++; this.clearNotebook(); this.clearReviews(); this.clearDrafts(); this.denied.clear();
     this.publish({ roster: unavailableEnrollmentRoster(), authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, targetActive: false, targetNotice: "", panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
   }
   suspendAuthority() {
     if (!this.active || this.state.authority === "session_expired") return;
+    this.practice={...this.practice,loading:false};
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     this.publish({ roster: unavailableEnrollmentRoster(), authority: "session_expired", loading: false, updating: false, targetLoading: false, targetNotice: "", mutationKey: null, notice: "", issue: null });
     this.notebook?.suspend();

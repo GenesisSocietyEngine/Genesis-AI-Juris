@@ -11,15 +11,20 @@ import type { DepartureRisk, DeparturePlan } from "./navigation-controller";
 import { organizationDisplayLabel } from "./organization-label";
 
 export const WORKSPACE_PAGES = [
-  { path: "/studio", view: "studio", en: "Case Studio", ru: "Студия кейсов", icon: "studio" },
   { path: "/matters", view: "matters", en: "My cases", ru: "Мои кейсы", icon: "cases" },
+  { path: "/work", view: "work", en: "Firm work", ru: "Работа организации", icon: "calendar" },
+  { path: "/studio", view: "studio", en: "AI Case Studio", ru: "ИИ Студия кейсов", icon: "flow" },
   { path: "/studio?view=demos", view: "demos", en: "Demo", ru: "Демо", icon: "demo" },
   { path: "/templates", view: "templates", en: "Templates", ru: "Шаблоны", icon: "template" },
-  { path: "/studio?view=play", view: "play", en: "Operations", ru: "Операции", icon: "tasks" },
+  { path: "/studio?view=play", view: "play", en: "Simulations", ru: "Симуляции", icon: "tasks" },
 ] as const;
 
 export function WorkspaceIcon({ name }: { name: string }) {
   const paths: Record<string, ReactNode> = {
+    reminder: <><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4"/></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18M7 15h2m4 0h2m-8 3h2"/></>,
+    flow: <><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5 17v-5h14v5"/></>,
+    report: <><path d="M4 3h12l4 4v14H4Z"/><path d="M8 17v-4m4 4V9m4 8v-6"/></>,
     studio: <><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
     cases: <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/>,
     demo: <><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 8 6 4-6 4Z"/></>,
@@ -114,7 +119,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }, []);
   function follow(event: MouseEvent<HTMLAnchorElement>, view: string) {
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    if (!onNavigate || view === "matters") { guardedLink(event);return; }
+    if (!onNavigate || ["matters", "work"].includes(view)) { guardedLink(event);return; }
     if(event.defaultPrevented)return;
     if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}
@@ -125,15 +130,8 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
       {WORKSPACE_PAGES.map(item => {
-        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos") || (active === "community" && item.view === "matters");
-        return <Fragment key={`${item.view}-${selected}`}><details className="genesis-nav-group" open={selected}>
-          <summary><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="genesis-nav-children">
-            <a href={href(item.path)} aria-current={selected && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : item.view === "demos" ? "Browse demo cases" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : item.view === "demos" ? "Каталог демо-кейсов" : `Открыть: ${item.ru}`)}</a>
-            {item.view === "matters" && <a href={href("/studio?view=community")} aria-current={active === "community" ? "page" : undefined} onClick={event => follow(event,"community")}>{en ? "Saved Studio drafts" : "Черновики Studio"}</a>}
-            {item.view === "play" && operationsActions}
-          </div>
-        </details>{item.view === "studio" && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos");
+        return <Fragment key={`${item.view}-${selected}`}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected ? "page" : undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="matters"&&<div className="genesis-nav-children"><a href={href("/studio?view=community")} aria-current={active==="community"?"page":undefined} onClick={event=>follow(event,"community")}>{en?"Saved Studio drafts":"Черновики Studio"}</a></div>}{item.view === "play" && operationsActions}{item.view === "studio" && selected && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
     </nav>
     <div className="genesis-nav-lower">

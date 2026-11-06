@@ -98,13 +98,16 @@ const detailFixture = {
   },
 };
 
-test("the workspace exposes the seven bounded conceptual destinations in the required order", () => {
+test("the workspace exposes the ten bounded conceptual destinations in the required order", () => {
   assert.deepEqual(MATTER_DESTINATIONS.map(({ key, label }) => ({ key, label })), [
     { key: "overview", label: "Overview" },
+    { key: "tasks", label: "Tasks" },
+    { key: "calendar", label: "Calendar" },
+    { key: "workflows", label: "Workflows" },
     { key: "documents", label: "Documents & evidence" },
     { key: "evidence", label: "Evidence review" },
     { key: "decision-packages", label: "Decision package" },
-    { key: "requests", label: "Tasks & reviews" },
+    { key: "requests", label: "Requests & deadlines" },
     { key: "outputs", label: "Reports" },
     { key: "activity", label: "Audit" },
   ]);
