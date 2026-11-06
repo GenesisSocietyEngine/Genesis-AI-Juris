@@ -13,6 +13,11 @@ import { NavigationController } from "../app/navigation-controller";
 import { SESSION_BOUNDARY_KEY, subscribeSessionBoundary } from "../app/session-boundary";
 
 const noop = () => {};
+test("Return to your case retains the saved Studio return hint without changing the governed dossier",()=>{
+  const returnTo="/matters?organization=org_a&dossier=matter_a";
+  const html=renderToStaticMarkup(createElement(GenesisNavigation,{locale:"en",active:"studio",location:"/studio?custom_case=51&organization=org_a&return_to="+encodeURIComponent(returnTo),returnTo,onLanguage:noop}));
+  assert.match(html,/class="genesis-return" href="\/matters\?organization=org_a&amp;dossier=matter_a&amp;studio_case=51"/);
+});
 test("the active Studio rail entry is an in-place command, so it cannot reload a working case", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, {locale:"en",active:"studio",location:"/studio?custom_case=51&studio_panel=overview",onLanguage:noop,onNavigate:noop}));
   assert.match(html, /<button type="button" class="casevant-primary-link" aria-current="page">[\s\S]*?<span>AI Studio<\/span><\/button>/);

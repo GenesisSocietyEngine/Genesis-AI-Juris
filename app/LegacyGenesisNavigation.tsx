@@ -162,7 +162,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         {session.selected?.role==="org_owner"&&<a href={href("/organizations?organization="+encodeURIComponent(session.selected.selection)+"#organization-users")} onClick={guardedLink}><WorkspaceIcon name="people"/>{en?"Users & access":"Участники и доступ"}</a>}
       </nav>}
       <div className="genesis-nav-footer">
-        {returnTo&&<a className="genesis-return" href={returnTo} onClick={guardedLink}>{en?"Return to your case":"Вернуться к делу"}</a>}
+        {returnTo&&<a className="genesis-return" href={href(returnTo)} onClick={guardedLink}>{en?"Return to your case":"Вернуться к делу"}</a>}
         <details className="genesis-nav-group" key={`help-${active === "help" || active === "/help/studio-demo"}`} open={active === "help" || active === "/help/studio-demo"}>
           <summary><WorkspaceIcon name="help"/><span>{en ? "Help & training" : "Помощь и обучение"}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
           <div className="genesis-nav-children"><a href={href("/studio?view=help")} onClick={event=>follow(event,"help")} aria-current={active === "help" ? "page" : undefined}>{en ? "Help & guides" : "Инструкции"}</a><a href={href("/studio?view=help#recordings")} target="_blank" rel="noopener noreferrer" aria-label={en ? "Scenario recordings (opens in a new tab)" : "Записи сценариев (в новой вкладке)"}>{en ? "Scenario recordings" : "Записи сценариев"}</a><a href={href("/help/studio-demo")} target="_blank" rel="noreferrer" aria-current={active === "/help/studio-demo" ? "page" : undefined}>{en ? "Workflow video · CaseVant ↗" : "Учебное видео CaseVant ↗"}</a></div>
