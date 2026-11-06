@@ -1,4 +1,4 @@
-import { calendarDate, validDate, type EventTiming } from "../matters/practice-scheduling";
+import { calendarDate, calendarDays, validDate, type EventTiming } from "../matters/practice-scheduling";
 export type AgendaPeriod="day"|"week"|"month";
 export type DueScope="all"|"overdue"|"today"|"next7"|"undated";
 const dateString=(date:Date)=>date.toISOString().slice(0,10);
@@ -21,12 +21,12 @@ export function monthDates(anchor:string){
   const start=agendaRange(month.start,"week").start;
   return Array.from({length:42},(_,index)=>{const date=shiftDate(start,index);return {date,inMonth:inAgenda(date,month)};});
 }
-export function matchesDue(item:{status:string;dueDate:string|null;timing?:EventTiming|null},scope:DueScope,today:string,zone:string){
+export function matchesDue(item:{kind?:string;status:string;dueDate:string|null;timing?:EventTiming|null},scope:DueScope,today:string,zone:string){
   const date=calendarDate(item,zone);
   if(scope==="all")return true;
   if(scope==="undated")return !date;
   if(!date)return false;
-  if(scope==="overdue")return item.status!=="completed"&&date<today;
-  if(scope==="today")return date===today;
+  if(scope==="overdue")return item.kind!=="event"&&item.status!=="completed"&&date<today;
+  if(scope==="today")return calendarDays(item,zone).includes(today);
   return date>=today&&date<=shiftDate(today,6);
 }

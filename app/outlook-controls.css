@@ -1,0 +1,35 @@
+/* Shared Outlook-inspired control and status language. No record state is inferred by CSS. */
+:root {
+  --cv-command-height: 36px;
+  --cv-command-radius: 4px;
+  --cv-blue: #0f6cbd;
+  --cv-blue-soft: #e8f2fc;
+  --cv-purple: #7052ad;
+  --cv-purple-soft: #f2edfa;
+  --cv-teal: #087e8b;
+  --cv-teal-soft: #e5f5f3;
+}
+.cv-status { display:inline-flex; align-items:center; gap:5px; width:fit-content; max-width:100%; padding:3px 8px; border:1px solid transparent; border-radius:4px; font:600 11px/1.4 var(--workspace-font, "Segoe UI", sans-serif); color:#526171; background:#edf0f4; vertical-align:middle; overflow-wrap:anywhere; }
+.cv-status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+.cv-status .casevant-icon { width:12px; height:12px; }
+.cv-status[data-tone=open] { color:#0f548c; background:#e8f2fc; }
+.cv-status[data-tone=completed] { color:#14683d; background:#e7f4ec; }
+.cv-status[data-tone=overdue] { color:#a12622; background:#fdeceb; }
+.cv-status[data-tone=today] { color:#805400; background:#fff2cf; }
+.cv-status[data-tone=scheduled] { color:#644297; background:#f2edfa; }
+.cv-status[data-tone=past] { color:#596471; background:#edf0f4; }
+.cv-badges { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:7px; }
+.cv-technical { margin-top:16px; border-top:1px solid var(--workspace-border); padding-top:10px; font-size:12px; color:var(--workspace-muted); }
+.cv-technical summary { cursor:pointer; width:fit-content; min-height:var(--cv-command-height); display:flex; align-items:center; gap:8px; }
+.cv-technical summary::before { content:"›"; font-size:18px; }
+.cv-technical[open] summary::before { transform:rotate(90deg); }
+.cv-technical p { overflow-wrap:anywhere; }
+.casevant-primary-link .casevant-icon[data-icon=calendar], .casevant-icon[data-icon=calendar] { color:var(--cv-purple); }
+.casevant-primary-link .casevant-icon[data-icon=tasks] { color:var(--cv-blue); }
+.casevant-primary-link .casevant-icon[data-icon=flow] { color:var(--cv-teal); }
+.casevant-primary-link .casevant-icon[data-icon=people] { color:#a05a14; }
+.casevant-primary-link { min-height:var(--cv-command-height); border-radius:var(--cv-command-radius); }
+.app-shell .primary-cta,.app-shell .secondary-cta { min-height:var(--cv-command-height); padding:7px 12px; border-radius:var(--cv-command-radius); font-size:13px; line-height:20px; }
+.genesis-navigation { border-top:4px solid var(--cv-blue); }
+@media(max-width:600px),(pointer:coarse) { :root { --cv-command-height:44px; } }
+@media(forced-colors:active) { .cv-status { border-color:currentColor; }.cv-status-dot { background:CanvasText; }.casevant-icon { color:inherit!important; } }

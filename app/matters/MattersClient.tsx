@@ -108,7 +108,11 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const [ownershipFilter, setOwnershipFilter] = useState<"all" | "owned" | "shared">("all");
   const [recentFilter, setRecentFilter] = useState<"all" | "7" | "30" | "90">("all");
   const [filterReferenceTime] = useState(() => Date.now());
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createLocale] = useInterfaceLocale();
+  const createText = (en:string,ru:string) => createLocale === "ru" ? ru : en;
+  const [createOverride,setCreateOverride] = useState<boolean|null>(null);
+  const createOpen = createOverride ?? new URL(location,"https://workspace.invalid").searchParams.get("create")==="case";
+  const setCreateOpen = (value:boolean|((open:boolean)=>boolean)) => setCreateOverride(typeof value==="function"?value(createOpen):value);
   const catalogueEpoch = useRef(0);
   const loadMatter = (id: string) => { if (selectedId && id !== selectedId) { navigation.requestDeparture("link", `/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(id)}&lang=${encodeURIComponent(new URL(window.location.href).searchParams.get("lang")??"en")}`); return Promise.resolve(); } owner.enter(id); return owner.load(); };
   const openAction = (target: MatterActionTarget) => {
@@ -385,14 +389,14 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
       <section className={styles.content} id="matter-workspace" aria-label="Selected matter workspace">
 
         {createOpen && <section className={styles.createPanel} id="create-matter-panel" aria-labelledby="create-matter-title">
-          <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>NEW GOVERNED RECORD</p><h2 id="create-matter-title">Create a pilot matter</h2></div><button type="button" className={styles.textButton} onClick={() => setCreateOpen(false)}>Close</button></div>
-          <p>Owner, access scope, and the collision-resistant Matter reference come from the trusted server, never from this form.</p>
+          <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>{createText("CASE DETAILS","СВЕДЕНИЯ О ДЕЛЕ")}</p><h2 id="create-matter-title">{createText("New case","Новое дело")}</h2></div><button type="button" className={styles.textButton} onClick={() => setCreateOpen(false)}>{createText("Close","Закрыть")}</button></div>
+          <p>{createText("Name your case and choose its jurisdiction, confidentiality and priority.","Укажите название, юрисдикцию, конфиденциальность и приоритет дела.")}</p>
           <form className={styles.formGrid} onSubmit={createMatter}>
-            <label className={styles.field}><span>Title</span><input name="title" required maxLength={240}/></label>
-            <label className={styles.field}><span>Jurisdiction</span><input name="jurisdiction" required maxLength={100}/></label>
-            <label className={styles.field}><span>Classification</span><select name="classification" defaultValue="confidential"><option value="internal">Internal</option><option value="confidential">Confidential</option><option value="strictly_confidential">Strictly confidential</option></select></label>
-            <label className={styles.field}><span>Priority</span><select name="priority" defaultValue="normal"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>
-            <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "create" ? "Creating…" : "Create matter at revision 0"}</button>
+            <label className={styles.field}><span>{createText("Title","Название")}</span><input name="title" required maxLength={240}/></label>
+            <label className={styles.field}><span>{createText("Jurisdiction","Юрисдикция")}</span><input name="jurisdiction" required maxLength={100}/></label>
+            <label className={styles.field}><span>{createText("Confidentiality","Конфиденциальность")}</span><select name="classification" defaultValue="confidential"><option value="internal">{createText("Internal","Для внутреннего использования")}</option><option value="confidential">{createText("Confidential","Конфиденциально")}</option><option value="strictly_confidential">{createText("Strictly confidential","Строго конфиденциально")}</option></select></label>
+            <label className={styles.field}><span>{createText("Priority","Приоритет")}</span><select name="priority" defaultValue="normal"><option value="low">{createText("Low","Низкий")}</option><option value="normal">{createText("Normal","Обычный")}</option><option value="high">{createText("High","Высокий")}</option><option value="urgent">{createText("Urgent","Срочный")}</option></select></label>
+            <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "create" ? createText("Creating…","Создание…") : createText("Create case","Создать дело")}</button>
           </form>
         </section>}
 

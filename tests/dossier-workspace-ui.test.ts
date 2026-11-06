@@ -308,7 +308,12 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /mutationPayload\(workspace\.matter\.revision/);
   assert.match(client, /requiresReviewerApproval \|\| currentReviewerApproval/);
   assert.match(client, /matter\.permissions\.canApprove/);
-  assert.match(client, /collision-resistant Matter reference come from the trusted server/);
+  // Plain-language creation must not make server-owned identity editable.
+  const createHandler = client.slice(client.indexOf("async function createMatter"), client.indexOf("async function uploadDocument"));
+  assert.match(createHandler, /owner\.createCase\(mutationPayload\(0,/);
+  assert.doesNotMatch(createHandler, /form\.get\("(?:reference|owner|actorId|organizationId|id)"\)/);
+  assert.match(client, /createText\("Create case","Создать дело"\)/);
+  assert.doesNotMatch(client, /Create matter at revision 0|NEW GOVERNED RECORD/);
   assert.doesNotMatch(client, /name="reference"/);
   assert.match(client, /Internal-only pilot boundary/);
   assert.match(client, /fixed pilot-default profile/);

@@ -119,3 +119,6 @@
 .decisionActions>div,.decisionActions>form{min-width:0}
 .decisionActions .actionForm{margin-top:18px}
 @media(max-width:900px){.decisionActions{grid-template-columns:minmax(0,1fr)}}
+
+/* Shared workspace commands; case rows keep their content-driven height. */
+.shell .primaryButton,.shell .secondaryButton,.shell .dangerButton,.shell .textButton,.catalogueActions button,.catalogueActions a,.sectionTabs button{min-height:var(--cv-command-height,36px);padding:7px 12px;border-radius:var(--cv-command-radius,4px);font-size:13px;line-height:20px;font-weight:600}

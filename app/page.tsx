@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import JurisApp from "./JurisApp";
 import { isFalconStudioHost } from "./host-mode";
@@ -33,6 +34,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
+  if (Object.keys(params).every(key => key === "lang" || key === "organization")) {
+    const destination = new URLSearchParams({view:"home"});
+    for (const key of ["lang","organization"]) if (params[key]) destination.set(key,params[key]!);
+    redirect(`/work?${destination}`);
+  }
   const { view } = params;
   // The custom domain selects the initial workspace; explicit navigation must
   // still reach the catalogue, saved drafts and help, including old bookmarks.

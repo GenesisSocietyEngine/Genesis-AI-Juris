@@ -24,6 +24,7 @@ test("due scopes retain undated work and never mark completed work overdue",()=>
 test("display-zone dates determine event scopes; cross-boundary days remain visible",()=>{
  const item={status:"open",dueDate:"2026-11-30",timing:{start:zonedMoment("2026-11-30T23:30","America/New_York"),end:zonedMoment("2026-12-01T01:00","America/New_York")}};
  assert.equal(matchesDue(item,"today","2026-12-01","Europe/Paris"),true);
- assert.equal(matchesDue(item,"today","2026-12-01","America/New_York"),false);
+ assert.equal(matchesDue(item,"today","2026-12-01","America/New_York"),true,"an ongoing event belongs to every day it spans, matching Home and Calendar");
+ assert.equal(matchesDue({...item,kind:"event"},"overdue","2026-12-02","America/New_York"),false,"past events are not overdue tasks");
  assert.ok(calendarDays(item,"America/New_York").some(day=>inAgenda(day,agendaRange("2026-12-01","day"))));
 });

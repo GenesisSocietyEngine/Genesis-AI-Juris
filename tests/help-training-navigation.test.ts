@@ -37,7 +37,10 @@ test("Templates has its own destination and no playable-case launch controls", (
 test("Studio navigation marks saved drafts and retains training with the shared signed-out state", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, { expandable: true, locale: "en", active: "community", location: "/studio?organization=org_A&view=community", onLanguage: () => {} }));
   assert.match(html, /class="genesis-nav-body"/);
-  assert.match(html, /aria-current="page"[^>]*>Saved Studio drafts/);
+  const selected = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].filter(match => /aria-current="page"/.test(match[1]));
+  assert.equal(selected.length, 1);
+  assert.equal(selected[0][2].replace(/<[^>]*>/g, ""), "Saved Studio drafts");
+  assert.match(selected[0][1], /href="\/studio\?view=community&amp;organization=org_A"/);
   assert.match(html, /Sign in/);
   assert.doesNotMatch(html, /Manage organizations|Users &amp; access|Sign out/);
   assert.match(html, /href="\/help\/studio-demo" target="_blank"[^>]*>Workflow video · CaseVant ↗/);
