@@ -21,3 +21,5 @@ Review: 47 focused navigation/rendering/date/workflow tests pass and targeted li
 Cycles 3–5 follow the [comparison and delivery ledger](../development/MYCASE_COMPETITIVE_CYCLES.md). Record concrete findings, fixes, tests, exact-source publication and a fresh live audit separately for each cycle. Current prepared work is not proof that the five cycles have completed.
 
 Cycle 2 local final grouped-control production build passed. The SVG catalogue height was increased to 600 to contain the last icon row; full candidate CI will build that final static asset.
+
+Cycle 1 completed: exact-main CI 42142501452 passed; published v182. All 616 runtime inputs matched, exact production identity and 198/198 assets verified. Authenticated live overdue selection/reset, week navigation Nov 2–8 → Nov 9–15 and Today return passed in an empty authorized work view. Populated selection remains synthetic evidence. No production write/AI-provider acceptance is claimed. See receipts/cycle1-v182-20261106.json. Live audit confirms the next gap is spatial calendar orientation; the icon/mobile grouping amendment is prepared in PR231.

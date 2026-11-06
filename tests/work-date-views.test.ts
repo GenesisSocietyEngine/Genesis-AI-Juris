@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agendaRange,moveAgenda,matchesDue,inAgenda } from "../app/work/work-date-views";
+import { agendaRange,moveAgenda,matchesDue,inAgenda,monthDates } from "../app/work/work-date-views";
 import { zonedMoment,calendarDays } from "../app/matters/practice-scheduling";
+test("month grid has complete Monday weeks, leap days and correct outside-month boundaries",()=>{
+ const days=monthDates("2028-02-17");assert.equal(days.length,42);assert.equal(days[0].date,"2028-01-31");assert.equal(days.filter(d=>d.inMonth).length,29);assert.equal(days.at(-1)?.date,"2028-03-12");assert.equal(days[0].inMonth,false);assert.equal(days.find(d=>d.date==="2028-02-29")?.inMonth,true);
+});
 test("agenda weeks cross years; months include leap days; navigation stays calendar based",()=>{
  assert.deepEqual(agendaRange("2027-01-01","week"),{start:"2026-12-28",end:"2027-01-03"});
  assert.deepEqual(agendaRange("2028-02-28","month"),{start:"2028-02-01",end:"2028-02-29"});
