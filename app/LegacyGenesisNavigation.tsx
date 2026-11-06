@@ -130,8 +130,8 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
       {WORKSPACE_PAGES.map(item => {
-        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos") || (active === "community" && item.view === "matters");
-        return <Fragment key={`${item.view}-${selected}`}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected ? "page" : undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="matters"&&<div className="genesis-nav-children"><a href={href("/studio?view=community")} onClick={event=>follow(event,"community")}>{en?"Saved Studio drafts":"Черновики Studio"}</a></div>}{item.view === "play" && operationsActions}{item.view === "studio" && selected && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos");
+        return <Fragment key={`${item.view}-${selected}`}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected ? "page" : undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="matters"&&<div className="genesis-nav-children"><a href={href("/studio?view=community")} aria-current={active==="community"?"page":undefined} onClick={event=>follow(event,"community")}>{en?"Saved Studio drafts":"Черновики Studio"}</a></div>}{item.view === "play" && operationsActions}{item.view === "studio" && selected && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
     </nav>
     <div className="genesis-nav-lower">
