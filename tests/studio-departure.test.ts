@@ -31,7 +31,8 @@ import {createStudioAuthContinuation,writeStudioAuthContinuation,STUDIO_AUTH_CON
 import {workspaceSignInPath} from './workspace-navigation';
 ${functions.get("blankStudioDraft")}
 export const blank=blankStudioDraft('2026-09-27T00:00:00.000Z');
-export function parent(navigation,input) {
+export function parent(navigation,input,actions=null) {
+ const studioDepartureActions={current:actions};
  const studioDepartureInput={current:input},draftRef={current:input.draft},studioOperationPending={current:input.operationPending},studioSavedBaseline={current:input.saved},currentStudioScopeRef={current:input.scope},initialBlankDraft=input.blank;
  const studioTaxWriteBaseline={current:new StudioTaxWriteBaseline()};
  const studioEvidenceBuffersRef={current:input.evidencePending?{evidence:{title:'Unadded item',detail:'',relatedId:''}}:{}};

@@ -4,6 +4,7 @@ import { WorkspaceIcon } from "../GenesisNavigation";
 import { caseEditorDirty, caseEditorPending, caseFieldErrors } from "./case-editor-model";
 import type { WorkspaceController } from "./workspace-controller";
 import styles from "./case-editor.module.css";
+import { readableMatterType } from "./matter-view-model";
 
 export default function CaseDetailsEditor({ owner, locale = "en" }: { owner: WorkspaceController; locale?: "en" | "ru" }) {
   const state = useSyncExternalStore(owner.subscribe, owner.getSnapshot, owner.getSnapshot);
@@ -26,7 +27,7 @@ export default function CaseDetailsEditor({ owner, locale = "en" }: { owner: Wor
   const confidentiality = (value: string) => ({ internal: t("Internal", "Для внутреннего использования"), confidential: t("Confidential", "Конфиденциально"), strictly_confidential: t("Strictly confidential", "Строго конфиденциально") }[value] ?? value);
   const phaseLabel = editor.phase === "saving" ? t("Saving…", "Сохранение…") : editor.phase === "checking" ? t("Checking saved details…", "Проверка сохранённых данных…") : editor.phase === "unconfirmed" ? t("Save not confirmed", "Сохранение не подтверждено") : conflict ? t("Review latest details", "Проверьте актуальные данные") : showErrors ? t("Check your entries", "Проверьте поля") : dirty ? t("Unsaved changes", "Несохранённые изменения") : t("Saved details", "Сохранённые данные");
   return <section className={styles.editor} aria-labelledby="case-editor-title" data-own-drafts onKeyDown={event => { if (event.key === "Escape" && !disabled) { event.preventDefault(); if (editor.discard) owner.keepCaseEdits(); else owner.cancelCaseEditor(); } }}>
-    <header className={styles.heading}><span className={styles.icon}><WorkspaceIcon name="cases"/></span><div><h2 id="case-editor-title">{t("Edit case", "Редактировать дело")}</h2><p>{matter.reference} · {matter.typeLabel}</p></div><span className="cv-status" data-tone={conflict || pending || showErrors ? "today" : dirty ? "open" : "completed"} role="status"><span className="cv-status-dot" aria-hidden="true"/>{phaseLabel}</span></header>
+    <header className={styles.heading}><span className={styles.icon}><WorkspaceIcon name="cases"/></span><div><h2 id="case-editor-title">{t("Edit case", "Редактировать дело")}</h2><p>{matter.reference} · {readableMatterType(matter.typeLabel)}</p></div><span className="cv-status" data-tone={conflict || pending || showErrors ? "today" : dirty ? "open" : "completed"} role="status"><span className="cv-status-dot" aria-hidden="true"/>{phaseLabel}</span></header>
     <form onSubmit={event => { event.preventDefault(); void owner.saveCaseDetails(); }} noValidate>
       {!matter.permissions.canWrite && <p className={styles.warning} role="alert">{t("Your access is now read-only. Your edits are still visible here, but cannot be saved.", "У вас остался только доступ на чтение. Изменения видны здесь, но сохранить их нельзя.")}</p>}
       {conflict && <div className={styles.warning} role="alert"><strong>{t("This case changed while you were editing.", "Дело изменилось, пока вы его редактировали.")}</strong><p>{t("Your edits are kept below. Review the latest saved details before starting a new edit.", "Ваши изменения сохранены в полях ниже. Проверьте актуальные данные перед новым редактированием.")}</p></div>}

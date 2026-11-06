@@ -2,6 +2,10 @@
 
 Updated: 6 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
 
+## Active follow-on — UI/UX reference audit and saving clarity
+
+Implemented and under release verification; public v190 remains unchanged. Fresh signed-in MyCase comparison and the user's screenshot led to explicit saved-case versus unsent-input status, a centered dialog with conditional Save and continue / Review choices, and compact case details with readable type labels. Case overview and AI Studio now keep the same editor, prompt and graph; other suite links retain the exact saved draft and governed return context. A browser-discovered first-save timing defect was repaired before publication. Seventy-seven focused checks and actual synthetic browser save/conflict/context/focus/390px checks pass; full clean candidate/exact-main web/PDF CI is still required (the local full run hit sandbox loopback/Git restrictions). No production case, prompt, authority, report or hosting binding changed. [Audit and acceptance](docs/testing/ui-reference-save-clarity-2026-11-06.md).
+
 ## Retrospective summary — 29 September to 6 November 2026
 
 This is a summary of the main changes, reconstructed from canonical main's dated integration history and the linked review/release records. Dates group the work; merging code is not, by itself, evidence of production or native acceptance. Historical audit limitations remain valid unless a later record explicitly closes them.

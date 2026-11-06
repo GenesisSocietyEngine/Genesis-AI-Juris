@@ -45,7 +45,7 @@ test("application retains header authority, unsaved-input and failure guidance w
   const guide=app.slice(app.indexOf("<StudioFirstCaseGuide locale="),app.indexOf("/></Suspense>",app.indexOf("<StudioFirstCaseGuide locale=")));
   assert.doesNotMatch(guide,/onSave=|onReport=|saveConfirmedInSession=/);
   assert.match(app, /visibleStep < 5 \|\| !saveWithinEnvelope/);
-  assert.match(app, /id="studio-save-status"[\s\S]*?Saved to workspace/);
+  assert.match(app, /<StudioSaveStatus state=\{visibleWorkspaceState\}/);
   assert.match(app, /displayMode === "developer" \|\| !\["saved", "submitted"\]\.includes\(visibleWorkspaceState\)/);
   assert.match(app, /canDuplicate && !\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)/);
   assert.match(app, /\["error", "conflict", "auth_required"\]\.includes\(visibleWorkspaceState\)[\s\S]*?Retry save/);

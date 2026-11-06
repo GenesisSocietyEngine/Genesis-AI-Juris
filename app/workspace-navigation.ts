@@ -18,7 +18,7 @@ export function workspaceSignInPath(returnTo: string) {
 
 export function workspacePagePath(path: string, params: Record<string, string | string[] | undefined>) {
   const query = new URLSearchParams();
-  for (const key of ["organization", "dossier", "scenario", "run", "lang", "view", "studio_step", "section", "return_to"]) {
+  for (const key of ["organization", "dossier", "scenario", "run", "lang", "view", "custom_case", "studio_case", "studio_panel", "studio_step", "section", "return_to"]) {
     const value = params[key];
     if (typeof value === "string" && value.length <= 2048) query.set(key, key === "return_to" ? safeWorkspaceReturn(value) : value);
   }
@@ -36,6 +36,8 @@ export function workspaceDestination(path: string, current: string) {
   const selectedOrganization = target.searchParams.get("organization") ?? source.searchParams.get("organization");
   const changesOrganization = selectedOrganization !== null && selectedOrganization !== context.searchParams.get("organization");
   const changesScenario = target.searchParams.has("scenario") && target.searchParams.get("scenario") !== context.searchParams.get("scenario");
+  const studioId = source.searchParams.get(source.pathname === "/studio" ? "custom_case" : "studio_case");
+  const changesStudio = target.searchParams.has("custom_case") && target.searchParams.get("custom_case") !== studioId;
   for (const key of ["organization", "lang"]) {
     const value = source.searchParams.get(key) ?? context.searchParams.get(key);
     if (value && !target.searchParams.has(key)) target.searchParams.set(key, value);
@@ -49,9 +51,38 @@ export function workspaceDestination(path: string, current: string) {
       if (value && !target.searchParams.has(key) && !(key === "run" && changesScenario)) target.searchParams.set(key, value);
     }
   }
-  if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/templates", "/account"].includes(target.pathname)) {
+  if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/work", "/templates", "/account"].includes(target.pathname)) {
     const returnTo = (["/matters", "/canopy"].includes(source.pathname) || (source.pathname === "/organizations" && target.pathname === "/account")) ? source.pathname + source.search + source.hash : returnPath;
     if (returnTo && returnTo !== target.pathname) target.searchParams.set("return_to", returnTo);
   }
+  // Saved Studio identity is a navigation hint, never a governed dossier ID.
+  // Only carry it inside the same explicitly selected case/organization context.
+  if (!changesCase && !changesOrganization && !changesStudio && studioId && /^[1-9]\d*$/.test(studioId) && Number.isSafeInteger(Number(studioId))) {
+    const key = target.pathname === "/studio" ? "custom_case" : "studio_case";
+    if (!target.searchParams.has(key)) target.searchParams.set(key, studioId);
+    for (const name of ["studio_step", "studio_panel"]) {
+      const value = source.searchParams.get(name);
+      if (value && value.length <= 100 && !target.searchParams.has(name)) target.searchParams.set(name, value);
+    }
+  }
   return target.pathname + target.search + target.hash;
+}
+
+/** A save may create the first durable ID after a link was clicked. Rebind only
+ * same-origin suite links; history plans and external destinations remain owned
+ * by the existing departure controller. */
+export function resumeWorkspaceDestination(destination: string, current: string) {
+  try {
+    const source = new URL(current, ORIGIN), target = new URL(destination, source);
+    if (source.origin !== target.origin || !PAGES.has(target.pathname)) return destination;
+    return workspaceDestination(target.pathname + target.search + target.hash, source.pathname + source.search + source.hash);
+  } catch { return destination; }
+}
+
+/** The case tab returns to the active case; the firm-wide list is a fallback. */
+export function currentCaseOverviewDestination(current: string): string | null {
+  const studio = workspaceDestination("/studio?studio_panel=overview", current);
+  if (new URL(studio, ORIGIN).searchParams.has("custom_case")) return studio;
+  const matter = workspaceDestination("/matters", current);
+  return new URL(matter, ORIGIN).searchParams.has("dossier") ? matter : null;
 }

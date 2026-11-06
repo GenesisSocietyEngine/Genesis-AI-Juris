@@ -777,6 +777,10 @@ export function statusLabel(value: string): string {
   return sentenceLabel(value);
 }
 
+export function readableMatterType(value: string): string {
+  return /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(value) ? sentenceLabel(value.replaceAll("-", " ")) : value;
+}
+
 export function sentenceLabel(value: string): string {
   const words = value.replaceAll("_", " ").replaceAll("-", " ").trim();
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Not recorded";

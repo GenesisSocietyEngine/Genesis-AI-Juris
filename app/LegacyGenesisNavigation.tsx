@@ -5,11 +5,12 @@ import { useStudioActionsNavigation } from "./StudioActionsNavigation";
 import { pendingSignOutMessage } from "./session-boundary";
 
 import { Fragment, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { workspaceDestination, workspaceSignInPath } from "./workspace-navigation";
+import { workspaceDestination, workspaceSignInPath, resumeWorkspaceDestination } from "./workspace-navigation";
 import { useNavigationController, useNavigationSession } from "./NavigationSession";
 import { isWorkspaceDepartureClick } from "./departure-click";
-import type { DepartureRisk, DeparturePlan } from "./navigation-controller";
+import type { DepartureRisk, DeparturePlan, DepartureChange } from "./navigation-controller";
 import { organizationDisplayLabel } from "./organization-label";
+import { departureChangeLabel } from "./departure-presentation";
 
 export const WORKSPACE_PAGES = [
   { path: "/work?view=home", view: "home", en: "Home", ru: "Главная", icon: "home" },
@@ -52,7 +53,9 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   const menuButton = useRef<HTMLButtonElement>(null);
   const [mobile, setMobile] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [pending, setPending] = useState<{kind:"organization"|"signout"|"link";id:string;risk:DepartureRisk;authority:number;target:string;plan?:DeparturePlan} | null>(null);
+  const [savingDeparture, setSavingDeparture] = useState(false);
+  const [saveDepartureIssue, setSaveDepartureIssue] = useState<object | null>(null);
+  const [pending, setPending] = useState<{kind:"organization"|"signout"|"link";id:string;risk:DepartureRisk;changes:DepartureChange[];authority:number;target:string;plan?:DeparturePlan} | null>(null);
   const navigation = useNavigationController();
   const session = useNavigationSession();
   const en = locale === "en";
@@ -71,13 +74,23 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }, [setTarget, closeDrawer]);
   useEffect(()=>{const media=window.matchMedia("(max-width: 800px)");const update=()=>{setMobile(media.matches);setDrawerOpen(false);};update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update);},[]);
   useEffect(()=>{if(pending)confirmRef.current?.showModal();else confirmRef.current?.close();},[pending]);
-  function cancelPending() { pending?.plan?.cancel?.(); setPending(null); }
+  function cancelPending() { navigation.beginIntent(); pending?.plan?.cancel?.(); setPending(null); }
+  async function saveAndContinue() {
+    if (!pending || savingDeparture) return;
+    const requested = pending, authority = navigation.authorityVersion;
+    const current = () => requested.authority === authority && authority === navigation.authorityVersion && (!requested.plan || requested.plan.current());
+    setSavingDeparture(true); setSaveDepartureIssue(null);
+    const confirmed = await navigation.saveBeforeDeparture(current);
+    setSavingDeparture(false);
+    if (confirmed && current()) await depart(requested.kind, requested.kind === "link" ? resumeWorkspaceDestination(requested.id, window.location.href) : requested.id, false, requested.target, requested.plan);
+    else setSaveDepartureIssue(requested);
+  }
   async function depart(kind:"organization"|"signout"|"link",id="",discard=false,target="",plan?:DeparturePlan) {
     if(plan&&!plan.current()){plan.cancel?.();setPending(null);return;}
     if(kind==="signout"){setPending(null);closeDrawer();await navigation.signOut(locale);return;}
     if(allowDeparture&&!allowDeparture()){plan?.cancel?.();setPending(null);return;}
     const risk=kind==="organization"?await navigation.select(id,locale,discard,plan):navigation.risk();
-    if(risk!=="clear"&&!(risk==="dirty"&&discard)){setPending({kind,id,risk,authority:navigation.authorityVersion,target,plan});return;}
+    if(risk!=="clear"&&!(risk==="dirty"&&discard)){setPending({kind,id,risk,changes:navigation.departureChanges(),authority:navigation.authorityVersion,target,plan});return;}
     setPending(null);
     if(kind==="link"){if(plan&&(!plan.current()||!plan.commit())){plan.cancel?.();return;}navigation.approvePageDeparture();closeDrawer();if(plan?.navigate)plan.navigate();else if(target==="_top"||target==="_parent")window.open(id,target);else window.location.assign(id);}
   }
@@ -113,6 +126,8 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     event.preventDefault(); closeDrawer();onNavigate(view);
     requestAnimationFrame(()=>{const main=document.querySelector<HTMLElement>("main h1, main");if(main){main.tabIndex=-1;main.focus();}});
   }
+  const liveChanges = navigation.departureChanges();
+  const pendingChanges = liveChanges.length ? liveChanges : pending?.changes ?? [];
   const contents=<>
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
@@ -120,7 +135,10 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         const isWork = active === "/work" || active === "work" || active === "/";
         const workView = new URL(location,"https://workspace.invalid").searchParams.get("view") ?? "home";
         const selected = isWork ? item.view === (workView === "cases" ? "home" : workView) : active === item.view || active === item.path;
-        return <Fragment key={item.view}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+        const label = <><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></>;
+        return <Fragment key={item.view}>{item.view === "studio" && active === "studio" && onNavigate
+          ? <button type="button" className="casevant-primary-link" aria-current="page" onClick={()=>{closeDrawer();onNavigate("studio");}}>{label}</button>
+          : <a className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}>{label}</a>}{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
       })}
       <details className="genesis-nav-group" open={SECONDARY_PAGES.some(item=>item.view===active||item.path===active)||active==="library"||active==="/canopy"}>
         <summary><WorkspaceIcon name="grid"/><span>{en?"Tools & library":"Инструменты и библиотека"}</span><span aria-hidden="true">⌄</span></summary>
@@ -173,8 +191,17 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     {mobile?<><button type="button" className="genesis-menu-toggle" ref={menuButton} aria-label={en?"Open navigation":"Открыть навигацию"} aria-expanded={drawerOpen} aria-controls="genesis-navigation-drawer" onClick={()=>{drawerRef.current?.showModal();setDrawerOpen(true);}}>{en?"Menu":"Меню"}</button><dialog id="genesis-navigation-drawer" className="genesis-navigation-drawer" ref={drawerRef} aria-label={en?"Workspace menu":"Меню рабочего пространства"} onClose={()=>setDrawerOpen(false)} onClick={event=>{if(event.target===event.currentTarget)closeDrawer(true);}}><div className="genesis-drawer-inner"><button type="button" className="genesis-drawer-close" onClick={()=>closeDrawer(true)}>{en?"Close menu":"Закрыть меню"}</button>{contents}</div></dialog></>:<div className="genesis-nav-body">{contents}</div>}
   </header>
   <dialog className="genesis-navigation-confirm" ref={confirmRef} onCancel={cancelPending} aria-labelledby="navigation-confirm-title">
-    <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):(en?"Leave unsaved changes?":"Покинуть несохранённые изменения?")}</h2>
-    <p>{pending?.risk==="pending"?(en?"A save could not be confirmed. Check the pending action before switching. You can always sign out; signing out closes this recovery view. Check the record before trying again.":"Сохранение не подтверждено. Перед переключением проверьте текущее действие. Вы можете выйти; выход закроет это окно восстановления. Проверьте запись перед повторной попыткой."):(en?"Your unsaved input will be discarded. Stay here to save your work or use an available export first. Saved workspace work remains available to your authorized account.":"Несохранённый ввод будет удалён. Останьтесь, чтобы сохранить работу или сначала выполнить доступный экспорт. Сохранённая работа останется доступна авторизованному аккаунту.")}</p>
-    <div><button type="button" onClick={cancelPending} autoFocus>{en?"Stay here":"Остаться"}</button>{pending?.risk==="pending"?<button type="button" onClick={()=>{cancelPending();closeDrawer();navigation.reviewPending();}}>{en?"Return to current work":"Вернуться к работе"}</button>:<button type="button" onClick={()=>{if(pending&&pending.authority===navigation.authorityVersion)void depart(pending.kind,pending.id,true,pending.target,pending.plan);else setPending(null);}}>{en?"Discard and continue":"Отменить изменения и продолжить"}</button>}{pending?.risk==="pending"&&navigation.canSignOut&&<button type="button" onClick={()=>void depart("signout")}>{en?"Sign out now":"Выйти сейчас"}</button>}</div>
+    <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):(en?"Keep your changes before leaving":"Сохраните изменения перед выходом")}</h2>
+    {pending?.risk==="pending"?<p>{en?"An operation is still running or its save is unconfirmed. Return to the current work to check it before switching.":"Операция ещё выполняется или сохранение не подтверждено. Вернитесь к работе и проверьте результат перед переходом."}</p>:<>
+      <ul>{pendingChanges.map(change=><li key={change}>{departureChangeLabel(change,locale)}</li>)}</ul>
+      <p>{en?"Previously saved case versions remain available. Only the unsaved work listed above would be discarded.":"Ранее сохранённые версии кейса останутся доступны. Будет удалена только перечисленная выше несохранённая работа."}</p>
+    </>}
+    {pending && saveDepartureIssue === pending && <p role="alert">{en?"Some work is still unsaved, or saving could not be confirmed. Review it before leaving.":"Часть работы не сохранена либо сохранение не подтверждено. Проверьте её перед выходом."}</p>}
+    {savingDeparture&&<p role="status">{en?"Saving your case…":"Сохранение кейса…"}</p>}
+    <div><button type="button" onClick={cancelPending} autoFocus>{en?"Stay here":"Остаться"}</button>
+      {pending?.risk==="pending"?<button type="button" onClick={()=>{cancelPending();closeDrawer();navigation.reviewPending();}}>{en?"Return to current work":"Вернуться к работе"}</button>:<>
+        {navigation.canSaveBeforeDeparture()||savingDeparture?<button type="button" className="departure-save" disabled={savingDeparture} onClick={()=>void saveAndContinue()}>{savingDeparture?(en?"Saving…":"Сохранение…"):(en?"Save and continue":"Сохранить и продолжить")}</button>:<button type="button" className="departure-save" onClick={()=>{cancelPending();closeDrawer();navigation.reviewUnsaved();}}>{en?"Review unsaved work":"Проверить несохранённую работу"}</button>}
+        <button type="button" className="departure-discard" disabled={savingDeparture} onClick={()=>{if(pending&&pending.authority===navigation.authorityVersion)void depart(pending.kind,pending.id,true,pending.target,pending.plan);else setPending(null);}}>{en?"Discard unsaved work and continue":"Отменить несохранённое и продолжить"}</button>
+      </>}{pending?.risk==="pending"&&navigation.canSignOut&&<button type="button" onClick={()=>void depart("signout")}>{en?"Sign out now":"Выйти сейчас"}</button>}</div>
   </dialog></>;
 }

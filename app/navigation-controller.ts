@@ -5,9 +5,10 @@ import { readWithTimeout } from "./read-with-timeout";
 import { pendingSignOutMessage, publishSessionBoundary, type SessionBoundary } from "./session-boundary";
 
 export type DepartureRisk = "clear" | "dirty" | "pending";
+export type DepartureChange = "studio_case" | "studio_prompt" | "studio_items" | "workspace";
 export type NavigationIdentity = { displayName: string; email: string; authSource: "chatgpt" | "local" };
 export type NavigationState = { phase: "checking" | "ready" | "anonymous" | "expired" | "denied" | "error" | "leaving"; identity: NavigationIdentity | null; actorId: string | null; organizations: ClientOrganization[]; selected: ClientOrganization | null; profileRequired: boolean; issue: string; busy: boolean; endingSession: boolean; signOutPending: boolean };
-type Guard = { risk: () => DepartureRisk; suspend: () => void; deny: () => void; review?: () => void; lock?: (value:boolean) => void };
+type Guard = { risk: () => DepartureRisk; suspend: () => void; deny: () => void; review?: () => void; lock?: (value:boolean) => void; changes?: () => DepartureChange[]; canSave?: () => boolean; save?: () => Promise<boolean> };
 type Options = { transport: (path: string, init?: RequestInit) => Promise<Response>; leave: (url: string) => void; clear: (email?: string) => Promise<void> | void };
 export type DeparturePlan = { current: () => boolean; commit: () => boolean; cancel?: () => void; target?: string; navigate?: () => void };
 type DepartureIntent = (kind:"organization"|"signout"|"link", id:string, plan?:DeparturePlan) => void;
@@ -24,6 +25,7 @@ export class NavigationController {
   intentCurrent(intent: number) { return intent === this.intentVersion; }
   private listeners = new Set<() => void>();
   private guards = new Map<object, Guard>();
+  private departureSaving = false;
   private workspaces = new Set<WorkspaceController>();
   private knownActor: string | null = null;
   private logoutIdentity: NavigationIdentity | null = null;
@@ -78,6 +80,28 @@ export class NavigationController {
     return () => { stop(); remove();this.workspaces.delete(owner); };
   }
   risk(): DepartureRisk { const risks = [...this.guards.values()].map(g => g.risk()); return risks.includes("pending") ? "pending" : risks.includes("dirty") ? "dirty" : "clear"; }
+  departureChanges(): DepartureChange[] { return [...new Set([...this.guards.values()].filter(g => g.risk() === "dirty").flatMap(g => g.changes?.() ?? ["workspace" as const]))]; }
+  canSaveBeforeDeparture() {
+    const dirty = [...this.guards.values()].filter(g => g.risk() === "dirty");
+    return !this.departureSaving && this.risk() !== "pending" && dirty.length > 0 && dirty.every(g => g.save && g.canSave?.());
+  }
+  /** Persistence must confirm every current change; this never authorizes discard. */
+  async saveBeforeDeparture(current: () => boolean = () => true): Promise<boolean> {
+    if (!current() || !this.canSaveBeforeDeparture()) return false;
+    const authority = this.authorityVersion, intent = this.intentVersion, guards = [...this.guards.entries()];
+    const valid = () => current() && authority === this.authorityVersion && intent === this.intentVersion
+      && guards.length === this.guards.size && guards.every(([key, guard]) => this.guards.get(key) === guard);
+    this.departureSaving = true;
+    try {
+      for (const [, guard] of guards) {
+        if (!valid() || this.risk() === "pending") return false;
+        if (guard.risk() === "dirty" && (!guard.canSave?.() || !guard.save || !await guard.save())) return false;
+      }
+      return valid() && this.risk() === "clear";
+    } catch { return false; }
+    finally { this.departureSaving = false; }
+  }
+  reviewUnsaved() { this.guards.forEach(g => { if (g.risk() !== "clear") g.review?.(); }); }
   reviewPending() { this.guards.forEach(g => { if (g.risk() === "pending") g.review?.(); }); }
   async refresh(selection?: string) {
     if (this.terminationRequested || this.boundarySuspended || this.state.busy || this.state.phase === "leaving") return;

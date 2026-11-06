@@ -1,9 +1,10 @@
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15 } from "./case-integrity";
-import type { DepartureRisk, NavigationController } from "./navigation-controller";
+import type { DepartureChange, DepartureRisk, NavigationController } from "./navigation-controller";
 import type { StudioDraft } from "./types";
 
 export type StudioSavedBaseline = { kind: "workspace" | "device"; scope: string | null; customCaseId: number | null; fingerprint: string };
 export type StudioDepartureInput = { draft: StudioDraft; blank: StudioDraft; prompt: string; evidencePending?: boolean; operationPending: boolean; deviceEligible: boolean; scope: string | null; customCaseId: number | null; serverFingerprint: string | null; serverPublicationFingerprint: string | null; saved: StudioSavedBaseline | null };
+export type StudioDepartureActions = { canSave: () => boolean; save: () => Promise<boolean>; review: () => void };
 
 /** Memory-only authoring comparison, not a new save receipt or approval. */
 export function studioDepartureFingerprint(draft: StudioDraft) {
@@ -25,8 +26,21 @@ export function studioDepartureRisk(input: StudioDepartureInput): DepartureRisk 
     && casePublicationFingerprint(input.draft) === input.serverPublicationFingerprint ? "clear" : "dirty";
 }
 
+export function studioDepartureChanges(input: StudioDepartureInput): DepartureChange[] {
+  const changes: DepartureChange[] = [];
+  if (studioDepartureRisk({ ...input, operationPending: false, prompt: "", evidencePending: false }) === "dirty") changes.push("studio_case");
+  if (input.prompt.trim()) changes.push("studio_prompt");
+  if (input.evidencePending) changes.push("studio_items");
+  return changes;
+}
+
 /** The existing controller owns the dialog, history, unload and logout policy.
  * StudioSessionAuthority remains responsible for hiding/discarding private work. */
-export function registerStudioDeparture(navigation: NavigationController, current: () => StudioDepartureInput) {
-  return navigation.register({}, { risk: () => studioDepartureRisk(current()), suspend: () => {}, deny: () => {} });
+export function registerStudioDeparture(navigation: NavigationController, current: () => StudioDepartureInput, actions: () => StudioDepartureActions | null = () => null) {
+  return navigation.register({}, { risk: () => studioDepartureRisk(current()), suspend: () => {}, deny: () => {},
+    changes: () => studioDepartureChanges(current()),
+    canSave: () => { const input = current(); return !input.operationPending && !input.prompt.trim() && !input.evidencePending && Boolean(actions()?.canSave()); },
+    save: async () => await actions()?.save() ?? false,
+    review: () => actions()?.review(),
+  });
 }

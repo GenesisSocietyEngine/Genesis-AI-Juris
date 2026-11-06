@@ -30,6 +30,7 @@ import {isRecord,normalizeStudioDraft,caseFingerprint,casePublicationFingerprint
 import {caseTypeReference} from './case-type-reference';
 import {mayChooseImportedPrivacy} from './studio-import-privacy';
 export function save(context) {
+ const flushSync=callback=>callback();
  const {draft,serverFingerprint,serverPublicationFingerprint,prepareTaxWrite,fetch,onWorkspaceSaved}=context;
  const state={workspace:'idle',error:'',draft};
  const isPrivate=false,canDuplicate=true,derivationsSettled=context.derivationsSettled??true,restorePending=context.restorePending??false,workspaceState=context.workspaceState??'idle',aiEntitlement='not_configured',locale='en';

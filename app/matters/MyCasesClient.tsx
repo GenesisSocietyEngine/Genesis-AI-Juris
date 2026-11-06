@@ -17,7 +17,7 @@ export default function MyCasesClient({ initialLocation }: { initialLocation: st
   const en = locale === "en", view = myCasesView(location);
   return <>
     <section className={styles.switcher} aria-label={en ? "My cases storage" : "Хранилище моих кейсов"}>
-      <h1>{en ? "My cases" : "Мои кейсы"}</h1>
+      {view === "team" ? <h2>{en ? "Cases" : "Дела"}</h2> : <h1>{en ? "My cases" : "Мои кейсы"}</h1>}
       <nav aria-label={en ? "Personal or Team cases" : "Личные или командные кейсы"}>
         <a href={myCasesHref("personal", location)} aria-current={view === "personal" ? "page" : undefined}>{en ? "Personal" : "Личные"}<small>{en ? "Saved Studio drafts" : "Черновики Studio"}</small></a>
         <a href={myCasesHref("team", location)} aria-current={view === "team" ? "page" : undefined}>{en ? "Team" : "Команда"}<small>{en ? "Organization cases" : "Дела организации"}</small></a>
