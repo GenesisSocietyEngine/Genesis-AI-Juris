@@ -9,7 +9,7 @@ export function workState(item: Work, today: string, zone: string): WorkState {
   const date = calendarDate(item, zone);
   if (calendarDays(item, zone).includes(today)) return "today";
   if (date && date < today) return item.kind === "event" ? "past" : "overdue";
-  return item.kind === "event" ? "scheduled" : "open";
+  return item.kind === "event" && date ? "scheduled" : "open";
 }
 
 export function workStateLabel(state: WorkState, locale: "en" | "ru") {

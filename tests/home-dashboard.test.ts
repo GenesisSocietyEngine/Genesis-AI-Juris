@@ -36,6 +36,7 @@ test("status labels distinguish completed work, late tasks and past events", () 
   assert.equal(workState({...task,kind:"event"},"2026-11-06","UTC"),"past");
   assert.equal(workState({...task,status:"completed"},"2026-11-06","UTC"),"completed");
   assert.equal(workState({...task,dueDate:null},"2026-11-06","UTC"),"open");
+  assert.equal(workState({...task,kind:"event",dueDate:null},"2026-11-06","UTC"),"open", "an undated event is not scheduled");
   assert.equal(workState({...task,dueDate:"2026-11-06"},"2026-11-06","UTC"),"today");
 });
 

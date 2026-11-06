@@ -34,3 +34,9 @@ Acceptance: same-size commands (36px desktop/44px narrow), keyboard focus, EN/RU
 ## Release status
 
 Candidate only at this checkpoint. Full CI, ordinary integration, exact-main provenance, previous-live asset retention and live acceptance are pending. No claim of complete MyCase parity: CRM, finance, external delivery/sync, standalone work, Library and client portal remain separate work.
+
+### Final review corrections
+
+Undated events now show Open, with a regression assertion, rather than suggesting an absent schedule. Shared command sizing also covers case creation, case commands and section buttons; actual desktop New case/Create case/Refresh/Add task measured 36px, narrow controls 44px. The source-stable local build passed before this final presentation-only correction.
+
+A fresh active synthetic tab resolved viewport targeting: Russian month calendar at actual 390 × 640 has document width 375, readable wrapping, visible focused day and working ArrowRight navigation. EN/RU Home and narrow calendar evidence are now distinct successful captures. Temporary viewport reset succeeded before closing this browser verification part. Earlier failed attempts remain recorded above as troubleshooting history.
