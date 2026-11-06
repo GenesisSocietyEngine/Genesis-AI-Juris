@@ -50,3 +50,7 @@ See [review and migration limits](../testing/FIRM_WORK_AND_TEMPLATES_REVIEW.md).
 Timed events now retain explicit IANA zones and UTC instants, with daylight-saving validation and display-zone selection. Tasks support finite daily/weekly/monthly series with a preview. Shared in-app reminders support due/upcoming views, dismissal and one-hour snooze; no external notification delivery or calendar synchronization is included.
 
 The UI direction is now Outlook-style: compact navigation and command bars, contiguous case/work rows, and a selected-work reading pane. Existing AI-assisted building and outcome reporting remain separate. See [review, verification and migration requirements](../testing/SCHEDULING_AND_OUTLOOK_REVIEW.md). Migration 0026 must precede rollout and remains in place on rollback to prevent older clients discarding scheduling metadata.
+
+## Fresh MyCase study and next execution plan
+
+The [6 November re-study and prioritized implementation plan](MYCASE_RESTUDY_20261106.md) supersedes earlier future-work lists where those features have now been implemented. Retain the Outlook-style list/reading-pane direction. The next bounded slice is task due-date triage and navigable Day/Week/Month agendas; visual time grids, workflow rebasing, standalone/private work and external notification delivery remain separately scoped follow-ons.
