@@ -29,10 +29,14 @@ Use focused controller/actual-handler tests for save continuation, status distin
 
 ## Evidence before publication
 
-- 77 focused checks pass, including actual save handlers, departure/history/authority behavior, workbench, save-status presentation, context round trips and case editor. Strict TypeScript passes; targeted lint has zero errors with seven pre-existing unused-variable warnings in JurisApp.
+- 79 focused checks pass, including actual save handlers, departure/history/authority behavior, workbench, save-status presentation, context round trips and case editor. Strict TypeScript passes; targeted lint has zero errors with seven pre-existing unused-variable warnings in JurisApp.
 - Real application local preview (`preview-save-clarity.mjs`) uses synthetic transport only. Overview → AI Studio → Overview → AI Studio retains the literal unsent prompt, title and 14-record/13-connection Canopy structure. Ordinary Save confirms case content while explicitly retaining the prompt warning. Departure lists only that prompt; Review focuses `studio-case-brief` with the original value. No provider call is available in this preview.
 - Actual dialog: centered at desktop 1280×720, Stay initially focused, keyboard Tab reaches Review. Russian 390×640: dialog width 358.4px, height 459.2px, three 44px buttons, document width 375px (no horizontal overflow), Escape closes the dialog. Local screenshots are synthetic UI evidence, not production write acceptance.
 - Actual case component at 1280×720 places sections at y476.9, compared with the live pre-change y807.75; fixture data and surrounding shell differ, so this is not a controlled percentage comparison. At 390px the case picker is closed, document width is 375px. Edit opens focused on the name; Cancel returns focus to `case-edit-command`; zero synthetic case writes.
 - The full local suite ran in the sandbox: loopback Worker requests failed with EACCES and temporary Git repositories could not write config. It is not a passing release run. Required clean candidate/exact-main CI will supply the authoritative full web/PDF result. No test or protection is relaxed to accommodate the host sandbox.
 
 Publication and fresh production verification remain pending. Existing native, source-acquisition, historical-artifact and wider module limitations remain separate.
+
+Final journey amendment: Back/Forward between panels of the exact same mounted Studio also stays local. The exemption allows only panel/step/hash changes (normalizing the default Studio view); different saved IDs, organization, locale, examples or suite views still use the existing guard. Actual history tests retain the prompt without reload and leave beforeunload protection enabled.
+
+Actual browser Back returns to Workbench with the literal prompt unchanged and no dialog; Forward returns to the same overview with no reload or discard. Final navigation regression set: 18/18 pass.

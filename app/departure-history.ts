@@ -1,4 +1,5 @@
 import type { NavigationController } from "./navigation-controller";
+import { isStudioPanelNavigation } from "./workspace-navigation";
 let historySession = 0;
 
 /** Preserve the history entry while the shared guard asks Stay/Discard.
@@ -50,7 +51,7 @@ export function installDepartureHistory(host: Window, navigation: NavigationCont
       return;
     }
     const intent=navigation.beginIntent(),url=host.location.href;
-    if(navigation.risk()==="clear"||url===currentUrl){position=point.index;currentUrl=url;return;}
+    if(navigation.risk()==="clear"||url===currentUrl||isStudioPanelNavigation(currentUrl,url)){position=point.index;currentUrl=url;return;}
     event.stopImmediatePropagation();
     const delta=position-point.index;
     if(!delta)return;

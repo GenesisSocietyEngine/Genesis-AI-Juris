@@ -112,6 +112,19 @@ test("real history guard retains anonymous Studio on Stay and completes only exp
   h.navigation.approvePageDeparture();plan!.navigate!();await new Promise(resolve=>setImmediate(resolve));assert.equal(cursor,0);assert.equal(reloads,1);assert.equal(h.navigation.warnBeforeUnload(),false);remove();parent.remove();
 });
 
+test("actual Back and Forward between the same Studio panels retain unsent work without reloading",async()=>{
+  const state=input();state.prompt="Keep this unsent request";const original=structuredClone(state),h=nav(),parent=actual.parent(h.navigation,state);
+  h.navigation.registerDeparture(()=>assert.fail("Local Studio panels must not discard the case"));
+  const target=new EventTarget();let cursor=0,reloads=0;const entries=[{url:"https://test.invalid/studio?custom_case=51&studio_panel=overview",state:{} as unknown}];
+  const location={get href(){return entries[cursor].url;},reload(){reloads++;}};
+  const history={get state(){return entries[cursor].state;},pushState(data:unknown,_unused:string,url?:string|URL|null){entries.splice(cursor+1);entries.push({state:data,url:String(url??location.href)});cursor++;},replaceState(data:unknown,_unused:string,url?:string|URL|null){entries[cursor]={state:data,url:String(url??location.href)};},go(delta:number){cursor+=delta;queueMicrotask(()=>{const event=new Event("popstate");Object.defineProperty(event,"state",{value:history.state});target.dispatchEvent(event);});}};
+  const remove=installDepartureHistory(Object.assign(target,{history,location}) as unknown as Window,h.navigation);
+  history.pushState({},"","https://test.invalid/studio?view=studio&custom_case=51&studio_panel=workbench");
+  history.go(-1);await new Promise(resolve=>setImmediate(resolve));assert.equal(cursor,0);
+  history.go(1);await new Promise(resolve=>setImmediate(resolve));assert.equal(cursor,1);
+  assert.equal(reloads,0);assert.deepEqual(state,original);assert.equal(h.navigation.warnBeforeUnload(),true);remove();parent.remove();
+});
+
 test("actual sign-in continuation approves departure only after its write; storage or navigation failure retains warning", () => {
   for(const failure of ["none","storage","navigation","private"]){
     const state=input(),h=nav(),parent=actual.parent(h.navigation,state),storage=new Map<string,string>(),events:string[]=[];

@@ -6,7 +6,7 @@ import { NavigationController, type DepartureRisk } from "../app/navigation-cont
 import { registerStudioDeparture, studioDepartureChanges, studioDepartureFingerprint, type StudioDepartureInput } from "../app/studio-departure";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
-import { workspaceDestination, resumeWorkspaceDestination, currentCaseOverviewDestination } from "../app/workspace-navigation";
+import { workspaceDestination, resumeWorkspaceDestination, currentCaseOverviewDestination, isStudioPanelNavigation } from "../app/workspace-navigation";
 import StudioSaveStatus from "../app/StudioSaveStatus";
 import { build } from "esbuild";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -67,6 +67,11 @@ test("save status distinguishes confirmed content, unsaved buffers, and failed o
   }
 });
 const url=(path:string)=>new URL(path,"https://casevant.pro");
+test("local history exemption never follows a different case, account, locale, example or suite view",()=>{
+  const source="/studio?custom_case=51&organization=a&lang=en&studio_panel=overview";
+  assert.equal(isStudioPanelNavigation(source,"/studio?view=studio&organization=a&custom_case=51&lang=en&studio_panel=workbench"),true);
+  for(const target of [source.replace("51","52"),source.replace("organization=a","organization=b"),source.replace("lang=en","lang=ru"),source+"&example=canopy",source+"&view=demos","/work?studio_case=51","https://other.test"+source])assert.equal(isStudioPanelNavigation(source,target),false,target);
+});
 test("saved Studio → Calendar → case overview / Studio retains the exact draft and governed context",()=>{
   const context="/matters?dossier=matter-a&organization=org-a&section=evidence&lang=ru";
   const studio="/studio?custom_case=51&studio_step=reports&studio_panel=workbench&organization=org-a&lang=ru&return_to="+encodeURIComponent(context);

@@ -86,3 +86,18 @@ export function currentCaseOverviewDestination(current: string): string | null {
   const matter = workspaceDestination("/matters", current);
   return new URL(matter, ORIGIN).searchParams.has("dossier") ? matter : null;
 }
+
+/** History between views of this same mounted Studio is not a page departure. */
+export function isStudioPanelNavigation(from: string, to: string): boolean {
+  try {
+    const source = new URL(from, ORIGIN), target = new URL(to, ORIGIN);
+    if (source.origin !== target.origin || source.pathname !== "/studio" || target.pathname !== "/studio") return false;
+    for (const url of [source, target]) {
+      if ((url.searchParams.get("view") ?? "studio") !== "studio") return false;
+      url.searchParams.set("view", "studio");
+      url.searchParams.delete("studio_panel"); url.searchParams.delete("studio_step");
+      url.searchParams.sort(); url.hash = "";
+    }
+    return source.href === target.href;
+  } catch { return false; }
+}
