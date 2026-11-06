@@ -293,3 +293,8 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .studio-entry-start{border-radius:0;box-shadow:none}.studio-entry-intro,.studio-entry-demo{padding:1rem;border-top:0;background:white}.workspace-icon-tile{border-radius:3px}.first-case-guide{border-radius:0;background:#fafafa}
 .studio-sidebar-group .secondary-cta,.studio-workspace-navigation nav button{border-radius:3px;box-shadow:none}.studio-workspace-navigation nav button[aria-pressed=true]{background:#e8f1fa;color:#0f548c;border-color:#0f6cbd;box-shadow:inset 0 -2px #0f6cbd}
 @media(pointer:coarse){.casevant-primary-link{min-height:44px}}
+
+/* CaseVant Line: shared vector geometry; labels remain the accessible name. */
+.casevant-icon{flex:none;vertical-align:middle;color:inherit}
+button>.casevant-icon,a>.casevant-icon{pointer-events:none}
+@media(forced-colors:active){.casevant-icon{stroke:currentColor}}

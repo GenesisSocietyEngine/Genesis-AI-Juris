@@ -1,0 +1,61 @@
+{
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_02d17b7825f8819193890b0e83505a78",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 181,
+    "source": {
+      "commit_sha": "5e04db955d73102064a07498fdf1a86af8a3def8"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000c460824384742fee1f82e1cf",
+      "content_hash": "sha256:828894697adecb3cf76c3f999be82c35ddaa6aba3a55155aec7338357cb35c00",
+      "size_bytes": 53350400,
+      "file_count": 628
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed2868907481918ef229d67adf5fff",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_02d17b7825f8819193890b0e83505a78",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T01:08:19.423363+00:00"
+  },
+  "predeploymentUTC": {
+    "current_time": "2026-11-06 01:07:50 UTC"
+  },
+  "sourceCommit": "5e04db955d73102064a07498fdf1a86af8a3def8",
+  "ci": {
+    "candidate": 42138792016,
+    "exactMain": 42140176885,
+    "conclusion": "success"
+  },
+  "verifiedInputs": 615,
+  "assets": {
+    "current": 143,
+    "retainedPrevious": 59,
+    "verified": 202,
+    "origins": [
+      "https://casevant.pro",
+      "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+    ]
+  },
+  "environment": {
+    "revision": 42,
+    "count": 13,
+    "unchanged": true
+  },
+  "audience": "public",
+  "browser": "Authenticated Chrome read-only Tasks/Calendar/Workflow templates load; one accessible synthetic case; zero saved writes.",
+  "backup": "Provider-managed D1 Time Travel; no manual export, bookmark or restore test claimed."
+}
