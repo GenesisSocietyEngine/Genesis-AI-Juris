@@ -1,5 +1,7 @@
 # MyCase live re-study and module amendment — 6 November 2026
 
+**v189 Studio integration:** AI Studio moves into primary navigation and becomes the shared tab immediately after Case overview. Its Workbench combines the prompt, current indicators and document-flow canvas; existing sources/review/report handlers and explicit saved-stage links remain. This addresses the disconnected Studio entry, while the broader firm Library, standalone work, CRM/finance/portal/synchronization scope below remains outstanding. [Release audit](../testing/integrated-ai-studio-2026-11-06.md).
+
 **v188 delivery:** Home is the default route; daily-work lists/counts and case quick actions are functional. Home, Calendar, Tasks, Cases, People and Workflows are primary; Studio, drafts, templates, demos and simulations remain in Tools & library. Outlook commands, status badges, calendar graphics and collapsed technical details are delivered. See [audit and acceptance limits](../testing/outlook-workspace-2026-11-06.md). Firm Library/storage, standalone work, deeper calendar layouts and the broader case editor remain outstanding. This advances step 2; it does not complete steps 3–5 or full service parity.
 
 Read-only reference study in an isolated MyCase tab; no reference records were changed. Case edit and event forms were cancelled unchanged. This evidence updates the implementation plan, not a claim of feature parity.

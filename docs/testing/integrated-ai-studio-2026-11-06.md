@@ -6,7 +6,7 @@ Outcome: AI Studio sits directly after Case overview in a shared workspace tab r
 
 Acceptance: EN/RU desktop and narrow layouts; visible brief, indicators and canvas on ordinary entry; keyboard operation; explicit Sources/Review/Reports navigation; prompt and draft preservation across internal tabs; guarded external departure; no implicit attachment to a governed case; existing authority, save, history, report and recovery checks. No real case records are edited during browser acceptance.
 
-Implementation and release evidence will be recorded below. This is not yet a production-release claim.
+The implementation checkpoint below was recorded before publication; the final delivery evidence follows.
 
 ## Implementation review
 
@@ -25,3 +25,15 @@ The initial broad local run completed 1,972 tests: 1,948 passed, 21 failed, thre
 The a44c8e3 local build and all six built HTML/asset checks pass. Final save-flow inspection found that the existing saved-URL helper allowed only Overview; it now also retains the explicit Workbench panel through save/restore, preserving the numeric saved identity, stage and safe governed-case return path. A dedicated test refuses unknown panel names and keeps governed IDs out of the Studio identity. Empty-canvas guidance now refers to the actual Add node control without assuming a left-hand palette.
 
 Canonical PR review identified a pending-proposal resume gap: the Workbench prompt still scrolled to an unmounted review. Both AI and canonical Markdown review actions now use the existing stage-and-deferred-focus handler. Actual JSX callbacks are executed in the preservation harness to prove stage 2, exact target, saved identity and unchanged draft/input/history. Applying remains a separate existing action. Candidate a44c8e3 completed both canonical web and PDF CI successfully; final-head CI must pass again after these follow-ups.
+
+## Delivered — public v189
+
+PR #241 merged normally as 32b02a03f9cd44529c309a35ffe180250e8bd973. Candidate run 42282945669 and exact-main run 42284159371 pass the complete web/PDF gate: 1,975 passes, three inherited skips, zero failures, plus two HTML checks. Types, lint, packaged Rust/Worker/report execution, both zero-finding dependency audits and unchanged PDF baselines pass. Final local TypeScript and 33 proposal-resume/preservation checks also pass; scoped lint has seven inherited warnings and zero errors. Cohorts overlap and are not added together.
+
+The exact-main CI archive was checksum-verified, then its source/tree and all 637 release inputs matched the checkout. CI build bytes were adopted without rebuilding or changing provenance. Only v188's current immutable assets were retained. Both live origins identify the exact runtime/application/hosting hashes and verify all 205 current/retained assets. Public access revision 2, environment revision 42/all 13 returned representations and DB/DOSSIER_DOCUMENTS remain unchanged. Receipt: receipts/integrated-ai-studio-v189-2026-11-06.json.
+
+Local canonical Markdown verification → Workbench → resume review opens the exact pending review and focuses its existing Apply control; it does not apply or save. Fresh authenticated production checks confirm Home → Case overview → the adjacent AI Studio tab in the same browser tab, visible prompt/indicators/canvas, Sources → Workbench prompt retention, EN/RU switching and the unsaved-departure Stay action. Only isolated synthetic unsaved input was used, then discarded. The live full-page English screenshot is saved. The requested production 390×720 override remained at 1280 CSS px and is not counted as mobile acceptance; local EN/RU 390×720 checks passed. No authenticated save or AI provider execution was performed.
+
+Native status at the release checkpoint: Rust, Android and Flutter pass; iOS Native FFI and iOS Tax Application remain in progress. Native acceptance is distinct from this web release under the existing web-only authorization. No real case or MyCase record was edited; no provider AI request was made. The task-owned preview was stopped, temporary viewport overrides reset and the live Studio output retained.
+
+AI Studio is now a primary destination beside Case overview and shares the suite navigation. Workbench exposes the existing prompt, factual indicators and editable flow; technical controls remain accessible through disclosures/other sections. Explicit saved-stage links remain valid, and saved Workbench links retain the selected panel. Full CRM, finance, firm Library, external sync, portal, standalone firm work and the broader case editor remain separate capabilities. Do not rebuild or redeploy this runtime for documentation closure.
