@@ -1,0 +1,51 @@
+{
+  "cycle": 2,
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_235c9985e2dc8191a2adfe5e48893750",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 183,
+    "source": {
+      "commit_sha": "84c985314c962153a61adca0f411fa54e1e97d15"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000006db081f4a9ed6ade2b8729ea",
+      "content_hash": "sha256:145247f56c4d82322eb8e950c867cd423e267c33ac6375c0e1033f55159bde6b",
+      "size_bytes": 53411840,
+      "file_count": 629
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed33144cf481919082a8b25e51f3b7",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_235c9985e2dc8191a2adfe5e48893750",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T01:53:48.330487+00:00"
+  },
+  "ci": {
+    "candidate": 42144878703,
+    "exactMain": 42145703468,
+    "conclusion": "success"
+  },
+  "verifiedInputs": 619,
+  "production": {
+    "origin": "https://casevant.pro",
+    "identityVerified": true,
+    "assetsVerified": 202,
+    "current": 143,
+    "retained": 59,
+    "iconCatalogue": "https://casevant.pro/brand/casevant-line-icons.svg",
+    "iconHTTPStatus": 200
+  },
+  "audit": "Authenticated Chrome month-grid render, ArrowRight Nov6→Nov7, Enter opens Nov7 Day agenda and focuses heading, Today return pass. Icons and grouped controls visually verified. Empty production work; populated/390px evidence remains synthetic. No saved production writes."
+}
