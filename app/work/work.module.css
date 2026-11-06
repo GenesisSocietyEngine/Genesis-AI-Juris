@@ -31,3 +31,4 @@
 @media(max-width:600px){.workspace .monthDay{min-height:76px;padding:5px 3px}.dayEntry{display:none}.monthDay small{font-size:10px}.monthWeekdays{font-size:11px}}
 
 .directoryLinks{list-style:none;margin:0;padding:0}.directoryLinks li{border-bottom:1px solid #e5e5e5;padding:12px 0}.directoryLinks a{display:inline-flex;min-height:32px;align-items:center;overflow-wrap:anywhere}
+.workspace .caseRow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:14px}.caseRow strong{display:flex;gap:6px;align-items:flex-start}.caseRow strong svg{flex-shrink:0}.caseCounts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.caseCounts dd{margin:0;font-weight:600}.directoryLinks a{gap:6px}@media(max-width:600px){.workspace .caseRow{grid-template-columns:minmax(0,1fr);gap:6px}}

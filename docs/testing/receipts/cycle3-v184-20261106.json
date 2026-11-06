@@ -1,0 +1,57 @@
+{
+  "cycle": 3,
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_4bb6d12aa8b881919e3578855b0c3c5c",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 184,
+    "source": {
+      "commit_sha": "8ded5d4ad4942701e6d5fab71d5faec23595a8bd"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000007ae481f49c2797b734116c69",
+      "content_hash": "sha256:26005391a3d33a1736e7194fc51eca46deae5c7bd4c8ab044a5ec72922eba47c",
+      "size_bytes": 53381120,
+      "file_count": 624
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed374e9b048191ab755493e25ebc70",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_4bb6d12aa8b881919e3578855b0c3c5c",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T02:11:50.042421+00:00"
+  },
+  "source": "8ded5d4ad4942701e6d5fab71d5faec23595a8bd",
+  "candidateCI": 42146146544,
+  "mainCI": 42147257309,
+  "testTotals": {
+    "tests": 1958,
+    "passed": 1955,
+    "failed": 0,
+    "skipped": 3,
+    "html": 2
+  },
+  "verifiedInputs": 621,
+  "assets": {
+    "current": 143,
+    "retained": 54,
+    "verified": 197
+  },
+  "liveAudit": "Authenticated directory: one authorized participant/case; selected details and exact case link; inactive filter removes row and details. Production read-only; populated multi-case/narrow evidence synthetic.",
+  "limitations": [
+    "No production write or AI-provider acceptance",
+    "No full CRM or standalone contacts parity"
+  ],
+  "initialVerifierAttempt": "Missing scoped Git trust prevented local identity derivation; rerun with checkout-scoped trust passed."
+}
