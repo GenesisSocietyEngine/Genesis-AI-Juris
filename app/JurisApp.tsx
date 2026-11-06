@@ -3706,9 +3706,9 @@ function StudioView({ standalone = false, checksReady, evidenceBuffers, onEviden
       {!canonicalPrompt && <Suspense fallback={null}><StudioCaseFlowBrief compact={showWorkbench} prompt={prompt} locale={locale} disabled={!canDuplicate || restorePending || aiState === "analysing"} onPrepare={value => { if (!operationPending.current && !restorePending) loadCasePrompt(value); }}/></Suspense>}
       <div className="prompt-actions">
         {canonicalCandidate
-          ? <Suspense fallback={null}><CanonicalReadyAction locale={locale} review={() => document.getElementById("canonical-case-review")?.scrollIntoView({behavior:"smooth",block:"start"})}/></Suspense>
+          ? <Suspense fallback={null}><CanonicalReadyAction locale={locale} review={() => openStudioAction({ step: 2, id: "canonical-case-review" })}/></Suspense>
           : activeAIResult
-            ? <button className="generate-button" onClick={() => document.getElementById("ai-plan-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}><Icon name="file" size={24}/><span>{locale === "en" ? "Review the AI proposal below" : "Проверьте AI-предложение ниже"}<small>{locale === "en" ? "Applying is available only after the complete operation list" : "Кнопка применения находится после полного списка операций"}</small></span><Icon name="arrow"/></button>
+            ? <button className="generate-button" onClick={() => openStudioAction({ step: 2, id: "ai-plan-review" })}><Icon name="file" size={24}/><span>{locale === "en" ? "Review the AI proposal" : "Проверить AI-предложение"}<small>{locale === "en" ? "Applying is available only after the complete operation list" : "Кнопка применения находится после полного списка операций"}</small></span><Icon name="arrow"/></button>
           : canonicalPrompt
             ? <Suspense fallback={null}><CanonicalPromptAction locale={locale} analysing={aiState === "analysing"} disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope || !derivationsSettled} verify={() => { if (displayMode === "user") selectGuidedStep(2); void analysePromptWithAI(); }}/></Suspense>
           : aiEntitlement === "ready"

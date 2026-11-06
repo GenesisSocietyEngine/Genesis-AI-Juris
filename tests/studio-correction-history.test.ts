@@ -113,6 +113,30 @@ test("explicit correction and Return still install their exact target after sect
   assert.equal(state.input.title, "QA synthetic retained evidence");
 });
 
+for (const id of ["ai-plan-review", "canonical-case-review"]) test(`Workbench ${id} action opens the pending review without changing the case`, () => {
+  const h = harness();
+  const before = JSON.stringify({ input: h.state.input, draft: h.state.draft, undo: h.state.undo });
+  let callback: ts.ArrowFunction | undefined;
+  function find(node: ts.Node) {
+    if (ts.isJsxAttribute(node) && ["onClick", "review"].includes(node.name.getText(source))
+      && node.initializer && ts.isJsxExpression(node.initializer)
+      && node.initializer.expression && ts.isArrowFunction(node.initializer.expression)
+      && node.initializer.expression.getText(source).includes(`"${id}"`)) callback = node.initializer.expression;
+    ts.forEachChild(node, find);
+  }
+  find(source);
+  assert.ok(callback, "the visible review action has a callback");
+  const actual = ts.transpileModule(`return (${callback.getText(source)})();`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  new Function("openStudioAction", actual)(h.actions.openStudioAction);
+  assert.equal(h.workbench.selected, false);
+  assert.equal(h.state.step, 2);
+  assert.deepEqual(h.state.target, { step: 2, id }, "existing deferred focus waits for the review to mount");
+  const url = new URL(h.state.pushes[0]);
+  assert.equal(url.searchParams.get("studio_step"), "review_ai_draft");
+  assert.equal(url.searchParams.get("custom_case"), "48");
+  assert.equal(JSON.stringify({ input: h.state.input, draft: h.state.draft, undo: h.state.undo }), before);
+});
+
 test("pending restore and unrecognized history do not cancel the current correction; empty case routes to brief", () => {
   const pending = harness({ pending: true }); pending.actions.restoreGuidedStepFromHistory();
   assert.equal(pending.state.target?.id, "studio-evidence-composer"); assert.equal(pending.state.notice, "Temporary action notice");
