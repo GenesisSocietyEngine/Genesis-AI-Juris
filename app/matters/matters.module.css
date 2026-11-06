@@ -122,3 +122,4 @@
 
 /* Shared workspace commands; case rows keep their content-driven height. */
 .shell .primaryButton,.shell .secondaryButton,.shell .dangerButton,.shell .textButton,.catalogueActions button,.catalogueActions a,.sectionTabs button{min-height:var(--cv-command-height,36px);padding:7px 12px;border-radius:var(--cv-command-radius,4px);font-size:13px;line-height:20px;font-weight:600}
+.heroTop>.secondaryButton{align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:none}.heroIdentity{flex:1;overflow-wrap:anywhere}.matterHero>:global(.cv-technical){margin:0;padding:8px 16px}.viewToggle button{min-height:var(--cv-command-height,36px);padding:7px 12px;border-radius:4px;font-size:13px}.viewToggle{max-width:320px;gap:8px}.viewToggle button+button{border-left:1px solid var(--rule)}

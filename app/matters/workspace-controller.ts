@@ -6,7 +6,8 @@ import { buildMatterActionCollection, enterActionQueue, resolveExactAction, type
 import { DispositionRecoveryController } from "./disposition-recovery-controller";
 import type { MatterActionTarget } from "./matter-actions";
 import { loadWorkspaceData, object, WorkspaceApiError, workspaceIssue, type WorkspaceBundle } from "./workspace-data";
-import { normalizeActivity, normalizeAnchors, normalizeAssertions, normalizeRequests, type ApiIssue, type MatterDestination } from "./matter-view-model";
+import { normalizeActivity, normalizeAnchors, normalizeAssertions, normalizeRequests, normalizeMatterDetail, type ApiIssue, type MatterDestination } from "./matter-view-model";
+import { caseEditorDirty, caseEditorPatch, caseEditorPending, caseFieldErrors, caseFields, matchesCasePatch, newCaseEditor, refreshCaseEditor, type CaseEditorState, type CaseFields } from "./case-editor-model";
 
 export type WorkspaceIdentity = { actorId: string; organizationId: string };
 export type Visit = WorkspaceIdentity & { caseId: string; generation: number };
@@ -18,6 +19,83 @@ const aborted = () => new DOMException("Obsolete workspace response", "AbortErro
 /** The actual workspace owner. UI panels borrow state from this object; they
  * cannot own or replace an unresolved server operation when they unmount. */
 export class WorkspaceController {
+  caseEditor: CaseEditorState | null = null;
+  openCaseEditor() {
+    const matter = this.state.bundle?.matter;
+    if (this.busy || this.state.updating || this.state.authority !== "granted" || !matter?.permissions.canWrite) return;
+    this.caseEditor ??= newCaseEditor(matter);
+    this.publish({ notice: "" });
+    this.navigate("overview");
+  }
+  editCaseField(key: keyof CaseFields, value: string) {
+    if (!this.caseEditor || this.busy || caseEditorPending(this.caseEditor) || this.state.authority !== "granted" || !this.state.bundle?.matter.permissions.canWrite) return;
+    this.caseEditor = { ...this.caseEditor, values: { ...this.caseEditor.values, [key]: value }, discard: null };
+    this.publish({});
+  }
+  cancelCaseEditor(discard: "close" | "latest" = "close") {
+    if (!this.caseEditor || this.busy || caseEditorPending(this.caseEditor) || this.state.authority !== "granted") return;
+    if (caseEditorDirty(this.caseEditor)) this.caseEditor = { ...this.caseEditor, discard };
+    else this.caseEditor = null;
+    this.publish({});
+  }
+  keepCaseEdits() { if (this.caseEditor) { this.caseEditor = { ...this.caseEditor, discard: null }; this.publish({}); } }
+  discardCaseEdits() {
+    if (!this.caseEditor?.discard || this.busy || caseEditorPending(this.caseEditor) || this.state.authority !== "granted") return;
+    if (this.caseEditor.discard === "latest") {
+      if (!this.state.bundle || this.state.issue || this.state.updating) return;
+      this.caseEditor = newCaseEditor(this.state.bundle.matter);
+    } else this.caseEditor = null;
+    this.publish({});
+  }
+  async saveCaseDetails() {
+    const editor = this.caseEditor, matter = this.state.bundle?.matter;
+    if (!editor || !matter?.permissions.canWrite || this.busy || this.state.updating || this.state.authority !== "granted" || !["editing", "invalid"].includes(editor.phase) || editor.discard) return false;
+    if (matter.revision !== editor.revision) { this.caseEditor = { ...editor, phase: "conflict" }; this.publish({}); return false; }
+    if (Object.values(caseFieldErrors(editor.values)).some(Boolean)) { this.caseEditor = { ...editor, phase: "invalid" }; this.publish({}); return false; }
+    const patch = caseEditorPatch(editor);
+    if (!Object.keys(patch).length) { this.caseEditor = null; this.publish({ notice: "No changes to save." }); return true; }
+    const ticket = this.capture();
+    this.caseEditor = { ...editor, phase: "saving" }; this.publish({ mutationKey: "case-details", notice: "", issue: null });
+    try {
+      const payload = await this.request(`/api/dossiers/${encodeURIComponent(editor.caseId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedRevision: editor.revision, ...patch }) }, ticket);
+      if (!this.current(ticket)) return false;
+      const saved = normalizeMatterDetail(payload);
+      if (!saved || saved.id !== editor.caseId || saved.revision !== editor.revision + 1 || !matchesCasePatch(saved, patch)) throw new Error("Unconfirmed case save");
+      this.caseEditor = null; this.publish({ notice: "Case details saved. Updating case actions…" });
+      await this.load(payload);
+      if (this.current(ticket)) this.publish({ notice: this.state.issue ? "Case details saved. Refresh the case to see its latest details." : "Case details saved." });
+      return this.current(ticket);
+    } catch (error) {
+      if (this.current(ticket) && this.caseEditor) {
+        this.caseEditor = { ...editor, phase: error instanceof WorkspaceApiError && error.status === 409 ? "conflict" : error instanceof WorkspaceApiError && [400, 422].includes(error.status) ? "invalid" : "unconfirmed" };
+        this.publish({});
+        if (this.caseEditor.phase === "conflict") await this.load();
+      }
+      return false;
+    } finally { if (this.current(ticket)) this.publish({ mutationKey: null }); }
+  }
+  async checkCaseDetailsSave() {
+    const editor = this.caseEditor;
+    if (!editor || editor.phase !== "unconfirmed" || this.busy || this.state.authority !== "granted") return;
+    const ticket = this.capture();
+    this.caseEditor = { ...editor, phase: "checking" }; this.publish({ mutationKey: "case-details" });
+    try {
+      await this.verifyIdentity(ticket);
+      const payload = await this.request(`/api/dossiers/${encodeURIComponent(editor.caseId)}`, {}, ticket);
+      if (!this.current(ticket)) return;
+      const saved = normalizeMatterDetail(payload);
+      if (!saved || saved.id !== editor.caseId) throw new Error("Unverified case");
+      if (saved.revision > editor.revision && matchesCasePatch(saved, caseEditorPatch(editor))) {
+        this.caseEditor = null;
+        this.publish({ notice: "The saved case details match your edits." });
+      } else {
+        this.caseEditor = { ...editor, phase: saved.revision === editor.revision && JSON.stringify(caseFields(saved)) === JSON.stringify(editor.baseline) ? "editing" : "conflict" };
+        this.publish({ notice: this.caseEditor.phase === "editing" ? "Your edits have not been saved. You can try saving again." : "" });
+      }
+      await this.load(payload);
+    } catch { if (this.current(ticket) && this.caseEditor) { this.caseEditor = { ...editor, phase: "unconfirmed" }; this.publish({}); } }
+    finally { if (this.current(ticket)) this.publish({ mutationKey: null }); }
+  }
   practice: { plan: PracticePlan; loaded: boolean; loading: boolean; pending: Record<string, unknown> | null; issue: string } = { plan: EMPTY_PLAN, loaded: false, loading: false, pending: null, issue: "" };
   async loadPractice() {
     if (this.state.authority !== "granted" || this.practice.loading) return;
@@ -87,16 +165,19 @@ export class WorkspaceController {
   draft(key: string) { return this.draftValues.get(key); }
   clearDrafts() { this.draftValues.clear(); this.draftInitial.clear(); }
   departureRisk(): "clear" | "dirty" | "pending" {
+    if (caseEditorPending(this.caseEditor)) return "pending";
     if (this.practice.pending) return "pending";
     const reviews = [...this.reviews.values()].map(review => review.getSnapshot());
     if (this.busy || this.notebook?.pending || reviews.some(s => s.operation && !s.receipt && !["validation", "conflict", "resource_denied", "case_denied"].includes(s.phase))) return "pending";
-    return this.notebook?.dirty || this.draftValues.size || reviews.some(s => !s.receipt && s.draft && (s.draft.reason !== "" || s.draft.support !== "" || s.draft.status !== "completed")) ? "dirty" : "clear";
+    return caseEditorDirty(this.caseEditor) || this.notebook?.dirty || this.draftValues.size || reviews.some(s => !s.receipt && s.draft && (s.draft.reason !== "" || s.draft.support !== "" || s.draft.status !== "completed")) ? "dirty" : "clear";
   }
   reviewBeforeLeaving() {
+    if (caseEditorPending(this.caseEditor)) { this.navigate("overview"); return; }
     if(this.practice.pending){this.navigate("tasks");return;}
     if (this.notebook?.pending) { this.notebook.selectPending(); this.openNotes(); return; }
     const pending = [...this.reviews.entries()].find(([, review]) => { const s = review.getSnapshot(); return s.operation && !s.receipt; });
     if (pending) void this.openReview(pending[0].startsWith("deadline:") ? "deadline" : "citation", pending[1].scope.recordId);
+    else if (caseEditorDirty(this.caseEditor)) this.navigate("overview");
   }
   revokeAuthority() { this.denyCase(true); }
   retainedReviews() { return [...this.reviews.entries()].filter(([, review]) => Boolean(review.getSnapshot().operation || review.getSnapshot().receipt)); }
@@ -123,17 +204,18 @@ export class WorkspaceController {
     return this.notebook;
   }
   private clearReviews() { this.reviews.forEach(review => review.dispose()); this.reviews.clear(); this.reviewOrigins.clear(); }
-  dispose() { this.clearNotebook(); this.clearReviews(); this.state = { ...this.state, roster: unavailableEnrollmentRoster() }; this.active = false; this.generation++; this.authorityEpoch++; this.listeners.clear(); }
+  dispose() { this.caseEditor = null; this.clearNotebook(); this.clearReviews(); this.state = { ...this.state, roster: unavailableEnrollmentRoster() }; this.active = false; this.generation++; this.authorityEpoch++; this.listeners.clear(); }
   enterFromCatalogue(caseId: string) {
     // Check at the actual transition, after asynchronous creation/list delivery.
-    if (this.state.visit && this.state.visit.caseId !== caseId && (this.notebook?.dirty || this.notebook?.pending)) {
-      this.publish({notice:"The case list is updated. Save, discard or recover your current notes before opening another case."});
+    if (this.state.visit && this.state.visit.caseId !== caseId && (this.notebook?.dirty || this.notebook?.pending || caseEditorDirty(this.caseEditor) || caseEditorPending(this.caseEditor))) {
+      this.publish({notice:"The case list is updated. Save, discard or recover your current work before opening another case."});
       return false;
     }
     this.enter(caseId); return true;
   }
   enter(caseId: string) {
     if (this.state.visit?.caseId === caseId && this.state.authority !== "case_denied") return;
+    this.caseEditor = null;
     this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
     this.workflowTemplates={items:[],loading:false,issue:""};
     this.clearNotebook(); this.clearReviews(); this.denied.clear(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
@@ -141,6 +223,7 @@ export class WorkspaceController {
     this.publish({ roster: unavailableEnrollmentRoster(), visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
   }
   private denyCase(account = false) {
+    this.caseEditor = null;
     this.practice={plan:EMPTY_PLAN,loaded:false,loading:false,pending:null,issue:""};
     this.workflowTemplates={items:[],loading:false,issue:""};
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++; this.clearNotebook(); this.clearReviews(); this.clearDrafts(); this.denied.clear();
@@ -148,6 +231,7 @@ export class WorkspaceController {
   }
   suspendAuthority() {
     if (!this.active || this.state.authority === "session_expired") return;
+    if (this.caseEditor && ["saving", "checking"].includes(this.caseEditor.phase)) this.caseEditor = { ...this.caseEditor, phase: "unconfirmed" };
     this.practice={...this.practice,loading:false};
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     this.publish({ roster: unavailableEnrollmentRoster(), authority: "session_expired", loading: false, updating: false, targetLoading: false, targetNotice: "", mutationKey: null, notice: "", issue: null });
@@ -181,6 +265,7 @@ export class WorkspaceController {
     return enrollmentRoster(payload);
   }
   private install(bundle: WorkspaceBundle, roster: EnrollmentRoster) {
+    this.caseEditor = refreshCaseEditor(this.caseEditor, bundle.matter);
     // A broad list response cannot restore an exact record that was denied.
     if (this.denied.size) bundle = { ...bundle, complete: false,
       requests: bundle.requests.filter(r => !this.denied.has("request-" + r.id)),
@@ -222,6 +307,7 @@ export class WorkspaceController {
   setNotice(notice: string) { this.publish({ notice }); }
   setIssue(issue: ApiIssue | null) { this.publish({ issue }); }
   private resourceDenied(target: MatterActionTarget | null) {
+    this.caseEditor = null;
     // Remove all cached private sections while authority is re-established.
     // Other review operations stay memory-only; the denied form clears itself.
     if (target) this.denied.add(target.requestId ? "request-" + target.requestId : target.id);

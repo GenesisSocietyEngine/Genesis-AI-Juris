@@ -1,5 +1,8 @@
 ---
 document_type: cumulative_development_handoff
+document_status: historical_detail_superseded_by_root_progress
+current_summary: ../../current_progress.md
+summary_updated: 2026-11-06
 project: "CaseVant by Falcon-Merlin Group"
 current_release_track: casevant_first_use_operations
 current_release_pr: 87
@@ -217,6 +220,9 @@ decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_un
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
 last_updated: 2026-09-30
 ---
+
+> **Current status and retrospective (29 September–6 November 2026):** see [current_progress.md](../../current_progress.md), maintained after every implementation, verification and release milestone. The fields and detailed handoff below are preserved historical evidence; their v109-era current-release labels do not describe today's deployment.
+
 
 ## Current live checkpoint — CaseVant v109, 2026-10-05
 
