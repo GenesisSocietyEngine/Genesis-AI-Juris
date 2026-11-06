@@ -40,3 +40,9 @@ Candidate only at this checkpoint. Full CI, ordinary integration, exact-main pro
 Undated events now show Open, with a regression assertion, rather than suggesting an absent schedule. Shared command sizing also covers case creation, case commands and section buttons; actual desktop New case/Create case/Refresh/Add task measured 36px, narrow controls 44px. The source-stable local build passed before this final presentation-only correction.
 
 A fresh active synthetic tab resolved viewport targeting: Russian month calendar at actual 390 × 640 has document width 375, readable wrapping, visible focused day and working ArrowRight navigation. EN/RU Home and narrow calendar evidence are now distinct successful captures. Temporary viewport reset succeeded before closing this browser verification part. Earlier failed attempts remain recorded above as troubleshooting history.
+
+### CI contract correction
+
+The first complete candidate CI build passed compilation, type checks, lint, lock checks and PDF visuals. Its full suite exposed two stale presentation expectations (old server-oriented creation copy and a navigation link assumed to contain only text). Replaced them with assertions for plain-language creation, server-owned identity, the unique selected navigation link and its exact destination. The two affected suites now pass all 17 tests; scoped ESLint passes. Application code is unchanged by this correction.
+
+The stable local production build passed. Targeted Git migration and local D1 diagnostics also pass outside the restricted executor. Interrupted broad local runs are not acceptance evidence; the complete canonical CI run remains the release gate.
