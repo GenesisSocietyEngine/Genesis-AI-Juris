@@ -1,0 +1,167 @@
+{
+  "schema": "casevant.integrated-studio-release.v1",
+  "recordedAt": "2026-11-06T20:18:44.966Z",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+  "candidateCommit": "eed00cc1054c50f1b796d8ebe9390b8630d0f5ae",
+  "pullRequest": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/241",
+  "candidateCI": 42282945669,
+  "mainCI": 42284159371,
+  "artifact": {
+    "id": 13537302042,
+    "sha256": "fd9beb1e71b5dbfd822a03edfb458930bd3b9ade1b4123bac6d8b893d5657421"
+  },
+  "ci": {
+    "tests": 1978,
+    "passed": 1975,
+    "failed": 0,
+    "skipped": 3,
+    "htmlTests": 2,
+    "pdfVisual": "passed, unchanged baselines"
+  },
+  "bindings": {
+    "d1": "DB",
+    "r2": "DOSSIER_DOCUMENTS"
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_adced3e5322881918c3cbdf24666a20c",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 189,
+    "source": {
+      "commit_sha": "32b02a03f9cd44529c309a35ffe180250e8bd973"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000f7708210b21460c3590d9b09",
+      "content_hash": "sha256:39528f4cf49c8b2840846a7480f8b9ac944030c15cf3cfa9fa34ddea92df5d04",
+      "size_bytes": 53616640,
+      "file_count": 635
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aee34cfea348191af6f0967bd573cb1",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_adced3e5322881918c3cbdf24666a20c",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T20:13:27.345872+00:00"
+  },
+  "environment": {
+    "before": 42,
+    "after": 42,
+    "entryCount": 13,
+    "returnedRepresentationsUnchanged": true
+  },
+  "access": {
+    "before": "public",
+    "after": "public",
+    "revisionBefore": 2,
+    "revisionAfter": 2
+  },
+  "browser": {
+    "summary": "Fresh authenticated production checks confirm Home → Case overview → the adjacent AI Studio tab in the same browser tab, visible prompt/indicators/canvas, Sources → Workbench prompt retention, EN/RU switching and the unsaved-departure Stay action. Only isolated synthetic unsaved input was used, then discarded. The live full-page English screenshot is saved. The requested production 390×720 override remained at 1280 CSS px and is not counted as mobile acceptance; local EN/RU 390×720 checks passed. No authenticated save or AI provider execution was performed.",
+    "screenshot": "casevant-studio-live.png",
+    "liveAuthenticated": true,
+    "savedRecordWrites": 0,
+    "providerRequests": 0,
+    "localNarrow": {
+      "width": 390,
+      "height": 720,
+      "documentWidth": 375,
+      "passed": true
+    },
+    "liveNarrow": {
+      "requestedWidth": 390,
+      "observedWidth": 1280,
+      "verified": false
+    }
+  },
+  "nativeSummary": "Rust, Android and Flutter pass; iOS Native FFI and iOS Tax Application remain in progress",
+  "workerLogSample": [
+    {
+      "timestamp": 1793996071563,
+      "path": "/api/work",
+      "level": "info",
+      "outcome": "canceled"
+    },
+    {
+      "timestamp": 1793996071523,
+      "path": "/api/work",
+      "level": "info",
+      "outcome": "canceled"
+    }
+  ],
+  "workerLogInterpretation": "The five-minute filtered sample returned two canceled /api/work invocations at info level; no exception was returned. This sample does not establish the cause of cancellation or complete console cleanliness.",
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+    "tree": "acf30917a09adb34962e5f4e993b099ab38f02b0",
+    "applicationInputsSha256": "9bb749be5121fe9663c2c54ad0bd08ba7ab329f70e57a7916d17fb0a994ee004",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 637,
+    "nodeVersion": "v22.23.2"
+  },
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "passed": true,
+      "assets": 205,
+      "verified": 205,
+      "expectedBuild": {
+        "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "previousSourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "applicationInputsSha256": "9bb749be5121fe9663c2c54ad0bd08ba7ab329f70e57a7916d17fb0a994ee004",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 145,
+        "retainedPreviousAssetCount": 60
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "passed": true,
+      "assets": 205,
+      "verified": 205,
+      "expectedBuild": {
+        "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "previousSourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "applicationInputsSha256": "9bb749be5121fe9663c2c54ad0bd08ba7ab329f70e57a7916d17fb0a994ee004",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 145,
+        "retainedPreviousAssetCount": 60
+      }
+    }
+  ],
+  "liveIdentities": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "applicationInputsSha256": "9bb749be5121fe9663c2c54ad0bd08ba7ab329f70e57a7916d17fb0a994ee004",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "applicationInputsSha256": "9bb749be5121fe9663c2c54ad0bd08ba7ab329f70e57a7916d17fb0a994ee004",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    }
+  ]
+}
