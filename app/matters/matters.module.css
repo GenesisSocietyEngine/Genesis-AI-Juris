@@ -111,3 +111,11 @@
 .casePickerBody .matterList{display:block}.matterCard,.matterCardActive{border-radius:0;margin:0;border:0;border-bottom:1px solid var(--rule);padding:12px}.matterCard>strong,.matterCardActive>strong{font-size:14px}.casePickerBody .catalogueTools{grid-template-columns:minmax(0,1fr)}
 @media(min-width:1200px){.workspaceLayout{grid-template-columns:280px minmax(0,1fr);align-items:start}.catalogue{margin:0;border:0;border-right:1px solid var(--rule);border-radius:0;position:sticky;top:0;height:100vh;overflow:auto}.catalogue:not([open])>.casePickerBody{display:block}.casePickerBody{padding:12px;max-height:none}.casePickerBody .catalogueHeading h1{font-size:20px}.catalogueLead{font-size:12px}.casePickerSummary{font-weight:600}.casePickerSummary::after{display:none}}
 @media(min-width:1200px){.workspaceLayout:has(.catalogue:not([open])){grid-template-columns:minmax(0,1fr)}.catalogue:not([open]){position:static;height:auto;border-bottom:1px solid var(--rule)}.catalogue:not([open])>.casePickerBody{display:none}.casePickerSummary::after{display:block}}
+
+/* Decision maps: compact register above the two user tasks, never a tall empty column. */
+.decisionLayout{display:grid;gap:20px;min-width:0}
+.decisionActions{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
+.decisionActions>.panelHeading{grid-column:1/-1;margin-bottom:0}
+.decisionActions>div,.decisionActions>form{min-width:0}
+.decisionActions .actionForm{margin-top:18px}
+@media(max-width:900px){.decisionActions{grid-template-columns:minmax(0,1fr)}}

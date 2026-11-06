@@ -54,3 +54,7 @@ The UI direction is now Outlook-style: compact navigation and command bars, cont
 ## Fresh MyCase study and next execution plan
 
 The [6 November re-study and prioritized implementation plan](MYCASE_RESTUDY_20261106.md) supersedes earlier future-work lists where those features have now been implemented. Retain the Outlook-style list/reading-pane direction. The next bounded slice is task due-date triage and navigable Day/Week/Month agendas; visual time grids, workflow rebasing, standalone/private work and external notification delivery remain separately scoped follow-ons.
+
+## Decision-map entry requirement — 6 November 2026
+
+Ordinary case workflows must not ask users to invent package IDs, version fingerprints, graph proposal IDs or simulation receipt IDs. Offer named published-map selection with the exact tuple supplied automatically, and an explicit AI Case Studio entry for draft work. Technical reference linking is an advanced disclosure; all server verification remains mandatory. Evidence snapshots preserve report inputs and must never be described as creating a decision map. See `docs/testing/decision-map-entry-2026-11-06.md` for the current correction and verification boundary. Continue the requested Home, task/calendar, separate case/firm Library, Templates/Demo relocation and neat case editor work independently, using live MyCase browser exploration as the reference and retaining AI workflows and case outcome reports.
