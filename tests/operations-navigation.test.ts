@@ -17,7 +17,7 @@ test("both Studio shells retain public routes and operation actions without inve
     assert.match(markup, /aria-current="page"[^>]*>.*?(AI Studio|ИИ Студия)/);
     for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
     for (const route of ["/templates", "/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
-    assert.ok(markup.includes(`href="/studio?studio_panel=workbench&amp;organization=org_example&amp;lang=${locale}"`));
+    assert.match(markup, /<button type="button" class="casevant-primary-link" aria-current="page">[\s\S]*?<span>(AI Studio|ИИ Студия)<\/span><\/button>/, "the active Studio returns locally without reloading its working case");
     assert.ok(markup.includes(locale === "en" ? "Sign in" : "Войти"));
     assert.doesNotMatch(markup, /Manage organizations|Users &amp; access|Sign out/);
     assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");
@@ -30,6 +30,7 @@ test("both Studio shells retain public routes and operation actions without inve
     }));
     assert.ok(training.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
     assert.ok(training.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));
+    assert.ok(training.includes(`href="/studio?studio_panel=workbench&amp;lang=${locale}"`), "other views retain the ordinary guarded Studio link");
   }
 });
 
