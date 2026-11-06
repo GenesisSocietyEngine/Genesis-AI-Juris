@@ -2,6 +2,18 @@
 
 The user requests five complete comparison, amendment, test, publication and post-publication audit cycles. v181 is the starting production baseline, not one of these five cycles. Preserve the Outlook-style navigation, compact commands, contiguous lists and reading panes. Do not copy vendor assets or represent unimplemented integrations as working features.
 
+**Completed 6 November 2026:** all five core-operation cycles are published and audited, through public v186. [Evidence and receipts](../testing/MYCASE_FIVE_CYCLES_REVIEW.md), [working guide](CASEVANT_FIRM_WORK_GUIDE.md), [CaseVant Line icon rules](CASEVANT_LINE_ICONS.md). Broader feature gaps and acceptance requirements below remain open; completion of five cycles is not full MyCase parity.
+
+| Cycle | Published change | Live version | Exact-main web/PDF gate |
+| --- | --- | --- | --- |
+| 1 | Due scopes, priority sorting, navigable agenda | v182 | 42142501452 passed |
+| 2 | Original 34-symbol icon family and keyboard-accessible month grid | v183 | 42145703468 passed |
+| 3 | Cross-case participant directory with exact identities | v184 | 42147257309 passed |
+| 4 | Applied workflow source/anchor, completion and generated-work retrieval | v185 | 42149398518 passed |
+| 5 | Case next task/event and attention counts | v186 | 42151245158 passed |
+
+Final runtime: `14f6f128cae758981d97bf600f7cc3cd85f56eba`. Both origins report that source and verify 197/197 current/retained client assets. Public access revision 2, environment revision 42/all 13 returned representations and DB/DOSSIER_DOCUMENTS bindings are unchanged. No production case record was written during these five live audits.
+
 ## Evidence
 
 Signed-in, read-only MyCase inspection covered cases, tasks/detail panels, date filters, Month/Week calendar and view menu, unsaved event/reminder form, applied workflows, contacts, report categories and document/communication/billing navigation. Returned the reference to Cases without saving records. Visible navigation establishes feature presence, not verified backend behaviour. Reference: https://maxima-consult.mycase.com/court_cases, /events, /tasks, /contacts/clients and /reporting/dashboard.
@@ -10,14 +22,14 @@ CaseVant v181 production loads authenticated firm Tasks, Calendar and Workflow t
 
 ## Feature coverage and implementation requirements
 
-| Capability | MyCase reference | CaseVant baseline and required acceptance |
+| Capability | MyCase reference | Current CaseVant coverage and remaining acceptance |
 | --- | --- | --- |
-| Case register and workspace | Case number/stage/owner, next task/event, status updates | Existing cases, access and history retained. Add next-work retrieval from actual authorized records; no predicted deadlines. |
-| Tasks | Due scopes, priorities, assignees, subtasks, detail pane | CRUD/checklists/assignment/finite recurrence exist. Cycle 1 adds triage and priority sorting. Verify stale selection, unassigned and completed work. |
-| Calendar | Day/Week/Month/Agenda/Staff, navigation | Zoned events and cross-day agenda exist. Cycle 1 adds ranges; later cycle adds a visual month with an accessible agenda alternative. Never infer a statutory date. |
+| Case register and workspace | Case number/stage/owner, next task/event, status updates | Existing cases, access and history retained. Cycle 5 delivers next-work retrieval from actual authorized records; no predicted deadlines. |
+| Tasks | Due scopes, priorities, assignees, subtasks, detail pane | CRUD/checklists/assignment/finite recurrence exist. Cycle 1 delivers triage and priority sorting, with stale-selection, unassigned and completed-work acceptance. |
+| Calendar | Day/Week/Month/Agenda/Staff, navigation | Zoned events and cross-day agenda exist. Cycle 1 delivers ranges; cycle 2 delivers a visual month with an accessible agenda alternative. Never infer a statutory date. |
 | Reminders | Recipient/channel/offset controls | Shared in-app reminders only. Email/push/external calendar sync remain missing integrations; require delivery receipts, retry/deduplication and recipient authority before being called supported. |
-| Workflows | Named anchors and generated task/event inspection | Versioned templates and explicit preview/apply exist. Add grouped application inspection, immutable source identity and progress. Multi-anchor rebasing remains a separately specified conflict workflow. |
-| Contacts | People/companies, groups, linked cases, archive/import | Case participants exist. Add an authorized cross-case participant directory; do not equate it with a complete standalone CRM or merge people by display name. Standalone contacts/import require an additive model and duplicate review. |
+| Workflows | Named anchors and generated task/event inspection | Versioned templates and explicit preview/apply exist. Cycle 4 delivers grouped application inspection and recorded progress, preserving source identity. Multi-anchor rebasing remains a separately specified conflict workflow. |
+| Contacts | People/companies, groups, linked cases, archive/import | Cycle 3 delivers an authorized cross-case participant directory; it is not a complete standalone CRM and never merges people by display name. Standalone contacts/import require an additive model and duplicate review. |
 | Documents | Case/firm documents, templates, signatures, intake | Existing case uploads, evidence links, requests and source review retained. Firm library, signatures and intake forms are gaps requiring their own durable models and provider acceptance. |
 | Communications | Email, messages, call log, text, comments | Existing case collaboration/history is not mailbox/SMS delivery. Track those as gaps, with explicit recipient review, delivery status and consent requirements. |
 | Billing/payments/accounting | Time, expenses, invoice drafts, trust reports, payment plans | Not implemented as practice accounting. Never present hypothetical case amounts or tax calculations as invoices, a ledger or trust accounting. Requires independent currency/tax/audit/permission design and payment-provider acceptance. |

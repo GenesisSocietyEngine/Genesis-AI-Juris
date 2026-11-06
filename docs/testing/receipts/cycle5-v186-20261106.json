@@ -1,0 +1,78 @@
+{
+  "cycle": 5,
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_19325e5f7d688191a5898d822a8075cd",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 186,
+    "source": {
+      "commit_sha": "14f6f128cae758981d97bf600f7cc3cd85f56eba"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000005a4c81f4bd21c4b6d0a0fa9f",
+      "content_hash": "sha256:35e68b1be20839c802bed9fd7955895f4954af98a8f54f832576f8881ade5556",
+      "size_bytes": 53422080,
+      "file_count": 624
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed3fbde1d88191a1ad012b4fdd98ad",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_19325e5f7d688191a5898d822a8075cd",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T02:47:47.452091+00:00"
+  },
+  "source": "14f6f128cae758981d97bf600f7cc3cd85f56eba",
+  "candidateCI": 42150032112,
+  "mainCI": 42151245158,
+  "additionalCandidateRun": {
+    "id": 42150073014,
+    "attempt1": "Chrome startup timed out before DevToolsActivePort; failure logs retained",
+    "attempt2": "success"
+  },
+  "testTotals": {
+    "tests": 1963,
+    "passed": 1960,
+    "failed": 0,
+    "skipped": 3,
+    "html": 2
+  },
+  "verifiedInputs": 625,
+  "applicationInputsSha256": "846cc35ddbd06b72032bc03f5d644a4179f6a44454467a1d2b20a615a13d29a0",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "assets": {
+    "current": 143,
+    "retained": 54,
+    "verifiedPerOrigin": 197,
+    "origins": [
+      "https://casevant.pro",
+      "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+    ],
+    "identityVerifiedBoth": true
+  },
+  "configuration": {
+    "environmentRevision": 42,
+    "returnedEntriesUnchanged": 13,
+    "publicAccessRevision": 2,
+    "bindings": [
+      "DB",
+      "DOSSIER_DOCUMENTS"
+    ]
+  },
+  "liveAudit": "Authenticated Case overview: one accessible empty case, correct zero counts and exact case/work destinations; attention scope excludes case and removes selected detail; reset restores row. Desktop screenshot retained. Populated next-work, timezone boundary and RU390 evidence is synthetic.",
+  "limitations": [
+    "No production case writes or AI-provider execution in these audits",
+    "No full MyCase CRM/billing/client-portal/integration parity",
+    "Separate iOS jobs were still queued/running at the last check"
+  ]
+}

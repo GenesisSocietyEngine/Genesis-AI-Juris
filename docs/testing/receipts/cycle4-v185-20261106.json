@@ -1,0 +1,56 @@
+{
+  "cycle": 4,
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_d52eabda069881919c1add929b939a15",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 185,
+    "source": {
+      "commit_sha": "d82006a9eb4ef5d6fb9825133afbbccd2ba0bc7d"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000ec5c8210b9a19e2b48e6f977",
+      "content_hash": "sha256:d0b8c966794750a75e997cc6219cce69dc0470e672883b799b39fc9677c4515b",
+      "size_bytes": 53391360,
+      "file_count": 623
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed3b2524508191aaf3a50acb48ef6b",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_d52eabda069881919c1add929b939a15",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T02:28:11.478474+00:00"
+  },
+  "source": "d82006a9eb4ef5d6fb9825133afbbccd2ba0bc7d",
+  "candidateCI": 42148119973,
+  "mainCI": 42149398518,
+  "testTotals": {
+    "tests": 1960,
+    "passed": 1957,
+    "failed": 0,
+    "skipped": 3,
+    "html": 2
+  },
+  "verifiedInputs": 623,
+  "assets": {
+    "current": 143,
+    "retained": 53,
+    "verified": 196
+  },
+  "liveAudit": "Authenticated Workflows tab, search, status selection and clear/reset verified in an authorized empty-work case. Populated generated-work/version/anchor and Russian 390px evidence is synthetic.",
+  "limitations": [
+    "No production records changed or AI provider invoked",
+    "Recorded workflow completion is not an outcome prediction"
+  ]
+}
