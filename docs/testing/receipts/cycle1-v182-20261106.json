@@ -1,0 +1,49 @@
+{
+  "cycle": 1,
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5485641f70dc81918ad52a711f5e46e7",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 182,
+    "source": {
+      "commit_sha": "31b8cf4c4dadc03e9b3d7c1a347e2f18c0686c44"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000002688824391e9b80864d069fb",
+      "content_hash": "sha256:f253f6e6d64d687edc12b6422b23cfba337376b988566fd05b6ac4e84907ec4f",
+      "size_bytes": 53340160,
+      "file_count": 624
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aed2ccd5e20819187527bb644f5e273",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_5485641f70dc81918ad52a711f5e46e7",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T01:26:59.069019+00:00"
+  },
+  "ci": {
+    "candidate": 42141243615,
+    "exactMain": 42142501452,
+    "conclusion": "success"
+  },
+  "verifiedInputs": 616,
+  "production": {
+    "origin": "https://casevant.pro",
+    "identityVerified": true,
+    "assetsVerified": 198,
+    "current": 143,
+    "retained": 55
+  },
+  "audit": "Authenticated read-only Chrome: overdue filter selection and reset, week navigation Nov 2–8 to Nov 9–15 and Today return pass. Empty authorized work state; populated behaviour covered by synthetic browser. No production records written."
+}

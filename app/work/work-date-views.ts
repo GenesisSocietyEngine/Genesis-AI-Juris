@@ -16,6 +16,11 @@ export function moveAgenda(anchor:string,period:AgendaPeriod,direction:-1|1){
   const date=new Date(anchor+"T00:00:00Z");date.setUTCDate(1);date.setUTCMonth(date.getUTCMonth()+direction);return dateString(date);
 }
 export function inAgenda(date:string,range:{start:string;end:string}){return date>=range.start&&date<=range.end;}
+export function monthDates(anchor:string){
+  const month=agendaRange(anchor,"month");
+  const start=agendaRange(month.start,"week").start;
+  return Array.from({length:42},(_,index)=>{const date=shiftDate(start,index);return {date,inMonth:inAgenda(date,month)};});
+}
 export function matchesDue(item:{status:string;dueDate:string|null;timing?:EventTiming|null},scope:DueScope,today:string,zone:string){
   const date=calendarDate(item,zone);
   if(scope==="all")return true;
