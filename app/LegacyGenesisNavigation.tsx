@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkspaceIcon } from "./CaseVantIcon";
 import { useStudioActionsNavigation } from "./StudioActionsNavigation";
 import { pendingSignOutMessage } from "./session-boundary";
 
@@ -19,28 +20,7 @@ export const WORKSPACE_PAGES = [
   { path: "/studio?view=play", view: "play", en: "Simulations", ru: "Симуляции", icon: "tasks" },
 ] as const;
 
-export function WorkspaceIcon({ name }: { name: string }) {
-  const paths: Record<string, ReactNode> = {
-    reminder: <><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4"/></>,
-    calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18M7 15h2m4 0h2m-8 3h2"/></>,
-    flow: <><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5 17v-5h14v5"/></>,
-    report: <><path d="M4 3h12l4 4v14H4Z"/><path d="M8 17v-4m4 4V9m4 8v-6"/></>,
-    studio: <><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
-    cases: <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/>,
-    demo: <><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 8 6 4-6 4Z"/></>,
-    template: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
-    tasks: <><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M5 20h16"/></>,
-    help: <><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3v.1"/></>,
-    plus: <path d="M12 4v16M4 12h16"/>,
-    upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/></>,
-    arrow: <path d="M4 12h16m-6-6 6 6-6 6"/>,
-    organization: <><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2m4 0h2M8 11h2m4 0h2m-6 6h4v4"/></>,
-    people: <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v3"/></>,
-    account: <><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>,
-    exit: <><path d="M9 3H3v18h6m5-15 6 6-6 6m-5-6h11"/></>,
-  };
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.studio}</svg>;
-}
+export { WorkspaceIcon } from "./CaseVantIcon";
 
 export type GenesisNavigationProps = {
   locale: "en" | "ru";
