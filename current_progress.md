@@ -19,15 +19,15 @@ This is a summary of the main changes, reconstructed from canonical main's dated
 | **4–5 November** | Refreshed Help/training, Studio sidebar/actions and compact Review findings; improved Overview return and evidence attachment selection. Added the case document workspace, case-flow brief and request queue. | Connected documents, evidence and operational case work more directly, preserving approvals, historical outputs and draft continuity. [Evidence attachment audit](docs/testing/evidence-attachment-ux-audit-2026-11-04.md); canonical integrations PRs 213–228. |
 | **6 November — work suite** | Completed five MyCase-informed cycles: work triage, original icons and visual month calendar, People, applied Workflows, and case next-work overview. Corrected decision-map entry through AI Case Studio and published-map selection. | Published and audited v182–v187, with exact-source/both-origin evidence and explicit remaining module gaps. [Five-cycle ledger](docs/testing/MYCASE_FIVE_CYCLES_REVIEW.md), [comparison/next order](docs/development/MYCASE_COMPETITIVE_CYCLES.md); PRs 229–238. |
 | **6 November — Outlook UI and Studio** | Added **Home** as the normal starting screen with authorized work counts, overdue tasks, upcoming events and quick actions. Standardized Outlook-style controls, original graphical elements, color accents, reading panes and text statuses. Made **AI Studio** a primary suite destination beside Case overview; its default Workbench brings prompt, real case indicators and document-flow canvas together, with saved Workbench/pending-proposal continuity. | **Delivered public v188 and v189**. [Home/Outlook release](docs/testing/outlook-workspace-2026-11-06.md), [integrated Studio release](docs/testing/integrated-ai-studio-2026-11-06.md); PRs 239–242. |
-| **6 November — current slice** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | Implementation and verification in progress; **not yet deployed**. See current task below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
+| **6 November — current slice** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | **Delivered public v190** after exact-main CI and both-origin verification. See current task below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
 
-Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v189; the remaining roadmap and current candidate are tracked below.
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v190; the remaining roadmap is tracked below.
 
 ## Current task
 
-Refactor the case editor in the shared Outlook-style suite: consistent commands, clear statuses, technical details hidden by default. Branch `refactor/case-details-editor`; baseline canonical main `40ebc851e4318eb5d0d45cd19727dee05a5bb35e`.
+Refactor the case editor in the shared Outlook-style suite: consistent commands, clear statuses, technical details hidden by default. [PR243](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/243) is merged as `c66826d0f63062e2284036f3ff0f7902138ab250` (candidate `003370a6512cf0d09719fcdc3666a61ebb82b838`). The merged runtime is verified and live as v190.
 
-## Implemented, awaiting integration and release
+## Delivered in the current release
 
 - Prominent Edit case command and focused bilingual form for supported name, jurisdictions, priority and confidentiality; read-only reference/type/owner context.
 - Save & close, guarded Cancel/Discard, draft retention across sections, distinct saving/conflict/unconfirmed states.
@@ -41,14 +41,14 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 - TypeScript and scoped lint passed with zero errors/warnings. No dependency changes.
 - Real-browser synthetic preview passed: entry/return focus, section-switch retention, Cancel/Keep editing/Discard, single-write Save, concurrent-change comparison, lost-response readback and read-only protection.
 - Actual 390×640 Russian/long-text checks passed with no horizontal overflow. Commands measure 36px desktop / 44px narrow. Focus and CSS findings were corrected and retested; technical controls stay collapsed.
-- Local production build underway; final candidate/exact-main CI and publication pending.
+- Local build and candidate/exact-main web/PDF CI passed: 1,999 tests passed, 3 inherited skips, no failures, plus 2 HTML checks; unchanged PDF baselines. Both origins verify the runtime and all 198 current/retained assets.
 
 ## Production
 
-Currently public v189: runtime `32b02a03f9cd44529c309a35ffe180250e8bd973`. The editor candidate is not yet deployed. Preserve public audience, environment, D1/R2 bindings, all existing cases/drafts/reports and previous-current immutable assets.
+**Live public v190** at [CaseVant](https://casevant.pro), runtime `c66826d0f63062e2284036f3ff0f7902138ab250`. PR243 is integrated in main. Public audience, environment revision 42, D1/R2 bindings and all existing cases/drafts/reports are preserved. Signed-in production read-only acceptance passed on the existing synthetic case: preserved field values and revision 2, Edit case entry focus, disabled unchanged Save, Cancel return focus and collapsed technical details. Commands measured 36px at 1280px and 44px at actual 390px with no page overflow. Live saving/conflicts were not exercised; those flows passed in the real-component synthetic preview. The temporary viewport reset reloaded the case view; it returned to the same unchanged Overview. Rust, Android and Flutter CI passed; iOS Native FFI and iOS Tax Application remain in progress at this checkpoint, with native acceptance separate.
 
 ## Next
 
-Finish rendered acceptance and review, commit/push ordinary PR, merge through normal controls, adopt exact-main verified CI artifact, deploy through Sites and verify both origins. Update release evidence and this file.
+Maintain this progress file at each milestone. Continue the separately scoped firm Library/document storage and standalone task/calendar work, then further case metadata as required. Preserve the completed Home, AI Studio and editor flows; avoid repeating their release for documentation changes.
 
 Broader remaining modules (Library, standalone firm work, CRM, finance, portal, sync) remain separate; this task does not claim full MyCase parity. Detailed evidence: [case editor audit](docs/testing/case-editor-2026-11-06.md).

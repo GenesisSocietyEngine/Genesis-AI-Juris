@@ -1,0 +1,160 @@
+{
+  "schema": "casevant.case-editor-release.v1",
+  "recordedAt": "2026-11-06T21:34:09.533Z",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+  "candidateCommit": "003370a6512cf0d09719fcdc3666a61ebb82b838",
+  "pullRequest": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/243",
+  "candidateCI": 42292959322,
+  "mainCI": 42294604056,
+  "artifact": {
+    "id": 13541516841,
+    "sha256": "7522212451911429a1ced74d6b54d95adfa78094729a533ce48aeac4c480ed04"
+  },
+  "ci": {
+    "tests": 2002,
+    "passed": 1999,
+    "failed": 0,
+    "skipped": 3,
+    "htmlTests": 2,
+    "pdfVisual": "passed, unchanged baselines"
+  },
+  "bindings": {
+    "d1": "DB",
+    "r2": "DOSSIER_DOCUMENTS"
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_68f40bd8f1d48191b07b6406b7867cc9",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 190,
+    "source": {
+      "commit_sha": "c66826d0f63062e2284036f3ff0f7902138ab250"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000541081f4b5ccc533f7b16118",
+      "content_hash": "sha256:403069d6d7f5ea7892999e74ff04284a065df583981811339216df86aec768f3",
+      "size_bytes": 53596160,
+      "file_count": 628
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aee46b2c1f081919ddfb9bf82f0ddeb",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_68f40bd8f1d48191b07b6406b7867cc9",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T21:29:46.410139+00:00"
+  },
+  "environment": {
+    "before": 42,
+    "after": 42,
+    "entryCount": 13,
+    "returnedRepresentationsUnchanged": true
+  },
+  "access": {
+    "before": "public",
+    "after": "public",
+    "revisionBefore": 2,
+    "revisionAfter": 2
+  },
+  "browser": {
+    "summary": "Signed-in production read-only acceptance passed on the existing synthetic case: preserved field values and revision 2, Edit case entry focus, disabled unchanged Save, Cancel return focus and collapsed technical details. Commands measured 36px at 1280px and 44px at actual 390px with no page overflow. Live saving/conflicts were not exercised; those flows passed in the real-component synthetic preview. The temporary viewport reset reloaded the case view; it returned to the same unchanged Overview.",
+    "screenshot": "casevant-case-editor-live.jpg",
+    "liveAuthenticated": true,
+    "savedRecordWrites": 0,
+    "providerRequests": 0,
+    "baselineRevision": 2,
+    "observedRevision": 2,
+    "desktopButtonHeight": 36,
+    "narrowButtonHeight": 44,
+    "narrowViewportWidth": 390,
+    "horizontalOverflow": false,
+    "technicalDetailsCollapsed": true
+  },
+  "nativeSummary": "Rust, Android and Flutter CI passed; iOS Native FFI and iOS Tax Application remain in progress at this checkpoint, with native acceptance separate",
+  "workerLogCheck": {
+    "sinceMinutes": 5,
+    "errorFilteredEvents": 3,
+    "outcomes": {
+      "canceled": 3
+    },
+    "paths": [
+      "/api/work/templates",
+      "/api/work"
+    ],
+    "interpretation": "The error-filtered sample contains canceled GET requests. No exception or failing response is reported in those three events; this bounded sample is not proof of absence of all errors."
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+    "tree": "05ce5a26cb6ffc41daf3bebff3b9f08c9c9e32b0",
+    "applicationInputsSha256": "4976a8311c865f12ca7422f0464885c859c5a22aac09193368280bd3b46b576f",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 640,
+    "nodeVersion": "v22.23.2"
+  },
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "passed": true,
+      "assets": 198,
+      "verified": 198,
+      "expectedBuild": {
+        "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "previousSourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "applicationInputsSha256": "4976a8311c865f12ca7422f0464885c859c5a22aac09193368280bd3b46b576f",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 145,
+        "retainedPreviousAssetCount": 53
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "passed": true,
+      "assets": 198,
+      "verified": 198,
+      "expectedBuild": {
+        "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "previousSourceCommit": "32b02a03f9cd44529c309a35ffe180250e8bd973",
+        "applicationInputsSha256": "4976a8311c865f12ca7422f0464885c859c5a22aac09193368280bd3b46b576f",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 145,
+        "retainedPreviousAssetCount": 53
+      }
+    }
+  ],
+  "liveIdentities": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "applicationInputsSha256": "4976a8311c865f12ca7422f0464885c859c5a22aac09193368280bd3b46b576f",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "applicationInputsSha256": "4976a8311c865f12ca7422f0464885c859c5a22aac09193368280bd3b46b576f",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    }
+  ]
+}
