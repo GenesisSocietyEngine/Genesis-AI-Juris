@@ -78,8 +78,13 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .genesis-nav-children button { background: transparent; border: 0; border-radius: 7px; color: var(--workspace-muted); text-align: left; padding: .7rem .75rem; cursor: pointer; font-family: inherit; }
 .genesis-nav-children button:hover { background: #fff; color: var(--workspace-accent); }
 .genesis-nav-children a, .genesis-nav-children button { line-height: 1.5; }
-.genesis-navigation-confirm { background: #fff; }
-.genesis-navigation-confirm button:last-child { background: var(--workspace-button); color: var(--workspace-button-ink); border-color: var(--workspace-border); }
+.genesis-navigation-confirm { background: #fff; margin:auto; width:min(36rem,calc(100vw - 2rem)); max-width:calc(100vw - 2rem); max-height:calc(100dvh - 2rem); overflow:auto; }
+.genesis-navigation-confirm ul { padding-left:1.25rem; margin:0 0 1rem; }
+.genesis-navigation-confirm li+li { margin-top:.5rem; }
+.genesis-navigation-confirm button:last-child { background:#fff; color:var(--workspace-ink); border-color:var(--workspace-border); }
+.genesis-navigation-confirm button.departure-save { background:var(--workspace-accent); color:#fff; border-color:var(--workspace-accent); }
+.genesis-navigation-confirm button.departure-discard { color:var(--workspace-danger); }
+@media(max-width:640px){.genesis-navigation-confirm>div{flex-direction:column}.genesis-navigation-confirm button{width:100%;min-height:44px}}
 
 /* A compact brand opening leaves the actual create/import controls above the fold. */
 .studio-entry { padding-block: 2.5rem; }
@@ -289,6 +294,7 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 :root{--workspace-rail:#f5f5f5;--workspace-subtle:#fafafa;--workspace-border:#dedede;--workspace-accent:#0f6cbd;--workspace-accent-soft:#e8f1fa;--workspace-radius:3px;--workspace-shadow:none;--casevant-display:var(--workspace-font)}
 .genesis-navigation{gap:.7rem;padding:1rem .5rem;background:#f5f5f5}.genesis-brand{padding:.25rem .5rem .75rem;gap:.5rem}.genesis-brand b{font-size:1.3rem;letter-spacing:0}.genesis-brand img{width:32px;border-radius:0}
 .casevant-primary-link{border-radius:3px;padding:7px 10px;min-height:36px;font-weight:400}.casevant-primary-link[aria-current=page]{background:#e8f1fa;color:#0f548c;box-shadow:inset 3px 0 #0f6cbd}
+button.casevant-primary-link{width:100%;border:0;text-align:left;font-family:inherit;cursor:pointer}
 .studio-entry{padding-block:1.25rem}.casevant-entry-header{margin-bottom:1rem}.casevant-entry-header h1{font:600 26px/1.3 var(--workspace-font);letter-spacing:0}.casevant-entry-header p{font-size:14px}
 .studio-entry-start{border-radius:0;box-shadow:none}.studio-entry-intro,.studio-entry-demo{padding:1rem;border-top:0;background:white}.workspace-icon-tile{border-radius:3px}.first-case-guide{border-radius:0;background:#fafafa}
 .studio-sidebar-group .secondary-cta,.studio-workspace-navigation nav button{border-radius:3px;box-shadow:none}.studio-workspace-navigation nav button[aria-pressed=true]{background:#e8f1fa;color:#0f548c;border-color:#0f6cbd;box-shadow:inset 0 -2px #0f6cbd}

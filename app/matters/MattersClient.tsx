@@ -43,6 +43,7 @@ import {
   normalizeMatterList,
   proposalGenerationIdempotencyKey,
   readinessSummary,
+  readableMatterType,
   sentenceLabel,
   statusLabel,
   transitionConsequences,
@@ -103,6 +104,13 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const [cataloguePhase, setCataloguePhase] = useState<LoadPhase>("loading");
   const [catalogueIssue, setCatalogueIssue] = useState<ApiIssue | null>(null);
   const [view, setView] = useState<MatterView>("user");
+  const catalogueElement = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const wide = window.matchMedia("(min-width: 1200px)");
+    const update = () => { if (catalogueElement.current) catalogueElement.current.open = wide.matches || !selectedId; };
+    update(); wide.addEventListener("change", update);
+    return () => wide.removeEventListener("change", update);
+  }, [selectedId]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MatterStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -327,11 +335,11 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
 
     {state.authority === "granted" && workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
     <div className={styles.workspaceLayout}>
-      <details className={styles.catalogue} open>
+      <details ref={catalogueElement} className={styles.catalogue} open>
         <summary className={styles.casePickerSummary}><WorkspaceIcon name="cases"/><strong>Cases</strong><span>Choose or create a case</span></summary>
         <div className={styles.casePickerBody}>
         <div className={styles.catalogueHeading}>
-          <div><p className={styles.eyebrow}>CASE LIBRARY</p><h1 id="matter-catalogue-title">My cases</h1><p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
+          <div><p className={styles.eyebrow}>CASE LIBRARY</p>{workspace ? <h2 id="matter-catalogue-title">My cases</h2> : <h1 id="matter-catalogue-title">My cases</h1>}<p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
             <span aria-hidden="true">＋</span><span className={styles.srOnly}>Create a matter</span>
           </button>
@@ -353,7 +361,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           <details className={styles.advancedFilters}>
             <summary>More filters</summary>
             <div>
-              <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+              <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{readableMatterType(type)}</option>)}</select></label>
               <label className={styles.field}><span>Ownership</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">Owned and shared</option><option value="owned">Owned by me</option><option value="shared">Shared with me</option></select></label>
               <label className={styles.field}><span>Recent activity</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
             </div>
@@ -371,7 +379,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
             return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { void loadMatter(matter.id); }} aria-pressed={matter.id === selectedId}>
               <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
               <strong>{matter.title}</strong>
-              <span>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
+              <span>{readableMatterType(matter.typeLabel)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
               {view === "developer" && <>
                 <span>{matter.permissions.role === "owner" ? "Owned by me" : "Shared with me"} · {sentenceLabel(matter.permissions.role)}</span>
                 <span>Owner: {matter.ownerName} · {matter.documentCount} document{matter.documentCount === 1 ? "" : "s"}</span>
@@ -414,6 +422,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {workspacePhase === "ready" && workspace && <>
           <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => { const title=document.getElementById("matter-catalogue-title"); const picker=title?.closest("details"); if(picker)picker.open=true;title?.scrollIntoView({block:"start"}); }}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
           <MatterHero onEdit={() => { owner.openCaseEditor(); document.getElementById("case-edit-name")?.focus(); }} editing={Boolean(owner.caseEditor)} editDisabled={owner.busy || state.updating} locale={createLocale} compact={destination !== "overview" || Boolean(owner.caseEditor)} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
+          <nav className={styles.caseModeNavigation} aria-label={createText("Case workspace", "Рабочая область дела")}><button type="button" aria-current="page" onClick={() => setDestination("overview")}><WorkspaceIcon name="cases"/>{createText("Case overview", "Обзор дела")}</button><a href={workspaceDestination("/studio?studio_panel=workbench", workspaceDestination(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(workspace.matter.id)}&section=${destination}`, location))}><WorkspaceIcon name="studio"/>{createText("AI Studio", "ИИ Студия")}</a></nav>
           <SectionNavigation destination={destination} onChange={setDestination}/>
           {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>Return to the originating report →</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
           {state.collection.availability !== "current" && <p className={styles.pilotNotice} role="status">{state.updating ? "Updating case actions…" : "Showing the last verified case. Action totals and readiness are not current."} <button type="button" onClick={() => void owner.load()} disabled={state.updating}>Update case actions</button></p>}
@@ -452,13 +461,13 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
       <div className={styles.heroIdentity}>
         <p className={styles.eyebrow}>{matter.reference}</p>
         <h1>{matter.title}</h1>
-        <p>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
+        <p>{readableMatterType(matter.typeLabel)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
         <div className="cv-badges"><span className="cv-status" data-tone={caseStatusTone(matter.status)}><span className="cv-status-dot" aria-hidden="true"/>{statusLabel(matter.status)}</span><span className="cv-status" data-tone={matter.priority === "urgent" ? "overdue" : matter.priority === "high" ? "today" : "past"}>{sentenceLabel(matter.priority)} priority</span></div>
       </div>
       {matter.permissions.canWrite && <button type="button" id="case-edit-command" className={styles.secondaryButton} disabled={editDisabled} onClick={onEdit} aria-expanded={editing} aria-controls={editing ? "case-editor-title" : undefined}><WorkspaceIcon name="cases"/>{locale === "ru" ? editing ? "Продолжить редактирование" : "Редактировать дело" : editing ? "Continue editing" : "Edit case"}</button>}
     </div>
 
-    <details className={styles.caseChecks} key={compact ? "compact" : "overview"} open={!compact}>
+    <details className={styles.caseChecks} key={compact ? "compact" : "overview"}>
     <summary>Case details & checks · {statusLabel(matter.status)} · {readiness.headline}</summary>
 
     <dl className={styles.heroFacts}>

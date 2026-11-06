@@ -11,7 +11,9 @@ test("generic Studio chooses an organization case without implying a dossier or 
   const result = destination("/studio?organization=org-current&lang=ru&dossier=unrelated&custom_case=7");
   assert.equal(result.returning, false);
   assert.equal(result.url.pathname, "/matters");
-  assert.deepEqual(Object.fromEntries(result.url.searchParams), { collection: "team", organization: "org-current", lang: "ru" });
+  assert.deepEqual(Object.fromEntries(result.url.searchParams), { collection: "team", organization: "org-current", lang: "ru", studio_case: "7" });
+  assert.equal(result.url.searchParams.has("dossier"), false, "the return hint is not a governed case association");
+  assert.equal(result.url.searchParams.has("custom_case"), false, "the case list must not interpret the Studio identity as its record");
 });
 
 test("explicit originating Matter returns to its evidence, retaining opaque identity and dropping stale action targets", () => {
@@ -24,7 +26,7 @@ test("explicit originating Matter returns to its evidence, retaining opaque iden
 
 test("organization switch discards originating-case selection instead of crossing organization contexts", () => {
   const previous = "/matters?organization=org-a&dossier=matter-a&lang=en";
-  const result = destination("/studio?organization=org-b&lang=ru&return_to=" + encodeURIComponent(previous));
+  const result = destination("/studio?custom_case=7&organization=org-b&lang=ru&return_to=" + encodeURIComponent(previous));
   assert.equal(result.returning, false);
   assert.deepEqual(Object.fromEntries(result.url.searchParams), { collection: "team", organization: "org-b", lang: "ru" });
 });
