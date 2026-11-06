@@ -32,3 +32,6 @@
 .workspace input:not([type=checkbox]),.workspace select,.workspace textarea{border-radius:3px;padding:7px}
 .editor,.list,.progress{border-radius:0}.editor{padding:16px;background:#fafafa}.item{padding:10px 12px;gap:10px}.item small{margin-top:3px}.progress{padding:12px}.day{padding:8px;background:#f5f5f5;margin-bottom:0}
 @media(max-width:600px){.workspace button{min-height:44px}.editor{padding:12px}}
+.workspace button { min-height:var(--cv-command-height,36px); border-radius:var(--cv-command-radius,4px); padding:7px 11px; line-height:20px; }
+.workspace input:not([type=checkbox]),.workspace select { min-height:var(--cv-command-height,36px); }
+.workspace .actions { align-items:center; }

@@ -9,6 +9,9 @@ import SchedulingFields, { schedulingIssue } from "./SchedulingFields";
 import { calendarDate, calendarDays, scheduleLabel, reminderDue, type Recurrence } from "./practice-scheduling";
 import { useWorkClock } from "./use-work-clock";
 import styles from "./practice.module.css";
+import StatusBadge from "../StatusBadge";
+import { workState, workStateLabel } from "../work/work-presentation";
+import { localAt } from "./practice-scheduling";
 const blank = (): Omit<PracticeItem,"id"|"workflow"|"workflowTitle"|"series"> => ({kind:"task",title:"",description:"",dueDate:null,assignee:null,priority:"normal",status:"open",checklist:[]});
 export default function PracticeWorkspace({owner,mode}:{owner:WorkspaceController;mode:"tasks"|"calendar"|"workflows"}) {
   const snapshot=useSyncExternalStore(owner.subscribe,owner.getSnapshot,owner.getSnapshot);
@@ -24,6 +27,12 @@ export default function PracticeWorkspace({owner,mode}:{owner:WorkspaceControlle
   const [anchor,setAnchor]=useWorkspaceDraft("practice-anchor","");
   const [assignee,setAssignee]=useWorkspaceDraft("practice-assignee","");
   useEffect(()=>{void owner.loadPractice();void owner.loadWorkflowTemplates();},[owner]);
+  useEffect(()=>{
+    const url=new URL(window.location.href), action=url.searchParams.get("workAction");
+    if (snapshot.authority!=="granted" || !owner.practice.loaded || !snapshot.bundle?.matter.permissions.canWrite || editor || owner.busy || owner.practice.pending || !((action==="task"&&mode==="tasks")||(action==="event"&&mode==="calendar"))) return;
+    setEditor(JSON.stringify({revision:owner.practice.plan.revision,item:{...blank(),kind:action}}));
+    url.searchParams.delete("workAction");window.history.replaceState(window.history.state,"",url);
+  },[owner,snapshot,editor,mode,setEditor]);
   const configured=owner.workflowTemplates.items.find(t=>t.id===template);
   const workflowKey=`${template}${configured?`@${configured.version}`:""}:${anchor}`;
   const practice=owner.practice, matter=snapshot.bundle?.matter;
@@ -40,7 +49,7 @@ export default function PracticeWorkspace({owner,mode}:{owner:WorkspaceControlle
   try {if(anchor)preview=workflowPreview(template,anchor,configured);}catch{/* Invalid input remains editable. */}
   const save=async()=>{if(!draft)return; if(await owner.savePractice({action:draft.id?"update":draft.recurrence?"create_series":"create",...(draft.recurrence?{recurrence:draft.recurrence}:{}),expectedRevision:draft.revision,...(draft.id?{id:draft.id}:{}),item:draft.item})){setEditor("");requestAnimationFrame(()=>heading.current?.focus());}};
   const itemCard=(item:PracticeItem)=><li key={item.id} className={styles.item}>
-    <WorkspaceIcon name={item.kind==="event"?"calendar":"tasks"}/><div><strong>{item.title}</strong><small>{scheduleLabel(item,displayZone)||t("No date","Без даты")} · {item.kind==="event"?(item.timing?t("Timed event","Событие со временем"):t("All-day event","Событие на весь день")):t("Task","Задача")} · {item.status==="completed"?t("Completed","Завершено"):t("Open","Открыто")}</small><small>{people.find(p=>p.id===item.assignee)?.displayName??(item.assignee?t("Former participant","Бывший участник"):t("Unassigned","Не назначено"))} · {item.priority==="high"?t("High","Высокий"):item.priority==="low"?t("Low","Низкий"):t("Normal","Обычный")}{item.checklist.length?` · ${item.checklist.filter(c=>c.done).length}/${item.checklist.length} ${t("checklist","пунктов")}`:""}</small>{item.series&&<small>{t("Recurring task","Повторяемая задача")} {item.series.index}/{item.series.count} · {t("Edit this occurrence only","Изменяется только это повторение")}</small>}{item.reminder&&<small>{t("Reminder","Напоминание")}: {item.reminder.local.replace("T"," ")} ({item.reminder.timeZone}) · {item.reminder.state}</small>}{item.description&&<p>{item.description}</p>}{item.workflow&&<small>{t("From workflow","Из процесса")}: {item.workflowTitle??practiceWorkflowLabel(item.workflow,locale)}</small>}</div>
+    <WorkspaceIcon name={item.kind==="event"?"calendar":"tasks"}/><div><strong>{item.title}</strong><div className="cv-badges"><StatusBadge tone={workState(item,now===null?"":localAt(now,displayZone).slice(0,10),displayZone)}>{workStateLabel(workState(item,now===null?"":localAt(now,displayZone).slice(0,10),displayZone),locale)}</StatusBadge>{item.priority==="high"&&<StatusBadge tone="overdue">{t("High priority","Высокий приоритет")}</StatusBadge>}</div><small>{scheduleLabel(item,displayZone)||t("No date","Без даты")} · {item.kind==="event"?(item.timing?t("Timed event","Событие со временем"):t("All-day event","Событие на весь день")):t("Task","Задача")} · {item.status==="completed"?t("Completed","Завершено"):t("Open","Открыто")}</small><small>{people.find(p=>p.id===item.assignee)?.displayName??(item.assignee?t("Former participant","Бывший участник"):t("Unassigned","Не назначено"))} · {item.priority==="high"?t("High","Высокий"):item.priority==="low"?t("Low","Низкий"):t("Normal","Обычный")}{item.checklist.length?` · ${item.checklist.filter(c=>c.done).length}/${item.checklist.length} ${t("checklist","пунктов")}`:""}</small>{item.series&&<small>{t("Recurring task","Повторяемая задача")} {item.series.index}/{item.series.count} · {t("Edit this occurrence only","Изменяется только это повторение")}</small>}{item.reminder&&<small>{t("Reminder","Напоминание")}: {item.reminder.local.replace("T"," ")} ({item.reminder.timeZone}) · {item.reminder.state}</small>}{item.description&&<p>{item.description}</p>}{item.workflow&&<small>{t("From workflow","Из процесса")}: {item.workflowTitle??practiceWorkflowLabel(item.workflow,locale)}</small>}</div>
     {canWrite&&<button type="button" disabled={disabled||Boolean(editor)} onClick={()=>start(item)} aria-label={`${t("Edit","Изменить")}: ${item.title}`}><WorkspaceIcon name="edit"/>{t("Edit","Изменить")}</button>}
   </li>;
   return <section className={styles.workspace} aria-label={t("Case work","Работа по делу")}>

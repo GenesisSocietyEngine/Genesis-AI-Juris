@@ -12,12 +12,19 @@ import type { DepartureRisk, DeparturePlan } from "./navigation-controller";
 import { organizationDisplayLabel } from "./organization-label";
 
 export const WORKSPACE_PAGES = [
-  { path: "/matters", view: "matters", en: "My cases", ru: "Мои кейсы", icon: "cases" },
-  { path: "/work", view: "work", en: "Firm work", ru: "Работа организации", icon: "calendar" },
-  { path: "/studio", view: "studio", en: "AI Case Studio", ru: "ИИ Студия кейсов", icon: "flow" },
-  { path: "/studio?view=demos", view: "demos", en: "Demo", ru: "Демо", icon: "demo" },
-  { path: "/templates", view: "templates", en: "Templates", ru: "Шаблоны", icon: "template" },
-  { path: "/studio?view=play", view: "play", en: "Simulations", ru: "Симуляции", icon: "tasks" },
+  { path: "/work?view=home", view: "home", en: "Home", ru: "Главная", icon: "home" },
+  { path: "/work?view=calendar", view: "calendar", en: "Calendar", ru: "Календарь", icon: "calendar" },
+  { path: "/work?view=tasks", view: "tasks", en: "Tasks", ru: "Задачи", icon: "tasks" },
+  { path: "/matters", view: "matters", en: "Cases", ru: "Дела", icon: "cases" },
+  { path: "/work?view=people", view: "people", en: "People", ru: "Участники", icon: "people" },
+  { path: "/work?view=workflows", view: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
+] as const;
+const SECONDARY_PAGES = [
+  {path:"/studio",view:"studio",en:"AI Case Studio",ru:"ИИ Студия кейсов",icon:"flow"},
+  {path:"/studio?view=community",view:"community",en:"Saved Studio drafts",ru:"Черновики Studio",icon:"document"},
+  {path:"/studio?view=demos",view:"demos",en:"Demo",ru:"Демо",icon:"demo"},
+  {path:"/templates",view:"templates",en:"Templates",ru:"Шаблоны",icon:"template"},
+  {path:"/studio?view=play",view:"play",en:"Simulations",ru:"Симуляции",icon:"tasks"},
 ] as const;
 
 export { WorkspaceIcon } from "./CaseVantIcon";
@@ -99,7 +106,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }, []);
   function follow(event: MouseEvent<HTMLAnchorElement>, view: string) {
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    if (!onNavigate || ["matters", "work"].includes(view)) { guardedLink(event);return; }
+    if (!onNavigate || ["matters", "work", "home", "calendar", "tasks", "people", "workflows"].includes(view)) { guardedLink(event);return; }
     if(event.defaultPrevented)return;
     if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}
@@ -110,9 +117,18 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
       {WORKSPACE_PAGES.map(item => {
-        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos");
-        return <Fragment key={`${item.view}-${selected}`}><a className="casevant-primary-link" href={href(item.path)} aria-current={selected ? "page" : undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="matters"&&<div className="genesis-nav-children"><a href={href("/studio?view=community")} aria-current={active==="community"?"page":undefined} onClick={event=>follow(event,"community")}>{en?"Saved Studio drafts":"Черновики Studio"}</a></div>}{item.view === "play" && operationsActions}{item.view === "studio" && selected && <div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+        const isWork = active === "/work" || active === "work" || active === "/";
+        const workView = new URL(location,"https://workspace.invalid").searchParams.get("view") ?? "home";
+        const selected = isWork ? item.view === (workView === "cases" ? "home" : workView) : active === item.view || active === item.path;
+        return <a key={item.view} className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>;
       })}
+      <details className="genesis-nav-group" open={SECONDARY_PAGES.some(item=>item.view===active||item.path===active)||active==="library"||active==="/canopy"}>
+        <summary><WorkspaceIcon name="grid"/><span>{en?"Tools & library":"Инструменты и библиотека"}</span><span aria-hidden="true">⌄</span></summary>
+        <div className="genesis-nav-children">{SECONDARY_PAGES.map(item=>{
+          const selected=active===item.view||active===item.path||((active==="library"||active==="/canopy")&&item.view==="demos");
+          return <Fragment key={item.view}><a href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="play"&&operationsActions}{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+        })}</div>
+      </details>
     </nav>
     <div className="genesis-nav-lower">
       {session.phase==="ready"&&session.identity&&<nav className="genesis-nav-organization" aria-label={en?"Organization controls":"Организация"}>
@@ -149,7 +165,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     </div>
   </>;
   return <><header className="genesis-navigation">
-    <a className="genesis-brand" href={href("/studio")} onClick={(event) => follow(event, "studio")} aria-label="CaseVant — Case Studio">
+    <a className="genesis-brand" href={href("/work?view=home")} onClick={(event) => follow(event, "home")} aria-label="CaseVant — Home">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/casevant-mark.png" alt="" width="48" height="52"/>
       <span><b>CaseVant</b><small>by Falcon-Merlin Group</small></span>
