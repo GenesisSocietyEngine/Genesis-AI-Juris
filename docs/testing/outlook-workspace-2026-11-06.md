@@ -46,3 +46,18 @@ A fresh active synthetic tab resolved viewport targeting: Russian month calendar
 The first complete candidate CI build passed compilation, type checks, lint, lock checks and PDF visuals. Its full suite exposed two stale presentation expectations (old server-oriented creation copy and a navigation link assumed to contain only text). Replaced them with assertions for plain-language creation, server-owned identity, the unique selected navigation link and its exact destination. The two affected suites now pass all 17 tests; scoped ESLint passes. Application code is unchanged by this correction.
 
 The stable local production build passed. Targeted Git migration and local D1 diagnostics also pass outside the restricted executor. Interrupted broad local runs are not acceptance evidence; the complete canonical CI run remains the release gate.
+
+
+## Published v188
+
+PR239 merged normally as 5d7cc10210c561982698b640ec8fde92dab98cd3. Final candidate run 42242064464 and exact-main run 42243785992 both pass the complete web/PDF gate: 1,965 passes, three inherited skips, zero failures, plus two HTML checks. Type checks, lint, production build, packaged Rust/Worker/report tests, dependency audits and unchanged PDF baselines pass.
+
+Exact-main CI artifact 13516259397 was checksum-verified before extraction. Source/tree and all 632 release inputs match the current checkout, with pinned CI Node v22.23.2. The CI output was adopted without rebuilding or rewriting provenance. Only v187's current immutable manifest was retained: 143 current assets plus 61 previous assets, all 204 verified locally and byte-for-byte on both production origins.
+
+Sites v188 succeeded at 2026-11-06T15:48:04.776702+00:00. Both public release endpoints identify the exact merged runtime and matching application/hosting hashes. Public audience/access revision 2, environment revision 42/all 13 returned representations and DB/DOSSIER_DOCUMENTS remain unchanged. See receipts/outlook-workspace-v188-2026-11-06.json.
+
+Fresh live browser: the bare root redirects to Home; EN/RU navigation and Tools & library work; Studio renders and returns to Home. This browser is signed out. Authenticated dashboard and editing acceptance remains synthetic-component evidence, not a production-write claim. The signed-out gate works and no real record was changed. Five auth-provider Statsig warnings predate deployment; the observed live-tab sample contains no application error. The five-minute worker sample has four expected 401 session/me responses, all outcome ok, and no worker failure.
+
+Merged Rust, Android and Flutter pass. iOS Native FFI 42243785710 and iOS Tax Application 42243785610 remained in progress at 15:50 UTC; native acceptance stays separate. Owned preview servers were stopped; temporary viewport overrides were reset. Existing user tabs and MyCase records are preserved.
+
+Home, daily-work navigation and the Outlook presentation requested in this slice are delivered. Standalone firm tasks/events, Library/storage, contact CRM, billing, external synchronization, client portal and the broader case metadata editor remain separate capabilities. Do not redeploy v188 for this documentation closure.

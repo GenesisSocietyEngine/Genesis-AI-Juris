@@ -1,0 +1,184 @@
+{
+  "schema": "casevant.outlook-workspace-release.v1",
+  "recordedAt": "2026-11-06T15:55:07.155Z",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_880d1148d2ac819198bf42876c6740cd",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 188,
+    "source": {
+      "commit_sha": "5d7cc10210c561982698b640ec8fde92dab98cd3"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000c5d48246ad637bab772e88af",
+      "content_hash": "sha256:91f9f8568eb4d4d6ce6240b39f1ca4df9cfa34bf47603abb3a38d54156e6436e",
+      "size_bytes": 53616640,
+      "file_count": 632
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aedf68caddc8191a2ac3b147ba48d04",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_880d1148d2ac819198bf42876c6740cd",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T15:48:04.776702+00:00"
+  },
+  "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+  "candidateCommit": "c4b2eb3cd12e7f1224d4f0bbcd0bd2d90528c485",
+  "pullRequest": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/239",
+  "candidateCI": 42242064464,
+  "mainCI": 42243785992,
+  "artifact": {
+    "id": 13516259397,
+    "sha256": "69e47561df836a1fcc72a1fa8d792630ca9b3e18e697457b3e0f5165d38b0086"
+  },
+  "environment": {
+    "before": 42,
+    "after": 42,
+    "entryCount": 13,
+    "returnedRepresentationsUnchanged": true
+  },
+  "access": {
+    "before": "public",
+    "after": "public",
+    "revisionBefore": 2,
+    "revisionAfter": 2
+  },
+  "workerLogSample": [
+    {
+      "timestamp": 1793980195825,
+      "path": "/api/workspace-session",
+      "status": 401,
+      "outcome": "ok"
+    },
+    {
+      "timestamp": 1793980183614,
+      "path": "/api/me",
+      "status": 401,
+      "outcome": "ok"
+    },
+    {
+      "timestamp": 1793980183264,
+      "path": "/api/workspace-session",
+      "status": 401,
+      "outcome": "ok"
+    },
+    {
+      "timestamp": 1793980147053,
+      "path": "/api/workspace-session",
+      "status": 401,
+      "outcome": "ok"
+    }
+  ],
+  "ci": {
+    "tests": 1968,
+    "passed": 1965,
+    "failed": 0,
+    "skipped": 3,
+    "htmlTests": 2,
+    "pdfVisual": "passed, unchanged baselines"
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+    "tree": "4457142dbe28367b10ad08d7f9d3577955a05662",
+    "applicationInputsSha256": "a9cd10c9b0b847015c1f5f7b5333bdf7399eabb3f95a7bff9cc264f17f1ef630",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 632,
+    "nodeVersion": "v22.23.2"
+  },
+  "liveIdentities": [
+    {
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "applicationInputsSha256": "a9cd10c9b0b847015c1f5f7b5333bdf7399eabb3f95a7bff9cc264f17f1ef630",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "origin": "https://casevant.pro"
+    },
+    {
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "applicationInputsSha256": "a9cd10c9b0b847015c1f5f7b5333bdf7399eabb3f95a7bff9cc264f17f1ef630",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      },
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "passed": true,
+      "assets": 204,
+      "verified": 204,
+      "expectedBuild": {
+        "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "previousSourceCommit": "77d8b04e2d41b0f944a06259de2af634a7137ebc",
+        "applicationInputsSha256": "a9cd10c9b0b847015c1f5f7b5333bdf7399eabb3f95a7bff9cc264f17f1ef630",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 143,
+        "retainedPreviousAssetCount": 61
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "passed": true,
+      "assets": 204,
+      "verified": 204,
+      "expectedBuild": {
+        "sourceCommit": "5d7cc10210c561982698b640ec8fde92dab98cd3",
+        "previousSourceCommit": "77d8b04e2d41b0f944a06259de2af634a7137ebc",
+        "applicationInputsSha256": "a9cd10c9b0b847015c1f5f7b5333bdf7399eabb3f95a7bff9cc264f17f1ef630",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 143,
+        "retainedPreviousAssetCount": 61
+      }
+    }
+  ],
+  "bindings": {
+    "d1": "DB",
+    "r2": "DOSSIER_DOCUMENTS"
+  },
+  "browser": {
+    "live": "Signed-out root redirects to Home; EN/RU navigation, Tools & library, Studio and Home return hydrate correctly.",
+    "authenticatedProduction": false,
+    "synthetic": "Actual components with isolated adapters: Home, quick entry, filters, keyboard, draft preservation; EN/RU Home and RU calendar at 390 x 640.",
+    "savedCaseWrites": false,
+    "console": "Five auth-provider Statsig warnings predate deployment; no application errors in observed live-tab sample."
+  },
+  "native": {
+    "rust": "passed",
+    "android": "passed",
+    "flutter": "passed",
+    "iosNative": {
+      "run": 42243785710,
+      "status": "in_progress at 15:50 UTC"
+    },
+    "iosTax": {
+      "run": 42243785610,
+      "status": "in_progress at 15:50 UTC"
+    }
+  },
+  "limitations": [
+    "Authenticated production dashboard flows not exercised: current browser has no signed-in session.",
+    "No full MyCase service parity: standalone firm work, Library/storage, CRM, client portal, billing and external sync remain separate.",
+    "No claim of iOS acceptance from this web release."
+  ]
+}
