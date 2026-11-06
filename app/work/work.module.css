@@ -26,3 +26,4 @@
 @media(max-width:600px){.workspace{padding:12px}.workspace button,.workspace input,.workspace select{min-height:44px}.workRow .rowDate{flex:1}.workRow{flex-wrap:wrap}.filters{grid-template-columns:minmax(0,1fr)}.tabs button{font-size:12px;padding:8px}}
 .readingPane{scroll-margin-top:100px}.readingPane:focus{outline:2px solid #0f6cbd;outline-offset:-2px}
 @media(min-width:1001px){.readingPane{position:sticky;top:0;align-self:start;max-height:90vh;overflow:auto}.workResults{max-height:70vh;overflow:auto}}
+@media(max-width:1000px){.readingPane[data-empty=true]{display:none}.workPanes{min-height:0}}
