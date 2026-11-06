@@ -1,5 +1,7 @@
 # Product change review
 
+Keep `current_progress.md` current after implementation, verification and release milestones and at handoff, as explicitly requested by the product owner on 6 November 2026.
+
 The product owner requires review and evaluation after every step, for all future work in this repository.
 
 For CaseVant product changes, read `docs/development/CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md` for the data/workflow invariants, acceptance matrix, prioritized follow-on work and release procedure. Reverify current source and deployment rather than treating a historical audit as current acceptance.

@@ -1,0 +1,54 @@
+# Current progress — CaseVant
+
+Updated: 6 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
+
+## Retrospective summary — 29 September to 6 November 2026
+
+This is a summary of the main changes, reconstructed from canonical main's dated integration history and the linked review/release records. Dates group the work; merging code is not, by itself, evidence of production or native acceptance. Historical audit limitations remain valid unless a later record explicitly closes them.
+
+| Period | Main changes | Result and evidence |
+| --- | --- | --- |
+| **29 September** | Reconciled Genesis Juris source and preserved development history; stabilized dependency/CI checks; corrected investment tax cash flows and lifecycle ROI. Improved Account readability, organization recovery and navigation, and added an authorized organization-member picker for case enrollment. Added saved-schema diagnostics and explicit tax transport/input contracts. | Established the reviewed v103-era baseline and clearer access/recovery boundaries. [Source reconciliation](docs/testing/github-sync-2026-09-29/RECONCILIATION.md), [CI review](docs/testing/ci-stabilization-2026-09-29/REVIEW.md), [tax calculation review](docs/testing/tax-calculation-amendment-2026-09-29/REVIEW.md); PRs 55–67. |
+| **29–30 September** | Integrated tax editor/runtime work across web and native adapters, preserved tax source and aggregate data, added recovery paths and a shared tax report model. | Broadened tax editing/report integration while keeping native/iOS installation, lifecycle and parity checks separately documented. [Web preservation](docs/testing/tax-web-preservation-2026-09-30/REVIEW.md), [report integration](docs/testing/tax-report-model-2026-09-30/PDF_INTEGRATION.md), [mobile recovery](docs/testing/tax-mobile-recovery-2026-09-30/REVIEW.md); PRs 68–77. |
+| **1–6 October** | Added numbered templates, nine worked examples and demo prompts; improved Studio continuity and Account return. Rebranded Genesis Juris as **CaseVant**, introduced the CaseVant domain and updated first-use guidance, operations diagnostics, Help and training. | Established the CaseVant product identity and verified the migration through public v113. [Domain rollout](docs/testing/casevant-domain-2026-10-05.md), [migration production record](docs/testing/casevant-migration-2026-10-06/PRODUCTION.md); PRs 79–86 and the 5–6 October integration commits. |
+| **12–16 October** | Migrated and unified the case library and example entry; improved evidence navigation, planning/access and semantic amendments. Expanded provenance/source-packet exports, professional case formatting, grid/report presentation and source actions. Improved Base-report flow and Studio recovery. | Stronger separation of working copies, source material, evidence acceptance and reports. Authenticated synthetic save/reopen, stale-conflict and actual PDF/source-packet checks are documented. Added previous-current client-asset retention for open-tab compatibility. [Library audit](docs/testing/case-library-elevated-audit-2026-10-13.md), [remaining-work/export audit](docs/testing/case-library-remaining-work-audit-2026-10-14.md); PRs 93–119. |
+| **17–19 October** | Improved save feedback and receipt binding, field-commit/save timing, the professional inspector, persistent Save access, map scrolling and 10% zoom, node palette behavior and revision-source references. Refined review/connection navigation, source entry, audit/report contracts and My cases list usability. | Made editing, map navigation and saved-state feedback more predictable while retaining historical sources and reports. Canonical integrations PRs 120–148; each slice retains its review/acceptance record under `docs/testing/`. |
+| **20–24 October** | Unified Studio materials, preserved catalogue search on return, improved source/material retrieval, pagination and focus, and compacted saved-case guidance. Added release-awareness and corrected browser/native acceptance boundaries. Fixed download lifetime and updated vulnerable dependencies/framework packages. | Improved retrieval and continuity; distinguished actual file/browser evidence from fixtures and pending native checks. [Weekly quality audit](docs/testing/weekly-quality-ux-audit-2026-10-23.md); canonical integrations PRs 149–186. |
+| **27 October** | Improved material-import result feedback and adapter outcomes. | Delivered the v163-era feedback refinement with its separate release receipt; PRs 187–188. |
+| **2–3 November** | Audited product readiness and accessibility; simplified workflow guidance and compacted source, template and demo catalogues. Improved Help playback, saved-case access retry, Review → source → Return navigation, exact cited-passage reading and evidence-operation context guards. | Clearer navigation and recovery without automatically accepting evidence or merging governed edits. [Workflow audit](docs/testing/workflow-simplification-audit-2026-11-02.md), [source reading](docs/testing/s05-cited-passages-review-2026-11-03.md), [evidence context](docs/testing/s05-evidence-context-review-2026-11-03.md); PRs 189–212. |
+| **4–5 November** | Refreshed Help/training, Studio sidebar/actions and compact Review findings; improved Overview return and evidence attachment selection. Added the case document workspace, case-flow brief and request queue. | Connected documents, evidence and operational case work more directly, preserving approvals, historical outputs and draft continuity. [Evidence attachment audit](docs/testing/evidence-attachment-ux-audit-2026-11-04.md); canonical integrations PRs 213–228. |
+| **6 November — work suite** | Completed five MyCase-informed cycles: work triage, original icons and visual month calendar, People, applied Workflows, and case next-work overview. Corrected decision-map entry through AI Case Studio and published-map selection. | Published and audited v182–v187, with exact-source/both-origin evidence and explicit remaining module gaps. [Five-cycle ledger](docs/testing/MYCASE_FIVE_CYCLES_REVIEW.md), [comparison/next order](docs/development/MYCASE_COMPETITIVE_CYCLES.md); PRs 229–238. |
+| **6 November — Outlook UI and Studio** | Added **Home** as the normal starting screen with authorized work counts, overdue tasks, upcoming events and quick actions. Standardized Outlook-style controls, original graphical elements, color accents, reading panes and text statuses. Made **AI Studio** a primary suite destination beside Case overview; its default Workbench brings prompt, real case indicators and document-flow canvas together, with saved Workbench/pending-proposal continuity. | **Delivered public v188 and v189**. [Home/Outlook release](docs/testing/outlook-workspace-2026-11-06.md), [integrated Studio release](docs/testing/integrated-ai-studio-2026-11-06.md); PRs 239–242. |
+| **6 November — current slice** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | Implementation and verification in progress; **not yet deployed**. See current task below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
+
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v189; the remaining roadmap and current candidate are tracked below.
+
+## Current task
+
+Refactor the case editor in the shared Outlook-style suite: consistent commands, clear statuses, technical details hidden by default. Branch `refactor/case-details-editor`; baseline canonical main `40ebc851e4318eb5d0d45cd19727dee05a5bb35e`.
+
+## Implemented, awaiting integration and release
+
+- Prominent Edit case command and focused bilingual form for supported name, jurisdictions, priority and confidentiality; read-only reference/type/owner context.
+- Save & close, guarded Cancel/Discard, draft retention across sections, distinct saving/conflict/unconfirmed states.
+- Saves retain the edit-start revision. Concurrent changes keep the draft; uncertain saves use authorized readback before any retry. No automatic merge.
+- Metadata saves preserve unrelated workspace drafts. Case status remains a separate action. Technical controls and revision information are collapsed.
+- Fresh signed-in MyCase sample-editor review completed without changing or saving reference data.
+
+## Verification
+
+- **87 focused checks passed**, including 24 new editor/controller cases and workspace, organization, practice and saved-case continuity regressions.
+- TypeScript and scoped lint passed with zero errors/warnings. No dependency changes.
+- Real-browser synthetic preview passed: entry/return focus, section-switch retention, Cancel/Keep editing/Discard, single-write Save, concurrent-change comparison, lost-response readback and read-only protection.
+- Actual 390×640 Russian/long-text checks passed with no horizontal overflow. Commands measure 36px desktop / 44px narrow. Focus and CSS findings were corrected and retested; technical controls stay collapsed.
+- Local production build underway; final candidate/exact-main CI and publication pending.
+
+## Production
+
+Currently public v189: runtime `32b02a03f9cd44529c309a35ffe180250e8bd973`. The editor candidate is not yet deployed. Preserve public audience, environment, D1/R2 bindings, all existing cases/drafts/reports and previous-current immutable assets.
+
+## Next
+
+Finish rendered acceptance and review, commit/push ordinary PR, merge through normal controls, adopt exact-main verified CI artifact, deploy through Sites and verify both origins. Update release evidence and this file.
+
+Broader remaining modules (Library, standalone firm work, CRM, finance, portal, sync) remain separate; this task does not claim full MyCase parity. Detailed evidence: [case editor audit](docs/testing/case-editor-2026-11-06.md).
