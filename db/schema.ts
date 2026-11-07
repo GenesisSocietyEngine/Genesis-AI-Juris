@@ -15,6 +15,21 @@ export const organizationWorkflowRevisions = sqliteTable("organization_workflow_
   library: text("library").notNull(), occurredAt: text("occurred_at").notNull(),
 }, t => [uniqueIndex("workflow_revision_unique").on(t.organizationId,t.revision), uniqueIndex("workflow_operation_unique").on(t.organizationId,t.actorRef,t.operationKey)]);
 
+export const organizationWorkRevisions = sqliteTable("organization_work_revisions", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  revision: integer("revision").notNull(), actorRef: text("actor_ref").notNull(),
+  operationKey: text("operation_key").notNull(), requestDigest: text("request_digest").notNull(),
+  plan: text("plan").notNull(), occurredAt: text("occurred_at").notNull(),
+}, t => [uniqueIndex("firm_work_revision_unique").on(t.organizationId,t.revision), uniqueIndex("firm_work_operation_unique").on(t.organizationId,t.actorRef,t.operationKey)]);
+
+export const firmDocumentVersions = sqliteTable("firm_document_versions", {
+  organizationId:text("organization_id").notNull().references(()=>organizations.id),
+  documentId:text("document_id").notNull(), version:integer("version").notNull(),
+  title:text("title").notNull(),folder:text("folder").notNull(),filename:text("filename").notNull(),
+  mediaType:text("media_type").notNull(),byteLength:integer("byte_length").notNull(),contentSha256:text("content_sha256").notNull(),objectKey:text("object_key").notNull(),
+  actorRef:text("actor_ref").notNull(),operationKey:text("operation_key").notNull(),requestDigest:text("request_digest").notNull(),occurredAt:text("occurred_at").notNull(),
+},t=>[uniqueIndex("firm_document_version_unique").on(t.organizationId,t.documentId,t.version),uniqueIndex("firm_document_operation_unique").on(t.organizationId,t.actorRef,t.operationKey)]);
+
 // P1 validation workspaces. Confidential data planes still require the frozen
 // per-tenant resource manifest and are never enabled by these shared-DB rows.
 export const organizations = sqliteTable("organizations", {

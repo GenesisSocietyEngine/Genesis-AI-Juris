@@ -1,6 +1,10 @@
 # Current progress — CaseVant
 
-Updated: 6 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
+Updated: 7 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
+
+## Active — Home, Tasks, Calendar and Library
+
+Development candidate on `codex/casevant-next-major`, based on canonical main f6c685f2 (public v191 source). Live MyCase study completed in the separate Chrome window requested by the owner. Added explicit firm versus case work creation/editing, shared recurrence/reminder fields, day/week calendar views, private versioned firm documents, Library navigation for case/firm documents, Templates and Demo, and scenario testing within Studio. Existing Home, AI workflows, case editor and outcome reports are preserved. The first 32 focused checks passed, including real D1/R2 route tests. Desktop and narrow synthetic browser audit found and fixed dialog centering/checkbox sizing; keyboard cancel restores focus. Full candidate/exact-main web/PDF CI, release and production audit are still pending. [Audit](docs/testing/modules-redesign-2026-11-07.md).
 
 ## Active follow-on — UI/UX reference audit and saving clarity
 

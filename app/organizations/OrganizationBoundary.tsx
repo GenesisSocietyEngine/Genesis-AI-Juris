@@ -20,7 +20,7 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
   if (session.phase === "ready" && session.selected && retained !== session.selected) setRetained(session.selected);
   const [locale] = useInterfaceLocale();
   const location = useWorkspaceLocation();
-  const recovering = ["/matters", "/work"].includes(location.split("?")[0]) && session.phase !== "ready";
+  const recovering = ["/matters", "/work", "/library"].includes(location.split("?")[0]) && session.phase !== "ready";
   const active = session.selected ?? (recovering ? retained : null);
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   useEffect(() => {
@@ -50,6 +50,6 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
       <p id="organization-access-status" role="status">{session.signOutPending ? pendingSignOutMessage(locale) : session.phase === "checking" ? t("Checking your access…", "Проверяем доступ…") : session.profileRequired ? t("Complete your profile to open saved work.", "Заполните профиль для доступа к сохранённым делам.") : t("Choose an available organization in the sidebar, or refresh your access.", "Выберите доступную организацию в боковом меню или обновите доступ.")}</p>
       <button type="button" disabled={session.signOutPending} aria-describedby="organization-access-status" onClick={()=>void navigation.refresh(new URL(location,"https://workspace.invalid").searchParams.get("organization")??undefined)}>{t("Refresh access", "Обновить доступ")}</button>
     </main>}
-    {active && (session.phase === "ready" || ["/matters", "/work"].includes(location.split("?")[0])) && <OrganizationContext.Provider key={active.selection} value={active}>{children}</OrganizationContext.Provider>}
+    {active && (session.phase === "ready" || ["/matters", "/work", "/library"].includes(location.split("?")[0])) && <OrganizationContext.Provider key={active.selection} value={active}>{children}</OrganizationContext.Provider>}
   </>;
 }

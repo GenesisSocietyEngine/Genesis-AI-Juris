@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   // Recheck the exact grants, including the pagination lookahead, after all reads.
   const grants = ids.length ? await context.db.select({ id: dossierParticipants.id, role: dossierParticipants.role }).from(dossierParticipants).where(and(inArray(dossierParticipants.dossierId, ids), eq(dossierParticipants.userId, context.actor.userId), eq(dossierParticipants.actorId, context.actor.actorId), eq(dossierParticipants.status, "active"))) : [];
   if (rows.some(row => !grants.some(g => g.id === row.grant && g.role === row.role))) return dossierJson({ error: "Case access changed. Refresh the firm view." }, 409);
-  return dossierJson({ scope, cases: page.map(row => ({ id: row.id, title: row.title, plan: row.plan ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN,
+  return dossierJson({ scope, cases: page.map(row => ({ id: row.id, title: row.title, canWrite:["owner","contributor"].includes(row.role), plan: row.plan ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN,
     participants: people.filter(p => p.caseId === row.id).map(p => ({ id: p.id, actorId: p.actorId, name: p.name, active: p.status === "active" })) })),
     nextCursor: rows.length > 25 ? btoa(JSON.stringify({ scope, after: page.at(-1)!.id })) : null });
 }

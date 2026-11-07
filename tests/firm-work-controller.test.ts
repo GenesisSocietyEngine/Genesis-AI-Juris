@@ -36,3 +36,17 @@ test("organization denial during refresh clears template drafts and library",asy
   const stop=owner.attach();await owner.refresh();owner.edit();owner.update(fields);deny=true;await owner.refresh();
   assert.equal(h.navigation.getSnapshot().phase,"denied");assert.equal(owner.getSnapshot().draft,null);assert.equal(owner.getSnapshot().library.templates.length,0);stop();
 });
+
+test("firm tasks recover the exact original save and retain drafts across read failures",async()=>{
+ const h=firmHarness();await h.start();const stop=h.controller.attach();await h.controller.refresh();h.controller.editWork("task");const draft=h.controller.getSnapshot().workDraft!;
+ h.controller.updateWork({...draft,item:{...draft.item,title:"Firm task"}});h.loseNext();assert.equal(await h.controller.saveWork(),false);assert.equal(h.navigation.risk(),"pending");
+ h.failRead(true);await h.controller.refresh();assert.ok(h.controller.getSnapshot().workPending);assert.equal(h.controller.getSnapshot().workDraft?.item.title,"Firm task");
+ h.failRead(false);await h.controller.refresh();assert.equal(await h.controller.saveWork(),true);assert.equal(h.posts[0],h.posts[1]);assert.equal(h.controller.getSnapshot().firmPlan.items.length,1);
+ h.controller.editWork("event");h.navigation.invalidate("denied");assert.equal(h.controller.getSnapshot().workDraft,null);assert.equal(h.controller.getSnapshot().firmPlan.items.length,0);stop();
+});
+
+test("editing a reading-pane item sends only work fields and preserves workflow identity",async()=>{
+ const h=firmHarness({applications:true});await h.start();const stop=h.controller.attach();await h.controller.refresh();const item=h.cases[0].plan.items[0];
+ const row={...item,caseId:h.cases[0].id,caseTitle:h.cases[0].title};h.controller.editWork(item.kind,row.caseId,row);const draft=h.controller.getSnapshot().workDraft!;h.controller.updateWork({...draft,item:{...draft.item,title:"Updated review"}});
+ assert.equal(await h.controller.saveWork(),true);assert.equal(h.cases[0].plan.items[0].workflow,item.workflow);assert.equal(h.cases[0].plan.items[0].title,"Updated review");assert.equal(JSON.parse(h.posts[0]).item.caseId,undefined);stop();
+});
