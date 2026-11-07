@@ -1,4 +1,4 @@
-# Home, work and Library redesign â€” 7 November 2026
+# Home, work and Library redesign — 7 November 2026
 
 ## Baseline and acceptance
 
