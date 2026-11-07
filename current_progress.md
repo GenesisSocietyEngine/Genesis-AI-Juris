@@ -3,9 +3,13 @@
 Updated: 7 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
 
 
-## Active — Home, Tasks, Calendar and Library
+## Delivered - Home, Tasks, Calendar and Library (v192)
 
-Development candidate on `codex/casevant-next-major`, based on canonical main f6c685f2 (public v191 source). Live MyCase study completed in the separate Chrome window requested by the owner. Added explicit firm versus case work creation/editing, shared recurrence/reminder fields, day/week calendar views, private versioned firm documents, Library navigation for case/firm documents, Templates and Demo, and scenario testing within Studio. Existing Home, AI workflows, case editor and outcome reports are preserved. All 38 final focused checks passed, including real D1/R2 route tests. Desktop and narrow synthetic browser audit found and fixed dialog centering/checkbox sizing; keyboard cancel restores focus. Full candidate CI caught a remote-D1 trigger-format issue in the unpublished firm-document migration; corrected it and passed both migration gates after the persistence/route checks. Full CI then passed 2,020 checks with two outdated navigation assertions and three inherited skips; amended the assertions for the requested Library structure and passed all 33 focused navigation checks. PDF checks passed. Final-head CI is rerunning; exact-main verification, release and production audit remain pending. [Audit](docs/testing/modules-redesign-2026-11-07.md).
+**Public v192**, runtime `92e52d8106aac6006e4d585b2892446e677d92b2`, merged through PR248. Live MyCase was explored in the owner's requested separate Chrome window. Home now includes firm work; Tasks supports direct firm/case editing with recurrence/reminders; Calendar adds day/week time views; Library contains Case documents, private versioned Firm documents, Templates and Demo. Simulations is removed from the main menu; Test scenarios stays within Studio. AI-assisted workflows and case outcome reports are preserved.
+
+Candidate and exact-main web/PDF CI pass **2,022 tests, zero failures, three inherited skips**, unchanged PDF checks and zero-finding dependency audits. All 655 runtime inputs match the CI build. Both live origins verify exact identity and **233/233 assets**. Signed-in production read-only audit covers editors, day/week views, all Library sections, retained existing case/task, keyboard cancellation/focus and actual 390px layout. No production record writes or AI requests. Audience/access revision 2, environment 42 and storage bindings remain unchanged. Minor validation/reminder wording follow-ups and broader sync/automation/native limits are documented. [Audit](docs/testing/modules-redesign-2026-11-07.md) - [Receipt](docs/testing/receipts/modules-redesign-v192-2026-11-07.json).
+
+Release commit Rust/Android/Flutter CI passed; both iOS workflows are running at this checkpoint and are not claimed as accepted. Documentation closure reuses v192 without rebuilding or deploying.
 
 
 ## Delivered follow-on — saving clarity and case continuity
