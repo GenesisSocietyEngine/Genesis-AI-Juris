@@ -1,0 +1,128 @@
+{
+  "date": "2026-11-07",
+  "version": 196,
+  "previousVersion": 195,
+  "sourceCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+  "previousRuntimeCommit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+  "candidateCommit": "5f13f5dbd9148ae6dea2d5051eb3a80e0f49db87",
+  "implementationPR": 255,
+  "candidateRun": 42365778061,
+  "mainRun": 42366258303,
+  "tests": {
+    "passed": 2037,
+    "failed": 0,
+    "skipped": 3,
+    "renderedBuildChecksIncluded": 2,
+    "fullPdfBaselineCount": 47,
+    "focusedChecksPassed": 27,
+    "dependencyAuditFindings": 0
+  },
+  "artifact": {
+    "id": 13572047347,
+    "digest": "sha256:09e90fdc7781d6e16c8c9a66c63b1d45f6af77a73ef78e3164b234097399f24c",
+    "expired": false,
+    "name": "verified-web-build-3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f-42366258303"
+  },
+  "deployment": "appgdep_6aef08525fb881919a82d656a84d50ca",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_80442ea7ca288191a998d16b4c81e8e1",
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "same": true
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 196
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+    "tree": "6bd72f719527c8b8fefb968300d64de8e8ceff0b",
+    "applicationInputsSha256": "2c47f298fcd02af0d920535965b3f8cc44a06d7039b4d1c3c8017da1488c439a",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 673,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+    "archiveSha256": "f16b85f6fa62995404c755e3523936f51eaf1f4e744fe38ad10b841b9640192e",
+    "migrationSha256": "abeac865ebfc1594670ff9b3794af4497a0ea7df3e197377e1d895bb3cc6f921",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+      "applicationInputsSha256": "2c47f298fcd02af0d920535965b3f8cc44a06d7039b4d1c3c8017da1488c439a",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+      "applicationInputsSha256": "2c47f298fcd02af0d920535965b3f8cc44a06d7039b4d1c3c8017da1488c439a",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 149,
+      "retained": 86,
+      "verified": 235,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 149,
+      "retained": 86,
+      "verified": 235,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Signed-in read-only navigation and blank-form checks",
+    "journey": [
+      "Library",
+      "Contacts",
+      "Case overview",
+      "AI Studio workbench",
+      "Contacts",
+      "Case participants"
+    ],
+    "sameSavedStudioCase": true,
+    "studioPromptVisible": true,
+    "emptySaveDisabled": true,
+    "cancelRestoredFocus": true,
+    "narrow": {
+      "viewportPx": 390,
+      "documentWidthPx": 375,
+      "headerAndCaseReturnControlHeightsPx": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    "syntheticPersistence": "Create and edit people and companies, company affiliation, relationship filter, case link, archive/restore, CSV preview, import and undo used isolated D1."
+  },
+  "anonymousContactsStatus": {
+    "custom": 401,
+    "native": 401
+  },
+  "workerErrorSample": {
+    "minutes": 4,
+    "count": 1,
+    "errors": 0,
+    "cancelled": 1
+  }
+}

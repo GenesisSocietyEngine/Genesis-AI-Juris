@@ -21,3 +21,11 @@ The isolated D1/R2 route suite passed all 14 checks, including the upgrade of a 
 The contact, participant, Library and persistence suites passed 27 focused checks. TypeScript and targeted ESLint passed. The final browser review changed a professional contact to a client under an active relationship filter and reopened the saved record from the confirmation. The responsive controls use the suite’s existing command heights and case banner. GitHub integration and production verification follow this checkpoint.
 
 A final wording check found that the shared departure dialog referred to saving a case when a contact was being saved. Its progress and discard messages now apply to the changes listed in the dialog, including CRM records.
+
+## Production acceptance
+
+Public v196 deployed merge `3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f` from PR #255. The final candidate and merged GitHub web/PDF runs passed 2,037 tests with zero failures and three inherited skips. The unchanged 47-PDF visual baseline and both dependency audits passed. The adopted CI artifact matched all 673 release inputs and the archive contained the reviewed additive migration. [Candidate run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42365778061) · [Merged build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42366258303).
+
+The signed-in production walkthrough followed Library → Contacts → Case overview → AI Studio → Contacts. The same synthetic saved case reopened in Overview and in the Workbench with its prompt field. The blank Add company form disabled Save and Cancel restored focus. The existing participant directory opened successfully. On the live 390 px viewport all three header commands and both case-return links measured 44 px. The document stayed within the viewport. Production checks were read-only. The populated governed-case round trip and contact mutations ran against isolated synthetic storage.
+
+Both public origins returned the merged build identity and verified 149 current and 86 retained assets. Both required sign-in for the contacts API. The four-minute worker-log sample contained one cancellation and zero error-level exceptions. The environment, audience and storage bindings matched their pre-release settings. [Release receipt](receipts/crm-contacts-v196-2026-11-07.json).

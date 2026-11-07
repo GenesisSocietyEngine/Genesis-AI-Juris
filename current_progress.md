@@ -1,8 +1,12 @@
 # Current progress — CaseVant
 
-## CRM and contacts, 7 November 2026
+## Published CRM and contacts, 7 November 2026
 
-Verified development checkpoint. The firm directory supports people and companies, client and prospect relationships, groups, employer links, duplicate review, case associations, archive/restore and reviewed CSV import with undo. The existing case-participant directory has its own tab. The signed-in MyCase audit covered both directories and their blank creation forms. The 27 focused checks passed. Browser verification covered editing, archive/restore, import/undo, 390 px controls and return to the same case. The departure dialog identifies unsaved contact changes and uses the same save wording across the suite. Canonical integration and production verification are pending. [Contacts audit](docs/testing/crm-contacts-2026-11-07.md).
+**Public v196** adds an Outlook-style firm directory for people and companies. It supports client and prospect relationships, groups, employer links, duplicate review, case links and reversible archiving. CSV import shows accepted and rejected rows before saving. Users can undo an untouched import. Case participants remain available in their own tab. [Implementation PR #255](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/255).
+
+On the live site, Library → Contacts → Case overview → AI Studio → Contacts returned to the same saved case. The blank company form disabled Save and returned keyboard focus on Cancel. Header and case-return controls measured 44 px at a 390 px viewport. Record creation, editing, case linking, import, undo and recovery were exercised with synthetic data in an isolated database. [Reference and acceptance audit](docs/testing/crm-contacts-2026-11-07.md).
+
+The merged build passed 2,037 tests with three inherited skips. Both production origins served the merged source and verified all 235 current and retained browser assets. The release used the existing D1 and document-storage bindings, access settings and environment. [Release receipt](docs/testing/receipts/crm-contacts-v196-2026-11-07.json).
 
 ## Published Library and document storage — 7 November 2026
 
