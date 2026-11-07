@@ -1,4 +1,4 @@
-# Home, work and Library redesign — 7 November 2026
+# Home, work and Library redesign â€” 7 November 2026
 
 ## Baseline and acceptance
 
@@ -29,3 +29,5 @@ Live Chrome also confirmed Calendar Staff/Day/Week/Month/Agenda, firm-document f
 No desktop drive sync, e-signature, bulk upload, empty-folder creation, external calendar sync or email/push reminders. Existing case evidence upload remains case-scoped. Firm upload retains the existing synthetic/de-identified data gate. Templates are case/workflow starters, not a new Word mail-merge system. Day/week grid lists events at start hour (continuations at midnight), not draggable duration blocks. Latest 100 file versions are listed; earlier immutable files remain stored. No native release acceptance claim. Full web/PDF CI and production audit remain mandatory before release.
 
 Final focused application set: 38/38 passed, zero skips/failures, including auditor/suspension checks, file retry recovery, calendar midnight boundaries and editing decorated reading-pane rows without losing workflow identity. Library return-context review added an explicit same-case/saved-Studio regression check. Canonical main advanced only in release/progress documentation to e2474c42; reconcile those updates without discarding them.
+
+CI follow-up: candidate run 42316091121 caught unparenthesized SELECT CASE in the new, unpublished 0028 migration. Corrected both trigger expressions without changing existing applied migrations. The local full persistence/route run passed 41 checks with one migration-format failure caused by local CRLF in 0027; normalized that checkout file to its tracked LF format, then both migration gates passed (2/2). No test assertions or baselines were weakened. Full CI is rerunning before merge/deployment.
