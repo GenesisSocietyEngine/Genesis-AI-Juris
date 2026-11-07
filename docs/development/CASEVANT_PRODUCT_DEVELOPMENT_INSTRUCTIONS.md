@@ -1,6 +1,8 @@
 # CaseVant product development instructions
 
-**Current delivery — public v195, 7 November 2026.** On phones, the Library gives the case name its own row above the two return commands. [Production receipt](../testing/receipts/library-document-storage-v195-2026-11-07.json). Preserve case identity and touch-target checks when changing this banner.
+**Current delivery — public v196, 7 November 2026.** Contacts now covers firm people, companies, relationships, case links and reviewed import. Keep contact identity, case participation and organization membership distinct. Preserve the shared case banner, reversible archive and exact-save recovery. [Acceptance audit](../testing/crm-contacts-2026-11-07.md) · [Production receipt](../testing/receipts/crm-contacts-v196-2026-11-07.json).
+
+**Previous delivery — public v195, 7 November 2026.** On phones, the Library gives the case name its own row above the two return commands. [Production receipt](../testing/receipts/library-document-storage-v195-2026-11-07.json). Preserve case identity and touch-target checks when changing this banner.
 
 **Previous delivery — public v194, 7 November 2026.** The Library storage and case-return changes are deployed. Use the [Library acceptance review](../testing/library-document-storage-2026-11-07.md) and [release receipt](../testing/receipts/library-document-storage-v194-2026-11-07.json). Preserve original versions and private object paths; do not purge cancelled attempts without an explicit retention policy.
 
