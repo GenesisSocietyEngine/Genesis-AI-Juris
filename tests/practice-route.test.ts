@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test, before, after } from "node:test";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { createHash } from "node:crypto";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -13,6 +14,7 @@ let routes:Record<string,{GET:Handler;POST:Handler}>;
 const storage=new AsyncLocalStorage<Request>();
 const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database;DOSSIER_DOCUMENTS?:R2Bucket};__practiceHeaders:()=>Headers};
 let organization:string, foreignOrganization:string, caseId:string;
+const legacyId="firm_doc_"+"d".repeat(64),legacyBytes="Synthetic v193 original";
 async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="") {
   const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
   return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:caseId})}));
@@ -21,7 +23,8 @@ before(async()=>{
   mf=new Miniflare({workers:[{config:{name:"practice-test",type:"worker",compatibilityDate:"2026-09-01",manifest:{mainModule:"index.mjs",modules:{"index.mjs":{type:"esm",contents:"export default {fetch(){return new Response('test')}}"}}},env:{DB:{type:"d1",name:"practice-test"},DOSSIER_DOCUMENTS:{type:"r2",name:"practice-documents"}}},dev:{}}]});
   db=await mf.getD1Database("DB","practice-test") as unknown as D1Database;
   const journal=JSON.parse(readFileSync("drizzle/meta/_journal.json","utf8"));
-  for(const entry of journal.entries)for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();
+  const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
+  for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
   const paths={firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
@@ -33,6 +36,18 @@ before(async()=>{
   let response=await call("organizations","POST",{action:"create",name:"Synthetic practice"});assert.equal(response.status,201,await response.clone().text());organization=(await response.json() as {organization:{id:string}}).organization.id;
   response=await call("organizations","POST",{action:"create",name:"Foreign practice"},"practice-outsider@example.test","");assert.equal(response.status,201,await response.clone().text());foreignOrganization=(await response.json() as {organization:{id:string}}).organization.id;
   response=await call("dossiers","POST",{title:"Synthetic operational case",jurisdictions:["Test"],classification:"internal"});assert.equal(response.status,201,await response.clone().text());const created=await response.json() as {dossier:{dossier_id:string}};caseId=created.dossier.dossier_id;
+  const actor=await db.prepare("SELECT actor_id FROM users WHERE email=?").bind("practice-owner@example.test").first<string>("actor_id");
+  const hex=createHash("sha256").update(legacyBytes).digest("hex"),digest="sha256-"+hex,objectKey=`firm/${organization}/${legacyId}/1/${hex}`;
+  await runtime.__practiceEnv.DOSSIER_DOCUMENTS!.put(objectKey,legacyBytes,{sha256:hex,httpMetadata:{contentType:"text/plain"},customMetadata:{contentSha256:digest}});
+  await db.prepare("INSERT INTO firm_document_versions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(organization,legacyId,1,"Legacy guide","Policies","legacy.txt","text/plain",legacyBytes.length,digest,objectKey,actor,"legacy-save-v193",digest,"2026-11-07T00:01:00.000Z").run();
+  const schema=(await db.prepare("SELECT name,sql,type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all<{name:string;sql:string;type:string}>()).results;
+  const tables=schema.filter(s=>s.type==="table"&&!s.name.startsWith("_cf_"));
+  const rows=()=>db.batch(tables.map(t=>db.prepare('SELECT * FROM "'+t.name.replaceAll('"','""')+'"')));
+  const beforeRows=(await rows()).map(v=>v.results);
+  for(const entry of journal.entries.filter((v:{idx:number})=>v.idx>=29))await migrate(entry);
+  assert.deepEqual((await rows()).map(v=>v.results),beforeRows,"upgrading a populated v193 database must preserve every pre-existing row");
+  const afterSchema=(await db.prepare("SELECT name,sql,type FROM sqlite_master ORDER BY name").all<{name:string;sql:string;type:string}>()).results;
+  assert.deepEqual(afterSchema.filter(v=>schema.some(old=>old.name===v.name)),schema,"old database objects must be unchanged");
 }, {timeout:120000});
 after(async()=>{await mf?.dispose();},{timeout:15000});
 test("practice handlers persist exact work, replay original results, reject conflicts and isolate organizations",async()=>{
@@ -131,11 +146,52 @@ test("standalone firm work is revisioned, replayable, private to the organizatio
  await assert.rejects(db.prepare("DELETE FROM organization_work_revisions WHERE organization_id=?").bind(organization).run(),/immutable/);
 });
 
-async function firmUpload(title:string,key:string,id?:string,expectedVersion=0){
+async function firmUpload(title:string,key:string,id?:string,expectedVersion=0,email="practice-owner@example.test",org=organization){
  const form=new FormData();form.set("title",title);form.set("folder","Policies/Team");form.set("operationKey",key);form.set("expectedVersion",String(expectedVersion));form.set("mediaType","text/plain");form.set("privacyAcknowledgement","synthetic_or_deidentified");form.set("file",new File(["Synthetic document only"],"example.txt",{type:"text/plain"}));if(id)form.set("id",id);
+ const request=new Request("https://practice.test/api/library/firm",{method:"POST",headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org},body:form});
+ return storage.run(request,()=>routes.firmDocuments.POST(request,{params:Promise.resolve({dossierId:caseId})}));
+}
+const firmGet=(query="",email="practice-owner@example.test",org=organization)=>call("firmDocuments","GET",undefined,email,org,undefined,query);
+async function firmAction(action:string,key:string,path?:string){
+ const form=new FormData();form.set("action",action);form.set("operationKey",key);if(path!==undefined)form.set("folder",path);
  const request=new Request("https://practice.test/api/library/firm",{method:"POST",headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":"practice-owner@example.test","x-genesis-organization":organization},body:form});
  return storage.run(request,()=>routes.firmDocuments.POST(request,{params:Promise.resolve({dossierId:caseId})}));
 }
+test("upgraded v193 original still downloads, and a legacy writer can append without a reservation",async()=>{
+ const response=await firmGet(`?id=${legacyId}&version=1&download=1`);assert.equal(response.status,200);assert.equal(await response.text(),legacyBytes);
+ const insert=db.prepare("INSERT INTO firm_document_versions SELECT organization_id,document_id,?,title,folder,filename,media_type,byte_length,content_sha256,replace(object_key,'/1/','/'||?||'/'),actor_ref,?,request_digest,occurred_at FROM firm_document_versions WHERE organization_id=? AND document_id=? AND version=1");
+ await db.batch(Array.from({length:100},(_,i)=>insert.bind(i+2,i+2,"legacy-history-"+(i+2),organization,legacyId)));
+ const first=await (await firmGet("?id="+legacyId)).json() as {documents:{version:number}[];nextVersion:number};
+ assert.equal(first.documents.length,100);assert.equal(first.documents[0].version,101);assert.equal(first.nextVersion,2);
+ const last=await (await firmGet(`?id=${legacyId}&before=${first.nextVersion}`)).json() as {documents:{version:number}[];nextVersion:null};
+ assert.deepEqual(last.documents.map(v=>v.version),[1]);assert.equal(last.nextVersion,null);
+});
+test("folder saves have private receipts, survive retries and cannot reuse upload keys",async()=>{
+ assert.equal((await firmAction("folder","create-folder-key","Policies / Forms")).status,200);
+ assert.equal((await firmAction("folder","create-folder-key","Policies/Forms")).status,200);
+ assert.equal((await firmAction("folder","create-folder-key","Other")).status,409);
+ assert.equal((await firmAction("folder","other-folder-key","../Other")).status,400);
+ assert.equal((await firmUpload("Collision","create-folder-key")).status,409);
+ const receipt=await (await firmGet("?operation=create-folder-key")).json() as {state:string;folder:string};assert.equal(receipt.state,"committed");assert.equal(receipt.folder,"Policies/Forms");
+ assert.equal((await (await firmGet("?operation=create-folder-key","practice-outsider@example.test",foreignOrganization)).json() as {state:string}).state,"not_started");
+ const list=await (await firmGet()).json() as {folders:string[]};assert.ok(list.folders.includes("Policies/Forms"));
+});
+test("interrupted storage resumes after reload, checks exact bytes and cancellation cannot publish a version",async()=>{
+ const bucket=runtime.__practiceEnv.DOSSIER_DOCUMENTS!,key="incomplete-original",abandon="cancel-original-upload";let attempts=0;
+ runtime.__practiceEnv.DOSSIER_DOCUMENTS=new Proxy(bucket,{get(target,name){if(name==="put")return async(...args:Parameters<R2Bucket["put"]>)=>{attempts++;await target.put(...args);throw Error("Simulated loss after persisting the original");};const v=Reflect.get(target,name);return typeof v==="function"?v.bind(target):v;}});
+ try{assert.equal((await firmUpload("Interrupted",key)).status,503);assert.equal((await firmUpload("Cancelled",abandon)).status,503);}finally{runtime.__practiceEnv.DOSSIER_DOCUMENTS=bucket;}
+ assert.equal(attempts,2);
+ const partial=await (await firmGet()).json() as {documents:{title:string}[];incomplete:{key:string}[]};assert.ok(partial.incomplete.some(v=>v.key===key));assert.ok(!partial.documents.some(v=>v.title==="Interrupted"));
+ assert.equal((await (await firmGet("?operation="+key)).json() as {state:string}).state,"pending");
+ assert.equal((await firmUpload("Mismatched",key)).status,409);
+ assert.equal((await (await firmAction("cancel",abandon)).json() as {state:string}).state,"cancelled");assert.equal((await firmUpload("Cancelled",abandon)).status,409);
+ const original=await firmUpload("Interrupted",key);assert.equal(original.status,200,await original.clone().text());const saved=await original.json() as {document:{id:string;version:number}};
+ const receipt=await (await firmGet("?operation="+key)).json() as {state:string;document:unknown};assert.equal(receipt.state,"committed");assert.deepEqual(receipt.document,saved.document);
+ assert.equal(await (await firmGet(`?id=${saved.document.id}&version=1&download=1`)).text(),"Synthetic document only");
+ assert.equal((await (await firmAction("cancel",key)).json() as {state:string}).state,"committed");
+ const race=await Promise.all([firmUpload("A","contending-save-A",saved.document.id,1),firmUpload("B","contending-save-B",saved.document.id,1)]);assert.deepEqual(race.map(v=>v.status).sort(),[200,409]);
+ assert.equal((await db.prepare("SELECT COUNT(*) AS n FROM firm_document_versions WHERE document_id=?").bind(saved.document.id).first<{n:number}>())!.n,2);
+});
 test("firm documents retain exact versions and protected downloads, with no case evidence mutation",async()=>{
  const before=await (await call("detail")).json();
  let response=await firmUpload("Firm policy","firm-upload-original");assert.equal(response.status,200,await response.clone().text());const original=await response.json() as {document:{id:string;version:number}};
@@ -157,4 +213,32 @@ test("auditor reads firm work but cannot change it and suspended members cannot 
  assert.equal((await call("firmDocuments","POST",{},"practice-outsider@example.test",organization)).status,403);
  await db.prepare("UPDATE organization_memberships SET status='suspended',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(organization,outsider!.actor_id).run();
  assert.equal((await call("firmDocuments","GET",undefined,"practice-outsider@example.test",organization)).status,404);
+});
+
+test("authority is checked again after private object I/O; changed identity gets neither bytes nor a committed version",async()=>{
+ const bucket=runtime.__practiceEnv.DOSSIER_DOCUMENTS!,headers=runtime.__practiceHeaders;
+ for(const mode of ["get","put"] as const){
+  runtime.__practiceEnv.DOSSIER_DOCUMENTS=new Proxy(bucket,{get(target,name){if(name===mode)return async(...args:unknown[])=>{const value=await Reflect.apply(Reflect.get(target,name),target,args);runtime.__practiceHeaders=()=>new Headers();return value;};const v=Reflect.get(target,name);return typeof v==="function"?v.bind(target):v;}});
+  try{const result=mode==="get"?await firmGet(`?id=${legacyId}&version=1&download=1`):await firmUpload("Revoked mid-save","identity-change-key");assert.ok([401,403,404].includes(result.status),String(result.status));assert.doesNotMatch(await result.text(),/Synthetic v193 original|firm_doc_/);}
+  finally{runtime.__practiceEnv.DOSSIER_DOCUMENTS=bucket;runtime.__practiceHeaders=headers;}
+ }
+ assert.equal((await (await firmGet("?operation=identity-change-key")).json() as {state:string}).state,"pending");await firmAction("cancel","identity-change-key");
+});
+test("an existing private object with inconsistent metadata is never overwritten or published",async()=>{
+ const bucket=runtime.__practiceEnv.DOSSIER_DOCUMENTS!;let path="";
+ runtime.__practiceEnv.DOSSIER_DOCUMENTS=new Proxy(bucket,{get(target,name){if(name==="put")return async(key:string,...args:unknown[])=>{path=key;await target.put(key,"Other synthetic bytes",{httpMetadata:{contentType:"text/plain"}});return Reflect.apply(target.put,target,[key,...args]);};const v=Reflect.get(target,name);return typeof v==="function"?v.bind(target):v;}});
+ try{assert.equal((await firmUpload("Integrity test","corrupt-existing-key")).status,503);}finally{runtime.__practiceEnv.DOSSIER_DOCUMENTS=bucket;}
+ assert.equal((await firmUpload("Integrity test","corrupt-existing-key")).status,503);assert.equal(await (await bucket.get(path))!.text(),"Other synthetic bytes");
+ assert.equal((await (await firmGet("?operation=corrupt-existing-key")).json() as {state:string}).state,"pending");await firmAction("cancel","corrupt-existing-key");
+});
+
+test("unfinished bytes are bounded per organization without counting or deleting its saved originals",async()=>{
+ const actor=await db.prepare("SELECT actor_id FROM users WHERE email=?").bind("practice-outsider@example.test").first<string>("actor_id");
+ const stage=db.prepare("INSERT INTO firm_upload_intents(organization_id,actor_ref,operation_key,request_digest,document_id,expected_version,title,folder,filename,byte_length,created_at) VALUES(?,?,?,?,?,0,'Synthetic quota test','','test.pdf',?,?)");
+ const sizes=[...Array(40).fill(25*1024*1024),24*1024*1024];
+ await db.batch(sizes.map((size,i)=>stage.bind(foreignOrganization,actor,"quota-test-"+i,"sha256-"+"c".repeat(64),"firm_doc_"+i.toString(16).padStart(64,"0"),size,"2026-11-07T08:00:00.000Z")));
+ const blocked=await firmUpload("No capacity","quota-save-full",undefined,0,"practice-outsider@example.test",foreignOrganization);
+ assert.equal(blocked.status,507);assert.match(await blocked.text(),/Incomplete upload storage is full/);
+ const own=await firmUpload("Other organization","unrelated-capacity");assert.equal(own.status,200);
+ const other=await (await firmGet("?operation=quota-test-0")).json() as {state:string};assert.equal(other.state,"not_started");
 });

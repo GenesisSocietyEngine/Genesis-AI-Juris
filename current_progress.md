@@ -2,7 +2,7 @@
 
 ## Library storage follow-on — 7 November 2026
 
-Verified current public v193 and reconciled the earlier Library investigation against PRs 248–251. The deployed firm document collection, existing version identifiers, private object paths, case evidence and recent Calendar changes are the baseline. Improving upload recovery, storage integrity, version browsing and case return within this existing Library. [Review and acceptance](docs/testing/library-document-storage-2026-11-07.md).
+**Verified in the development candidate; public baseline v193.** Library now keeps the current case and AI Studio return visible, separates case evidence from firm files, and provides folders, file selection, version history and clear save destinations. Interrupted uploads can be resumed or cancelled; a lost response can be checked without resending the file. Previously stored versions and download paths remain intact. The 18 storage, controller and migration checks passed, including a populated v193 upgrade. The final desktop and 390 px Russian browser checks covered recovery, keyboard focus, case links and control sizes. [Review and acceptance](docs/testing/library-document-storage-2026-11-07.md).
 
 ## Published Calendar and task audit fixes, 7 November 2026
 
@@ -90,9 +90,9 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 
 ## Next
 
-Maintain this progress file at each milestone. Continue the separately scoped firm Library/document storage and standalone task/calendar work, then further case metadata as required. Preserve the completed Home, AI Studio and editor flows; avoid repeating their release for documentation changes.
+Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Verify and release the Library storage follow-on against that deployed baseline. Preserve the completed Home, AI Studio and editor flows.
 
-Broader remaining modules (Library, standalone firm work, CRM, finance, portal, sync) remain separate; this task does not claim full MyCase parity. Detailed evidence: [case editor audit](docs/testing/case-editor-2026-11-06.md).
+Further case metadata, CRM, finance, client portal and external synchronization remain separate work. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
 
 ## Calendar and reminder audit follow-up, 7 November
 
