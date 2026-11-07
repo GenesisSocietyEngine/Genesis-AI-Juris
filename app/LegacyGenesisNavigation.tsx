@@ -194,10 +194,10 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):(en?"Keep your changes before leaving":"Сохраните изменения перед выходом")}</h2>
     {pending?.risk==="pending"?<p>{en?"An operation is still running or its save is unconfirmed. Return to the current work to check it before switching.":"Операция ещё выполняется или сохранение не подтверждено. Вернитесь к работе и проверьте результат перед переходом."}</p>:<>
       <ul>{pendingChanges.map(change=><li key={change}>{departureChangeLabel(change,locale)}</li>)}</ul>
-      <p>{en?"Previously saved case versions remain available. Only the unsaved work listed above would be discarded.":"Ранее сохранённые версии кейса останутся доступны. Будет удалена только перечисленная выше несохранённая работа."}</p>
+      <p>{en?"Previously saved work remains available. Leaving discards the changes listed above.":"Сохранённая работа останется доступна. При выходе перечисленные выше изменения будут отменены."}</p>
     </>}
     {pending && saveDepartureIssue === pending && <p role="alert">{en?"Some work is still unsaved, or saving could not be confirmed. Review it before leaving.":"Часть работы не сохранена либо сохранение не подтверждено. Проверьте её перед выходом."}</p>}
-    {savingDeparture&&<p role="status">{en?"Saving your case…":"Сохранение кейса…"}</p>}
+    {savingDeparture&&<p role="status">{en?"Saving your changes…":"Сохранение изменений…"}</p>}
     <div><button type="button" onClick={cancelPending} autoFocus>{en?"Stay here":"Остаться"}</button>
       {pending?.risk==="pending"?<button type="button" onClick={()=>{cancelPending();closeDrawer();navigation.reviewPending();}}>{en?"Return to current work":"Вернуться к работе"}</button>:<>
         {navigation.canSaveBeforeDeparture()||savingDeparture?<button type="button" className="departure-save" disabled={savingDeparture} onClick={()=>void saveAndContinue()}>{savingDeparture?(en?"Saving…":"Сохранение…"):(en?"Save and continue":"Сохранить и продолжить")}</button>:<button type="button" className="departure-save" onClick={()=>{cancelPending();closeDrawer();navigation.reviewUnsaved();}}>{en?"Review unsaved work":"Проверить несохранённую работу"}</button>}

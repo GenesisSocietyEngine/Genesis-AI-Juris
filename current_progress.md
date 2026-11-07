@@ -2,7 +2,7 @@
 
 ## CRM and contacts, 7 November 2026
 
-Verified development checkpoint. The firm directory supports people and companies, client and prospect relationships, groups, employer links, duplicate review, case associations, archive/restore and reviewed CSV import with undo. The existing case-participant directory has its own tab. The signed-in MyCase audit covered both directories and their blank creation forms. The 27 focused checks passed. Browser verification covered editing, archive/restore, import/undo, 390 px controls and return to the same case. Canonical integration and production verification are pending. [Contacts audit](docs/testing/crm-contacts-2026-11-07.md).
+Verified development checkpoint. The firm directory supports people and companies, client and prospect relationships, groups, employer links, duplicate review, case associations, archive/restore and reviewed CSV import with undo. The existing case-participant directory has its own tab. The signed-in MyCase audit covered both directories and their blank creation forms. The 27 focused checks passed. Browser verification covered editing, archive/restore, import/undo, 390 px controls and return to the same case. The departure dialog identifies unsaved contact changes and uses the same save wording across the suite. Canonical integration and production verification are pending. [Contacts audit](docs/testing/crm-contacts-2026-11-07.md).
 
 ## Published Library and document storage — 7 November 2026
 
