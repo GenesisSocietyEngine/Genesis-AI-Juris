@@ -1,0 +1,117 @@
+{
+  "version": 195,
+  "previousVersion": 194,
+  "commit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+  "previousCommit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+  "candidateCommit": "0cc3418916608b9d4d0318214a9b774031bef0ff",
+  "implementationPR": 253,
+  "storagePR": 252,
+  "candidateRun": 42359837959,
+  "mainRun": 42360441101,
+  "candidateWebAndPDF": true,
+  "mainWebAndPDF": true,
+  "tests": {
+    "passed": 2031,
+    "failed": 0,
+    "skipped": 3,
+    "htmlPassed": 2,
+    "dependencyAudits": "zero findings"
+  },
+  "artifact": {
+    "id": 13569044046,
+    "digest": "sha256:b74972532bb19ebd8441fdfa7dfdc569808bfb70415e5efea561c353f908a10a"
+  },
+  "deployment": "appgdep_6aeef482409c81918a292338d0afbf77",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_f5765cda9880819196d0399ac05e256a",
+  "environmentUnchanged": true,
+  "audienceUnchanged": true,
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "unchanged": true
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "unchanged": true
+  },
+  "mobile": {
+    "viewport": 390,
+    "document": 375,
+    "width": 294,
+    "height": 21,
+    "linksBelow": true,
+    "actionHeights": [
+      44,
+      44
+    ],
+    "locales": [
+      "en",
+      "ru"
+    ],
+    "sameSavedStudioCase": true
+  },
+  "browserChecks": [
+    "four Library sections at 1280 px",
+    "signed-in English and Russian mobile measurements",
+    "both return links retained saved case and correct destination panel",
+    "live AI Studio workbench reopened the same saved synthetic case and showed confirmed workspace status"
+  ],
+  "productionWrites": false,
+  "workerLogSample": {
+    "minutes": 5,
+    "returned": 7,
+    "cancelledReads": 7,
+    "errorLevelOrExceptions": 0
+  },
+  "ciProvenance": {
+    "passed": true,
+    "sourceCommit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+    "tree": "6b5ad6e1ebedcddf559bcf5d1dd873a4ba5f408b",
+    "applicationInputsSha256": "f247f59f645a7f36bde8c359ac1a65509e8444ea3083bc4b6d99fa85d55f45ad",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 661,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+    "archiveSha256": "be6b962efac2c16b84d63b59ca67c19bfc097db9f4fbd8d0054bb459a0d80508",
+    "migrationSha256": "cc89033e884a3376ecaffad394f434d31e9a84424c983ae77fb5ebab6b63d33f",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+      "applicationInputsSha256": "f247f59f645a7f36bde8c359ac1a65509e8444ea3083bc4b6d99fa85d55f45ad",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "64ef7cd70fa0d594be47f11bac021c1f075d0cda",
+      "applicationInputsSha256": "f247f59f645a7f36bde8c359ac1a65509e8444ea3083bc4b6d99fa85d55f45ad",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 150,
+      "retained": 54,
+      "verified": 204
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 150,
+      "retained": 54,
+      "verified": 204
+    }
+  ]
+}
