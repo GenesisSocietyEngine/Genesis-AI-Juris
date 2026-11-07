@@ -13,8 +13,8 @@ import { organizationSelectionToken } from "../../../organization-store";
 import { isSameOriginMutation } from "../../../request-security";
 import { prepareDossierUpload, readBoundedDossierFormData } from "../../../dossier-private-upload";
 import { firmDocumentFields, firmObjectKey } from "../../../library/firm-document-model";
+import { firmAuthority as authority } from "../../../firm-authority";
 import {
-  firmAuthority as authority,
   firmCollections,
   firmOperation,
   firmRecord as publicRecord,

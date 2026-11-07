@@ -86,6 +86,48 @@ export const dossierOrganizationBindings = sqliteTable("dossier_organization_bin
 export const dossierOrganizationCommitments = sqliteTable("dossier_organization_commitments", {
   dossierId: text("dossier_id").primaryKey().references(() => dossiers.id),
 }, (t) => [foreignKey({ columns: [t.dossierId], foreignColumns: [dossierOrganizationBindings.dossierId] })]);
+
+// Firm address-book entries and their case associations never confer case access.
+export const firmContacts = sqliteTable("firm_contacts", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  kind: text("kind", { enum: ["person", "company"] }).notNull(),
+  profile: text("profile").notNull(),
+  nameKey: text("name_key").notNull(),
+  emailKey: text("email_key").notNull(),
+  status: text("status", { enum: ["active", "archived"] }).notNull(),
+  revision: integer("revision").notNull(),
+}, t => [
+  uniqueIndex("firm_contact_scope").on(t.organizationId, t.id),
+  index("firm_contact_name").on(t.organizationId, t.kind, t.nameKey),
+  index("firm_contact_email").on(t.organizationId, t.emailKey),
+  check("firm_contact_state", sql`${t.revision} > 0 AND ${t.kind} IN ('person','company') AND ${t.status} IN ('active','archived') AND json_valid(${t.profile})`),
+]);
+
+export const firmContactCases = sqliteTable("firm_contact_cases", {
+  organizationId: text("organization_id").notNull(),
+  contactId: text("contact_id").notNull(),
+  dossierId: text("dossier_id").notNull(),
+}, t => [
+  uniqueIndex("firm_contact_case").on(t.organizationId, t.contactId, t.dossierId),
+  foreignKey({ columns: [t.organizationId, t.contactId], foreignColumns: [firmContacts.organizationId, firmContacts.id] }),
+  foreignKey({ columns: [t.organizationId, t.dossierId], foreignColumns: [dossierOrganizationBindings.organizationId, dossierOrganizationBindings.dossierId] }),
+]);
+
+export const firmContactOperations = sqliteTable("firm_contact_operations", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  actorRef: text("actor_ref").notNull(),
+  operationKey: text("operation_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  action: text("action").notNull(),
+  contactIds: text("contact_ids").notNull(),
+  reverses: text("reverses"),
+  occurredAt: text("occurred_at").notNull(),
+}, t => [
+  uniqueIndex("firm_contact_operation").on(t.organizationId, t.actorRef, t.operationKey),
+  uniqueIndex("firm_contact_undo").on(t.organizationId, t.actorRef, t.reverses),
+  index("firm_contact_import_history").on(t.organizationId, t.actorRef, t.action, t.occurredAt),
+]);
 export const organizationCasGuards = sqliteTable("organization_cas_guards", {
   changed: integer("changed").notNull(),
 }, (t) => [check("organization_cas_guards_check", sql`${t.changed}=1`)]);

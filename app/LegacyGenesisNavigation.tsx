@@ -18,7 +18,7 @@ export const WORKSPACE_PAGES = [
   { path: "/work?view=tasks", view: "tasks", en: "Tasks", ru: "Задачи", icon: "tasks" },
   { path: "/matters", view: "matters", en: "Cases", ru: "Дела", icon: "cases" },
   { path: "/studio?studio_panel=workbench", view: "studio", en: "AI Studio", ru: "ИИ Студия", icon: "studio" },
-  { path: "/work?view=people", view: "people", en: "People", ru: "Участники", icon: "people" },
+  { path: "/work?view=people", view: "people", en: "Contacts", ru: "Контакты", icon: "people" },
   { path: "/work?view=workflows", view: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
 ] as const;
 const SECONDARY_PAGES = [

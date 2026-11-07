@@ -2,7 +2,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
-import { currentCaseOverviewDestination, workspaceDestination } from "../workspace-navigation";
+import WorkspaceCaseContext from "../WorkspaceCaseContext";
+import { workspaceDestination } from "../workspace-navigation";
 import { WorkspaceIcon } from "../CaseVantIcon";
 import WorkTabs from "../work/WorkTabs";
 import { WorkController } from "../work/work-controller";
@@ -57,8 +58,7 @@ export default function LibraryClient({
   const url = new URL(location, "https://workspace.invalid"),
     view = sections.find(([key]) => key === url.searchParams.get("view"))?.[0] ?? "cases";
   const href = (path: string) => workspaceDestination(path, location);
-  const overview = currentCaseOverviewDestination(location),
-    caseId = new URL(href("/matters"), url).searchParams.get("dossier");
+  const caseId = new URL(href("/matters"), url).searchParams.get("dossier");
   const currentCase = cases.cases.find((c) => c.id === caseId),
     visible = cases.cases
       .filter((c) => c.title.toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale)))
@@ -102,16 +102,7 @@ export default function LibraryClient({
           {t("Refresh", "Обновить")}
         </button>
       </header>
-      {overview && (
-        <aside className={lib.context}>
-          <span className={lib.caseIdentity}>
-            <WorkspaceIcon name="cases" />
-            <strong>{currentCase?.title || t("Current case", "Текущее дело")}</strong>
-          </span>
-          <a href={overview}>{t("Return to case overview", "Вернуться к обзору дела")}</a>
-          <a href={href("/studio?studio_panel=workbench")}>{t("Open AI Studio", "Открыть ИИ Студию")}</a>
-        </aside>
-      )}
+      <WorkspaceCaseContext location={location} name={currentCase?.title} locale={locale} />
       <nav className={lib.tabs} aria-label={t("Library sections", "Разделы библиотеки")}>
         {sections.map(([key, en, ru]) => (
           <button key={key} aria-current={view === key ? "page" : undefined} onClick={() => changeView(key)}>

@@ -26,7 +26,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -50,6 +50,79 @@ before(async()=>{
   assert.deepEqual(afterSchema.filter(v=>schema.some(old=>old.name===v.name)),schema,"old database objects must be unchanged");
 }, {timeout:120000});
 after(async()=>{await mf?.dispose();},{timeout:15000});
+
+test("firm contacts preserve participants, enforce case visibility and recover the original save", async () => {
+  const post = (command: Record<string,unknown>) => call("contacts","POST",command);
+  const directory = async (email?:string, org=organization) => (await (await call("contacts","GET",undefined,email,org)).json()) as {
+    contacts: {id:string; name:string; revision:number; caseIds:string[]; status:string; companyId:string}[];
+    batches: {key:string; count:number}[];
+  };
+  const create = {action:"create", id:"", revision:0, reviewed:[], operationKey:"crm-first-company", profile:{kind:"company",name:"Synthetic Works",email:"team@example.test"}};
+  const participants = () => db.prepare("SELECT * FROM dossier_participants WHERE dossier_id=? ORDER BY id").bind(caseId).all();
+  const before = (await participants()).results;
+  const first = await post(create);
+  assert.equal(first.status,200,await first.clone().text());
+  const receipt = await first.json() as {ids:string[]};
+  const id = receipt.ids[0];
+  assert.deepEqual(await (await post(create)).json(),receipt);
+  assert.deepEqual(await (await call("contacts","GET",undefined,undefined,organization,undefined,"?operation=crm-first-company")).json(),receipt);
+  assert.equal((await post({...create,profile:{...create.profile,name:"Other"}})).status,409);
+  assert.equal((await post({...create,operationKey:"crm-duplicate"})).status,409);
+  assert.equal((await post({...create,operationKey:"crm-reviewed-duplicate",reviewed:[id]})).status,200);
+  const person = {...create,operationKey:"crm-affiliation",profile:{kind:"person",name:"Synthetic colleague",companyId:id}};
+  assert.equal((await post(person)).status,200);
+  assert.equal((await directory()).contacts.find(c=>c.name==="Synthetic colleague")!.companyId,id);
+  const link = {action:"link",id,caseId,revision:1,operationKey:"crm-case-link"};
+  assert.equal((await post(link)).status,200);
+  assert.deepEqual((await directory()).contacts.find(c=>c.id===id)!.caseIds,[caseId]);
+  assert.deepEqual((await participants()).results,before);
+  const email="crm-auditor@example.test";
+  await db.prepare("INSERT INTO users(email,display_name) VALUES (?,?)").bind(email,"Synthetic directory reader").run();
+  const user=await db.prepare("SELECT id,actor_id FROM users WHERE email=?").bind(email).first<{id:number;actor_id:string}>();
+  await db.prepare("INSERT INTO organization_memberships(organization_id,user_id,actor_id,role,status,revision,created_at) VALUES(?,?,?,'auditor','active',1,?)").bind(organization,user!.id,user!.actor_id,new Date().toISOString()).run();
+  assert.deepEqual((await directory(email)).contacts.find(c=>c.id===id)!.caseIds,[]);
+  assert.equal((await call("contacts","POST",person,email)).status,403);
+  await db.prepare("UPDATE organization_memberships SET role='member',revision=revision+1 WHERE actor_id=? AND organization_id=?").bind(user!.actor_id,organization).run();
+  assert.equal((await call("contacts","POST",{...link,action:"unlink",revision:2,operationKey:"crm-unauthorized-unlink"},email)).status,403);
+  assert.deepEqual((await directory("practice-outsider@example.test",foreignOrganization)).contacts,[]);
+  assert.equal((await call("contacts","POST",person,undefined,organization,{origin:"https://foreign.test","sec-fetch-site":"cross-site"})).status,403);
+  assert.equal((await post({...link,action:"unlink",revision:2,operationKey:"crm-unlink"})).status,200);
+  const edit={...create,action:"edit",id,revision:3,operationKey:"crm-email-change",profile:{kind:"company",name:"Renamed synthetic firm",email:"new@example.test"}};
+  assert.equal((await post(edit)).status,200);
+  assert.equal((await post({...edit,operationKey:"crm-stale-edit"})).status,409);
+  assert.equal((await post({action:"archive",id,revision:4,operationKey:"crm-archive"})).status,200);
+  assert.equal((await directory()).contacts.find(c=>c.id===id)!.status,"archived");
+  assert.equal((await post({action:"restore",id,revision:5,operationKey:"crm-restore"})).status,200);
+  assert.deepEqual((await participants()).results,before);
+});
+
+test("reviewed CRM import is atomic, replayable and reversible until a contact changes",async()=>{
+  const post=(command:Record<string,unknown>)=>call("contacts","POST",command);
+  const profile=(name:string)=>({kind:"person",name});
+  const cmd={action:"import",operationKey:"crm-import-first",profiles:[profile("Example A"),profile("Example B")]};
+  const first=await post(cmd);assert.equal(first.status,200,await first.clone().text());
+  const receipt=await first.json() as {ids:string[]};assert.equal(receipt.ids.length,2);
+  assert.deepEqual(await (await post(cmd)).json(),receipt);
+  assert.equal((await post({...cmd,operationKey:"crm-import-stale",profiles:[profile("Rolled back"),profile("Example A")]})).status,409);
+  assert.equal(await db.prepare("SELECT count(*) AS n FROM firm_contacts WHERE name_key='rolled back'").first("n"),0);
+  const undo={action:"undo",batchKey:cmd.operationKey,operationKey:"crm-import-undo"};
+  const undone=await post(undo);assert.equal(undone.status,200);
+  assert.deepEqual(await (await post(undo)).json(),await undone.json());
+  assert.equal((await post({...undo,operationKey:"crm-undo-twice"})).status,409);
+  const second={...cmd,operationKey:"crm-import-second",profiles:[profile("Example C"),profile("Example D")]};
+  const ids=(await (await post(second)).json() as {ids:string[]}).ids;
+  assert.equal((await post({action:"link",id:ids[1],caseId,revision:1,operationKey:"crm-after-import"})).status,200);
+  assert.equal((await post({...undo,operationKey:"crm-late-undo",batchKey:second.operationKey})).status,409);
+  const directory=await (await call("contacts")).json() as {contacts:{id:string;status:string}[];batches:{key:string}[]};
+  assert.ok(directory.contacts.filter(c=>ids.includes(c.id)).every(c=>c.status==="active"));
+  assert.ok(directory.contacts.filter(c=>receipt.ids.includes(c.id)).every(c=>c.status==="archived"));
+  assert.deepEqual(directory.batches.map(b=>b.key),[second.operationKey]);
+  const employer={action:"import",operationKey:"crm-import-employer",profiles:[{kind:"company",name:"Example employer",relationship:"client"}]};
+  const [companyId]=(await (await post(employer)).json() as {ids:string[]}).ids;
+  const employee={action:"create",profile:{kind:"person",name:"New employee",companyId},id:"",revision:0,reviewed:[],operationKey:"crm-dependent-person"};
+  assert.equal((await post(employee)).status,200);
+  assert.equal((await post({...undo,batchKey:employer.operationKey,operationKey:"crm-employer-used"})).status,409);
+});
 test("practice handlers persist exact work, replay original results, reject conflicts and isolate organizations",async()=>{
   const before=await (await call("detail")).json();
   const command={action:"create",expectedRevision:0,operationKey:"practice-original",item:{kind:"task",title:"Review evidence",description:"Synthetic only",dueDate:"2026-11-10",assignee:null,priority:"high",status:"open",checklist:[{title:"Inspect cited version",done:false}]}};
