@@ -3,9 +3,19 @@ import { test } from "node:test";
 import { LibraryController } from "../app/library/library-controller";
 import { firmDocumentFields, firmObjectKey } from "../app/library/firm-document-model";
 import { workspaceDestination } from "../app/workspace-navigation";
+import { verifiedLibraryReturn } from "../app/library/library-navigation";
 import { firmHarness } from "./fixtures/firm-work";
 
 const saved={id:"firm_doc_"+"a".repeat(64),version:1,title:"Policy",folder:"",filename:"policy.txt",mediaType:"text/plain",bytes:9,occurredAt:"2026-11-07T08:00:00.000Z"};
+
+test("legacy Library bookmarks restore only a case confirmed in the selected organization",()=>{
+ const location=(back:string)=>"/library?view=firm&organization=org_A&studio_case=51&return_to="+encodeURIComponent(back);
+ const old=location("/matters?dossier=case_A&section=documents#history"),cases=[{id:"case_A"}];
+ const restored=verifiedLibraryReturn(old,"org_A",cases),studio=new URL(workspaceDestination("/studio",restored),"https://work.test");
+ assert.equal(studio.searchParams.get("custom_case"),"51");assert.equal(studio.searchParams.get("return_to"),"/matters?dossier=case_A&section=documents&organization=org_A#history");
+ assert.equal(verifiedLibraryReturn(old,"org_A",[]),old);assert.equal(verifiedLibraryReturn(old,"org_B",cases),old);
+ for(const path of ["/matters?dossier=case_A&organization=org_B","//escape.test/matters?dossier=case_A","/studio?custom_case=51"]){assert.equal(verifiedLibraryReturn(location(path),"org_A",cases),location(path));}
+});
 
 test("firm upload retains the exact file operation through lost response, expiry and refresh failure",async()=>{
   const h=firmHarness();await h.start();let fail=false,lose=true;const posts:FormData[]=[];

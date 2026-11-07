@@ -7,6 +7,7 @@ import { WorkspaceIcon } from "../CaseVantIcon";
 import WorkTabs from "../work/WorkTabs";
 import { WorkController } from "../work/work-controller";
 import { LibraryController } from "./library-controller";
+import { verifiedLibraryReturn } from "./library-navigation";
 import FirmLibrarySection from "./FirmLibrarySection";
 import FirmUploadDialog, { libraryFeedback } from "./FirmUploadDialog";
 import type { FirmDocument } from "./firm-document-model";
@@ -37,10 +38,20 @@ export default function LibraryClient({
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const cases = useSyncExternalStore(work.subscribe, work.getSnapshot, work.getSnapshot);
   const [locale] = useInterfaceLocale(),
-    location = useWorkspaceLocation(),
+    browserLocation = useWorkspaceLocation(),
     [query, setQuery] = useState("");
   useEffect(() => controller.attach(), [controller]);
   useEffect(() => work.attach(), [work]);
+  const location =
+    session.phase === "ready" && !session.busy && !session.endingSession && cases.loaded
+      ? verifiedLibraryReturn(browserLocation, session.selected?.selection, cases.cases)
+      : browserLocation;
+  useEffect(() => {
+    const current = window.location.pathname + window.location.search + window.location.hash;
+    if (current !== browserLocation || location === current) return;
+    window.history.replaceState(window.history.state, "", location);
+    window.dispatchEvent(new Event("genesis-interface-change"));
+  }, [browserLocation, location]);
   const t = (en: string, ru: string) => (locale === "ru" ? ru : en);
   if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   const url = new URL(location, "https://workspace.invalid"),

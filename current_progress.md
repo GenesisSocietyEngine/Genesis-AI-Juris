@@ -2,7 +2,7 @@
 
 ## Library storage follow-on — 7 November 2026
 
-**Verified in the development candidate; public baseline v193.** Library now keeps the current case and AI Studio return visible, separates case evidence from firm files, and provides folders, file selection, version history and clear save destinations. Interrupted uploads can be resumed or cancelled; a lost response can be checked without resending the file. Previously stored versions and download paths remain intact. The 18 storage, controller and migration checks passed, including a populated v193 upgrade. The final desktop and 390 px Russian browser checks covered recovery, keyboard focus, case links and control sizes. [Review and acceptance](docs/testing/library-document-storage-2026-11-07.md).
+**Verified in the development candidate; public baseline v193.** Library now keeps the current case and AI Studio return visible, separates case evidence from firm files, and provides folders, file selection, version history and clear save destinations. Interrupted uploads can be resumed or cancelled; a lost response can be checked without resending the file. Previously stored versions and download paths remain intact. The 44 targeted storage, controller, migration and navigation checks include a populated v193 upgrade and restoration of older case bookmarks after access is confirmed. The final desktop and 390 px Russian browser checks covered recovery, keyboard focus, case links and control sizes. [Review and acceptance](docs/testing/library-document-storage-2026-11-07.md).
 
 ## Published Calendar and task audit fixes, 7 November 2026
 
