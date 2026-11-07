@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## Published Calendar and task audit fixes, 7 November 2026
+
+Published v193 from PR 250. Calendar shows the range selector only in Agenda, remembers its selection and shows a single date in Day view. Task recurrence shows one first-date prompt. Shared reminders describe their effect for everyone with access. Both live origins verified the release and all 204 assets. The signed-in production audit exercised layout switching, date navigation, reminder scope, validation and keyboard focus on cancel.
+
 Updated: 7 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
 
 
