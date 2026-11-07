@@ -1,0 +1,22 @@
+{
+  "version": 193,
+  "deploymentId": "appgdep_6aeeade700708191b4017738ce297621",
+  "sourceCommit": "9187f0a75b76858f8ec3cdd4a455ee1a025574f5",
+  "publishedAt": "2026-11-07T04:50:05.682868+00:00",
+  "candidateCI": 42338514079,
+  "mergedCI": 42339351392,
+  "verifiedAssetsPerOrigin": 204,
+  "retainedAssets": 54,
+  "origins": [
+    "https://casevant.pro",
+    "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+  ],
+  "productionAudit": [
+    "Agenda range visibility and persistence",
+    "Next day navigation",
+    "Single validation alert and disabled Save",
+    "Scope-neutral reminder",
+    "Cancel restores focus"
+  ],
+  "productionRecordWrites": false
+}
