@@ -15,9 +15,14 @@ test("both Studio shells retain public routes and operation actions without inve
       hasActiveScenario: true, toggleLocale: noop,
     }));
     assert.match(markup, /aria-current="page"[^>]*>.*?(AI Studio|ИИ Студия)/);
-    for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
-    for (const route of ["/templates", "/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    for (const view of ["play"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
+    for (const route of ["/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
     assert.match(markup, /<button type="button" class="casevant-primary-link" aria-current="page">[\s\S]*?<span>(AI Studio|ИИ Студия)<\/span><\/button>/, "the active Studio returns locally without reloading its working case");
+    for (const section of ["cases", "firm", "templates", "demo"]) {
+      assert.ok(markup.includes(`href="/library?view=${section}&amp;organization=org_example&amp;lang=${locale}"`), `Library ${section} preserves workspace context`);
+    }
+    assert.match(markup, /<details class="genesis-nav-group"><summary>[\s\S]*?<span>(Library|Библиотека)<\/span>/);
+    assert.doesNotMatch(markup, /<span>(Simulations|Симуляции)<\/span>/);
     assert.ok(markup.includes(locale === "en" ? "Sign in" : "Войти"));
     assert.doesNotMatch(markup, /Manage organizations|Users &amp; access|Sign out/);
     assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");
