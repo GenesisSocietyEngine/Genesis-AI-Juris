@@ -1,0 +1,95 @@
+{
+  "version": 194,
+  "previousVersion": 193,
+  "commit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+  "previousCommit": "9187f0a75b76858f8ec3cdd4a455ee1a025574f5",
+  "candidateCommit": "8901a92ff38e1d78a3197aa14d60904aa4b0c814",
+  "implementationPR": 252,
+  "candidateRun": 42357277913,
+  "mainRun": 42357993766,
+  "web": "success",
+  "pdf": "success",
+  "tests": {
+    "passed": 2031,
+    "failed": 0,
+    "skipped": 3,
+    "htmlPassed": 2
+  },
+  "artifact": {
+    "id": 13568896755,
+    "digest": "sha256:bc94699c4cec3c22c306a311ff1be241e76559e03ea83e353e44dcc5bf15eea3"
+  },
+  "deployment": "appgdep_6aeeec9c67b881919719d73e93a7fb1e",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b8e2864000a881919c9168dd513008e5",
+  "environmentUnchanged": true,
+  "audienceUnchanged": true,
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "unchanged": true
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "unchanged": true
+  },
+  "observedErrorEventsInFiveMinutes": 2,
+  "browserChecks": [
+    "four Library sections and authorized empty firm collection",
+    "upload and folder destinations, disabled empty Save and Cancel restoring focus",
+    "governed case documents → firm Library → same case overview",
+    "saved Studio case 51 → Library → Overview, with both Studio and Overview links retaining the saved ID"
+  ],
+  "productionWrites": false,
+  "mobileFinding": "At 390 px the case label shrank to 17 px next to its return commands. Follow-on remediation required.",
+  "ciProvenance": {
+    "passed": true,
+    "sourceCommit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+    "tree": "2cb21a9ddfc0546f50a73fc4a700b7a8b5728d8d",
+    "applicationInputsSha256": "b42ff439917e4339473b8982b47984d1f655ecd0b52013058361987101481794",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 661,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+    "archiveSha256": "e03983a682ca53844cae89018218538e3d80d5c85dabd8c7fcdb492fc8be1ab7",
+    "migrationSha256": "cc89033e884a3376ecaffad394f434d31e9a84424c983ae77fb5ebab6b63d33f",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+      "applicationInputsSha256": "b42ff439917e4339473b8982b47984d1f655ecd0b52013058361987101481794",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "4cc0dc91f6bc3c707a844f6e8669c4ca5a077470",
+      "applicationInputsSha256": "b42ff439917e4339473b8982b47984d1f655ecd0b52013058361987101481794",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 150,
+      "retained": 59,
+      "verified": 209
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 150,
+      "retained": 59,
+      "verified": 209
+    }
+  ]
+}

@@ -104,8 +104,10 @@ export default function LibraryClient({
       </header>
       {overview && (
         <aside className={lib.context}>
-          <WorkspaceIcon name="cases" />
-          <strong>{currentCase?.title || t("Current case", "Текущее дело")}</strong>
+          <span className={lib.caseIdentity}>
+            <WorkspaceIcon name="cases" />
+            <strong>{currentCase?.title || t("Current case", "Текущее дело")}</strong>
+          </span>
           <a href={overview}>{t("Return to case overview", "Вернуться к обзору дела")}</a>
           <a href={href("/studio?studio_panel=workbench")}>{t("Open AI Studio", "Открыть ИИ Студию")}</a>
         </aside>

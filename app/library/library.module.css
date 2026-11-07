@@ -386,3 +386,34 @@
 .destination > svg {
   flex: none;
 }
+.caseIdentity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 10rem;
+}
+.caseIdentity svg {
+  flex: none;
+}
+@media (max-width: 640px) {
+  .context {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 8px;
+  }
+  .caseIdentity {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .caseIdentity strong {
+    margin: 0;
+    min-width: 0;
+  }
+  .context a {
+    min-width: 0;
+    padding-inline: 0;
+    line-height: 1.3;
+    align-self: stretch;
+  }
+}
