@@ -15,6 +15,7 @@ export const WORK_VIEWS = [
   { id: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
   { id: "cases", en: "Case overview", ru: "Обзор дел", icon: "cases" },
   { id: "studio", en: "AI Studio", ru: "ИИ Студия", icon: "studio" },
+  { id: "library", en: "Library", ru: "Библиотека", icon: "document" },
 ] as const;
 
 export type WorkView = typeof WORK_VIEWS[number]["id"];
@@ -22,7 +23,7 @@ export type WorkView = typeof WORK_VIEWS[number]["id"];
 /** Local work views retain their controller. Cross-page links use the suite's departure guard. */
 export default function WorkTabs({ locale, active, location, onView, onStudio, onCaseOverview }: {
   locale: "en" | "ru"; active: WorkView; location: string;
-  onView?: (view: Exclude<WorkView, "studio">) => void;
+  onView?: (view: Exclude<WorkView, "studio" | "library">) => void;
   onStudio?: () => void;
   onCaseOverview?: () => void;
 }) {
@@ -38,8 +39,9 @@ export default function WorkTabs({ locale, active, location, onView, onStudio, o
       if (item.id === "cases" && onCaseOverview) return <button key={item.id} type="button" aria-current={active === "cases" ? "page" : undefined} onClick={onCaseOverview}>{content}</button>;
       if (item.id === "cases" && caseOverview) return <a key={item.id} href={caseOverview}>{content}</a>;
       if (item.id === "studio" && onStudio) return <button key={item.id} type="button" aria-current={active === "studio" ? "page" : undefined} onClick={onStudio}>{content}</button>;
+      if (item.id === "library") return <a key={item.id} href={active === "library" ? location : workspaceDestination("/library", location)} aria-current={active === item.id ? "page" : undefined}>{content}</a>;
       return onView && item.id !== "studio"
-        ? <button key={item.id} type="button" aria-current={active === item.id ? "page" : undefined} onClick={() => onView(item.id as Exclude<WorkView, "studio">)}>{content}</button>
+        ? <button key={item.id} type="button" aria-current={active === item.id ? "page" : undefined} onClick={() => onView(item.id as Exclude<WorkView, "studio" | "library">)}>{content}</button>
         : <a key={item.id} href={workspaceDestination(item.id === "studio" ? "/studio?studio_panel=workbench" : `/work?view=${item.id}`, location)} aria-current={active === item.id ? "page" : undefined}>{content}</a>;
     })}
   </nav>;

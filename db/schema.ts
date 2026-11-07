@@ -1,6 +1,16 @@
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, real, sqliteTable, text, uniqueIndex, type SQLiteTableExtraConfigValue } from "drizzle-orm/sqlite-core";
 
+export const firmUploadIntents = sqliteTable("firm_upload_intents", {
+  organizationId:text("organization_id").notNull().references(()=>organizations.id), actorRef:text("actor_ref").notNull(),
+  operationKey:text("operation_key").notNull(),requestDigest:text("request_digest").notNull(),documentId:text("document_id").notNull(),expectedVersion:integer("expected_version").notNull(),
+  title:text("title").notNull(),folder:text("folder").notNull(),filename:text("filename").notNull(),byteLength:integer("byte_length").notNull(),
+  state:text("state").notNull().default("pending"),createdAt:text("created_at").notNull(),
+},t=>[uniqueIndex("firm_intent_operation").on(t.organizationId,t.actorRef,t.operationKey),index("firm_intent_owner_state").on(t.organizationId,t.actorRef,t.state),check("firm_intent_state",sql`${t.state} IN ('pending','committed','cancelled')`)]);
+export const firmLibraryFolderPaths = sqliteTable("firm_library_folder_paths",{
+  organizationId:text("organization_id").notNull().references(()=>organizations.id),path:text("path").notNull(),actorRef:text("actor_ref").notNull(),operationKey:text("operation_key").notNull(),createdAt:text("created_at").notNull(),
+},t=>[uniqueIndex("firm_folder_path").on(t.organizationId,t.path),uniqueIndex("firm_folder_save").on(t.organizationId,t.actorRef,t.operationKey)]);
+
 export const dossierPracticeRevisions = sqliteTable("dossier_practice_revisions", {
   dossierId: text("dossier_id").notNull().references(() => dossiers.id),
   revision: integer("revision").notNull(), actorRef: text("actor_ref").notNull(),
