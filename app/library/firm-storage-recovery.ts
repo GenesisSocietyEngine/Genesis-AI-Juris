@@ -4,8 +4,9 @@ import {
   firmLibraryFolderPaths as folders,
   firmUploadIntents as intents,
 } from "../../db/schema";
-import { dossierJson, revalidateDossierIdentity, type DossierServerContext } from "../dossier-server";
-import { assertOrganizationCurrent, organizationSelectionToken } from "../organization-store";
+import { dossierJson, type DossierServerContext } from "../dossier-server";
+import { firmReply } from "../firm-authority";
+import { organizationSelectionToken } from "../organization-store";
 import { canonicalR2Sha256, type PreparedDossierUpload } from "../dossier-private-upload";
 import { firmFolder } from "./firm-document-model";
 type Version = typeof versions.$inferSelect;
@@ -19,19 +20,6 @@ export const firmRecord = (r: Version) => ({
   bytes: r.byteLength,
   occurredAt: r.occurredAt,
 });
-export async function firmAuthority(c: DossierServerContext) {
-  const denied = await revalidateDossierIdentity(c);
-  if (denied) return denied;
-  try {
-    await assertOrganizationCurrent(c.db, c.actor, c.organization!);
-    return null;
-  } catch {
-    return dossierJson({ error: "Organization access changed." }, 404);
-  }
-}
-export async function firmReply(c: DossierServerContext, body: unknown, status = 200) {
-  return (await firmAuthority(c)) ?? dossierJson(body, status);
-}
 const owner = (c: DossierServerContext, key: string) =>
   and(
     eq(intents.organizationId, c.organization!.id),

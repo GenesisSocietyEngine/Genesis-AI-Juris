@@ -1,0 +1,387 @@
+.workspace {
+  min-width: 0;
+}
+.workspace button,
+.workspace select,
+.workspace input,
+.editor input,
+.editor select,
+.editor textarea {
+  font: inherit;
+}
+.workspace button,
+.workspace select,
+.workspace input {
+  min-height: 36px;
+}
+.commands,
+.links li,
+.imports li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.commands button,
+.workspace nav button,
+.caseLinks h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.workspace button.primary {
+  background: #105f9e;
+  color: #fff;
+  border-color: #105f9e;
+}
+.workspace button.primary:hover:enabled {
+  background: #064c83;
+}
+.workspace button:focus-visible,
+.workspace a:focus-visible,
+.workspace input:focus-visible,
+.workspace select:focus-visible,
+.workspace summary:focus-visible {
+  outline: 2px solid #146ba4;
+  outline-offset: 2px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px 16px;
+  margin: 16px 0;
+}
+.filters label,
+.linkForm label,
+.fields label {
+  display: grid;
+  gap: 5px;
+  font-weight: 600;
+  color: #273e50;
+  min-width: 0;
+}
+.filters label {
+  flex: 1 1 8rem;
+  max-width: 14rem;
+}
+.filters label:first-child {
+  flex: 2 1 16rem;
+  max-width: 30rem;
+}
+.filters input,
+.filters select,
+.linkForm select,
+.fields select,
+.fields textarea,
+.fields input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  color: #203547;
+  background: white;
+  border: 1px solid #adbfcd;
+  border-radius: 4px;
+  font-weight: 400;
+}
+.search {
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+.search svg {
+  position: absolute;
+  inset-inline-start: 10px;
+  color: #61768b;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+}
+.search input {
+  padding-inline-start: 34px;
+}
+.panes {
+  display: grid;
+  grid-template-columns: minmax(235px, 0.8fr) minmax(0, 1.25fr);
+  border: 1px solid #c8d5df;
+  border-radius: 7px;
+  overflow: hidden;
+  background: white;
+}
+.list,
+.reading {
+  min-width: 0;
+}
+.list {
+  border-inline-end: 1px solid #c8d5df;
+}
+.list > h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #f3f7fa;
+  border-bottom: 1px solid #d6e0e8;
+  margin: 0;
+  padding: 12px 16px;
+}
+.list h2 span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4c6174;
+}
+.list ul,
+.links,
+.imports ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li + li {
+  border-top: 1px solid #e1e8ed;
+}
+.list .row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 62px;
+  border: 0;
+  border-inline-start: 3px solid transparent;
+  border-radius: 0;
+  text-align: start;
+  padding: 9px 13px;
+  background: white;
+}
+.list .row:hover {
+  background: #f1f7fb;
+}
+.list .row[aria-pressed="true"] {
+  background: #e7f2fc;
+  border-inline-start-color: #1068a7;
+}
+.row > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.row strong,
+.row small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.row small,
+.muted,
+.empty,
+.emptyDetail {
+  color: #506576;
+}
+.row small {
+  margin-top: 3px;
+}
+.row > svg {
+  color: #61798b;
+  width: 16px;
+  flex: none;
+}
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: #d8edf1;
+  color: #135865;
+  font-weight: 650;
+  line-height: 1;
+}
+.glyph[data-kind="company"] {
+  background: #e9e4f5;
+  color: #5d4181;
+  border-radius: 8px;
+}
+.reading {
+  padding: 18px;
+  overflow-wrap: anywhere;
+}
+.reading:focus {
+  outline: none;
+}
+.reading:focus-visible {
+  box-shadow: inset 0 0 0 2px #146ba4;
+}
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.profile .glyph {
+  width: 46px;
+  height: 46px;
+  font-size: 1.1rem;
+}
+.profile h2,
+.caseLinks h3 {
+  margin: 0 0 6px;
+}
+.details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.details dt {
+  color: #526679;
+  font-size: 0.86rem;
+}
+.details dd {
+  margin: 2px 0 0;
+}
+.caseLinks {
+  border-top: 1px solid #d8e1e8;
+  padding-top: 14px;
+}
+.caseLinks h3 svg,
+.emptyDetail svg {
+  color: #277695;
+}
+.links li,
+.imports li {
+  justify-content: space-between;
+  margin: 6px 0;
+}
+.links a {
+  color: #075797;
+  overflow-wrap: anywhere;
+}
+.linkForm {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.linkForm label {
+  flex: 1 1 12rem;
+}
+.empty {
+  padding: 14px 16px;
+  margin: 0;
+}
+.emptyDetail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  text-align: center;
+}
+.emptyDetail svg {
+  width: 31px;
+  height: 31px;
+}
+.message,
+.problem,
+.review {
+  margin: 10px 0;
+  padding: 9px 12px;
+  border-inline-start: 3px solid #328373;
+  background: #edf7f3;
+  color: #224f44;
+  overflow-wrap: anywhere;
+}
+.problem,
+.review {
+  border-color: #b67b17;
+  background: #fff6e4;
+  color: #65480d;
+}
+.review ul,
+.review ol {
+  padding-inline-start: 21px;
+  max-height: 12rem;
+  overflow: auto;
+}
+.review ol {
+  list-style: none;
+  padding: 0;
+}
+.imports {
+  margin: 12px 0;
+}
+.imports summary {
+  display: list-item;
+  cursor: pointer;
+  color: #245d83;
+}
+.editor .fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 11px 15px;
+}
+.editor .fields label {
+  margin: 0;
+}
+.fields .review,
+.fields:has(textarea) > * {
+  grid-column: 1/-1;
+}
+.fields textarea {
+  resize: vertical;
+}
+@media (max-width: 720px) {
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .list {
+    border-inline-end: 0;
+    border-bottom: 1px solid #c8d5df;
+  }
+  .list ul {
+    max-height: 40vh;
+    overflow: auto;
+  }
+  .emptyDetail {
+    min-height: 72px;
+  }
+  .reading {
+    padding: 14px;
+  }
+  .filters label:first-child {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .filters label {
+    max-width: none;
+  }
+  .workspace button,
+  .workspace select,
+  .workspace input,
+  .workspace a,
+  .workspace summary,
+  .editor button,
+  .editor select,
+  .editor input:not([type="checkbox"]) {
+    min-height: 44px;
+  }
+  .editor .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editor {
+    max-height: 90dvh;
+  }
+}
+
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.profile [class] + [class] {
+  margin-inline-start: 4px;
+}

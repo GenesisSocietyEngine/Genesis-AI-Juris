@@ -11,7 +11,7 @@ export const WORK_VIEWS = [
   { id: "calendar", en: "Calendar", ru: "Календарь", icon: "calendar" },
   { id: "reminders", en: "Reminders", ru: "Напоминания", icon: "reminder" },
   { id: "templates", en: "Workflow templates", ru: "Шаблоны процессов", icon: "template" },
-  { id: "people", en: "People", ru: "Участники", icon: "people" },
+  { id: "people", en: "Contacts", ru: "Контакты", icon: "people" },
   { id: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
   { id: "cases", en: "Case overview", ru: "Обзор дел", icon: "cases" },
   { id: "studio", en: "AI Studio", ru: "ИИ Студия", icon: "studio" },
