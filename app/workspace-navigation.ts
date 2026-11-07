@@ -1,6 +1,6 @@
 const ORIGIN = "https://workspace.invalid";
 const RESERVED = new Set(["/signin-with-chatgpt", "/signout-with-chatgpt", "/callback"]);
-const PAGES = new Set(["/", "/studio", "/templates", "/matters", "/work", "/canopy", "/organizations", "/invitations", "/account"]);
+const PAGES = new Set(["/", "/studio", "/templates", "/library", "/matters", "/work", "/canopy", "/organizations", "/invitations", "/account"]);
 
 /** A return destination is a same-origin browser page, never an auth callback or API. */
 export function safeWorkspaceReturn(value: unknown, fallback = "/studio"): string {
@@ -51,7 +51,7 @@ export function workspaceDestination(path: string, current: string) {
       if (value && !target.searchParams.has(key) && !(key === "run" && changesScenario)) target.searchParams.set(key, value);
     }
   }
-  if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/work", "/templates", "/account"].includes(target.pathname)) {
+  if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/work", "/templates", "/library", "/account"].includes(target.pathname)) {
     const returnTo = (["/matters", "/canopy"].includes(source.pathname) || (source.pathname === "/organizations" && target.pathname === "/account")) ? source.pathname + source.search + source.hash : returnPath;
     if (returnTo && returnTo !== target.pathname) target.searchParams.set("return_to", returnTo);
   }

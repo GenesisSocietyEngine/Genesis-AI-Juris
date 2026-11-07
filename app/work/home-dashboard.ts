@@ -2,9 +2,10 @@ import { calendarDate, calendarDays, localAt } from "../matters/practice-schedul
 import type { FirmCase } from "./work-controller";
 import { caseWorkSummary } from "./case-work-summary";
 
-export function homeDashboard(cases: FirmCase[], now: number, zone: string) {
+export function homeDashboard(cases: FirmCase[], now: number, zone: string, firmItems: import("../matters/practice-plan").PracticeItem[] = []) {
   const today = localAt(now, zone).slice(0, 10);
   const all = cases.flatMap(matter => matter.plan.items.map(item => ({ ...item, caseId: matter.id, caseTitle: matter.title })));
+  all.push(...firmItems.map(item=>({...item,caseId:"",caseTitle:"Firm work"})));
   const open = all.filter(item => item.status === "open");
   const sort = (a: typeof all[number], b: typeof all[number]) =>
     (calendarDate(a, zone) ?? "9999").localeCompare(calendarDate(b, zone) ?? "9999") ||

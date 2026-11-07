@@ -11,19 +11,19 @@ type Handler=(request:Request,context:{params:Promise<{dossierId:string}>})=>Pro
 let mf:Miniflare, db:D1Database;
 let routes:Record<string,{GET:Handler;POST:Handler}>;
 const storage=new AsyncLocalStorage<Request>();
-const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database};__practiceHeaders:()=>Headers};
+const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database;DOSSIER_DOCUMENTS?:R2Bucket};__practiceHeaders:()=>Headers};
 let organization:string, foreignOrganization:string, caseId:string;
 async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="") {
   const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
   return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:caseId})}));
 }
 before(async()=>{
-  mf=new Miniflare({workers:[{config:{name:"practice-test",type:"worker",compatibilityDate:"2026-09-01",manifest:{mainModule:"index.mjs",modules:{"index.mjs":{type:"esm",contents:"export default {fetch(){return new Response('test')}}"}}},env:{DB:{type:"d1",name:"practice-test"}}},dev:{}}]});
+  mf=new Miniflare({workers:[{config:{name:"practice-test",type:"worker",compatibilityDate:"2026-09-01",manifest:{mainModule:"index.mjs",modules:{"index.mjs":{type:"esm",contents:"export default {fetch(){return new Response('test')}}"}}},env:{DB:{type:"d1",name:"practice-test"},DOSSIER_DOCUMENTS:{type:"r2",name:"practice-documents"}}},dev:{}}]});
   db=await mf.getD1Database("DB","practice-test") as unknown as D1Database;
   const journal=JSON.parse(readFileSync("drizzle/meta/_journal.json","utf8"));
   for(const entry of journal.entries)for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();
-  runtime.__practiceEnv={DB:db};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
+  const paths={firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -115,4 +115,46 @@ test("timed events, recurrence and reminder receipts persist without changing ca
   response=await call("firm");assert.equal(response.status,200,await response.clone().text());
   const stable=(value:unknown)=>JSON.parse(JSON.stringify(value,(key,v)=>key==="evaluated_at"?undefined:v));
   assert.deepEqual(stable(await (await call("detail")).json()),stable(before));
+});
+
+
+test("standalone firm work is revisioned, replayable, private to the organization and immutable",async()=>{
+ const item={kind:"task",title:"Firm review",description:"Synthetic",dueDate:"2026-11-10",assignee:null,priority:"normal",status:"open",checklist:[]};
+ const command={action:"create",item,expectedRevision:0,operationKey:"firm-task-original"};
+ const response=await call("firmWork","POST",command);assert.equal(response.status,200,await response.clone().text());const original=await response.json();
+ assert.deepEqual(await (await call("firmWork","POST",command)).json(),original);
+ assert.equal((await call("firmWork","POST",{...command,item:{...item,title:"Replacement"}})).status,409);
+ assert.equal((await call("firmWork","POST",{...command,operationKey:"firm-task-stale"})).status,409);
+ assert.equal((await call("firmWork","POST",{...command,expectedRevision:1,operationKey:"firm-task-invalid-owner",item:{...item,assignee:"unknown_actor"}})).status,409);
+ assert.equal((await call("firmWork","POST",command,"practice-owner@example.test",organization,{origin:"https://foreign.test","sec-fetch-site":"cross-site"})).status,403);
+ const foreign=await (await call("firmWork","GET",undefined,"practice-outsider@example.test",foreignOrganization)).json() as {plan:{revision:number}};assert.equal(foreign.plan.revision,0);
+ await assert.rejects(db.prepare("DELETE FROM organization_work_revisions WHERE organization_id=?").bind(organization).run(),/immutable/);
+});
+
+async function firmUpload(title:string,key:string,id?:string,expectedVersion=0){
+ const form=new FormData();form.set("title",title);form.set("folder","Policies/Team");form.set("operationKey",key);form.set("expectedVersion",String(expectedVersion));form.set("mediaType","text/plain");form.set("privacyAcknowledgement","synthetic_or_deidentified");form.set("file",new File(["Synthetic document only"],"example.txt",{type:"text/plain"}));if(id)form.set("id",id);
+ const request=new Request("https://practice.test/api/library/firm",{method:"POST",headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":"practice-owner@example.test","x-genesis-organization":organization},body:form});
+ return storage.run(request,()=>routes.firmDocuments.POST(request,{params:Promise.resolve({dossierId:caseId})}));
+}
+test("firm documents retain exact versions and protected downloads, with no case evidence mutation",async()=>{
+ const before=await (await call("detail")).json();
+ let response=await firmUpload("Firm policy","firm-upload-original");assert.equal(response.status,200,await response.clone().text());const original=await response.json() as {document:{id:string;version:number}};
+ assert.deepEqual(await (await firmUpload("Firm policy","firm-upload-original")).json(),original);
+ assert.equal((await firmUpload("Different title","firm-upload-original")).status,409);
+ response=await firmUpload("Firm policy revised","firm-upload-version2",original.document.id,1);assert.equal(response.status,200,await response.clone().text());
+ response=await call("firmDocuments","GET",undefined,"practice-owner@example.test",organization,undefined,`?id=${original.document.id}`);assert.equal(response.status,200);assert.equal((await response.json() as {documents:unknown[]}).documents.length,2);
+ response=await call("firmDocuments","GET",undefined,"practice-owner@example.test",organization,undefined,`?id=${original.document.id}&version=1&download=1`);assert.equal(response.status,200,await response.clone().text());assert.equal(await response.text(),"Synthetic document only");assert.match(response.headers.get("cache-control")!,/no-store/);assert.match(response.headers.get("content-disposition")!,/attachment/);
+ assert.equal((await call("firmDocuments","GET",undefined,"practice-outsider@example.test",foreignOrganization,undefined,`?id=${original.document.id}&version=1&download=1`)).status,404);
+ await assert.rejects(db.prepare("DELETE FROM firm_document_versions WHERE organization_id=?").bind(organization).run(),/immutable/);
+ const stable=(v:unknown)=>JSON.parse(JSON.stringify(v,(k,x)=>k==="evaluated_at"?undefined:x));assert.deepEqual(stable(await (await call("detail")).json()),stable(before));
+});
+
+test("auditor reads firm work but cannot change it and suspended members cannot read firm documents",async()=>{
+ const outsider=await db.prepare("SELECT actor_id FROM users WHERE email=?").bind("practice-outsider@example.test").first<{actor_id:string}>();
+ await db.prepare("UPDATE organization_memberships SET role='auditor',status='active',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(organization,outsider!.actor_id).run();
+ assert.equal((await call("firmWork","GET",undefined,"practice-outsider@example.test",organization)).status,200);
+ assert.equal((await call("firmWork","POST",{action:"create"},"practice-outsider@example.test",organization)).status,403);
+ assert.equal((await call("firmDocuments","POST",{},"practice-outsider@example.test",organization)).status,403);
+ await db.prepare("UPDATE organization_memberships SET status='suspended',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(organization,outsider!.actor_id).run();
+ assert.equal((await call("firmDocuments","GET",undefined,"practice-outsider@example.test",organization)).status,404);
 });

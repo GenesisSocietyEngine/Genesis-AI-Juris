@@ -15,7 +15,7 @@ export default function WorkReadingPane({ item, paneRef, locale, today, zone, hr
   const state = item ? workState(item, today, zone) : "open";
   return <section ref={paneRef} tabIndex={-1} data-empty={!item} className={styles.readingPane} aria-label={t("Work reading pane", "Область чтения задачи")}>
     {item ? <>
-      <div className={styles.actions}><a className={styles.primary} href={href}><WorkspaceIcon name="arrow" />{t("Open in case", "Открыть в деле")}</a><button type="button" onClick={onClose}><WorkspaceIcon name="close" />{t("Close preview", "Закрыть просмотр")}</button></div>
+      <div className={styles.actions}>{href&&<a className={styles.primary} href={href}><WorkspaceIcon name="arrow" />{t("Open in case", "Открыть в деле")}</a>}<button type="button" onClick={onClose}><WorkspaceIcon name="close" />{t("Close preview", "Закрыть просмотр")}</button></div>
       <p className={styles.eyebrow}>{item.caseTitle}</p><h2>{item.title}</h2>
       <div className="cv-badges"><StatusBadge tone={state}>{workStateLabel(state, locale)}</StatusBadge>{item.priority === "high" && <StatusBadge tone="overdue">{t("High priority", "Высокий приоритет")}</StatusBadge>}</div>
       <dl className={styles.detailFields}>

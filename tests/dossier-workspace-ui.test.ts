@@ -349,7 +349,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(boundary, /<WorkspaceNavigation active=/);
   assert.match(navigation, /GenesisNavigation/);
   const navigationMarkup = renderToStaticMarkup(createElement(WorkspaceNavigation, { active: "/canopy" }));
-  assert.match(navigationMarkup, /href="\/studio\?view=demos" aria-current="page"/);
+  assert.match(navigationMarkup, /href="\/library\?view=demo" aria-current="page"/);
   assert.match(navigationMarkup, /href="\/matters"/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);

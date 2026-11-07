@@ -22,10 +22,10 @@ export const WORKSPACE_PAGES = [
   { path: "/work?view=workflows", view: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
 ] as const;
 const SECONDARY_PAGES = [
-  {path:"/studio?view=community",view:"community",en:"Saved Studio drafts",ru:"Черновики Studio",icon:"document"},
-  {path:"/studio?view=demos",view:"demos",en:"Demo",ru:"Демо",icon:"demo"},
-  {path:"/templates",view:"templates",en:"Templates",ru:"Шаблоны",icon:"template"},
-  {path:"/studio?view=play",view:"play",en:"Simulations",ru:"Симуляции",icon:"tasks"},
+  {path:"/library?view=cases",view:"library-cases",en:"Case documents",ru:"Документы дел",icon:"document"},
+  {path:"/library?view=firm",view:"library-firm",en:"Firm documents",ru:"Документы фирмы",icon:"organization"},
+  {path:"/library?view=templates",view:"library-templates",en:"Templates",ru:"Шаблоны",icon:"template"},
+  {path:"/library?view=demo",view:"library-demo",en:"Demo",ru:"Демо",icon:"demo"},
 ] as const;
 
 export { WorkspaceIcon } from "./CaseVantIcon";
@@ -119,7 +119,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }, []);
   function follow(event: MouseEvent<HTMLAnchorElement>, view: string) {
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    if (!onNavigate || ["matters", "work", "home", "calendar", "tasks", "people", "workflows"].includes(view)) { guardedLink(event);return; }
+    if (!onNavigate || view.startsWith("library-") || ["matters", "work", "home", "calendar", "tasks", "people", "workflows"].includes(view)) { guardedLink(event);return; }
     if(event.defaultPrevented)return;
     if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}
@@ -138,13 +138,13 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         const label = <><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></>;
         return <Fragment key={item.view}>{item.view === "studio" && active === "studio" && onNavigate
           ? <button type="button" className="casevant-primary-link" aria-current="page" onClick={()=>{closeDrawer();onNavigate("studio");}}>{label}</button>
-          : <a className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}>{label}</a>}{item.view==="studio"&&selected&&<div className="studio-sidebar-actions" ref={studioActionsSlot}/>}</Fragment>;
+          : <a className="casevant-primary-link" href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}>{label}</a>}{item.view==="studio"&&(selected||active==="community"||active==="play")&&<><div className="studio-sidebar-actions" ref={studioActionsSlot}/><div className="genesis-nav-children"><a aria-current={active==="community"?"page":undefined} href={href("/studio?view=community")} onClick={event=>follow(event,"community")}>{en?"Saved Studio drafts":"Черновики Studio"}</a><a aria-current={active==="play"?"page":undefined} href={href("/studio?view=play")} onClick={event=>follow(event,"play")}>{en?"Test scenarios":"Проверить сценарии"}</a>{operationsActions}</div></>}</Fragment>;
       })}
-      <details className="genesis-nav-group" open={SECONDARY_PAGES.some(item=>item.view===active||item.path===active)||active==="library"||active==="/canopy"}>
-        <summary><WorkspaceIcon name="grid"/><span>{en?"Tools & library":"Инструменты и библиотека"}</span><span aria-hidden="true">⌄</span></summary>
+      <details className="genesis-nav-group" open={SECONDARY_PAGES.some(item=>item.view===active||item.path===active)||active==="library"||active==="/library"||active==="/templates"||active==="templates"||active==="demos"||active==="/canopy"}>
+        <summary><WorkspaceIcon name="grid"/><span>{en?"Library":"Библиотека"}</span><span aria-hidden="true">⌄</span></summary>
         <div className="genesis-nav-children">{SECONDARY_PAGES.map(item=>{
-          const selected=active===item.view||active===item.path||((active==="library"||active==="/canopy")&&item.view==="demos");
-          return <Fragment key={item.view}><a href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a>{item.view==="play"&&operationsActions}</Fragment>;
+          const selected=active==="/library" ? item.view===`library-${new URL(location,"https://workspace.invalid").searchParams.get("view")??"cases"}` : ((active==="/templates"||active==="templates")&&item.view==="library-templates")||((active==="demos"||active==="/canopy")&&item.view==="library-demo");
+          return <Fragment key={item.view}><a href={href(item.path)} aria-current={selected?"page":undefined} onClick={event=>follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en?item.en:item.ru}</span></a></Fragment>;
         })}</div>
       </details>
     </nav>
