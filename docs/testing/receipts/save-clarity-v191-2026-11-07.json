@@ -1,0 +1,231 @@
+{
+  "schema": "casevant.save-clarity-release.v1",
+  "recordedAt": "2026-11-06T23:21:08.147Z",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+  "candidateCommit": "d6b5e2fb34de6b6293a6d095837c846e9bc7c80b",
+  "pullRequest": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/245",
+  "candidateCI": 42306941698,
+  "mainCI": 42308151143,
+  "mainAttempt": 2,
+  "artifact": {
+    "id": 13547976909,
+    "sha256": "8ca70cc3aadfc09199e5e047fa140c0934cf25293ed2edbf73e70a2b02a3c621"
+  },
+  "ci": {
+    "tests": 2015,
+    "passed": 2012,
+    "failed": 0,
+    "skipped": 3,
+    "htmlTests": 2,
+    "pdfVisual": "passed, unchanged baselines",
+    "candidateWebJob": 128198545911,
+    "candidatePdfJob": 128198545226,
+    "mainWebJob": 128206628259,
+    "mainPdfOriginalJob": 128202644366,
+    "retryNote": "Attempt 1 of run 42308151143 passed all 2,012 application tests (zero failures, three inherited skips), two HTML checks and unchanged PDF baselines, but packaged Chrome did not create DevToolsActivePort within its existing 20-second startup window. Its Chrome diagnostic log was empty; the underlying startup cause is unconfirmed. Preserved diagnostic artifact 13547971705 (SHA-256 5122336113ba12f586712e14f2eb525d3e97d782753b35585ad43fdd2538d0d9) and retried only the failed web job on the same commit without changing code or test gates. Attempt 2 web job 128206628259 passed all checks, including packaged browser/Worker execution and both zero-finding audits; the original PDF pass remains valid."
+  },
+  "bindings": {
+    "d1": "DB",
+    "r2": "DOSSIER_DOCUMENTS"
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_22f936e61b748191b09bb0268245ea6f",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 191,
+    "source": {
+      "commit_sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000004cec81f4a5bbf55db89f0126",
+      "content_hash": "sha256:541dda4b277ab6c972f8a1a81772fd29631ef91216f954ec22c325e80cf6f709",
+      "size_bytes": 54056960,
+      "file_count": 657
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6aee5fa278dc8191af0949f14d3cd8ea",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_22f936e61b748191b09bb0268245ea6f",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-06T23:16:10.228624+00:00"
+  },
+  "environment": {
+    "before": 42,
+    "after": 42,
+    "entryCount": 13,
+    "unchanged": true,
+    "returnedRepresentationsUnchanged": true
+  },
+  "audience": {
+    "before": "public",
+    "after": "public",
+    "revisionBefore": 2,
+    "revisionAfter": 2,
+    "unchanged": true
+  },
+  "date": "2026-11-07",
+  "dateLabel": "7 November 2026",
+  "browser": {
+    "summary": "Fresh signed-in production read-only checks preserve synthetic Studio case 51's exact title, 14 records and 13 connections through Case overview, AI Studio, Back/Forward and Calendar → Case overview → Studio. The prompt and canvas are visible, with explicit confirmed-case saving feedback. The governed case has one H1, readable General matter labels, collapsed details/checks and technical details; its case sections now start at y574.70 at 1280×720 (the same live case previously y807.75). Edit opens on the case-name field, unchanged Save is disabled and Cancel restores its command focus. No production case writes or provider requests. Non-empty prompt retention, save/conflict/continuation and 390px Russian dialog checks were exercised in the real-component synthetic preview, separately from live read-only acceptance.",
+    "liveAuthenticated": true,
+    "savedRecordWrites": 0,
+    "providerRequests": 0,
+    "studioId": 51,
+    "caseRecords": 14,
+    "flowConnections": 13,
+    "historyContinuity": true,
+    "crossModuleReturn": true,
+    "desktopWidth": 1280,
+    "desktopHeight": 720,
+    "caseSectionsYBefore": 807.75,
+    "caseSectionsYAfter": 574.7000122070312,
+    "singleCaseH1": true,
+    "secondaryDetailsCollapsed": true,
+    "technicalDetailsCollapsed": true,
+    "editEntryFocus": "case-edit-name",
+    "editReturnFocus": "case-edit-command",
+    "horizontalOverflow": false,
+    "screenshot": "casevant-context-live.jpg",
+    "syntheticDialogScreenshot": "casevant-saving-clarity.jpg",
+    "localFocusedChecks": 86
+  },
+  "retention": {
+    "previousSourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+    "previousCurrentAssets": 145,
+    "currentAssets": 144,
+    "retainedPreviousAssets": 84,
+    "totalVerifiedAssets": 228
+  },
+  "nativeSummary": "Rust, Android, Flutter and iOS Tax Application CI passed; iOS Native FFI remains in progress at this checkpoint, with native application acceptance separate",
+  "workflowRuns": [
+    {
+      "id": 42308151167,
+      "name": "Flutter Mobile UI",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151167"
+    },
+    {
+      "id": 42308151183,
+      "name": "Rust CI",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151183"
+    },
+    {
+      "id": 42308151111,
+      "name": "Android Native FFI",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151111"
+    },
+    {
+      "id": 42308151377,
+      "name": "iOS Native FFI",
+      "event": "push",
+      "status": "in_progress",
+      "conclusion": null,
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151377"
+    },
+    {
+      "id": 42308151143,
+      "name": "Root Web and PDF",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151143"
+    },
+    {
+      "id": 42308151120,
+      "name": "iOS Tax Application",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "sha": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151120"
+    }
+  ],
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+    "tree": "70be68e695263c2490b4bf88c0d33605f1079686",
+    "applicationInputsSha256": "da37cccce3265503be8245392775012a9821743401d2028405e1133b7c1be042",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 642,
+    "nodeVersion": "v22.23.2"
+  },
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "passed": true,
+      "assets": 228,
+      "verified": 228,
+      "expectedBuild": {
+        "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+        "previousSourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "applicationInputsSha256": "da37cccce3265503be8245392775012a9821743401d2028405e1133b7c1be042",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 144,
+        "retainedPreviousAssetCount": 84
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "passed": true,
+      "assets": 228,
+      "verified": 228,
+      "expectedBuild": {
+        "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+        "previousSourceCommit": "c66826d0f63062e2284036f3ff0f7902138ab250",
+        "applicationInputsSha256": "da37cccce3265503be8245392775012a9821743401d2028405e1133b7c1be042",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+        "currentAssetCount": 144,
+        "retainedPreviousAssetCount": 84
+      }
+    }
+  ],
+  "liveIdentities": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+        "applicationInputsSha256": "da37cccce3265503be8245392775012a9821743401d2028405e1133b7c1be042",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 200,
+      "verified": true,
+      "identity": {
+        "schema": "casevant.studio-release.v1",
+        "sourceCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0",
+        "applicationInputsSha256": "da37cccce3265503be8245392775012a9821743401d2028405e1133b7c1be042",
+        "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+      }
+    }
+  ]
+}

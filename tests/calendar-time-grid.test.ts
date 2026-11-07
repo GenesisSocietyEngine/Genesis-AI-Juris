@@ -10,4 +10,3 @@ test("time grid converts zones, includes continuation and excludes exact midnigh
   assert.equal(timeGridSlot({...event,timing:null,kind:"task"},"2026-11-06","Asia/Tokyo"),"all-day");
   assert.deepEqual(timeGridDays("2027-01-01","week"),["2026-12-28","2026-12-29","2026-12-30","2026-12-31","2027-01-01","2027-01-02","2027-01-03"]);
 });
-
