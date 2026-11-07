@@ -45,3 +45,11 @@ Candidate run 42318155565 and exact-main run 42319109880 passed: **2,022 tests, 
 Fresh signed-in production browser audit confirms Home's direct task/event editors, explicit firm/case scope, recurrence and shared in-app reminders, timed-event timezone/DST controls, day/week calendar grids, the four Library sections, and the firm upload form. Existing case/task remains visible (one accessible case, one completed task); no production records were changed, no files uploaded, and no AI provider requests made. Upload/task Cancel restores the initiating command. Measured production 390px viewport: document width 371px and dialog width 337px; no page overflow. The temporary viewport override was reset. No console errors were observed. Local synthetic authoring/persistence tests remain distinct from production read-only acceptance. Screenshot: local `.artifacts/modules-v192-task-editor.png`.
 
 Minor audit follow-up: avoid duplicate recurrence validation text in the shared work editor, use scope-neutral reminder wording for firm work, and consider hiding Agenda range outside Agenda. These do not block creation or cancel/save controls. Broader limits above remain explicit. Rust, Android and Flutter checks pass on the release commit; iOS Native FFI and iOS Tax Application are still running at this checkpoint, not claimed as accepted. Documentation-only closure must not trigger another deployment.
+
+## Calendar and reminder follow-up
+
+MyCase groups Day, Week, Month and Agenda as alternative views. Its live Help Center confirms the selector and its reminder delivery options. The firm tenant returned a sign-in prompt on this pass. [MyCase Calendar overview](https://supportcenter.mycase.com/en/articles/9370065-calendar-overview)
+
+Calendar now keeps the Agenda range within Agenda and remembers it across layout changes. Previous and Next follow the displayed period. Day shows one date. Recurring tasks show one first-date prompt and keep Save disabled until scheduling is valid. The reminder explanation covers firm and case work in English and Russian.
+
+Fifteen focused scheduling, date-view and firm work tests passed. Release acceptance also checks the rendered toolbar and editor.
