@@ -1,0 +1,58 @@
+{
+  "release": "CaseVant v192",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ac1b920cf31c81918b214f631daa0a33",
+  "version": 192,
+  "deploymentId": "appgdep_6aee7567afa081919799ada104b35b5a",
+  "status": "succeeded",
+  "publishedAt": "2026-11-07T00:49:02.439232+00:00",
+  "origins": [
+    "https://casevant.pro",
+    "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+  ],
+  "sourceCommit": "92e52d8106aac6006e4d585b2892446e677d92b2",
+  "applicationInputsSha256": "89250f92477c3effd91ed80a3922194040123e7e0eaf995e843e6f154adefe4a",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "inputs": 655,
+  "environmentRevision": 42,
+  "audience": "public",
+  "accessRevision": 2,
+  "ci": {
+    "candidate": 42318155565,
+    "exactMain": 42319109880,
+    "passed": 2022,
+    "failed": 0,
+    "inheritedSkips": 3,
+    "pdf": "passed",
+    "dependencyAudits": "zero findings"
+  },
+  "assets": {
+    "perOrigin": 233,
+    "current": 150,
+    "retainedPrevious": 83,
+    "previousCommit": "f6c685f2f733cb5a9218485679705f7a606dd3a0"
+  },
+  "browserAudit": {
+    "authenticated": true,
+    "productionRecordWrites": false,
+    "home": true,
+    "tasks": true,
+    "calendarDayWeek": true,
+    "librarySections": true,
+    "uploadDialogCancelFocus": true,
+    "narrow": {
+      "cssWidth": 390,
+      "documentWidth": 371,
+      "dialogWidth": 337
+    },
+    "consoleErrorsObserved": 0
+  },
+  "limits": [
+    "Firm uploads retain synthetic/de-identified acknowledgement",
+    "No external calendar sync, desktop drive, bulk upload, e-signature or Word mail merge",
+    "Calendar time grid lists start-hour entries, not draggable duration blocks",
+    "Version history lists latest 100",
+    "Minor follow-up: duplicate recurrence validation text and scope-specific reminder wording",
+    "iOS checks still running at release closure"
+  ]
+}
