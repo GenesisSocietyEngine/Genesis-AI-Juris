@@ -78,3 +78,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 Maintain this progress file at each milestone. Continue the separately scoped firm Library/document storage and standalone task/calendar work, then further case metadata as required. Preserve the completed Home, AI Studio and editor flows; avoid repeating their release for documentation changes.
 
 Broader remaining modules (Library, standalone firm work, CRM, finance, portal, sync) remain separate; this task does not claim full MyCase parity. Detailed evidence: [case editor audit](docs/testing/case-editor-2026-11-06.md).
+
+## Calendar and reminder audit follow-up, 7 November
+
+Implemented the three v192 audit findings on the major-version branch. Focused scheduling and work controller tests passed (15). Release verification is tracked in the module audit.
