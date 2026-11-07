@@ -1,8 +1,12 @@
 # Current progress — CaseVant
 
-## Library storage follow-on — 7 November 2026
+## Published Library and document storage — 7 November 2026
 
-**Verified in the development candidate; public baseline v193.** Library now keeps the current case and AI Studio return visible, separates case evidence from firm files, and provides folders, file selection, version history and clear save destinations. Interrupted uploads can be resumed or cancelled; a lost response can be checked without resending the file. Previously stored versions and download paths remain intact. The 44 targeted storage, controller, migration and navigation checks include a populated v193 upgrade and restoration of older case bookmarks after access is confirmed. The final desktop and 390 px Russian browser checks covered recovery, keyboard focus, case links and control sizes. [Review and acceptance](docs/testing/library-document-storage-2026-11-07.md).
+**Public v194**, merged in [PR #252](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/252). Library keeps the current case and AI Studio return, shows explicit firm folders and version history, and confirms a lost save without resending the file. Older bookmarks are restored only after case access is verified. Existing originals, case evidence and their private storage paths are preserved.
+
+Production mobile follow-up: on a 390 px screen the case label was squeezed between return commands. The corrected case name now occupies a 294 px row, with two separate 44 px return commands beneath it. Verified in English and Russian with generic and named cases; production verification follows.
+
+Candidate and exact-main web/PDF checks passed. Both production origins returned the merged runtime `4cc0dc91f6bc3c707a844f6e8669c4ca5a077470` and verified all 209 browser assets each (59 retained from v193). The update preserved site access, runtime settings and D1/R2 bindings. Signed-in production acceptance was read-only; upload and interruption tests used isolated actual D1/R2 storage. [Audit](docs/testing/library-document-storage-2026-11-07.md) · [Release receipt](docs/testing/receipts/library-document-storage-v194-2026-11-07.json).
 
 ## Published Calendar and task audit fixes, 7 November 2026
 
@@ -61,6 +65,7 @@ This cumulative summary uses [development-journal.md](development-journal.md) fo
 | **6 November — case editor** | Focused case editor with clear entry, supported fields, Save & close, guarded cancellation, retained drafts and revision-bound conflict/recovery handling. Established this continuously maintained progress file. | **Delivered public v190** after exact-main CI and both-origin verification. See the v190 evidence below and [case editor audit](docs/testing/case-editor-2026-11-06.md). |
 | **7 November 2026 — saving and case continuity** | Clear saved-content versus unsent-input status, centered Save and continue / Review dialog, in-place Case overview and AI Studio, exact saved-case return links and Back/Forward continuity. Compact case hierarchy and readable labels. | **Delivered public v191** with 2,012 full-suite passes and both-origin verification. [Audit](docs/testing/ui-reference-save-clarity-2026-11-06.md). |
 | **7 November — firm modules** | Home, Tasks and Calendar gained firm/case scheduling and reminders; Library gained distinct case/firm documents, folder filtering, private immutable versions, Templates and Demo. The Calendar/recurrence/reminder audit then corrected controls, validation and focus. | **Published v192 and v193**, PRs 248–251. [Module review](docs/testing/modules-redesign-2026-11-07.md), [v193 receipt](docs/testing/receipts/calendar-reminders-v193-2026-11-07.json). |
+| **7 November — Library and storage** | Added explicit save destinations, interrupted-upload recovery, complete version browsing and verified return to the same case. | Published v194 from PR #252. [Release receipt](docs/testing/receipts/library-document-storage-v194-2026-11-07.json). |
 
 Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v193; the remaining roadmap is tracked below.
 
@@ -90,7 +95,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 
 ## Next
 
-Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Verify and release the Library storage follow-on against that deployed baseline. Preserve the completed Home, AI Studio and editor flows.
+Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Library storage and case return shipped in v194. Further storage work needs an agreed retention/cleanup policy for abandoned originals. Preserve the completed Home, AI Studio and editor flows.
 
 Further case metadata, CRM, finance, client portal and external synchronization remain separate work. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
 

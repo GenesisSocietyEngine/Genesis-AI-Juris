@@ -1,6 +1,8 @@
 # CaseVant product development instructions
 
-**Current delivery — public v193.**
+**Current delivery — public v194, 7 November 2026.** The Library storage and case-return changes are deployed. Use the [Library acceptance review](../testing/library-document-storage-2026-11-07.md) and [release receipt](../testing/receipts/library-document-storage-v194-2026-11-07.json). Preserve original versions and private object paths; do not purge cancelled attempts without an explicit retention policy.
+
+**Previous delivery — public v193.**
 
 Published v193 from PR 250. Calendar shows the range selector only in Agenda, remembers its selection and shows a single date in Day view. Task recurrence shows one first-date prompt. Shared reminders describe their effect for everyone with access. Both live origins verified the release and all 204 assets. The signed-in production audit exercised layout switching, date navigation, reminder scope, validation and keyboard focus on cancel. [Release audit](../testing/modules-redesign-2026-11-07.md#calendar-and-reminder-follow-up).
 
