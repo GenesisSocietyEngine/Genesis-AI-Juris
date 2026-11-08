@@ -26,7 +26,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -44,12 +44,62 @@ before(async()=>{
   const tables=schema.filter(s=>s.type==="table"&&!s.name.startsWith("_cf_"));
   const rows=()=>db.batch(tables.map(t=>db.prepare('SELECT * FROM "'+t.name.replaceAll('"','""')+'"')));
   const beforeRows=(await rows()).map(v=>v.results);
-  for(const entry of journal.entries.filter((v:{idx:number})=>v.idx>=29))await migrate(entry);
+  for(const entry of journal.entries.filter((v:{idx:number})=>v.idx>=29)){
+    if(entry.idx===31){
+      const contact="contact_"+"f".repeat(32);
+      await db.prepare("INSERT INTO firm_contacts (id,organization_id,kind,profile,name_key,email_key,status,revision) VALUES(?,?,'company',?,'migration witness','','active',1)").bind(contact,organization,JSON.stringify({kind:"company",name:"Migration witness"})).run();
+      await db.prepare("INSERT INTO firm_contact_cases VALUES(?,?,?)").bind(organization,contact,caseId).run();
+      const v196=async()=>Promise.all(["firm_contacts","firm_contact_cases","firm_contact_operations","firm_document_versions"].map(table=>db.prepare("SELECT * FROM "+table).all().then(r=>r.results)));
+      const snapshot=await v196();await migrate(entry);assert.deepEqual(await v196(),snapshot,"v196 address book, existing case links, receipts and document versions survive intake migration");
+    }else await migrate(entry);
+  }
   assert.deepEqual((await rows()).map(v=>v.results),beforeRows,"upgrading a populated v193 database must preserve every pre-existing row");
   const afterSchema=(await db.prepare("SELECT name,sql,type FROM sqlite_master ORDER BY name").all<{name:string;sql:string;type:string}>()).results;
   assert.deepEqual(afterSchema.filter(v=>schema.some(old=>old.name===v.name)),schema,"old database objects must be unchanged");
 }, {timeout:120000});
 after(async()=>{await mf?.dispose();},{timeout:15000});
+
+test("case intake retains its original questions, validates completion and preserves every revision",async()=>{
+ const post=(command:Record<string,unknown>)=>call("intake","POST",command), list=async()=>await (await call("intake")).json() as {records:import("../app/intake/intake-model").IntakeRecord[]};
+ const id="intake_"+"1".repeat(32),formId="intake_"+"2".repeat(32);
+ const design={action:"design",revision:0,id,title:"Initial review",questions:[{label:"Purpose",required:true},{label:"Next steps",required:false}],operationKey:"intake-design-1"};
+ const first=await post(design);assert.equal(first.status,200,await first.clone().text());
+ const draft={action:"answer",id:formId,revision:0,caseId,templateId:id,templateRevision:1,status:"draft",answers:["",""],deidentified:true,operationKey:"intake-save-1"};
+ assert.equal((await post({...draft,deidentified:false})).status,400);
+ assert.equal((await post({...draft,status:"complete"})).status,400);
+ const created=await post(draft);assert.equal(created.status,200,await created.clone().text());const receipt=await created.json();
+ assert.deepEqual(await (await post(draft)).json(),receipt);
+ assert.deepEqual(await (await call("intake","GET",undefined,undefined,organization,undefined,"?operation=intake-save-1")).json(),receipt);
+ assert.equal((await post({...draft,answers:["another",""]})).status,409);
+ assert.equal((await post({...design,revision:1,title:"Updated intake",questions:[{label:"Different question",required:true}],operationKey:"intake-design-2"})).status,200);
+ assert.equal((await post({...draft,id:"intake_"+"3".repeat(32),operationKey:"intake-stale-template"})).status,409);
+ const archive={action:"archive",id,revision:2,operationKey:"intake-archive-3"};assert.equal((await post(archive)).status,200);
+ assert.equal((await post({...draft,id:"intake_"+"3".repeat(32),templateRevision:3,operationKey:"intake-archived-src"})).status,409);
+ const complete={...draft,revision:1,status:"complete",answers:["Synthetic purpose",""],operationKey:"intake-save-2"};
+ assert.equal((await post(complete)).status,200);assert.equal((await post({...complete,operationKey:"intake-stale-form"})).status,409);
+ const r=(await list()).records.find(v=>v.id===formId)!;assert.equal(r.title,design.title);assert.deepEqual(r.questions,design.questions);assert.equal(r.templateRevision,1);assert.equal(r.status,"complete");assert.equal(r.canEdit,true);
+ assert.equal((await post({...complete,revision:2,status:"draft",operationKey:"intake-edit-complete"})).status,409);
+ assert.equal((await post({action:"reopen",id:formId,revision:2,operationKey:"intake-reopen-3"})).status,200);
+ assert.equal((await post({...archive,action:"restore",revision:3,operationKey:"intake-restore-4"})).status,200);
+ const history=(await db.prepare("SELECT status,answers FROM intake_revisions WHERE id=? ORDER BY revision").bind(formId).all()).results;
+ assert.deepEqual(history.map(h=>h.status),["draft","complete","draft"]);assert.equal(history[2].answers,history[1].answers);
+ await assert.rejects(db.prepare("UPDATE intake_revisions SET title='replaced' WHERE id=?").bind(id).run(),/immutable_intake_revision/);
+ await assert.rejects(db.prepare("DELETE FROM intake_revisions WHERE id=?").bind(formId).run(),/immutable_intake_revision/);
+});
+test("firm membership does not reveal intake answers or grant access to a case",async()=>{
+ const email="intake-reviewer@example.test";await db.prepare("INSERT INTO users(email,display_name) VALUES (?,?)").bind(email,"Synthetic intake reviewer").run();
+ const u=await db.prepare("SELECT id,actor_id FROM users WHERE email=?").bind(email).first<{id:number;actor_id:string}>();
+ await db.prepare("INSERT INTO organization_memberships(organization_id,user_id,actor_id,role,status,revision,created_at) VALUES(?,?,?,'member','active',1,?)").bind(organization,u!.id,u!.actor_id,new Date().toISOString()).run();
+ const list=await (await call("intake","GET",undefined,email)).json() as {records:{caseId:string|null}[];cases:unknown[]};
+ assert.deepEqual(list.cases,[]);assert.ok(list.records.length);assert.ok(list.records.every(r=>r.caseId===null));
+ const cmd={action:"answer",id:"intake_"+"4".repeat(32),revision:0,caseId,templateId:"intake_"+"1".repeat(32),templateRevision:4,status:"draft",answers:["Synthetic"],deidentified:true,operationKey:"intake-denied-case"};
+ assert.equal((await call("intake","POST",cmd,email)).status,403);
+ assert.equal((await call("intake","POST",{...cmd,caseId:"51"})).status,403);
+ assert.equal((await call("intake","POST",cmd,undefined,organization,{origin:"https://foreign.test","sec-fetch-site":"cross-site"})).status,403);
+ const other=await (await call("intake","GET",undefined,"practice-outsider@example.test",foreignOrganization)).json() as {records:unknown[]};assert.deepEqual(other.records,[]);
+ await db.prepare("UPDATE organization_memberships SET role='auditor',revision=revision+1 WHERE actor_id=? AND organization_id=?").bind(u!.actor_id,organization).run();
+ assert.equal((await call("intake","POST",{action:"archive",id:cmd.templateId,revision:4,operationKey:"intake-denied-audit"},email)).status,403);
+});
 
 test("firm contacts preserve participants, enforce case visibility and recover the original save", async () => {
   const post = (command: Record<string,unknown>) => call("contacts","POST",command);

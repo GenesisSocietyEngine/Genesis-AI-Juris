@@ -1,5 +1,11 @@
 # Current progress — CaseVant
 
+## Case intake forms — 8 November 2026
+
+The next Library refactor adds reusable firm questionnaires and case-specific intake forms. A user can save a partial draft to a named case, return after reload, complete required answers and download the result. Editing a questionnaire leaves existing forms unchanged. Intake respects case access and keeps the return to Case overview and AI Studio. These are internal forms for synthetic or de-identified information; external delivery and Word document templates remain separate work.
+
+Development verification covered the signed-in MyCase reference, a complete synthetic browser journey, Russian labels, phone controls and isolated database save/recovery checks. [Acceptance details](docs/testing/case-intake-2026-11-08.md). Publication and production checks follow the reviewed implementation.
+
 ## Published CRM and contacts, 7 November 2026
 
 **Public v196** adds an Outlook-style firm directory for people and companies. It supports client and prospect relationships, groups, employer links, duplicate review, case links and reversible archiving. CSV import shows accepted and rejected rows before saving. Users can undo an untouched import. Case participants remain available in their own tab. [Implementation PR #255](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/255).

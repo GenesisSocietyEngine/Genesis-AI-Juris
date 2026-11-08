@@ -87,6 +87,24 @@ export const dossierOrganizationCommitments = sqliteTable("dossier_organization_
   dossierId: text("dossier_id").primaryKey().references(() => dossiers.id),
 }, (t) => [foreignKey({ columns: [t.dossierId], foreignColumns: [dossierOrganizationBindings.dossierId] })]);
 
+// Case responses keep a snapshot and a foreign key to the questionnaire revision used.
+export const intakeRevisions = sqliteTable("intake_revisions", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  id: text("id").notNull(), revision: integer("revision").notNull(),
+  caseId: text("case_id"), templateId: text("template_id"), templateRevision: integer("template_revision"),
+  status: text("status", {enum:["available","archived","draft","complete"]}).notNull(),
+  title: text("title").notNull(), questions: text("questions").notNull(), answers: text("answers").notNull(),
+  actorRef: text("actor_ref").notNull(), operationKey: text("operation_key").notNull(),
+  requestDigest: text("request_digest").notNull(), savedAt: text("saved_at").notNull(),
+}, t => [
+  uniqueIndex("intake_revision").on(t.organizationId,t.id,t.revision),
+  uniqueIndex("intake_operation").on(t.organizationId,t.actorRef,t.operationKey),
+  index("intake_case").on(t.organizationId,t.caseId,t.id),
+  foreignKey({columns:[t.organizationId,t.caseId],foreignColumns:[dossierOrganizationBindings.organizationId,dossierOrganizationBindings.dossierId]}),
+  foreignKey({columns:[t.organizationId,t.templateId,t.templateRevision],foreignColumns:[t.organizationId,t.id,t.revision]}),
+  check("intake_kind", sql`${t.revision} > 0 AND ((${t.caseId} IS NULL AND ${t.templateId} IS NULL AND ${t.templateRevision} IS NULL AND ${t.status} IN ('available','archived')) OR (${t.caseId} IS NOT NULL AND ${t.templateId} IS NOT NULL AND ${t.templateRevision} IS NOT NULL AND ${t.status} IN ('draft','complete')))`),
+]);
+
 // Firm address-book entries and their case associations never confer case access.
 export const firmContacts = sqliteTable("firm_contacts", {
   id: text("id").primaryKey(),
