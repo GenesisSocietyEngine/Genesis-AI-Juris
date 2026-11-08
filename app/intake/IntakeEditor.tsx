@@ -94,6 +94,7 @@ export default function IntakeEditor({
           </legend>
           {design ? (
             <>
+              <p className={lib.meta}>{t("Use generic questions here. Case-specific answers belong in the case form.", "Здесь указывайте общие вопросы. Ответы по конкретному делу сохраняйте в форме дела.")}</p>
               <label>
                 {t("Questionnaire name", "Название анкеты")}
                 <input

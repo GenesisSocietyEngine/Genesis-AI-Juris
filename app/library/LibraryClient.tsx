@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import WorkspaceCaseContext from "../WorkspaceCaseContext";
@@ -62,13 +62,14 @@ export default function LibraryClient({
   const t = (en: string, ru: string) => (locale === "ru" ? ru : en);
   const url = new URL(location, "https://workspace.invalid"),
     view = sections.find(([key]) => key === url.searchParams.get("view"))?.[0] ?? "cases";
-  const [openedIntake, setOpenedIntake] = useState(false);
+  const detachIntake = useRef<(() => void) | null>(null);
   useEffect(() => {
-    if (view === "intake") setOpenedIntake(true);
-  }, [view]);
-  useEffect(() => {
-    if (openedIntake) return intake.attach();
-  }, [openedIntake, intake]);
+    if (view === "intake" && !detachIntake.current) detachIntake.current = intake.attach();
+  }, [view, intake]);
+  useEffect(() => () => {
+    detachIntake.current?.();
+    detachIntake.current = null;
+  }, [intake]);
   if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   const href = (path: string) => workspaceDestination(path, location);
   const caseId = new URL(href("/matters"), url).searchParams.get("dossier");
