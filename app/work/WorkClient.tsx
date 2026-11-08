@@ -20,17 +20,21 @@ import { distinctLabels, readableDate, workState, workStateLabel } from "./work-
 import ContactsWorkspace from "../contacts/ContactsWorkspace";
 import type { ContactController } from "../contacts/contact-controller";
 import FirmWorkflows from "./FirmWorkflows";
+import CaseworkHost from "../casework/Host";
+import Register from "../casework/Register";
 import FirmCases from "./FirmCases";
 import { agendaRange, moveAgenda, inAgenda, matchesDue, type AgendaPeriod, type DueScope } from "./work-date-views";
 
-export default function WorkClient({ controller: supplied, contacts }: { controller?: WorkController; contacts?: ContactController }) {
+type Props={controller?:WorkController;contacts?:ContactController};
+export default function WorkClient(props:Props){return <CaseworkHost><WorkBody {...props}/></CaseworkHost>;}
+function WorkBody({ controller: supplied, contacts }: { controller?: WorkController; contacts?: ContactController }) {
   const navigation = useNavigationController(), session = useNavigationSession();
   const [controller] = useState(() => supplied ?? new WorkController(navigation, (path, init) => fetch(path, init)));
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const [locale] = useInterfaceLocale(), location = useWorkspaceLocation();
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   const selectedView = new URL(location, "https://workspace.invalid").searchParams.get("view");
-  const mode = selectedView === "home" || selectedView === "cases" || selectedView === "workflows" || selectedView === "people" || selectedView === "calendar" || selectedView === "templates" || selectedView === "reminders" ? selectedView : selectedView === "tasks" ? "tasks" : "home";
+  const mode = selectedView === "progress" || selectedView === "home" || selectedView === "cases" || selectedView === "workflows" || selectedView === "people" || selectedView === "calendar" || selectedView === "templates" || selectedView === "reminders" ? selectedView : selectedView === "tasks" ? "tasks" : "home";
   const [query, setQuery] = useState(""), [status, setStatus] = useState("open"), [caseId, setCaseId] = useState(""), [person, setPerson] = useState("");
   const [calendarLayout,setCalendarLayout]=useState<"agenda"|"month"|"day"|"week">("month");
   const [agendaDate,setAgendaDate]=useState(()=>new Date().toISOString().slice(0,10));
@@ -48,6 +52,7 @@ export default function WorkClient({ controller: supplied, contacts }: { control
   useEffect(() => { if (editorOpen) titleInput.current?.focus(); else if (wasEditing.current) heading.current?.focus(); wasEditing.current = editorOpen; }, [editorOpen]);
   if (mode === "people") return <ContactsWorkspace supplied={contacts} work={controller} workState={state} />;
   if (session.phase !== "ready" || session.endingSession || session.busy) return null;
+  if(mode==="progress") return <Register key={session.selected?.selection} locale={locale} location={location}/>;
   const changeMode = (view: string) => { const url = new URL(window.location.href); url.searchParams.set("view", view); window.history.replaceState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-interface-change")); };
   const period=calendarLayout==="agenda"?agendaPeriod:calendarLayout;
   const today=(now===null?agendaDate:localAt(now,displayZone).slice(0,10)), range=agendaRange(agendaDate,period);

@@ -1,8 +1,10 @@
+import { leadStages } from "../casework/model";
 export type ContactKind = "person" | "company";
 export type ContactStatus = "active" | "archived";
 export const relationships = ["prospect", "client", "former_client", "professional"] as const;
 export type Relationship = (typeof relationships)[number];
 export type ContactProfile = {
+  leadStage?: (typeof leadStages)[number] | "";
   relationship: Relationship | "";
   kind: ContactKind;
   name: string;
@@ -33,6 +35,7 @@ export const limits = {
 export const blankContact = (kind: ContactKind): ContactProfile => ({
   kind,
   relationship: "",
+  leadStage: "",
   name: "",
   email: "",
   phone: "",
@@ -63,6 +66,13 @@ export function contactProfile(raw: unknown): ContactProfile {
   if (relationship !== "" && !relationships.includes(relationship as Relationship))
     throw Error("relationship");
   result.relationship = relationship as ContactProfile["relationship"];
+  const stage = input.leadStage ?? "";
+  if (
+    stage !== "" &&
+    (relationship !== "prospect" || !leadStages.includes(stage as (typeof leadStages)[number]))
+  )
+    throw Error("leadStage");
+  result.leadStage = stage as ContactProfile["leadStage"];
   if (!result.name) throw Error("name");
   if (result.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(result.email)) throw Error("email");
   if (result.website) {

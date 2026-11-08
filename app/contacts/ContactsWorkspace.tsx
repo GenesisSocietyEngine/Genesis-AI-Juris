@@ -17,6 +17,7 @@ import {
   type ContactKind,
   type ContactStatus,
 } from "./contact-model";
+import { leadStages, label as stageName } from "../casework/model";
 import { contactMessage, relationshipLabel } from "./contact-copy";
 import ContactEditor from "./ContactEditor";
 import workStyle from "../work/work.module.css";
@@ -93,6 +94,7 @@ function Directory({
     [query, setQuery] = useState(""),
     [group, setGroup] = useState(""),
     [caseOnly, setCaseOnly] = useState(false);
+  const [leadStage, setLeadStage] = useState("");
   const [relationship, setRelationship] = useState("");
   const pane = useRef<HTMLElement>(null),
     results = useRef<HTMLHeadingElement>(null);
@@ -112,6 +114,7 @@ function Directory({
   const filtered = scoped
     .filter(
       (c) =>
+        (!leadStage || (c.relationship === "prospect" && (c.leadStage || "unset") === leadStage)) &&
         (!relationship || c.relationship === relationship) &&
         (!group || c.group === group) &&
         contactKey([c.name, c.email, c.phone, c.group, lookup.get(c.companyId)?.name].join(" ")).includes(
@@ -129,6 +132,7 @@ function Directory({
     setSection(s);
     setQuery("");
     setRelationship("");
+    setLeadStage("");
     setGroup("");
     setStatus("active");
     setCaseOnly(false);
@@ -252,7 +256,13 @@ function Directory({
             </label>
             <label>
               {t("Relationship", "Отношения")}
-              <select value={relationship} onChange={(e) => setRelationship(e.target.value)}>
+              <select
+                value={relationship}
+                onChange={(e) => {
+                  setRelationship(e.target.value);
+                  setLeadStage("");
+                }}
+              >
                 <option value="">{t("All relationships", "Все отношения")}</option>
                 {relationships.map((value) => (
                   <option key={value} value={value}>
@@ -261,6 +271,19 @@ function Directory({
                 ))}
               </select>
             </label>
+            {relationship === "prospect" && (
+              <label>
+                {t("Prospect stage", "Этап обращения")}
+                <select value={leadStage} onChange={(e) => setLeadStage(e.target.value)}>
+                  <option value="">{t("All stages", "Все этапы")}</option>
+                  {["unset", ...leadStages].map((k) => (
+                    <option key={k} value={k}>
+                      {stageName(k, locale)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
               {t("Group", "Группа")}
               <select value={group} onChange={(e) => setGroup(e.target.value)}>
@@ -362,6 +385,11 @@ function Directory({
                       <StatusBadge tone={selected.status === "active" ? "completed" : "neutral"}>
                         {selected.status === "active" ? activeLabel : archivedLabel}
                       </StatusBadge>
+                      {selected.relationship === "prospect" && (
+                        <StatusBadge tone={selected.leadStage ? "open" : "neutral"}>
+                          {stageName(selected.leadStage || "unset", locale)}
+                        </StatusBadge>
+                      )}
                       {selected.relationship && (
                         <StatusBadge tone="scheduled">
                           {relationshipLabel(selected.relationship, locale)}

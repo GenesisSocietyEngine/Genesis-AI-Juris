@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon } from "../CaseVantIcon";
 import StatusBadge from "../StatusBadge";
 import { contactMessage, relationshipLabel } from "./contact-copy";
+import { leadStages, label as stageName } from "../casework/model";
 import { contactProfile, limits, relationships } from "./contact-model";
 import { csvHeader, reviewContactCsv } from "./contact-import";
 import { ContactController } from "./contact-controller";
@@ -140,6 +141,22 @@ export default function ContactEditor({
                   ))}
                 </select>
               </label>
+              {d.profile.relationship === "prospect" && (
+                <label>
+                  {t("Prospect stage", "Этап обращения")}
+                  <select
+                    value={d.profile.leadStage ?? ""}
+                    onChange={(e) => controller.setProfile("leadStage", e.target.value)}
+                  >
+                    <option value="">{stageName("unset", locale)}</option>
+                    {leadStages.map((k) => (
+                      <option key={k} value={k}>
+                        {stageName(k, locale)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {field("group", t("Group", "Группа"))}
               {field("email", t("Email", "Эл. почта"), "email")}
               {field("phone", t("Phone", "Телефон"), "tel")}

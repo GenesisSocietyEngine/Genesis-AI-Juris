@@ -87,6 +87,24 @@ export const dossierOrganizationCommitments = sqliteTable("dossier_organization_
   dossierId: text("dossier_id").primaryKey().references(() => dossiers.id),
 }, (t) => [foreignKey({ columns: [t.dossierId], foreignColumns: [dossierOrganizationBindings.dossierId] })]);
 
+// Firm templates, generated case documents, case updates and personal register filters.
+// Every save appends a revision; a generated document refers to the exact template revision.
+export const caseWorkRevisions = sqliteTable("case_work_revisions",{
+  organizationId:text("organization_id").notNull().references(()=>organizations.id),
+  id:text("id").notNull(),revision:integer("revision").notNull(),kind:text("kind",{enum:["template","document","progress","view"]}).notNull(),
+  caseId:text("case_id"),sourceId:text("source_id"),sourceRevision:integer("source_revision"),
+  title:text("title").notNull(),body:text("body").notNull(),stage:text("stage").notNull(),statusFilter:text("status_filter").notNull(),
+  archived:integer("archived",{mode:"boolean"}).notNull(),actorRef:text("actor_ref").notNull(),
+  operationKey:text("operation_key").notNull(),requestDigest:text("request_digest").notNull(),savedAt:text("saved_at").notNull(),
+},t=>[
+  uniqueIndex("case_work_revision").on(t.organizationId,t.id,t.revision),
+  uniqueIndex("case_work_operation").on(t.organizationId,t.actorRef,t.operationKey),
+  index("case_work_scope").on(t.organizationId,t.kind,t.caseId,t.id),
+  foreignKey({columns:[t.organizationId,t.caseId],foreignColumns:[dossierOrganizationBindings.organizationId,dossierOrganizationBindings.dossierId]}),
+  foreignKey({columns:[t.organizationId,t.sourceId,t.sourceRevision],foreignColumns:[t.organizationId,t.id,t.revision]}),
+  check("case_work_kind",sql`${t.revision}>0 AND ((${t.kind} IN ('template','view') AND ${t.caseId} IS NULL) OR (${t.kind} IN ('document','progress') AND ${t.caseId} IS NOT NULL)) AND ((${t.kind}='document' AND ${t.sourceId} IS NOT NULL AND ${t.sourceRevision} IS NOT NULL AND ${t.revision}=1) OR (${t.kind}<>'document' AND ${t.sourceId} IS NULL AND ${t.sourceRevision} IS NULL))`),
+]);
+
 // Case responses keep a snapshot and a foreign key to the questionnaire revision used.
 export const intakeRevisions = sqliteTable("intake_revisions", {
   organizationId: text("organization_id").notNull().references(() => organizations.id),

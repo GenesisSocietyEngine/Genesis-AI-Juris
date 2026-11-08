@@ -62,7 +62,10 @@ const empty = (): State => ({
 });
 const profileOf = (c: Contact): ContactProfile =>
   Object.fromEntries(
-    Object.keys(blankContact(c.kind)).map((k) => [k, c[k as keyof ContactProfile]]),
+    Object.keys(blankContact(c.kind)).map((k) => [
+      k,
+      c[k as keyof ContactProfile] ?? blankContact(c.kind)[k as keyof ContactProfile],
+    ]),
   ) as ContactProfile;
 export class ContactController {
   private state = empty();
@@ -264,7 +267,18 @@ export class ContactController {
   setProfile(field: keyof ContactProfile, value: string) {
     const d = this.state.draft;
     if (!this.editable() || d?.type !== "profile" || field === "kind") return;
-    this.publish({ draft: { ...d, profile: { ...d.profile, [field]: value }, reviewed: [] }, issue: "" });
+    this.publish({
+      draft: {
+        ...d,
+        profile: {
+          ...d.profile,
+          [field]: value,
+          ...(field === "relationship" && value !== "prospect" ? { leadStage: "" } : {}),
+        },
+        reviewed: [],
+      },
+      issue: "",
+    });
   }
   duplicates() {
     const d = this.state.draft;
