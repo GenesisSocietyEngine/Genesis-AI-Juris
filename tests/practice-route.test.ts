@@ -1,3 +1,4 @@
+import {workflows as caseworkScenarios,prospect as prospectScenario} from "./casework-scenarios";
 import assert from "node:assert/strict";
 import { test, before, after } from "node:test";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -26,7 +27,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -51,6 +52,12 @@ before(async()=>{
       await db.prepare("INSERT INTO firm_contact_cases VALUES(?,?,?)").bind(organization,contact,caseId).run();
       const v196=async()=>Promise.all(["firm_contacts","firm_contact_cases","firm_contact_operations","firm_document_versions"].map(table=>db.prepare("SELECT * FROM "+table).all().then(r=>r.results)));
       const snapshot=await v196();await migrate(entry);assert.deepEqual(await v196(),snapshot,"v196 address book, existing case links, receipts and document versions survive intake migration");
+    }else if(entry.idx===32){
+      const id="intake_"+"a".repeat(32),base={action:"design",revision:0,id,title:"Preservation witness",questions:[{label:"Question",required:true}],operationKey:"witness-design-197"};
+      assert.equal((await call("intake","POST",base)).status,200);assert.equal((await call("intake","POST",{action:"answer",id:"intake_"+"b".repeat(32),revision:0,caseId,templateId:id,templateRevision:1,status:"draft",answers:["Existing synthetic answer"],deidentified:true,operationKey:"witness-form-197"})).status,200);
+      const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
+      const snapshot=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
+      const old=await snapshot();await migrate(entry);assert.deepEqual(await snapshot(),old,"all populated v197 tables including intake answers survive unchanged");
     }else await migrate(entry);
   }
   assert.deepEqual((await rows()).map(v=>v.results),beforeRows,"upgrading a populated v193 database must preserve every pre-existing row");
@@ -58,6 +65,9 @@ before(async()=>{
   assert.deepEqual(afterSchema.filter(v=>schema.some(old=>old.name===v.name)),schema,"old database objects must be unchanged");
 }, {timeout:120000});
 after(async()=>{await mf?.dispose();},{timeout:15000});
+
+test("case register, private views and Word templates keep exact history, authorization and frozen downloads",async()=>caseworkScenarios(call,db,organization,caseId));
+test("prospect stages persist through older CRM editors without linking a case",async()=>prospectScenario(call));
 
 test("case intake retains its original questions, validates completion and preserves every revision",async()=>{
  const post=(command:Record<string,unknown>)=>call("intake","POST",command), list=async()=>await (await call("intake")).json() as {records:import("../app/intake/intake-model").IntakeRecord[]};

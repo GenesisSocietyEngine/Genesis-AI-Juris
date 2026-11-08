@@ -1,5 +1,9 @@
 # Working across cases
 
+In **Case register**, select a case to read its latest update or its dated history. **Update case progress** adds a stage and note without changing the formal case status. Choose a stage, status or search phrase and use **Save current filters** for a named personal view. Select it again under **My saved views**; archived views can be restored.
+
+In **Library → Templates**, create a document template or insert a merge field. **Create case document** shows the destination case and which fields are missing. Review the merged text, confirm it is synthetic or de-identified and save to the case. Under **Generated documents**, select the saved document and choose **Download Word document**. Saved documents keep their reviewed text. For CRM, choose **Prospect** as the relationship to see or filter by **Prospect stage**.
+
 Open **Firm work** in the left navigation. Every view includes only cases available in the selected workspace. Refresh after changes made elsewhere. Selecting a row opens a reading pane; use its case link for editing.
 
 | View | Use it for |

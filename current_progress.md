@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## Case register, document templates and prospect stages — 8 November 2026
+
+Implementation and synthetic verification complete; public v197 remains the previously verified release pending integration. The new Case register shows a case’s operational stage, dated updates and formal status separately and supports private named filters. Library templates generate reviewed Word documents for an explicitly identified case; later edits leave saved documents intact. Contacts records a prospect’s stage without creating a case or granting access. [Reference and acceptance audit](docs/testing/casework-records-2026-11-08.md).
+
 ## Published case intake forms — 8 November 2026
 
 [Public v197](https://casevant.pro/library?view=intake) adds reusable firm questionnaires and case-specific intake forms. A user can save a partial draft to a named case, return after reload, complete required answers and download the result. Editing a questionnaire leaves existing forms unchanged. Intake respects case access and keeps the return to Case overview and AI Studio. These are internal forms for synthetic or de-identified information; external delivery and Word document templates remain separate work.

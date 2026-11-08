@@ -1,0 +1,138 @@
+.fields {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  min-width: 0;
+  padding: 4px 0 16px;
+}
+.fields label,
+.filters label {
+  display: grid;
+  gap: 4px;
+  color: #223b4d;
+  font-weight: 600;
+}
+.fields textarea,
+.fields select,
+.filters select,
+.filters input {
+  font: inherit;
+  border: 1px solid #9fb0bf;
+  border-radius: 4px;
+  padding: 6px 9px;
+  min-height: 36px;
+  max-width: 100%;
+  width: 100%;
+  background: #fff;
+  color: #233c4c;
+  box-sizing: border-box;
+}
+.fields textarea {
+  resize: vertical;
+}
+.filters,
+.commands {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.filters label {
+  min-width: 135px;
+  flex: 1;
+  max-width: 280px;
+}
+.paper {
+  background: white;
+  border: 1px solid #ccd8e3;
+  border-inline-start: 3px solid #4285b7;
+  padding: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 20rem;
+  overflow: auto;
+  color: #21394a;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(185px, 0.9fr) minmax(0, 1.55fr);
+  border: 1px solid #cbd8e2;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+.layout > section {
+  min-width: 0;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+.layout > section + section {
+  border-inline-start: 1px solid #cbd8e2;
+  background: #f8fbfd;
+}
+.rowTitle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rowTitle svg {
+  color: #14679c;
+  flex: none;
+}
+.layout small {
+  display: block;
+  color: #466071;
+}
+.commands a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: #075797;
+  padding: 0 7px;
+}
+.layout h3 {
+  margin-top: 0;
+}
+.details {
+  margin-top: 16px;
+}
+.details summary,
+.fields summary {
+  cursor: pointer;
+  color: #125985;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.dates {
+  list-style: none;
+  padding: 0;
+}
+.dates li {
+  border-inline-start: 3px solid #5499ad;
+  padding: 5px 12px;
+  margin: 8px 0;
+  background: white;
+}
+.dates p {
+  white-space: pre-wrap;
+}
+@media (max-width: 680px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout > section + section {
+    border-inline-start: 0;
+    border-top: 1px solid #cbd8e2;
+  }
+  .filters label {
+    min-width: min(100%, 140px);
+    max-width: 100%;
+  }
+  .fields select,
+  .filters select,
+  .filters input,
+  .commands a {
+    min-height: 44px;
+  }
+}

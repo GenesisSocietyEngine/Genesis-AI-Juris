@@ -11,6 +11,8 @@ import { LibraryController } from "./library-controller";
 import { verifiedLibraryReturn } from "./library-navigation";
 import FirmLibrarySection from "./FirmLibrarySection";
 import { IntakeController } from "../intake/intake-controller";
+import CaseworkHost, { useCasework } from "../casework/Host";
+import Documents from "../casework/Documents";
 import IntakeSection from "../intake/IntakeSection";
 import IntakeEditor from "../intake/IntakeEditor";
 import FirmUploadDialog, { libraryFeedback } from "./FirmUploadDialog";
@@ -25,13 +27,22 @@ const sections = [
   ["templates", "Templates", "Шаблоны"],
   ["demo", "Demo", "Демо"],
 ] as const;
-export default function LibraryClient({
+type Props = { controller?: LibraryController; workController?: WorkController };
+export default function LibraryClient(props: Props) {
+  return (
+    <CaseworkHost>
+      <LibraryBody {...props} />
+    </CaseworkHost>
+  );
+}
+function LibraryBody({
   controller: supplied,
   workController: suppliedWork,
 }: {
   controller?: LibraryController;
   workController?: WorkController;
 }) {
+  const { controller: casework, s: caseworkState } = useCasework();
   const navigation = useNavigationController(),
     session = useNavigationSession();
   const [controller] = useState(
@@ -66,10 +77,13 @@ export default function LibraryClient({
   useEffect(() => {
     if (view === "intake" && !detachIntake.current) detachIntake.current = intake.attach();
   }, [view, intake]);
-  useEffect(() => () => {
-    detachIntake.current?.();
-    detachIntake.current = null;
-  }, [intake]);
+  useEffect(
+    () => () => {
+      detachIntake.current?.();
+      detachIntake.current = null;
+    },
+    [intake],
+  );
   if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   const href = (path: string) => workspaceDestination(path, location);
   const caseId = new URL(href("/matters"), url).searchParams.get("dossier");
@@ -108,12 +122,15 @@ export default function LibraryClient({
         </div>
         <button
           disabled={
-            view === "intake"
-              ? intakeState.loading || intakeState.saving || intakeState.locked
-              : state.loading || state.saving || state.locked
+            view === "templates"
+              ? caseworkState.loading || caseworkState.saving || !!caseworkState.pending
+              : view === "intake"
+                ? intakeState.loading || intakeState.saving || intakeState.locked
+                : state.loading || state.saving || state.locked
           }
           onClick={() => {
-            if (view === "intake") void intake.refresh();
+            if (view === "templates") void casework.refresh();
+            else if (view === "intake") void intake.refresh();
             else void controller.refresh();
             void work.refresh();
           }}
@@ -126,7 +143,9 @@ export default function LibraryClient({
         {sections.map(([key, en, ru]) => (
           <button
             key={key}
-            disabled={intakeState.saving || !!intakeState.pending}
+            disabled={
+              intakeState.saving || !!intakeState.pending || caseworkState.saving || !!caseworkState.pending
+            }
             aria-current={view === key ? "page" : undefined}
             onClick={() => changeView(key)}
           >
@@ -154,6 +173,9 @@ export default function LibraryClient({
               "Выберите дело для работы с доказательствами, версиями и отчётами.",
             )}
           </p>
+          <a href={href("/library?view=templates&section=generated")}>
+            {t("Browse generated Word documents", "Открыть созданные документы Word")} →
+          </a>
           <label className={lib.search}>
             {t("Find a case", "Найти дело")}
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -211,37 +233,45 @@ export default function LibraryClient({
         />
       ) : view === "templates" ? (
         <section>
-          <h2>{t("Templates", "Шаблоны")}</h2>
-          <ul className={styles.workList}>
-            <li>
-              <a className={styles.workRow} href={href("/templates")}>
-                <WorkspaceIcon name="template" />
-                <span>
-                  <strong>{t("Case templates", "Шаблоны дел")}</strong>
-                  <small>
-                    {t(
-                      "Start AI-assisted case building from a reusable brief.",
-                      "Начните создание дела с повторно используемого задания.",
-                    )}
-                  </small>
-                </span>
-              </a>
-            </li>
-            <li>
-              <a className={styles.workRow} href={href("/work?view=templates")}>
-                <WorkspaceIcon name="flow" />
-                <span>
-                  <strong>{t("Workflow templates", "Шаблоны процессов")}</strong>
-                  <small>
-                    {t(
-                      "Configure task and event sequences, then apply them to a case.",
-                      "Настройте последовательность задач и событий для дела.",
-                    )}
-                  </small>
-                </span>
-              </a>
-            </li>
-          </ul>
+          <Documents
+            key={session.selected?.selection}
+            locale={locale}
+            current={caseId ?? ""}
+            generated={url.searchParams.get("section") === "generated"}
+          />
+          <details>
+            <summary>{t("Case and workflow templates", "Шаблоны дел и процессов")}</summary>
+            <ul className={styles.workList}>
+              <li>
+                <a className={styles.workRow} href={href("/templates")}>
+                  <WorkspaceIcon name="template" />
+                  <span>
+                    <strong>{t("Case templates", "Шаблоны дел")}</strong>
+                    <small>
+                      {t(
+                        "Start AI-assisted case building from a reusable brief.",
+                        "Начните создание дела с повторно используемого задания.",
+                      )}
+                    </small>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a className={styles.workRow} href={href("/work?view=templates")}>
+                  <WorkspaceIcon name="flow" />
+                  <span>
+                    <strong>{t("Workflow templates", "Шаблоны процессов")}</strong>
+                    <small>
+                      {t(
+                        "Configure task and event sequences, then apply them to a case.",
+                        "Настройте последовательность задач и событий для дела.",
+                      )}
+                    </small>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </details>
         </section>
       ) : (
         <section>

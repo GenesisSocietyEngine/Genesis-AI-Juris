@@ -162,10 +162,7 @@ function parseCommand(body: Record<string, unknown>): ContactCommand {
   if (action === "create" || action === "edit") {
     fields(["id", "revision", "profile", "reviewed"]);
     const reviewed = body.reviewed;
-    if (
-      !Array.isArray(reviewed) ||
-      reviewed.some((id) => typeof id !== "string" || !contactId.test(id))
-    )
+    if (!Array.isArray(reviewed) || reviewed.some((id) => typeof id !== "string" || !contactId.test(id)))
       throw Error("invalid");
     return { action, id, revision, profile: contactProfile(body.profile), reviewed };
   }
@@ -235,7 +232,17 @@ export async function POST(request: Request) {
       changes.push(
         db
           .update(contacts)
-          .set(fields)
+          .set({
+            ...fields,
+            // Older editors never sent a pipeline stage. Preserve the current one in the CAS update.
+            profile:
+              profile.relationship === "prospect" &&
+              body.profile &&
+              typeof body.profile === "object" &&
+              !Object.hasOwn(body.profile, "leadStage")
+                ? sql`json_set(${fields.profile},'$.leadStage',coalesce(json_extract(${contacts.profile},'$.leadStage'),''))`
+                : fields.profile,
+          })
           .where(
             and(
               eq(contacts.organizationId, org.id),
