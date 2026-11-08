@@ -1,0 +1,128 @@
+{
+  "date": "2026-11-08",
+  "version": 198,
+  "previousVersion": 197,
+  "sourceCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+  "previousRuntimeCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+  "candidateCommit": "7f8860466c767ec1da32d5d5e51f653f9522959f",
+  "implementationPR": 259,
+  "candidateRun": 42519891028,
+  "mainRun": 42520768953,
+  "tests": {
+    "passed": 2045,
+    "failed": 0,
+    "skipped": 3,
+    "renderedBuildChecksIncluded": 2,
+    "fullPdfBaselineCount": 47,
+    "practiceRouteChecksPassed": 18,
+    "caseworkControllerChecksPassed": 2,
+    "migrationBreakpointChecksPassed": 2,
+    "independentWordReaderRoundTrip": true,
+    "dependencyAuditFindings": 0
+  },
+  "artifact": {
+    "id": 13633318630,
+    "name": "verified-web-build-3c71c990c05d6917b9d81c8b5efd653b56748c8d-42520768953",
+    "digest": "sha256:44845d86fe65ffe95fa571fa65dbc03676e0c3115f14ae66f2bd59ed9a076703",
+    "expired": false
+  },
+  "deployment": "appgdep_6af0dfd23614819180a1f0de991becca",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_8c59223198748191892563a53c6d05df",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 198
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+    "tree": "e62b4b422414e684aef646d1dab21761e29f3e91",
+    "applicationInputsSha256": "4be62edf718c6f3b4a4362713ebf1fc284d77fd0fcb7dd0d73b8b8c5c0d9a929",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 694,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+    "archiveSha256": "abffbd18a16a31ec211e54648158e934ff97575df140bf83fa5f9984cfb91722",
+    "migrationSha256": "00fa8f96a89da417045187880ff68aed388c12e1e8979bf3665a61aaeacd5f2f",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+      "applicationInputsSha256": "4be62edf718c6f3b4a4362713ebf1fc284d77fd0fcb7dd0d73b8b8c5c0d9a929",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+      "applicationInputsSha256": "4be62edf718c6f3b4a4362713ebf1fc284d77fd0fcb7dd0d73b8b8c5c0d9a929",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 150,
+      "retained": 62,
+      "verified": 212,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 150,
+      "retained": 62,
+      "verified": 212,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Read-only, signed-in",
+    "journey": [
+      "Case register",
+      "Case overview",
+      "AI Studio Workbench",
+      "Contacts / Prospect stage",
+      "Library / Templates",
+      "Blank template editor and Close"
+    ],
+    "sameSavedStudioCase": true,
+    "promptAndDocumentFlowVisible": true,
+    "blankSaveDisabled": true,
+    "explicitDestination": true,
+    "closeReturnedFocus": true,
+    "synthetic": "Saved reusable template; confirmed missing fields blocked the Word save; recorded a dated case update; reopened a personal saved view after reload; generated, saved and downloaded a Word document for the same case. Changed and filtered a prospect stage without creating a case link.",
+    "narrow": {
+      "frameWidthPx": 390,
+      "documentWidthPx": 375,
+      "horizontalOverflow": false,
+      "locale": "ru",
+      "primaryControlsPx": [
+        44,
+        44
+      ],
+      "editorCloseReturnedFocus": true
+    }
+  },
+  "limits": [
+    "Plain-text template authoring and controlled merge fields; no import of rich Word layouts or e-signatures.",
+    "Case stages and prospect stages are predefined. Multi-anchor workflow rescheduling remains next.",
+    "Operational progress and generated text do not change formal dossier status, evidence approval or participant access.",
+    "Production acceptance used read-only navigation; writes and downloads used synthetic records in an isolated database."
+  ]
+}
