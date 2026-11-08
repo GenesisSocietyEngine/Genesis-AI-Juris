@@ -10,7 +10,15 @@ if ($baseline.rasterizer.requiredSuiteVersion -ne '25.07.0') {
 }
 $archive = Join-Path $env:RUNNER_TEMP 'Release-25.07.0-0.zip'
 $destination = Join-Path $env:RUNNER_TEMP 'juris-poppler-25.07.0'
-Invoke-WebRequest -Uri $releaseUrl -OutFile $archive
+try {
+    Invoke-WebRequest -Uri $releaseUrl -OutFile $archive -TimeoutSec 45
+} catch {
+    # The browser release URL can return 504 while GitHub's API still serves
+    # the same immutable asset. Both paths must pass the existing digest below.
+    $releaseUrl = 'https://api.github.com/repos/oschwartz10612/poppler-windows/releases/assets/283815159?download=1'
+    Write-Output 'Retrying the pinned Poppler archive through the GitHub release asset API.'
+    Invoke-WebRequest -Uri $releaseUrl -Headers @{ Accept = 'application/octet-stream' } -OutFile $archive -TimeoutSec 60
+}
 $actualSha256 = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actualSha256 -cne $expectedSha256) {
     throw "Poppler archive checksum mismatch: $actualSha256"

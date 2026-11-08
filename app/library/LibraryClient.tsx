@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import WorkspaceCaseContext from "../WorkspaceCaseContext";
@@ -10,6 +10,9 @@ import { WorkController } from "../work/work-controller";
 import { LibraryController } from "./library-controller";
 import { verifiedLibraryReturn } from "./library-navigation";
 import FirmLibrarySection from "./FirmLibrarySection";
+import { IntakeController } from "../intake/intake-controller";
+import IntakeSection from "../intake/IntakeSection";
+import IntakeEditor from "../intake/IntakeEditor";
 import FirmUploadDialog, { libraryFeedback } from "./FirmUploadDialog";
 import type { FirmDocument } from "./firm-document-model";
 import styles from "../work/work.module.css";
@@ -18,6 +21,7 @@ import lib from "./library.module.css";
 const sections = [
   ["cases", "Case documents", "Документы дел"],
   ["firm", "Firm documents", "Документы фирмы"],
+  ["intake", "Intake forms", "Приёмные формы"],
   ["templates", "Templates", "Шаблоны"],
   ["demo", "Demo", "Демо"],
 ] as const;
@@ -36,6 +40,8 @@ export default function LibraryClient({
   const [work] = useState(
     () => suppliedWork ?? new WorkController(navigation, (path, init) => fetch(path, init)),
   );
+  const [intake] = useState(() => new IntakeController(navigation, (path, init) => fetch(path, init)));
+  const intakeState = useSyncExternalStore(intake.subscribe, intake.getSnapshot, intake.getSnapshot);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const cases = useSyncExternalStore(work.subscribe, work.getSnapshot, work.getSnapshot);
   const [locale] = useInterfaceLocale(),
@@ -54,9 +60,17 @@ export default function LibraryClient({
     window.dispatchEvent(new Event("genesis-interface-change"));
   }, [browserLocation, location]);
   const t = (en: string, ru: string) => (locale === "ru" ? ru : en);
-  if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   const url = new URL(location, "https://workspace.invalid"),
     view = sections.find(([key]) => key === url.searchParams.get("view"))?.[0] ?? "cases";
+  const detachIntake = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (view === "intake" && !detachIntake.current) detachIntake.current = intake.attach();
+  }, [view, intake]);
+  useEffect(() => () => {
+    detachIntake.current?.();
+    detachIntake.current = null;
+  }, [intake]);
+  if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   const href = (path: string) => workspaceDestination(path, location);
   const caseId = new URL(href("/matters"), url).searchParams.get("dossier");
   const currentCase = cases.cases.find((c) => c.id === caseId),
@@ -93,9 +107,14 @@ export default function LibraryClient({
           </h1>
         </div>
         <button
-          disabled={state.loading || state.saving || state.locked}
+          disabled={
+            view === "intake"
+              ? intakeState.loading || intakeState.saving || intakeState.locked
+              : state.loading || state.saving || state.locked
+          }
           onClick={() => {
-            void controller.refresh();
+            if (view === "intake") void intake.refresh();
+            else void controller.refresh();
             void work.refresh();
           }}
         >
@@ -105,7 +124,12 @@ export default function LibraryClient({
       <WorkspaceCaseContext location={location} name={currentCase?.title} locale={locale} />
       <nav className={lib.tabs} aria-label={t("Library sections", "Разделы библиотеки")}>
         {sections.map(([key, en, ru]) => (
-          <button key={key} aria-current={view === key ? "page" : undefined} onClick={() => changeView(key)}>
+          <button
+            key={key}
+            disabled={intakeState.saving || !!intakeState.pending}
+            aria-current={view === key ? "page" : undefined}
+            onClick={() => changeView(key)}
+          >
             {t(en, ru)}
           </button>
         ))}
@@ -178,6 +202,13 @@ export default function LibraryClient({
           locale={locale}
           download={download}
         />
+      ) : view === "intake" ? (
+        <IntakeSection
+          key={session.selected?.selection}
+          controller={intake}
+          currentCase={caseId}
+          locale={locale}
+        />
       ) : view === "templates" ? (
         <section>
           <h2>{t("Templates", "Шаблоны")}</h2>
@@ -231,6 +262,9 @@ export default function LibraryClient({
           locale={locale}
           organization={session.selected?.name ?? ""}
         />
+      )}
+      {intakeState.loaded && intakeState.draft && (
+        <IntakeEditor controller={intake} locale={locale} organization={session.selected?.name ?? ""} />
       )}
     </main>
   );

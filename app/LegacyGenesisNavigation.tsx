@@ -24,6 +24,7 @@ export const WORKSPACE_PAGES = [
 const SECONDARY_PAGES = [
   {path:"/library?view=cases",view:"library-cases",en:"Case documents",ru:"Документы дел",icon:"document"},
   {path:"/library?view=firm",view:"library-firm",en:"Firm documents",ru:"Документы фирмы",icon:"organization"},
+  {path:"/library?view=intake",view:"library-intake",en:"Intake forms",ru:"Приёмные формы",icon:"tasks"},
   {path:"/library?view=templates",view:"library-templates",en:"Templates",ru:"Шаблоны",icon:"template"},
   {path:"/library?view=demo",view:"library-demo",en:"Demo",ru:"Демо",icon:"demo"},
 ] as const;
