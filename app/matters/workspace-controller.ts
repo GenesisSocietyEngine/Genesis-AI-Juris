@@ -1,3 +1,4 @@
+import type { WorkflowSchedule } from "../work/workflow-milestones";
 import { readWorkflowLibrary, type WorkflowTemplate } from "../work/workflow-templates";
 import { enrollmentRoster, unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
 import { EMPTY_PLAN, parsePracticePlan, type PracticePlan } from "./practice-plan";
@@ -96,14 +97,14 @@ export class WorkspaceController {
     } catch { if (this.current(ticket) && this.caseEditor) { this.caseEditor = { ...editor, phase: "unconfirmed" }; this.publish({}); } }
     finally { if (this.current(ticket)) this.publish({ mutationKey: null }); }
   }
-  practice: { plan: PracticePlan; loaded: boolean; loading: boolean; pending: Record<string, unknown> | null; issue: string } = { plan: EMPTY_PLAN, loaded: false, loading: false, pending: null, issue: "" };
+  practice: { plan: PracticePlan; canSchedule?: boolean; loaded: boolean; loading: boolean; pending: Record<string, unknown> | null; issue: string } = { plan: EMPTY_PLAN, loaded: false, loading: false, pending: null, issue: "" };
   async loadPractice() {
     if (this.state.authority !== "granted" || this.practice.loading) return;
     const ticket = this.capture();
     this.practice = {...this.practice, loading:true, issue:""}; this.publish({});
     try {
-      const data = await this.request(`/api/dossiers/${encodeURIComponent(ticket.visit!.caseId)}/practice`,{},ticket) as {plan:PracticePlan};
-      if(this.current(ticket)) this.practice = {...this.practice,plan:parsePracticePlan(data.plan),loaded:true};
+      const data = await this.request(`/api/dossiers/${encodeURIComponent(ticket.visit!.caseId)}/practice`,{},ticket) as {plan:PracticePlan;canSchedule?:boolean};
+      if(this.current(ticket)) this.practice = {...this.practice,plan:parsePracticePlan(data.plan),canSchedule:data.canSchedule,loaded:true};
     } catch(error) { if(this.current(ticket)) { this.practice = {...this.practice,loaded:false,issue:error instanceof WorkspaceApiError && error.status === 503 ? "Work storage is unavailable." : "Could not read the work plan. Refresh to retry."}; if(error instanceof WorkspaceApiError && [403,404].includes(error.status))await this.load(); } }
     finally { if(this.current(ticket)){this.practice={...this.practice,loading:false};this.publish({});} }
   }
@@ -116,23 +117,43 @@ export class WorkspaceController {
     try {
       const result=await this.request(`/api/dossiers/${encodeURIComponent(ticket.visit!.caseId)}/practice`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pending)},ticket) as {plan:PracticePlan;operation:string};
       if(!this.current(ticket))return false;
-      if(result.operation!==pending.operationKey)throw new Error("Mismatched receipt");
+      if(result.operation!==pending.operationKey || result.plan?.revision !== Number(pending.expectedRevision) + 1)throw new Error("Mismatched receipt");
       this.practice={plan:parsePracticePlan(result.plan),loaded:true,loading:false,pending:null,issue:""};
-      this.publish({notice:"Work saved. Task completion does not approve evidence or an outcome."});
-      await this.loadPractice(); return true;
+      const workflow = pending.action === "apply_workflow" || pending.action === "reschedule_workflow";
+      if (workflow) this.rememberDraft("workflow-schedule", "", "");
+      this.publish({notice:workflow ? "Workflow dates saved to this case." : "Work saved. Task completion does not approve evidence or an outcome."});
+      await this.loadPractice(); return this.current(ticket);
     } catch(error) {
       if(this.current(ticket))this.practice={...this.practice,pending:error instanceof WorkspaceApiError && [400,403,404,409].includes(error.status)?null:pending,issue:error instanceof WorkspaceApiError ? String(object(error.payload).error ?? "Could not save work.") : "Save not confirmed. Retry the original change to recover its receipt."};
+      if (this.current(ticket) && error instanceof WorkspaceApiError && error.status === 409 && ["apply_workflow","reschedule_workflow"].includes(String(pending.action))) {
+        const issue = this.practice.issue;
+        await this.loadPractice();
+        await this.loadWorkflowTemplates();
+        if (this.current(ticket)) this.practice = {...this.practice,issue: this.practice.issue || issue};
+      }
       return false;
     } finally {if(this.current(ticket))this.publish({mutationKey:null});}
+  }
+  async loadWorkflowSchedule(workflow: string) {
+    if (this.state.authority !== "granted") return null;
+    const ticket = this.capture();
+    try {
+      const path = "/api/dossiers/" + encodeURIComponent(ticket.visit!.caseId) + "/practice?workflow=" + encodeURIComponent(workflow);
+      const data = await this.request(path, {}, ticket) as {schedule: WorkflowSchedule; revision: number};
+      if (this.current(ticket) && data.schedule?.workflow === workflow && Array.isArray(data.schedule.dates) && Array.isArray(data.schedule.steps) && Number.isSafeInteger(data.revision)) return data;
+    } catch (error) {
+      if (this.current(ticket) && error instanceof WorkspaceApiError && [403,404].includes(error.status)) await this.load();
+    }
+    return null;
   }
   workflowTemplates: {items:WorkflowTemplate[];issue:string;loading:boolean} = {items:[],issue:"",loading:false};
   async loadWorkflowTemplates() {
     if(this.state.authority!=="granted")return;
     const ticket=this.capture();this.workflowTemplates={...this.workflowTemplates,loading:true,issue:""};this.publish({});
     try {
-      const response=await this.request("/api/work/templates",undefined,ticket) as {library:unknown};
+      const response=await this.request("/api/work/templates",undefined,ticket) as {library:unknown;milestoneVersions?:unknown};
       if(!this.current(ticket))return;
-      this.workflowTemplates={items:readWorkflowLibrary(response.library).templates.filter(t=>!t.archived),loading:false,issue:""};
+      this.workflowTemplates={items:readWorkflowLibrary(response.library,response.milestoneVersions).templates.filter(t=>!t.archived),loading:false,issue:""};
     } catch {if(this.current(ticket))this.workflowTemplates={items:[],loading:false,issue:"Custom templates unavailable. Refresh templates to retry."};}
     finally {if(this.current(ticket))this.publish({});}
   }

@@ -1,10 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
-import { organizationWorkflowRevisions as revisions } from "../../../../db/schema";
+import { organizationWorkflowRevisions as revisions, workflowTemplateMilestones } from "../../../../db/schema";
 import { canonicalDossierJson } from "../../../dossier-contract";
 import { boundedDossierText, canonicalDossierTimestamp, dossierJson, dossierSha256, isResponse, newDossierOpaqueId, revalidateDossierIdentity, resolveDossierServerContext } from "../../../dossier-server";
 import { assertOrganizationCurrent } from "../../../organization-store";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { changeWorkflowLibrary, EMPTY_LIBRARY, readWorkflowLibrary } from "../../../work/workflow-templates";
+
+import { templateMilestones } from "../../../work/workflow-milestone-store";
 
 export const dynamic = "force-dynamic";
 type Context = Exclude<Awaited<ReturnType<typeof resolveDossierServerContext>>, Response>;
@@ -17,7 +19,8 @@ async function finish(context: Context, data: unknown) {
 export async function GET(request: Request) {
   const context = await resolveDossierServerContext(request); if (isResponse(context)) return context;
   const [row] = await context.db.select().from(revisions).where(eq(revisions.organizationId, context.organization!.id)).orderBy(desc(revisions.revision)).limit(1);
-  return finish(context, { library: row ? readWorkflowLibrary(JSON.parse(row.library)) : EMPTY_LIBRARY, canManage: ["org_owner", "org_admin"].includes(context.organization!.role) });
+  const library = row ? readWorkflowLibrary(JSON.parse(row.library)) : EMPTY_LIBRARY;
+  return finish(context, { library, milestoneVersions: await templateMilestones(context.db, context.organization!.id, library), canManage: ["org_owner", "org_admin"].includes(context.organization!.role) });
 }
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return dossierJson({ error: "Cross-site change rejected." }, 403);
@@ -32,16 +35,28 @@ export async function POST(request: Request) {
     digest = await dossierSha256(canonicalDossierJson(command));
   } catch { return dossierJson({ error: "Invalid template action." }, 400); }
   const original = async () => (await context.db.select().from(revisions).where(and(eq(revisions.organizationId, context.organization!.id), eq(revisions.actorRef, context.actor.actorId), eq(revisions.operationKey, key))).limit(1))[0];
-  const receipt = (row: typeof revisions.$inferSelect) => row.requestDigest === digest ? finish(context, { library: readWorkflowLibrary(JSON.parse(row.library)), operation: row.operationKey }) : dossierJson({ error: "This operation key belongs to a different change." }, 409);
+  const receipt = async (row: typeof revisions.$inferSelect) => {
+    if (row.requestDigest !== digest) return dossierJson({ error: "This operation key belongs to a different change." }, 409);
+    const library = readWorkflowLibrary(JSON.parse(row.library));
+    return finish(context, { library, milestoneVersions: await templateMilestones(context.db, row.organizationId, library), operation: row.operationKey });
+  };
   const prior = await original(); if (prior) return receipt(prior);
   const [latest] = await context.db.select().from(revisions).where(eq(revisions.organizationId, context.organization!.id)).orderBy(desc(revisions.revision)).limit(1);
   const library = latest ? readWorkflowLibrary(JSON.parse(latest.library)) : EMPTY_LIBRARY;
   if (library.revision !== command!.expectedRevision) return dossierJson({ error: "Templates changed. Refresh and compare before saving." }, 409);
+  const versions = await templateMilestones(context.db, context.organization!.id, library);
+  if (command!.action === "update" && versions[String(command!.id)] && request.headers.get("x-casevant-milestones") !== "1")
+    return dossierJson({ error: "Refresh the template editor to keep its milestone dates." }, 409);
   let next;
   try { next = changeWorkflowLibrary(library, command!, () => newDossierOpaqueId("wf")); }
   catch (error) { return dossierJson({ error: error instanceof Error ? error.message : "Invalid template." }, 400); }
-  const row = { organizationId: context.organization!.id, revision: next.revision, actorRef: context.actor.actorId, operationKey: key, requestDigest: digest, library: canonicalDossierJson(next), occurredAt: canonicalDossierTimestamp() };
-  try { await context.db.batch([context.db.insert(revisions).values(row)]); }
+  const changed = next.templates.find(t => !library.templates.some(previous => previous.id === t.id && previous.version === t.version))!;
+  const names = changed.steps.map(step => step.milestone ?? "");
+  const stored = { ...next, templates: next.templates.map(t => t.id !== changed.id ? t : { ...t, steps: t.steps.map(({title, kind, days}) => ({title, kind, days})) }) };
+  const row = { organizationId: context.organization!.id, revision: next.revision, actorRef: context.actor.actorId, operationKey: key, requestDigest: digest, library: canonicalDossierJson(stored), occurredAt: canonicalDossierTimestamp() };
+  try { await context.db.batch([context.db.insert(revisions).values(row), ...(names.some(Boolean) ? [
+    context.db.insert(workflowTemplateMilestones).values({ organizationId: row.organizationId, templateId: changed.id, version: changed.version, libraryRevision: next.revision, names: JSON.stringify(names) })
+  ] : [])]); }
   catch { const saved = await original(); if (saved) return receipt(saved); return dossierJson({ error: "Templates or your access changed. Refresh before saving." }, 409); }
   return receipt(row);
 }

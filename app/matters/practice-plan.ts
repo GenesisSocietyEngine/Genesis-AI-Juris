@@ -1,4 +1,5 @@
 import { readTiming, readReminder, readRecurrence, recurrenceDates, shiftReminder, zonedMoment, localAt, type EventTiming, type WorkReminder, type SeriesOccurrence } from "./practice-scheduling";
+import { milestoneDates, previewSteps } from "../work/workflow-milestones";
 import type { WorkflowTemplate } from "../work/workflow-templates";
 /** Operational work is separate from hypothetical decision-graph consequences. */
 export type PracticeItem = {
@@ -26,7 +27,7 @@ export function parsePracticePlan(value: unknown): PracticePlan {
 }
 export function practiceWorkflowLabel(id: string, locale: "en"|"ru" = "en") {
   const template=PRACTICE_WORKFLOWS.find(w=>w.id===id.split(":")[0]);
-  return template ? locale==="ru" ? template.id==="intake-v1"?"Приём клиента":"Проверка дела и отчётность" : template.title : id;
+  return template ? locale==="ru" ? template.id==="intake-v1"?"Приём клиента":template.id==="filing-review-v1"?"Подача документов и проверка":"Проверка дела и отчётность" : template.title : id;
 }
 export const PRACTICE_WORKFLOWS = [
   { id: "intake-v1", title: "Client intake", steps: [
@@ -41,18 +42,20 @@ export const PRACTICE_WORKFLOWS = [
     { title: "Team review meeting", days: 2, kind: "event" },
     { title: "Prepare outcome report for approval", days: 3, kind: "task" },
   ] },
+  { id: "filing-review-v1", title: "Filing and review", steps: [
+    { title: "Prepare filing packet", days: -2, kind: "task", milestone: "Filing" },
+    { title: "File documents", days: 0, kind: "event", milestone: "Filing" },
+    { title: "Review meeting", days: 0, kind: "event", milestone: "Review" },
+    { title: "Record review follow-up", days: 1, kind: "task", milestone: "Review" },
+  ] },
 ] as const;
 export function validPracticeDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 }
-export function workflowPreview(templateId: string, anchor: string, configured?: WorkflowTemplate) {
+export function workflowPreview(templateId: string, dates: unknown, configured?: WorkflowTemplate) {
   const template = configured ?? PRACTICE_WORKFLOWS.find(item => item.id === templateId);
-  if (!template || !validPracticeDate(anchor)) throw new Error("Choose a workflow and a valid anchor date.");
-  return template.steps.map(step => {
-    const dueDate = new Date(Date.parse(anchor) + step.days * 86_400_000).toISOString().slice(0, 10);
-    if (!validPracticeDate(dueDate)) throw new Error("A step falls outside the supported date range.");
-    return { title: step.title, kind: step.kind, dueDate };
-  });
+  if (!template) throw Error("Choose a workflow template.");
+  return previewSteps(template.steps, dates);
 }
 export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | "workflow" | "workflowTitle" | "series"> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter a task or event.");
@@ -75,8 +78,11 @@ export function changePracticePlan(plan: PracticePlan, command: Record<string, u
   const items = [...plan.items];
   if (command.action === "apply_workflow") {
     if (configured && (configured.archived || configured.id !== command.templateId || configured.version !== command.templateVersion)) throw new Error("Template changed. Refresh and preview it again.");
-    const preview = workflowPreview(String(command.templateId), String(command.anchor), configured);
-    const workflow = `${command.templateId}${configured ? `@${configured.version}` : ""}:${command.anchor}`;
+    const template = configured ?? PRACTICE_WORKFLOWS.find(t => t.id === command.templateId);
+    if (!template || (command.anchor !== undefined && command.milestones !== undefined)) throw Error("Choose a workflow and its milestone dates.");
+    const dates = milestoneDates(template.steps, command.milestones ?? command.anchor);
+    const preview = previewSteps(template.steps, dates);
+    const workflow = `${command.templateId}${configured ? `@${configured.version}` : ""}:${dates[0].date}`;
     if (items.some(item => item.workflow === workflow)) throw new Error("This workflow is already applied for that anchor date.");
     items.push(...preview.map(step => ({ ...step, id: newId(), description: "", assignee: typeof command.assignee === "string" ? command.assignee : null, priority: "normal" as const, status: "open" as const, checklist: [], workflow, ...(configured ? {workflowTitle: configured.title} : {}) })));
   } else if (command.action === "create_series") {

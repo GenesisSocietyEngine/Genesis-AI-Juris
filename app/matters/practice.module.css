@@ -35,3 +35,14 @@
 .workspace button { min-height:var(--cv-command-height,36px); border-radius:var(--cv-command-radius,4px); padding:7px 11px; line-height:20px; }
 .workspace input:not([type=checkbox]),.workspace select { min-height:var(--cv-command-height,36px); }
 .workspace .actions { align-items:center; }
+
+.workflowSchedule,.scheduleReview { display:grid; min-width:0; gap:12px }
+.workflowSchedule h3 { display:flex; align-items:center; gap:8px; margin:0; font-size:16px }
+.workflowSchedule h3 svg,.scheduleRow>svg { color:#0f6cbd; flex-shrink:0 }
+.scheduleActions { display:flex; flex-wrap:wrap; gap:8px }
+.scheduleReview>button { justify-self:start }
+.scheduleRow { display:grid; grid-template-columns:20px minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 12px; background:white; border-bottom:1px solid #e2e8ee }
+.scheduleRow:last-child { border-bottom:0 }
+.scheduleRow strong,.scheduleRow small { display:block; overflow-wrap:anywhere }
+.scheduleRow small { margin-top:3px; color:#526777; font-variant-numeric:tabular-nums }
+@media(max-width:600px){.scheduleRow{grid-template-columns:20px minmax(0,1fr)}.scheduleRow>span{grid-column:2;justify-self:start}.workflowSchedule select{max-width:100%}.workflowSchedule .fields{grid-template-columns:minmax(0,1fr)}}

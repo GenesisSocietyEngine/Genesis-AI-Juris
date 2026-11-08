@@ -1,6 +1,6 @@
-import { validPracticeDate } from "../matters/practice-plan";
+import { milestoneName, previewSteps } from "./workflow-milestones";
 
-export type WorkflowStep = { title: string; days: number; kind: "task" | "event" };
+export type WorkflowStep = { title: string; days: number; milestone?: string; kind: "task" | "event" };
 export type WorkflowTemplate = { id: string; version: number; title: string; archived: boolean; steps: WorkflowStep[] };
 export type WorkflowLibrary = { revision: number; templates: WorkflowTemplate[] };
 export const EMPTY_LIBRARY: WorkflowLibrary = { revision: 0, templates: [] };
@@ -11,13 +11,14 @@ export function templateFields(value: unknown): Pick<WorkflowTemplate, "title" |
   if (Object.keys(item).some(k => !["title", "archived", "steps"].includes(k)) || typeof item.title !== "string" || !item.title.trim() || item.title.length > 100 || typeof item.archived !== "boolean") throw new Error("Use a template title of 1–100 characters.");
   if (!Array.isArray(item.steps) || !item.steps.length || item.steps.length > 30) throw new Error("Use 1–30 workflow steps.");
   const steps = item.steps.map(step => {
-    if (!step || typeof step !== "object" || Object.keys(step).some(k => !["title", "days", "kind"].includes(k)) || typeof step.title !== "string" || !step.title.trim() || step.title.length > 240 || !Number.isInteger(step.days) || Math.abs(step.days) > 3650 || !["task", "event"].includes(step.kind)) throw new Error("Each step needs a title, type and a whole-day offset between −3650 and 3650.");
-    return { title: step.title.trim(), days: step.days, kind: step.kind };
+    if (!step || typeof step !== "object" || Object.keys(step).some(k => !["title", "days", "kind", "milestone"].includes(k)) || typeof step.title !== "string" || !step.title.trim() || step.title.length > 240 || !Number.isInteger(step.days) || Math.abs(step.days) > 3650 || !["task", "event"].includes(step.kind)) throw new Error("Each step needs a title, type and a whole-day offset between −3650 and 3650.");
+    const name = milestoneName(step.milestone);
+    return { title: step.title.trim(), days: step.days, kind: step.kind, ...(name ? { milestone: name } : {}) };
   });
   return { title: item.title.trim(), archived: item.archived, steps };
 }
 
-export function readWorkflowLibrary(value: unknown): WorkflowLibrary {
+export function readWorkflowLibrary(value: unknown, metadata?: unknown): WorkflowLibrary {
   const library = value as WorkflowLibrary;
   if (!library || !Number.isSafeInteger(library.revision) || library.revision < 0 || !Array.isArray(library.templates) || library.templates.length > 100) throw new Error("Unsupported workflow library.");
   const ids = new Set<string>();
@@ -26,7 +27,18 @@ export function readWorkflowLibrary(value: unknown): WorkflowLibrary {
     const { id, version, ...fields } = template; void version;
     templateFields(fields); ids.add(id);
   }
-  return library;
+  if (!metadata) return library;
+  if (typeof metadata !== "object" || Array.isArray(metadata)) throw Error("Unsupported template milestones.");
+  const versions = metadata as Record<string, { version: number; names: string[] }>;
+  return { ...library, templates: library.templates.map(template => {
+    const record = versions[template.id];
+    if (!record || record.version !== template.version) return template;
+    if (record.names.length !== template.steps.length) throw Error("Unsupported template milestones.");
+    return { ...template, steps: template.steps.map((step, i) => {
+      const name = milestoneName(record.names[i]);
+      return name ? { ...step, milestone: name } : step;
+    }) };
+  }) };
 }
 
 export function changeWorkflowLibrary(library: WorkflowLibrary, command: Record<string, unknown>, newId: () => string): WorkflowLibrary {
@@ -43,11 +55,6 @@ export function changeWorkflowLibrary(library: WorkflowLibrary, command: Record<
   return { revision: library.revision + 1, templates };
 }
 
-export function previewTemplate(template: Pick<WorkflowTemplate, "steps">, anchor: string) {
-  if (!validPracticeDate(anchor)) throw new Error("Choose a valid anchor date.");
-  return template.steps.map(step => {
-    const dueDate = new Date(Date.parse(anchor) + step.days * 86_400_000).toISOString().slice(0, 10);
-    if (!validPracticeDate(dueDate)) throw new Error("A step falls outside the supported date range.");
-    return { title: step.title, kind: step.kind, dueDate };
-  });
+export function previewTemplate(template: Pick<WorkflowTemplate, "steps">, dates: unknown) {
+  return previewSteps(template.steps, dates);
 }

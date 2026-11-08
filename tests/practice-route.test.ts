@@ -14,11 +14,11 @@ let mf:Miniflare, db:D1Database;
 let routes:Record<string,{GET:Handler;POST:Handler}>;
 const storage=new AsyncLocalStorage<Request>();
 const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database;DOSSIER_DOCUMENTS?:R2Bucket};__practiceHeaders:()=>Headers};
-let organization:string, foreignOrganization:string, caseId:string;
+let organization:string, foreignOrganization:string, caseId:string, oldCase:string;
 const legacyId="firm_doc_"+"d".repeat(64),legacyBytes="Synthetic v193 original";
-async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="") {
+async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="", dossier=caseId) {
   const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
-  return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:caseId})}));
+  return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:dossier})}));
 }
 before(async()=>{
   mf=new Miniflare({workers:[{config:{name:"practice-test",type:"worker",compatibilityDate:"2026-09-01",manifest:{mainModule:"index.mjs",modules:{"index.mjs":{type:"esm",contents:"export default {fetch(){return new Response('test')}}"}}},env:{DB:{type:"d1",name:"practice-test"},DOSSIER_DOCUMENTS:{type:"r2",name:"practice-documents"}}},dev:{}}]});
@@ -41,6 +41,14 @@ before(async()=>{
   const hex=createHash("sha256").update(legacyBytes).digest("hex"),digest="sha256-"+hex,objectKey=`firm/${organization}/${legacyId}/1/${hex}`;
   await runtime.__practiceEnv.DOSSIER_DOCUMENTS!.put(objectKey,legacyBytes,{sha256:hex,httpMetadata:{contentType:"text/plain"},customMetadata:{contentSha256:digest}});
   await db.prepare("INSERT INTO firm_document_versions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(organization,legacyId,1,"Legacy guide","Policies","legacy.txt","text/plain",legacyBytes.length,digest,objectKey,actor,"legacy-save-v193",digest,"2026-11-07T00:01:00.000Z").run();
+  const outsider="practice-outsider@example.test";
+  const old=await call("dossiers","POST",{title:"Legacy schedule witness",jurisdictions:["Test"],classification:"internal"},outsider,foreignOrganization);
+  oldCase=(await old.json() as {dossier:{dossier_id:string}}).dossier.dossier_id;
+  const oldActor=await db.prepare("SELECT actor_id FROM users WHERE email=?").bind(outsider).first<string>("actor_id");
+  const oldItem={id:"work_legacy",kind:"task",title:"Original step",description:"",dueDate:"2026-11-07",assignee:null,priority:"normal",status:"open",checklist:[],workflow:"intake-v1:2026-11-06"};
+  for(const [revision,dueDate] of [[1,"2026-11-07"],[2,"2026-11-10"]] as const) {
+    await db.prepare("INSERT INTO dossier_practice_revisions VALUES(?,?,?,?,?,?,?)").bind(oldCase,revision,oldActor,"original-legacy-"+revision,"legacy-digest",JSON.stringify({revision,items:[{...oldItem,dueDate}]}),"2026-11-08T10:00:00.000Z").run();
+  }
   const schema=(await db.prepare("SELECT name,sql,type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all<{name:string;sql:string;type:string}>()).results;
   const tables=schema.filter(s=>s.type==="table"&&!s.name.startsWith("_cf_"));
   const rows=()=>db.batch(tables.map(t=>db.prepare('SELECT * FROM "'+t.name.replaceAll('"','""')+'"')));
@@ -58,6 +66,10 @@ before(async()=>{
       const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
       const snapshot=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
       const old=await snapshot();await migrate(entry);assert.deepEqual(await snapshot(),old,"all populated v197 tables including intake answers survive unchanged");
+    }else if(entry.idx===33){
+      const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
+      const rows=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
+      const snapshot=await rows();await migrate(entry);assert.deepEqual(await rows(),snapshot,"all v198 records and historical plans survive the milestone upgrade");
     }else await migrate(entry);
   }
   assert.deepEqual((await rows()).map(v=>v.results),beforeRows,"upgrading a populated v193 database must preserve every pre-existing row");
@@ -374,4 +386,54 @@ test("unfinished bytes are bounded per organization without counting or deleting
  assert.equal(blocked.status,507);assert.match(await blocked.text(),/Incomplete upload storage is full/);
  const own=await firmUpload("Other organization","unrelated-capacity");assert.equal(own.status,200);
  const other=await (await firmGet("?operation=quota-test-0")).json() as {state:string};assert.equal(other.state,"not_started");
+});
+
+test("named milestone writes, historical template receipts and manual legacy dates stay case-scoped", async () => {
+  type Result={plan:import("../app/matters/practice-plan").PracticePlan;library:import("../app/work/workflow-templates").WorkflowLibrary;milestoneVersions:Record<string,{names:string[]}>;cases:import("../app/work/work-controller").FirmCase[];nextCursor:string|null};
+  const query=async(route:string,command?:Record<string,unknown>,extra?:Record<string,string>)=>{
+    const response=await call(route,command?"POST":"GET",command,undefined,organization,extra);
+    assert.equal(response.status,200,await response.clone().text());return await response.json() as Result;
+  };
+  const fields={title:"Filing / review",archived:false,steps:[{title:"Prepare",days:-1,kind:"task",milestone:"Filing"},{title:"Submit",days:0,kind:"event",milestone:"Filing"},{title:"Review",days:1,kind:"task",milestone:"Review"}]};
+  const create={action:"create",template:fields,expectedRevision:(await query("templates")).library.revision,operationKey:"named-create-template"};
+  const first=await query("templates",create);
+  const template=first.library.templates.at(-1)!;
+  assert.equal(template.steps[0].milestone,undefined,"the original library format remains readable");
+  assert.deepEqual(first.milestoneVersions[template.id].names,["Filing","Filing","Review"]);
+  const original={action:"apply_workflow",templateId:template.id,templateVersion:1,milestones:[{name:"Filing",date:"2026-12-12"},{name:"Review",date:"2026-12-16"}],expectedRevision:(await query("practice")).plan.revision,operationKey:"named-apply-original"};
+  const applied=await query("practice",original), items=applied.plan.items.slice(-3), workflow=items[0].workflow!;
+  assert.deepEqual(items.map(i=>i.dueDate),["2026-12-11","2026-12-12","2026-12-17"]);
+  const update={action:"update",template:{...fields,archived:true},id:template.id,operationKey:"named-template-archive",expectedRevision:first.library.revision};
+  assert.equal((await call("templates","POST",update)).status,409);
+  await query("templates",update,{"x-casevant-milestones":"1"});
+  assert.deepEqual(await query("templates",create),first);
+  assert.deepEqual(await query("practice",original),applied);
+  const read=async()=>await (await call("practice","GET",undefined,undefined,organization,undefined,"?workflow="+encodeURIComponent(workflow))).json() as {schedule:import("../app/work/workflow-milestones").WorkflowSchedule};
+  const frozen=(await read()).schedule;assert.deepEqual(frozen.dates,original.milestones);
+  const {id,workflow:source,workflowTitle,...item}=items[0];void source;void workflowTitle;
+  const manual=await query("practice",{action:"update",id,item:{...item,dueDate:"2026-12-25",description:"My change"},expectedRevision:applied.plan.revision,operationKey:"named-manual-move"});
+  const move={action:"reschedule_workflow",workflow,milestones:[{name:"Review",date:"2026-12-21"},{name:"Filing",date:"2026-12-15"}],expectedRevision:manual.plan.revision,operationKey:"named-reschedule"};
+  assert.equal((await call("practice","POST",{...move,expectedRevision:applied.plan.revision})).status,409);
+  const saved=await query("practice",move);
+  assert.deepEqual(saved.plan.items.slice(-3).map(i=>i.dueDate),["2026-12-25","2026-12-15","2026-12-22"]);
+  assert.deepEqual(await query("practice",move),saved);
+  assert.deepEqual((await read()).schedule.steps.map(s=>s.held),["manual",undefined,undefined]);
+  let page=await query("firm");
+  while(!page.cases.some(c=>c.id===caseId)&&page.nextCursor)page=await (await call("firm","GET",undefined,undefined,organization,undefined,"?cursor="+encodeURIComponent(page.nextCursor))).json() as Result;
+  const view=page.cases.find(c=>c.id===caseId);
+  assert.deepEqual(view?.workflowMilestones?.find(s=>s.workflow===workflow)?.dates,(await read()).schedule.dates);
+  const race=await Promise.all(["2026-12-26","2026-12-27"].map(date=>call("practice","POST",{...move,expectedRevision:saved.plan.revision,milestones:[{name:"Filing",date},{name:"Review",date}],operationKey:"named-concurrent-"+date})));
+  assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);
+  const winner=await race.find(r=>r.ok)!.json() as Result;
+  await db.prepare("CREATE TRIGGER test_milestone_failure BEFORE INSERT ON case_workflow_milestones WHEN json_extract(NEW.schedule,'$.dates[0].date')='2026-12-30' BEGIN SELECT RAISE(ABORT,'test conflict'); END").run();
+  const refused=await call("practice","POST",{...move,expectedRevision:winner.plan.revision,milestones:[{name:"Filing",date:"2026-12-30"},{name:"Review",date:"2026-12-31"}],operationKey:"named-atomic-failure"});
+  assert.equal(refused.status,409);assert.deepEqual((await query("practice")).plan,winner.plan,"plan revision rolls back with a rejected schedule");
+  const outsider="practice-outsider@example.test",oldKey="intake-v1:2026-11-06";
+  const oldRead=await call("practice","GET",undefined,outsider,foreignOrganization,undefined,"?workflow="+oldKey,oldCase);
+  assert.equal(oldRead.status,200);assert.equal((await oldRead.json() as {schedule:{steps:{days:number}[]}}).schedule.steps[0].days,1);
+  const rebase=await call("practice","POST",{action:"reschedule_workflow",workflow:oldKey,milestones:[{name:"",date:"2026-11-20"}],operationKey:"named-legacy-move",expectedRevision:2},outsider,foreignOrganization,undefined,"",oldCase);
+  assert.equal(rebase.status,200);assert.equal((await rebase.json() as {plan:{items:{dueDate:string}[]}}).plan.items[0].dueDate,"2026-11-10");
+  assert.equal((await call("practice","GET",undefined,outsider,foreignOrganization,undefined,"?workflow="+workflow)).status,404);
+  assert.equal((await call("practice","POST",{...move,expectedRevision:3},outsider,foreignOrganization,undefined,"",oldCase)).status,400);
+  await assert.rejects(db.prepare("UPDATE case_workflow_milestones SET workflow='changed' WHERE dossier_id=?").bind(caseId).run(),/immutable/);
 });
