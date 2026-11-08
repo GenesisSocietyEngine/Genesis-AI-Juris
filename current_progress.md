@@ -1,10 +1,12 @@
 # Current progress — CaseVant
 
-## Case intake forms — 8 November 2026
+## Published case intake forms — 8 November 2026
 
-The next Library refactor adds reusable firm questionnaires and case-specific intake forms. A user can save a partial draft to a named case, return after reload, complete required answers and download the result. Editing a questionnaire leaves existing forms unchanged. Intake respects case access and keeps the return to Case overview and AI Studio. These are internal forms for synthetic or de-identified information; external delivery and Word document templates remain separate work.
+[Public v197](https://casevant.pro/library?view=intake) adds reusable firm questionnaires and case-specific intake forms. A user can save a partial draft to a named case, return after reload, complete required answers and download the result. Editing a questionnaire leaves existing forms unchanged. Intake respects case access and keeps the return to Case overview and AI Studio. These are internal forms for synthetic or de-identified information; external delivery and Word document templates remain separate work.
 
-Development verification covered the signed-in MyCase reference, a complete synthetic browser journey, Russian labels, phone controls and isolated database save/recovery checks. [Acceptance details](docs/testing/case-intake-2026-11-08.md). Publication and production checks follow the reviewed implementation.
+[PR #257](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/257) is on main. In the signed-in live app, Intake → Case overview → AI Studio → Contacts → Intake kept the same saved case and restored the Workbench prompt and document-flow canvas. On Cancel, the blank questionnaire returned focus to the opening command. Draft persistence, completion and download were exercised with synthetic data in an isolated database; phone commands measured 44 px at a 390 px viewport.
+
+The [merged web/PDF run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42471978423) passed 2,041 tests with three inherited skips and preserved the 47-report PDF baseline. Both production addresses verified all 209 current and retained browser assets. [Acceptance details](docs/testing/case-intake-2026-11-08.md) · [Release receipt](docs/testing/receipts/case-intake-v197-2026-11-08.json).
 
 ## Published CRM and contacts, 7 November 2026
 
@@ -55,7 +57,7 @@ The release audit, deployment receipt and retrospective are integrated into cano
 - **Published runtime `f6c685f`:** [web/PDF CI](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151143), Rust, Android, Flutter and iOS Tax Application passed. The [iOS Native FFI run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42308151377) subsequently finished as **cancelled**; its earlier in-progress status is superseded, and it is not counted as a pass.
 - **Documentation integration `63a897f`:** [web/PDF CI](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42311550238), Rust, Android and Flutter passed. [iOS Tax Application](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42311550485) is running and [iOS Native FFI](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42311550426) is queued at this checkpoint. These dated statuses do not establish native application acceptance.
 
-## Retrospective summary — 31 August to 7 November 2026
+## Retrospective summary — 31 August to 8 November 2026
 
 This cumulative summary uses [development-journal.md](development-journal.md) for its 31 August–1 September entries, then canonical main's dated integration history and the linked review/release records. The journal contains no later dated entries; later milestones come from those separate records. Dates group the work; merging code is not, by itself, evidence of production or native acceptance. Historical audit limitations remain valid unless a later record explicitly closes them.
 
@@ -82,8 +84,10 @@ This cumulative summary uses [development-journal.md](development-journal.md) fo
 | **7 November 2026 — saving and case continuity** | Clear saved-content versus unsent-input status, centered Save and continue / Review dialog, in-place Case overview and AI Studio, exact saved-case return links and Back/Forward continuity. Compact case hierarchy and readable labels. | **Delivered public v191** with 2,012 full-suite passes and both-origin verification. [Audit](docs/testing/ui-reference-save-clarity-2026-11-06.md). |
 | **7 November — firm modules** | Home, Tasks and Calendar gained firm/case scheduling and reminders; Library gained distinct case/firm documents, folder filtering, private immutable versions, Templates and Demo. The Calendar/recurrence/reminder audit then corrected controls, validation and focus. | **Published v192 and v193**, PRs 248–251. [Module review](docs/testing/modules-redesign-2026-11-07.md), [v193 receipt](docs/testing/receipts/calendar-reminders-v193-2026-11-07.json). |
 | **7 November — Library and storage** | Added explicit save destinations, interrupted-upload recovery, complete version browsing and verified return to the same case. | Published v194 from PR #252 and the mobile correction in v195 from PR #253. [Storage receipt](docs/testing/receipts/library-document-storage-v194-2026-11-07.json), [mobile receipt](docs/testing/receipts/library-document-storage-v195-2026-11-07.json). |
+| **7 November — CRM and contacts** | Added firm people and companies, relationship and group filters, explicit case links, archive/restore and reviewed CSV import with undo. | Published v196 from [PR #255](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/255). [Contacts receipt](docs/testing/receipts/crm-contacts-v196-2026-11-07.json). |
+| **8 November — case intake** | Added reusable firm questionnaires, case-bound drafts and completed answers, exact-save recovery and text downloads. Existing responses keep the questions they were given. | Published v197 from [PR #257](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/257). [Intake receipt](docs/testing/receipts/case-intake-v197-2026-11-08.json). |
 
-Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. Current verified runtime is v193; the remaining roadmap is tracked below.
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified runtime on 8 November is v197. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks reusable document templates and the remaining work.
 
 ## Previous delivery — case editor v190
 
@@ -113,7 +117,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 
 Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Library storage and case return shipped in v194; v195 completed the mobile follow-up. Further storage work needs an agreed retention/cleanup policy for abandoned originals. Preserve the completed Home, AI Studio and editor flows.
 
-Further case metadata, CRM, finance, client portal and external synchronization remain separate work. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
+The firm CRM shipped in v196; internal case intake shipped in v197. Next in the Library: reusable document templates. Further case metadata, lead stages, finance, client portal and external synchronization remain open. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
 
 ## Calendar and reminder audit follow-up, 7 November
 
