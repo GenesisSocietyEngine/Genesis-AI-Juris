@@ -232,6 +232,13 @@
       "when": 1794154685737,
       "tag": "0032_case_work_records",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1794173881339,
+      "tag": "0033_workflow_milestones",
+      "breakpoints": true
     }
   ]
 }

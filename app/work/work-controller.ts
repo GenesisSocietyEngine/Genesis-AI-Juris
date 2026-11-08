@@ -3,7 +3,7 @@ import { readWithTimeout } from "../read-with-timeout";
 import { EMPTY_PLAN, parsePracticePlan, type PracticeItem, type PracticePlan } from "../matters/practice-plan";
 import { EMPTY_LIBRARY, readWorkflowLibrary, type WorkflowLibrary, type WorkflowTemplate } from "./workflow-templates";
 
-export type FirmCase = { id: string; title: string; canWrite?: boolean; plan: PracticePlan; participants: { id: string; actorId: string | null; name: string; active: boolean }[] };
+export type FirmCase = { id: string; title: string; canWrite?: boolean; workflowMilestones?: {workflow:string;dates:import("./workflow-milestones").MilestoneDate[]}[]; plan: PracticePlan; participants: { id: string; actorId: string | null; name: string; active: boolean }[] };
 export type WorkDraft = { caseId: string; id?: string; expectedRevision: number; item: Omit<PracticeItem,"id"|"workflow"|"workflowTitle"|"series">; recurrence?: import("../matters/practice-scheduling").Recurrence | null };
 type Draft = { id?: string; expectedRevision: number; template: Pick<WorkflowTemplate, "title" | "archived" | "steps"> };
 type State = { firmPlan: PracticePlan; firmMembers: {id:string;name:string}[]; canWriteFirm: boolean; workDraft: WorkDraft|null; workPending: Record<string,unknown>|null; cases: FirmCase[]; library: WorkflowLibrary; loading: boolean; loaded: boolean; canManage: boolean; issue: string; draft: Draft | null; pending: Record<string, unknown> | null; saving: boolean; locked: boolean; notice: string };
@@ -58,7 +58,7 @@ export class WorkController {
       const [templateData,firmData] = await Promise.all([request("/api/work/templates"),request("/api/work/firm")]);
       if(firmData.scope!==context.selection||!Array.isArray(firmData.members)||firmData.members.some(m=>!m||typeof m.id!=="string"||typeof m.name!=="string"))throw Error("Invalid firm work scope.");
       const firmPlan=parsePracticePlan(firmData.plan);
-      const library = readWorkflowLibrary(templateData.library);
+      const library = readWorkflowLibrary(templateData.library, templateData.milestoneVersions);
       const cases: FirmCase[] = [], ids = new Set<string>(), cursors = new Set<string>();
       let cursor: string | null = null;
       do {
@@ -122,7 +122,7 @@ export class WorkController {
     this.publish({ pending: command, saving: true, issue: "", notice: "" });
     try {
       const {response,result} = await readWithTimeout(async signal => {
-        const response = await this.transport("/api/work/templates", { method: "POST", headers: { "Content-Type": "application/json", "x-genesis-organization": context.selection }, credentials: "same-origin", signal, body: JSON.stringify(command) });
+        const response = await this.transport("/api/work/templates", { method: "POST", headers: { "Content-Type": "application/json", "x-casevant-milestones": "1", "x-genesis-organization": context.selection }, credentials: "same-origin", signal, body: JSON.stringify(command) });
         return {response,result:await response.json() as Record<string,unknown>};
       });
       if (!this.current(epoch, context.scope)) return false;
@@ -133,7 +133,7 @@ export class WorkController {
         throw new Error(typeof result.error === "string" ? result.error : "Save not confirmed. Recover the original save.");
       }
       if (result.operation !== command.operationKey) throw Error("Save receipt did not match. Recover the original save.");
-      const library = readWorkflowLibrary(result.library);
+      const library = readWorkflowLibrary(result.library, result.milestoneVersions);
       this.publish({ library, draft: null, pending: null, saving: false, notice: "Template saved. Existing case work keeps its original version." });
       await this.refresh(); return true;
     } catch (error) {

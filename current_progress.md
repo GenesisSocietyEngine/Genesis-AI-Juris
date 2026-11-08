@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## Workflow milestone scheduling in development — 8 November 2026
+
+The case workflow editor and firm template editor now support named dates and a step-by-step preview. The server preserves individually scheduled and completed work when a milestone moves. The isolated browser verified template creation, case application, conflict labels and saved dates after reload. The local route suite verified case access and exact retries. The production baseline is v198. [Acceptance notes](docs/testing/workflow-milestones-2026-11-08.md)
+
 ## Published case register, Word documents and prospect stages — 8 November 2026
 
 **[Public v198](https://casevant.pro)** adds four workflows: daily case stages with dated updates; personal saved register views; prospect stages in Contacts; and reusable templates that produce reviewed Word documents saved to a named case. A case’s formal status and permissions stay separate. Editing the source case or template cannot change a document already saved.
@@ -96,7 +100,7 @@ This cumulative summary uses [development-journal.md](development-journal.md) fo
 | **8 November — case intake** | Added reusable firm questionnaires, case-bound drafts and completed answers, exact-save recovery and text downloads. Existing responses keep the questions they were given. | Published v197 from [PR #257](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/257). [Intake receipt](docs/testing/receipts/case-intake-v197-2026-11-08.json). |
 | **8 November — case register, documents and leads** | Added operational case stages and dated history, personal named register views, prospect stages and reviewed template-to-Word generation. Generated text stays on its selected case. | Published v198 from [PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259). [Release receipt](docs/testing/receipts/casework-v198-2026-11-08.json). |
 
-Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified runtime on 8 November is v197. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks reusable document templates and the remaining work.
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified baseline for the milestone work on 8 November is v198. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks calendar connections and recipient delivery.
 
 ## Previous delivery — case editor v190
 

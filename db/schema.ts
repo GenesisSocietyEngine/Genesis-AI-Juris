@@ -25,6 +25,23 @@ export const organizationWorkflowRevisions = sqliteTable("organization_workflow_
   library: text("library").notNull(), occurredAt: text("occurred_at").notNull(),
 }, t => [uniqueIndex("workflow_revision_unique").on(t.organizationId,t.revision), uniqueIndex("workflow_operation_unique").on(t.organizationId,t.actorRef,t.operationKey)]);
 
+export const workflowTemplateMilestones = sqliteTable("workflow_template_milestones", {
+  organizationId: text("organization_id").notNull(), templateId: text("template_id").notNull(),
+  version: integer("version").notNull(), libraryRevision: integer("library_revision").notNull(), names: text("names").notNull(),
+}, t => [
+  uniqueIndex("template_milestones_version").on(t.organizationId, t.templateId, t.version),
+  foreignKey({ columns: [t.organizationId, t.libraryRevision], foreignColumns: [organizationWorkflowRevisions.organizationId, organizationWorkflowRevisions.revision] }),
+]);
+
+export const caseWorkflowMilestones = sqliteTable("case_workflow_milestones", {
+  dossierId: text("dossier_id").notNull(), revision: integer("revision").notNull(),
+  workflow: text("workflow").notNull(), schedule: text("schedule").notNull(),
+}, t => [
+  uniqueIndex("case_milestones_revision").on(t.dossierId, t.revision),
+  index("case_milestones_application").on(t.dossierId, t.workflow, t.revision),
+  foreignKey({ columns: [t.dossierId, t.revision], foreignColumns: [dossierPracticeRevisions.dossierId, dossierPracticeRevisions.revision] }),
+]);
+
 export const organizationWorkRevisions = sqliteTable("organization_work_revisions", {
   organizationId: text("organization_id").notNull().references(() => organizations.id),
   revision: integer("revision").notNull(), actorRef: text("actor_ref").notNull(),
