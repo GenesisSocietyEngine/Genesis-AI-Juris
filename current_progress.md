@@ -1,8 +1,12 @@
 # Current progress — CaseVant
 
-## Workflow milestone scheduling in development — 8 November 2026
+## Published workflow milestone scheduling — 8 November 2026
 
-The case workflow editor and firm template editor now support named dates and a step-by-step preview. The server preserves individually scheduled and completed work when a milestone moves. The isolated browser verified template creation, case application, conflict labels and saved dates after reload. The local route suite verified case access and exact retries. The production baseline is v198. [Acceptance notes](docs/testing/workflow-milestones-2026-11-08.md)
+**[CaseVant v199](https://casevant.pro/work?view=workflows)** lets a case team plan work from named dates such as filing and review. In the case’s Workflows tab, Preview dates shows each step that will move or keep its date. Save milestone dates commits the reviewed changes to that case. Existing workflows and template versions retain their original steps.
+
+[PR #261](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/261) is on main. The [merged web and PDF checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42529089118) passed 2,048 tests with 3 inherited skips and all 47 PDF baselines intact. Both production addresses verified all 208 current and retained browser assets. [Acceptance notes](docs/testing/workflow-milestones-2026-11-08.md) · [Release receipt](docs/testing/receipts/workflow-milestones-v199-2026-11-08.json)
+
+The next roadmap item is Outlook and Google Calendar synchronization and recipient-specific reminder delivery.
 
 ## Published case register, Word documents and prospect stages — 8 November 2026
 
@@ -10,7 +14,7 @@ The case workflow editor and firm template editor now support named dates and a 
 
 [PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259) is on main. The [merged web and PDF checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42520768953) passed 2,045 tests with 3 inherited skips, zero failures and all 47 PDF baselines intact. Both production addresses verified all 212 current and retained browser assets. The signed-in live audit and synthetic write flows are distinguished in the [acceptance notes](docs/testing/casework-records-2026-11-08.md) and [release receipt](docs/testing/receipts/casework-v198-2026-11-08.json).
 
-Next: named workflow anchors with a preview of date changes and explicit handling of conflicts. Rich Word layout import, electronic signatures and external client intake remain separate.
+The named-date follow-up shipped in v199 with per-step previews and conflict handling. Rich Word layout import, electronic signatures and external client intake remain separate.
 
 ## Published case intake forms — 8 November 2026
 
@@ -42,7 +46,7 @@ Candidate and exact-main web/PDF CI passed; both live origins returned `64ef7cd7
 
 Published v193 from PR 250. Calendar shows the range selector only in Agenda, remembers its selection and shows a single date in Day view. Task recurrence shows one first-date prompt. Shared reminders describe their effect for everyone with access. Both live origins verified the release and all 204 assets. The signed-in production audit exercised layout switching, date navigation, reminder scope, validation and keyboard focus on cancel.
 
-Updated: 7 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
+Updated 8 November 2026. Maintain this file after each implementation, verification and release milestone, and at handoff (product-owner instruction).
 
 
 ## Delivered - Home, Tasks, Calendar and Library (v192)
@@ -99,8 +103,9 @@ This cumulative summary uses [development-journal.md](development-journal.md) fo
 | **7 November — CRM and contacts** | Added firm people and companies, relationship and group filters, explicit case links, archive/restore and reviewed CSV import with undo. | Published v196 from [PR #255](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/255). [Contacts receipt](docs/testing/receipts/crm-contacts-v196-2026-11-07.json). |
 | **8 November — case intake** | Added reusable firm questionnaires, case-bound drafts and completed answers, exact-save recovery and text downloads. Existing responses keep the questions they were given. | Published v197 from [PR #257](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/257). [Intake receipt](docs/testing/receipts/case-intake-v197-2026-11-08.json). |
 | **8 November — case register, documents and leads** | Added operational case stages and dated history, personal named register views, prospect stages and reviewed template-to-Word generation. Generated text stays on its selected case. | Published v198 from [PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259). [Release receipt](docs/testing/receipts/casework-v198-2026-11-08.json). |
+| **8 November — workflow milestone dates** | Named dates on reusable templates, case-specific change previews and explicit saving. Completed work, manual dates and individual schedules retain their dates. | Published v199 from [PR #261](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/261). [Release receipt](docs/testing/receipts/workflow-milestones-v199-2026-11-08.json). |
 
-Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified baseline for the milestone work on 8 November is v198. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks calendar connections and recipient delivery.
+Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified public release on 8 November is v199. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks calendar connections and recipient delivery.
 
 ## Previous delivery — case editor v190
 
@@ -130,7 +135,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 
 Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Library storage and case return shipped in v194; v195 completed the mobile follow-up. Further storage work needs an agreed retention/cleanup policy for abandoned originals. Preserve the completed Home, AI Studio and editor flows.
 
-The firm CRM shipped in v196 and internal intake in v197. In v198, the register gained dated stage updates and personal views, Contacts gained prospect stages, and Library gained reusable templates and saved Word documents. Next: let a workflow use named dates such as filing and review; preview changes before rescheduling, preserve completed or manually moved work, and flag conflicts. Finance, client portal, electronic signatures and external synchronization remain separate. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
+The firm CRM shipped in v196 and internal intake in v197. In v198, the register gained dated stage updates and personal views, Contacts gained prospect stages, and Library gained reusable templates and saved Word documents. v199 added named workflow dates and reviewed rescheduling. The next delivery covers Outlook and Google Calendar synchronization and recipient-specific reminders. Finance, client portal, electronic signatures and external synchronization remain separate. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
 
 ## Calendar and reminder audit follow-up, 7 November
 

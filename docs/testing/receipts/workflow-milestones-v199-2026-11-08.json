@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-08",
+  "version": 199,
+  "previousVersion": 198,
+  "sourceCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+  "previousRuntimeCommit": "3c71c990c05d6917b9d81c8b5efd653b56748c8d",
+  "candidateCommit": "a9a7d06bde2adba0fb7ee4851a11df5187855df7",
+  "implementationPR": 261,
+  "candidateRun": 42528149489,
+  "mainRun": 42529089118,
+  "tests": {
+    "passed": 2048,
+    "failed": 0,
+    "skipped": 3,
+    "fullPdfBaselineCount": 47,
+    "practiceRouteChecksPassed": 19,
+    "localSchedulingChecksPassed": 6,
+    "migrationBreakpointChecksPassed": 2,
+    "dependencyAuditFindings": 0
+  },
+  "artifact": {
+    "id": 13637345240,
+    "name": "verified-web-build-536713a2abb95980d8979e39201ba9e805e872e8-42529089118",
+    "digest": "sha256:9d24125cd68715450071f7da21c438f2f8780ab1bfde3399fbe770cc2c014da3",
+    "expired": false
+  },
+  "deployment": "appgdep_6af0f6d1d73c8191b4a5e622447bc2de",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_eb940a03c1248191916911433935c3df",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 199
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+    "tree": "cadb46c948f9b0d54c7dec208c81df8e1610bb6c",
+    "applicationInputsSha256": "e04d74bfc4cea6e8806a4fe3f5e643223827ae8be75ff466dd4f96e8d4afeece",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 701,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+    "archiveSha256": "102551258ecd656c9ede20e3a7e2bffee32b227df41cdc2f54e0f790d179c0d0",
+    "migrationSha256": "1840d4b46028014f0b5ef1fee99fc6e78b0c23f5b67a27ee9ecd3d6164c812df",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+      "applicationInputsSha256": "e04d74bfc4cea6e8806a4fe3f5e643223827ae8be75ff466dd4f96e8d4afeece",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+      "applicationInputsSha256": "e04d74bfc4cea6e8806a4fe3f5e643223827ae8be75ff466dd4f96e8d4afeece",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 150,
+      "retained": 58,
+      "verified": 208,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 150,
+      "retained": 58,
+      "verified": 208,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": {
+      "signedIn": true,
+      "caseWorkflowTab": true,
+      "filingAndReviewInputs": true,
+      "reviewedAdditions": 4,
+      "explicitApply": true,
+      "discardClearedPreview": true,
+      "firmTemplatesOpened": true,
+      "returnedToSameDossierAndWorkflowTab": true,
+      "productionCaseWrites": 0,
+      "appliedWorkflowsInAccessibleFirm": 0
+    },
+    "synthetic": {
+      "caseBoundTemplateSaveAndApply": true,
+      "manualAndCompletedKept": true,
+      "openStepsMoved": 2,
+      "receiptAndReload": true,
+      "keyboardFocus": true,
+      "russianViewport": 390,
+      "buttonHeight": 44,
+      "overflow": false
+    }
+  },
+  "limits": [
+    "Calendar-day offsets. Date review and explicit save are required.",
+    "Completed work, individual dates, timed appointments and reminders keep their saved dates.",
+    "External calendar sync and reminder delivery are separate roadmap work.",
+    "Production checks were read-only. Writes used an isolated synthetic case."
+  ]
+}
