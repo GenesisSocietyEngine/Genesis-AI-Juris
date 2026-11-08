@@ -123,6 +123,11 @@ export function fields(s: string) {
   if (literal.includes("{{") || literal.includes("}}")) throw Error("unknownField");
   return [...used];
 }
+export function describeTemplate(body: string, locale: Locale) {
+  return body.replace(/\{\{([^{}]*)\}\}/g, (literal, key: keyof typeof tokens) =>
+    Object.hasOwn(tokens, key) ? "«" + tokenLabel(key, locale) + "»" : literal,
+  );
+}
 export function preview(
   body: string,
   firm: string,
@@ -143,7 +148,10 @@ export function preview(
     /\{\{([^{}]*)\}\}/g,
     (literal, key: keyof typeof tokens) => values[key] || literal,
   );
-  return { text, missing };
+  const display = missing.length
+    ? body.replace(/\{\{([^{}]*)\}\}/g, (_, key: keyof typeof tokens) => values[key] || "«" + tokenLabel(key, locale) + "»")
+    : text;
+  return { text, missing, display };
 }
 export function parseCommand(input: unknown): Command {
   const x = object(input),

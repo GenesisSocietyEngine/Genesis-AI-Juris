@@ -50,7 +50,7 @@ export default function Register({ locale, location: loc }: { locale: Locale; lo
     else set({ ...defaultFilter });
   };
   return (
-    <main className={styles.workspace}>
+    <main className={`${styles.workspace} ${lib.workspace}`}>
       <WorkTabs locale={locale} active="progress" location={location} />
       <header className={styles.heading}>
         <div>

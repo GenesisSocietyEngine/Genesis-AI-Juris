@@ -4,7 +4,7 @@ import { WorkspaceIcon } from "../CaseVantIcon";
 import StatusBadge from "../StatusBadge";
 import { Feedback, useCasework } from "./Host";
 import { words, when } from "./presentation";
-import type { Locale, WorkRecord } from "./model";
+import { describeTemplate, type Locale, type WorkRecord } from "./model";
 import lib from "../library/library.module.css";
 import css from "./casework.module.css";
 export default function Documents({
@@ -230,7 +230,7 @@ export default function Documents({
                     )}
                   </p>
                 )}
-                <div className={css.paper}>{selected.body}</div>
+                <div className={css.paper}>{doc ? selected.body : describeTemplate(selected.body, locale)}</div>
               </>
             ) : (
               <p>

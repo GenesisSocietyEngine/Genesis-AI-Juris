@@ -11,6 +11,8 @@ Base: public v197 and canonical main 012b2d43. Read-only reference: MyCase [Word
 | Keep context and recover saves. | Register → Library → Contacts retained the selected case. Controller tests cover template and case revision changes, discarded authority, exact receipts after an uncertain save, and Save and continue. A Studio identifier alone does not select a governed case. |
 | Keep desktop and narrow layouts usable. | Verified English desktop and Russian in a 390 px browser frame. Template/update commands measured 44 px; document scroll width equalled available width. Closing the case editor returned focus to its opening command. |
 
+Final visual review aligned the register heading with Library and replaced field codes in reading panes with localized field names. The editor still supports precise field insertion. Reviewed and saved text is not reinterpreted as template syntax.
+
 Migration 0032 adds one append-only table with four kinds of records and no changes to previous tables. A populated v197 fixture includes questionnaire versions, a saved answer, CRM links and stored document history; every existing table's rows survived migration unchanged. The 18-test practice-route suite and both new controller tests passed locally.
 
 Scope: these are reusable plain-text templates with controlled merge fields and genuine .docx output. Importing rich Word layouts, electronic signatures, external client intake, custom pipeline configuration and multi-anchor workflow rebasing are separate work. Operational stage and generated text do not approve evidence, change governance, or give access to a case. Production verification is recorded separately from synthetic write testing.

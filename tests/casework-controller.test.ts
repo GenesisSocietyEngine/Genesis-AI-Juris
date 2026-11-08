@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { firmHarness } from "./fixtures/firm-work";
 import { CaseworkController } from "../app/casework/controller";
-import { type CaseChoice, type WorkRecord } from "../app/casework/model";
+import { describeTemplate, preview, type CaseChoice, type WorkRecord } from "../app/casework/model";
 const source: WorkRecord = {
   kind: "template",
   caseId: null,
@@ -27,6 +27,11 @@ const matter: CaseChoice = {
   canEdit: true,
 };
 test("case document requires the reviewed case and template version, clears with revoked access and never treats a Studio hint as a case grant", async () => {
+  const body="{{case.title}} / {{case.stage}}", literal={...matter,title:"Synthetic {{firm.name}}"};
+  assert.equal(describeTemplate(body,"ru"),"«Название дела» / «Этап дела»");
+  assert.equal(preview(body,"Firm",literal,undefined,"en").display,"Synthetic {{firm.name}} / «Case stage»");
+  const complete=preview(body,"Firm",literal,{stage:"review",body:"Synthetic"},"en");
+  assert.equal(complete.display,complete.text);
   const h = firmHarness();
   await h.start();
   let src = { ...source },

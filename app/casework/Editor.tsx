@@ -231,7 +231,7 @@ export default function CaseworkEditor({
               {pr && (
                 <>
                   <h3>{t("Merged preview", "Предпросмотр документа")}</h3>
-                  <div className={css.paper}>{pr.text}</div>
+                  <div className={css.paper}>{pr.display}</div>
                   {pr.missing.length > 0 ? (
                     <p role="status">
                       {t("Missing case information: ", "Не хватает сведений: ")}
