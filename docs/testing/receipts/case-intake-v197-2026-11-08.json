@@ -1,0 +1,125 @@
+{
+  "date": "2026-11-08",
+  "version": 197,
+  "previousVersion": 196,
+  "sourceCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+  "previousRuntimeCommit": "3d63f0fa621be9e5c9d4e6caeae9eb548c987d6f",
+  "candidateCommit": "c03db14302f48ff751be2540b5c75850908ed404",
+  "implementationPR": 257,
+  "candidateRun": 42471281364,
+  "mainRun": 42471978423,
+  "tests": {
+    "passed": 2041,
+    "failed": 0,
+    "skipped": 3,
+    "renderedBuildChecksIncluded": 2,
+    "fullPdfBaselineCount": 47,
+    "focusedChecksPassed": 18,
+    "dependencyAuditFindings": 0,
+    "mainPdfJobRetriedAfterUpstreamDownloadFailure": true
+  },
+  "artifact": {
+    "id": 13613734871,
+    "name": "verified-web-build-d1bde169c93aff2061a338c4f06636911b6d6cf3-42471978423",
+    "digest": "sha256:f10e464372eaa98098b091909304b0559c284c2a70cda7b3457225f7a8bcdd35",
+    "expired": false
+  },
+  "deployment": "appgdep_6af0546f75d88191a7e54e39de3115a7",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_018df47f98ac8191bdc86661796ba920",
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "same": true
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 197
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+    "tree": "9b47b848e02d0c6acab111747a891fedce1ee90d",
+    "applicationInputsSha256": "21aaf0d1b2a73eadcbcfcd2b18f856e67fcd3f50d49c0a9c19710d92500c841f",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 682,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+    "archiveSha256": "00b26b34e7aefc33d8d250bca3ee2dc681e5bc287795eb7da71474f8c68aa7db",
+    "migrationSha256": "20bafeaa1256f7cf656618e09b0e59d7e86f2337557d735f9e0fd7d2f7ed7bc1",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+      "applicationInputsSha256": "21aaf0d1b2a73eadcbcfcd2b18f856e67fcd3f50d49c0a9c19710d92500c841f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "d1bde169c93aff2061a338c4f06636911b6d6cf3",
+      "applicationInputsSha256": "21aaf0d1b2a73eadcbcfcd2b18f856e67fcd3f50d49c0a9c19710d92500c841f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 150,
+      "retained": 59,
+      "verified": 209,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 150,
+      "retained": 59,
+      "verified": 209,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Read-only, signed-in",
+    "journey": [
+      "Library / Intake forms",
+      "Blank questionnaire and Cancel",
+      "Case overview",
+      "AI Studio Workbench",
+      "Contacts",
+      "Library / Intake forms"
+    ],
+    "sameSavedStudioCase": true,
+    "promptAndDocumentFlowVisible": true,
+    "emptySaveDisabled": true,
+    "cancelReturnedFocus": true,
+    "synthetic": "Designed a questionnaire, saved a partial case draft, reloaded, completed and downloaded answers, and returned through Contacts with the same governed case and Studio identity.",
+    "narrow": {
+      "where": "isolated browser with real D1 and React components",
+      "viewportPx": 390,
+      "documentWidthPx": 375,
+      "primaryControlsPx": [
+        44,
+        44,
+        44
+      ]
+    },
+    "workerObservation": "Four canceled navigation requests in the bounded error-only sample, none on the intake route."
+  },
+  "limits": [
+    "Internal staff intake; synthetic or de-identified data only.",
+    "No client delivery or external submissions, signatures, or Word merge templates.",
+    "The reading pane shows the current revision. Prior revisions are retained.",
+    "Production acceptance did not write a case or response."
+  ]
+}

@@ -8,11 +8,13 @@ Open **Firm work** in the left navigation. Every view includes only cases availa
 | Calendar | Navigate day/week/month agendas or use the month grid. Choose a display timezone. Arrow keys move within the month grid; Enter opens that day's agenda. All-day dates stay fixed. |
 | Reminders | Review due or upcoming shared in-app reminders. Open the case to dismiss or snooze. These do not send email, push or background notifications. |
 | Workflow templates | Authorized firm administrators configure reusable task/event steps and calendar-day offsets. Case contributors preview a saved template and anchor date in a case before applying it. |
-| People | Find recorded participants and their linked cases, including active/inactive memberships. Equal names do not merge identities. This is a case-participant directory, not a standalone CRM. |
+| Contacts | Manage people, companies, case links, archiving and reviewed CSV imports. The Participants tab separately shows recorded case membership. |
 | Workflows | Inspect applied template versions, anchors and generated tasks/events. Completion reflects saved work; open the case to update it. |
 | Case overview | Find next dated tasks and upcoming/ongoing events, then inspect open, completed, overdue, unassigned and undated counts. Empty cases remain visible. |
 
 Create or edit tasks and events inside the relevant case. Timed events retain their timezone. Recurring tasks create a finite reviewed set of occurrences; each is completed or edited independently. Checklist completion does not silently complete the task.
+
+Open **Library → Intake forms** to collect internal case information. Under **Questionnaires**, select **New questionnaire**, give it a name, add questions and choose which are required. **Start intake** shows where the response will be saved; verify the case before entering synthetic or de-identified answers. **Save draft** allows incomplete answers. Use **Continue draft** to pick up later, then **Mark complete** when every required question has an answer. Completed forms offer **Download answers (.txt)** and **Reopen as draft**. Editing or archiving the questionnaire leaves existing forms unchanged.
 
 **AI Case Studio** remains the destination for AI-assisted case reasoning and reviewed proposals. Its evidence, alternative scenarios and outcome reports are separate from operational task completion. Applying a firm workflow does not certify an outcome, calculate a legal deadline or silently accept an AI suggestion.
 

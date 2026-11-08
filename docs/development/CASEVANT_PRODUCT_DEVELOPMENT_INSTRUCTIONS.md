@@ -1,6 +1,8 @@
 # CaseVant product development instructions
 
-**Current delivery — public v196, 7 November 2026.** Contacts now covers firm people, companies, relationships, case links and reviewed import. Keep contact identity, case participation and organization membership distinct. Preserve the shared case banner, reversible archive and exact-save recovery. [Acceptance audit](../testing/crm-contacts-2026-11-07.md) · [Production receipt](../testing/receipts/crm-contacts-v196-2026-11-07.json).
+**Current delivery — public v197, 8 November 2026.** Library now supports firm questionnaires and internal case intake. Keep required answers distinct from draft saving; preserve the questionnaire used by each case, the active case across navigation, case-participant authority and exact-save recovery. [Acceptance audit](../testing/case-intake-2026-11-08.md) · [Production receipt](../testing/receipts/case-intake-v197-2026-11-08.json). Reusable document templates and external client intake remain separate work.
+
+**Previous delivery — public v196, 7 November 2026.** Contacts now covers firm people, companies, relationships, case links and reviewed import. Keep contact identity, case participation and organization membership distinct. Preserve the shared case banner, reversible archive and exact-save recovery. [Acceptance audit](../testing/crm-contacts-2026-11-07.md) · [Production receipt](../testing/receipts/crm-contacts-v196-2026-11-07.json).
 
 **Previous delivery — public v195, 7 November 2026.** On phones, the Library gives the case name its own row above the two return commands. [Production receipt](../testing/receipts/library-document-storage-v195-2026-11-07.json). Preserve case identity and touch-target checks when changing this banner.
 
