@@ -13,6 +13,12 @@ Base: public v197 and canonical main 012b2d43. Read-only reference: MyCase [Word
 
 Final visual review aligned the register heading with Library and replaced field codes in reading panes with localized field names. The editor still supports precise field insertion. Reviewed and saved text is not reinterpreted as template syntax.
 
-Migration 0032 adds one append-only table with four kinds of records and no changes to previous tables. A populated v197 fixture includes questionnaire versions, a saved answer, CRM links and stored document history; every existing table's rows survived migration unchanged. The 18-test practice-route suite and both new controller tests passed locally.
+Migration 0032 adds one append-only table with four kinds of records and no changes to previous tables. A populated v197 fixture includes questionnaire versions, a saved answer, CRM links and stored document history; every existing table's rows survived migration unchanged. The 18-test practice-route suite and both new controller tests passed locally. An independent Word document reader reopened the generated package and recovered all paragraphs, Cyrillic text, XML special characters and a tab.
 
 Scope: these are reusable plain-text templates with controlled merge fields and genuine .docx output. Importing rich Word layouts, electronic signatures, external client intake, custom pipeline configuration and multi-anchor workflow rebasing are separate work. Operational stage and generated text do not approve evidence, change governance, or give access to a case. Production verification is recorded separately from synthetic write testing.
+
+## Production acceptance — v198
+
+[Implementation PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259); merged source `3c71c990c05d6917b9d81c8b5efd653b56748c8d`; [exact-main run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42520768953). The main build and unchanged 47-report PDF baseline passed. Both production origins served the same source and all 212 verified assets. Existing D1 and document-storage bindings, audience and environment remained unchanged. [Release receipt](receipts/casework-v198-2026-11-08.json).
+
+Signed-in live navigation retained the saved Studio case across the case register, overview, Studio and Library. The real template library loaded, and closing the empty template editor restored focus without saving. Generated document and CRM writes, Word download and governed case history were tested with the isolated synthetic fixture described above.

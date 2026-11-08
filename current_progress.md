@@ -1,8 +1,12 @@
 # Current progress — CaseVant
 
-## Case register, document templates and prospect stages — 8 November 2026
+## Published case register, Word documents and prospect stages — 8 November 2026
 
-Implementation and synthetic verification complete; public v197 remains the previously verified release pending integration. The new Case register shows a case’s operational stage, dated updates and formal status separately and supports private named filters. Library templates generate reviewed Word documents for an explicitly identified case; later edits leave saved documents intact. Contacts records a prospect’s stage without creating a case or granting access. [Reference and acceptance audit](docs/testing/casework-records-2026-11-08.md).
+**[Public v198](https://casevant.pro)** adds four workflows: daily case stages with dated updates; personal saved register views; prospect stages in Contacts; and reusable templates that produce reviewed Word documents saved to a named case. A case’s formal status and permissions stay separate. Editing the source case or template cannot change a document already saved.
+
+[PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259) is on main. The [merged web and PDF checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42520768953) passed 2,045 tests with 3 inherited skips, zero failures and all 47 PDF baselines intact. Both production addresses verified all 212 current and retained browser assets. The signed-in live audit and synthetic write flows are distinguished in the [acceptance notes](docs/testing/casework-records-2026-11-08.md) and [release receipt](docs/testing/receipts/casework-v198-2026-11-08.json).
+
+Next: named workflow anchors with a preview of date changes and explicit handling of conflicts. Rich Word layout import, electronic signatures and external client intake remain separate.
 
 ## Published case intake forms — 8 November 2026
 
@@ -90,6 +94,7 @@ This cumulative summary uses [development-journal.md](development-journal.md) fo
 | **7 November — Library and storage** | Added explicit save destinations, interrupted-upload recovery, complete version browsing and verified return to the same case. | Published v194 from PR #252 and the mobile correction in v195 from PR #253. [Storage receipt](docs/testing/receipts/library-document-storage-v194-2026-11-07.json), [mobile receipt](docs/testing/receipts/library-document-storage-v195-2026-11-07.json). |
 | **7 November — CRM and contacts** | Added firm people and companies, relationship and group filters, explicit case links, archive/restore and reviewed CSV import with undo. | Published v196 from [PR #255](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/255). [Contacts receipt](docs/testing/receipts/crm-contacts-v196-2026-11-07.json). |
 | **8 November — case intake** | Added reusable firm questionnaires, case-bound drafts and completed answers, exact-save recovery and text downloads. Existing responses keep the questions they were given. | Published v197 from [PR #257](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/257). [Intake receipt](docs/testing/receipts/case-intake-v197-2026-11-08.json). |
+| **8 November — case register, documents and leads** | Added operational case stages and dated history, personal named register views, prospect stages and reviewed template-to-Word generation. Generated text stays on its selected case. | Published v198 from [PR #259](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/259). [Release receipt](docs/testing/receipts/casework-v198-2026-11-08.json). |
 
 Across this period, release discipline was strengthened around ordinary reviewed integration, exact-main CI artifacts, source/input receipts, preserved immutable assets, both production origins, and separate native acceptance. This history does **not** imply full MyCase parity, resolution of every source-original gap, completed native/iOS acceptance or commercial readiness. The verified runtime on 8 November is v197. The [comparative roadmap](docs/development/MYCASE_COMPETITIVE_CYCLES.md) tracks reusable document templates and the remaining work.
 
@@ -121,7 +126,7 @@ Refactor the case editor in the shared Outlook-style suite: consistent commands,
 
 Maintain this progress file at each milestone. The standalone firm work and Calendar foundation shipped in v192/v193. Library storage and case return shipped in v194; v195 completed the mobile follow-up. Further storage work needs an agreed retention/cleanup policy for abandoned originals. Preserve the completed Home, AI Studio and editor flows.
 
-The firm CRM shipped in v196; internal case intake shipped in v197. Next in the Library: reusable document templates. Further case metadata, lead stages, finance, client portal and external synchronization remain open. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
+The firm CRM shipped in v196 and internal intake in v197. In v198, the register gained dated stage updates and personal views, Contacts gained prospect stages, and Library gained reusable templates and saved Word documents. Next: let a workflow use named dates such as filing and review; preview changes before rescheduling, preserve completed or manually moved work, and flag conflicts. Finance, client portal, electronic signatures and external synchronization remain separate. See the [case editor audit](docs/testing/case-editor-2026-11-06.md) and [module comparison](docs/development/MYCASE_COMPETITIVE_CYCLES.md).
 
 ## Calendar and reminder audit follow-up, 7 November
 
