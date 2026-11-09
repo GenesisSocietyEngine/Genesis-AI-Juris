@@ -1,3 +1,4 @@
+import { providerRequest } from "./provider-request";
 import { and, eq, sql } from "drizzle-orm";
 import { calendarReminders as table } from "../../db/schema";
 import type { DossierDb } from "../dossier-server";
@@ -98,11 +99,14 @@ export async function dispatch(
           counts.unknown++;
           continue;
         }
-        const resp = await transport("https://api.resend.com/emails/" + encodeURIComponent(r.providerId), {
-          headers: requestHeaders,
-          redirect: "error",
-          signal: AbortSignal.timeout(7000),
-        });
+        const resp = await providerRequest(
+          transport,
+          "https://api.resend.com/emails/" + encodeURIComponent(r.providerId),
+          {
+            headers: requestHeaders,
+          },
+          7000,
+        );
         if (!resp.ok) {
           await retry();
           continue;
@@ -164,13 +168,16 @@ export async function dispatch(
         counts.cancelled++;
         continue;
       }
-      const resp = await transport("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { ...requestHeaders, "Idempotency-Key": "casevant-reminder-" + r.id },
-        body: payload,
-        redirect: "error",
-        signal: AbortSignal.timeout(7000),
-      });
+      const resp = await providerRequest(
+        transport,
+        "https://api.resend.com/emails",
+        {
+          method: "POST",
+          headers: { ...requestHeaders, "Idempotency-Key": "casevant-reminder-" + r.id },
+          body: payload,
+        },
+        7000,
+      );
       if (resp.ok) {
         const data = (await resp.json()) as { id?: string };
         if (typeof data.id === "string" && /^[\w-]{1,100}$/.test(data.id)) {

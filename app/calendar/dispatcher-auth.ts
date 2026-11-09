@@ -1,3 +1,4 @@
+import { providerRequest } from "./provider-request";
 const issuer = "https://token.actions.githubusercontent.com",
   repo = "GenesisSocietyEngine/Genesis-AI-Juris",
   audience = "https://casevant.pro/api/calendar/dispatch";
@@ -37,11 +38,14 @@ export async function verifyAssertion(
     )
       return "claims";
     stage = "issuer";
-    const res = await transport(issuer + "/.well-known/jwks", {
-      redirect: "error",
-      headers: { Accept: "application/json", "User-Agent": "CaseVant calendar dispatcher" },
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await providerRequest(
+      transport,
+      issuer + "/.well-known/jwks",
+      {
+        headers: { Accept: "application/json", "User-Agent": "CaseVant calendar dispatcher" },
+      },
+      5000,
+    );
     if (!res.ok) return "issuer";
     const jwks = (await res.json()) as { keys: (JsonWebKey & { kid: string })[] };
     const key = jwks.keys.find((k) => k.kid === h.kid && k.kty === "RSA" && k.use !== "enc");
