@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-004 · Mobile portal controls · 9 November 2026
+
+The portal view buttons now share a height on phones and wrap their labels at word boundaries. In an isolated Chrome layout check, all three buttons measured 44 px at 320 and 390 px in English and Russian. Desktop controls measured 36 px. All 27 portal departure and practice-route tests passed. Signed-in production verification is pending. [Measurements](docs/testing/mobile-portal-controls-cv004.md) · [Development backlog](docs/development/development_backlog.md).
+
 ## Published CV-003 — direct mobile case links · 9 November 2026
 
 **[CaseVant v206 is live](https://casevant.pro/matters).** On a phone, a direct team case link shows its authorized case title and selected section first. Expand **Cases** to reach Personal/Team collections, case search and the register. Enter and Space operate the picker, and section changes or resizing respect an explicit choice. An ordinary visit to Cases or New case still opens the register. Desktop retains the side-by-side list and reading pane.
