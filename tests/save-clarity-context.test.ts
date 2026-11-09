@@ -6,7 +6,7 @@ import { NavigationController, type DepartureRisk } from "../app/navigation-cont
 import { registerStudioDeparture, studioDepartureChanges, studioDepartureFingerprint, type StudioDepartureInput } from "../app/studio-departure";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
-import { workspaceDestination, resumeWorkspaceDestination, currentCaseOverviewDestination, isStudioPanelNavigation } from "../app/workspace-navigation";
+import { workspaceDestination, resumeWorkspaceDestination, currentCaseOverviewDestination, selectedTeamCase, isStudioPanelNavigation } from "../app/workspace-navigation";
 import StudioSaveStatus from "../app/StudioSaveStatus";
 import { build } from "esbuild";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -63,7 +63,7 @@ test("save status distinguishes confirmed content, unsaved buffers, and failed o
   for(const locale of ["en","ru"] as const){
     const props={state:"saved" as const,locale,hasSavedCase:true,savedAt:"2026-11-06T20:00:00.000Z",promptPending:true,itemsPending:false,onReview:()=>{}};
     const html=renderToStaticMarkup(createElement(StudioSaveStatus,props));assert.match(html,/data-state="partial"/);assert.match(html,/<time/);assert.ok(html.includes(locale==="en"?"AI prompt is not saved.":"AI-промпт не сохранён."));
-    for(const state of ["idle","conflict","error","saving"] as const){const unsaved=renderToStaticMarkup(createElement(StudioSaveStatus,{...props,state}));assert.doesNotMatch(unsaved,/<time/);assert.ok(!unsaved.includes(locale==="en"?"Case saved to workspace":"Кейс сохранён в рабочем пространстве"));}
+    for(const state of ["idle","conflict","error","saving"] as const){const unsaved=renderToStaticMarkup(createElement(StudioSaveStatus,{...props,state}));assert.doesNotMatch(unsaved,/<time/);assert.ok(!unsaved.includes(locale==="en"?"Studio draft saved":"Черновик Студии сохранён"));assert.match(unsaved,/collection=personal/);}
   }
 });
 const url=(path:string)=>new URL(path,"https://casevant.pro");
@@ -77,7 +77,7 @@ test("saved Studio → Calendar → case overview / Studio retains the exact dra
   const studio="/studio?custom_case=51&studio_step=reports&studio_panel=workbench&organization=org-a&lang=ru&return_to="+encodeURIComponent(context);
   const calendar=workspaceDestination("/work?view=calendar",studio);
   assert.equal(url(calendar).searchParams.get("studio_case"),"51");
-  const overview=currentCaseOverviewDestination(calendar)!;assert.equal(url(overview).pathname,"/studio");assert.equal(url(overview).searchParams.get("custom_case"),"51");assert.equal(url(overview).searchParams.get("studio_panel"),"overview");assert.equal(url(overview).searchParams.get("return_to"),context);
+  const overview=url(currentCaseOverviewDestination(calendar)!);assert.equal(overview.pathname,"/matters");assert.equal(overview.searchParams.get("section"),"overview");assert.equal(overview.searchParams.get("dossier"),"matter-a");assert.equal(overview.searchParams.get("studio_case"),"51");assert.equal(overview.searchParams.get("lang"),"ru");assert.equal(url(workspaceDestination("/studio",overview.pathname+overview.search)).searchParams.get("custom_case"),"51");
   const back=workspaceDestination("/studio?studio_panel=workbench",calendar);assert.equal(url(back).searchParams.get("custom_case"),"51");assert.equal(url(back).searchParams.get("studio_step"),"reports");
   const matter=workspaceDestination("/matters",calendar);assert.equal(url(matter).searchParams.get("dossier"),"matter-a");assert.equal(url(matter).searchParams.get("studio_case"),"51");
   assert.equal(url(workspaceDestination("/studio",matter)).searchParams.get("custom_case"),"51");
@@ -95,4 +95,34 @@ test("case overview and Studio are in-place buttons within Studio, and return li
   const local=renderToStaticMarkup(createElement(WorkTabs,{locale:"en",active:"cases",location:"/studio?custom_case=51",onCaseOverview:()=>{},onStudio:()=>{}}));
   assert.match(local,/<button[^>]*aria-current="page"[^>]*>[\s\S]*?Case overview/);assert.equal((local.match(/aria-current="page"/g)??[]).length,1);
   const elsewhere=renderToStaticMarkup(createElement(WorkTabs,{locale:"en",active:"calendar",location:"/work?view=calendar&studio_case=51",onView:()=>{}}));assert.match(elsewhere,/href="\/studio\?studio_panel=overview&amp;custom_case=51"/);
+});
+
+test("team overview is explicit and guarded; case B starts without case A's personal draft", () => {
+  const team="/matters?collection=team&dossier=case_alpha&organization=org-a&section=portal&target=old&lang=en";
+  const blank=workspaceDestination("/studio?studio_panel=workbench",team);
+  const link=selectedTeamCase(blank)!;
+  assert.equal(link.id,"case_alpha");assert.equal(link.organization,"org-a");
+  const back=url(link.overview);
+  assert.equal(back.pathname,"/matters"); assert.equal(back.searchParams.get("section"),"overview");
+  for(const key of ["target","studio_case","custom_case","return_to"]) assert.equal(back.searchParams.has(key),false);
+  const saved=workspaceDestination("/studio?custom_case=87",blank);
+  assert.equal(url(resumeWorkspaceDestination(link.overview,saved)).searchParams.get("studio_case"),"87");
+  const other=workspaceDestination("/matters?collection=team&dossier=case_bravo",saved);
+  assert.equal(selectedTeamCase(other)?.id,"case_bravo");
+  assert.equal(url(workspaceDestination("/studio",other)).searchParams.has("custom_case"),false);
+  for(const ret of ["//external.test/matters?dossier=case_alpha","/api/dossiers/case_alpha","/matters?collection=personal&dossier=case_alpha","/matters?organization=org-b&dossier=case_alpha","/matters?dossier=..%2Fprivate"])
+    assert.equal(selectedTeamCase("/studio?organization=org-a&return_to="+encodeURIComponent(ret)),null,ret);
+  const markup=renderToStaticMarkup(createElement(WorkTabs,{locale:"en",active:"studio",location:saved,onStudio:()=>{}}));
+  assert.match(markup,/href="\/matters\?[^"]*section=overview[^"]*"/);assert.equal((markup.match(/aria-current="page"/g)??[]).length,1);
+});
+test("a device-only copy, an unconfirmed draft and a confirmed save identify their real destinations in both languages",()=>{
+  for(const locale of ["en","ru"] as const){
+    const props={state:"idle" as const,locale,hasSavedCase:false,savedAt:null,promptPending:false,itemsPending:false,onReview:()=>{}};
+    for(const variant of [{...props},{...props,hasDeviceCopy:true},{...props,restoring:true},{...props,state:"saved" as const}]){
+      const html=renderToStaticMarkup(createElement(StudioSaveStatus,variant));
+      assert.match(html,new RegExp('href="/matters\\?collection=personal&amp;lang='+locale+'"'));assert.doesNotMatch(html,/dossier=/);
+      const en=locale==="en";const label="hasDeviceCopy" in variant ? (en?"Device copy only":"Копия на устройстве"):"restoring" in variant?(en?"Opening Studio draft":"Открывается черновик"):variant.state==="saved"?(en?"Studio draft saved":"Черновик Студии сохранён"):(en?"Studio draft not saved yet":"Черновик Студии ещё не сохранён");
+      assert.ok(html.includes(label));
+    }
+  }
 });

@@ -79,14 +79,14 @@ function checkCapacity(scope: string, entries: ArchivedStudioDraft[]) {
  * Never rewrite another tab's records. Roll back only this attempt on quota/capacity
  * failure; original active/editor data remains intact even if rollback fails. */
 export function retainStudioReplacement(storage: DeviceStorage, scope: string, current: { draft: StudioDraft; prompt: string } | null,
-  options = { id: () => crypto.randomUUID() as string, now: () => new Date().toISOString() }) {
+  { id = () => crypto.randomUUID() as string, now = () => new Date().toISOString(), includeDeviceSlot = true }: { id?: () => string; now?: () => string; includeDeviceSlot?: boolean } = {}) {
   const existing = readStudioArchive(storage, scope);
   const retained: ArchivedStudioDraft[] = [];
   const add = (draft: StudioDraft, prompt: string, original?: string) => {
     const normalized = editable(draft);
-    retained.push({ id: options.id(), title: normalized.title, createdAt: options.now(), draft: normalized, prompt, ...(original === undefined ? {} : { original }) });
+    retained.push({ id: id(), title: normalized.title, createdAt: now(), draft: normalized, prompt, ...(original === undefined ? {} : { original }) });
   };
-  for (const key of [studioDeviceDraftV2Key(scope), studioDeviceDraftKey(scope)]) {
+  for (const key of includeDeviceSlot ? [studioDeviceDraftV2Key(scope), studioDeviceDraftKey(scope)] : []) {
     const raw = storage.getItem(key);
     if (raw === null) continue;
     const read = readStudioAggregate(raw, { kind: "device-draft", expectedScope: scope, normalizeDraft: normalizeIncompleteStudioDraft });

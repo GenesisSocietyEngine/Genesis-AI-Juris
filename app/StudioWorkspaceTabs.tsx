@@ -11,10 +11,11 @@ const sections = [
 ] as const;
 
 /** Presentation over existing workflow stages: old URLs and data stay valid. */
-export default function StudioWorkspaceTabs({ locale, activeStep, overview, workbench = false, onWorkbench, onOverview, onStep }: {
+export default function StudioWorkspaceTabs({ locale, activeStep, overview, teamCase = false, workbench = false, onWorkbench, onOverview, onStep }: {
   locale: "en" | "ru";
   activeStep: StudioWorkflowStep;
   overview: boolean;
+  teamCase?: boolean;
   workbench?: boolean;
   onWorkbench?: () => void;
   onOverview: () => void;
@@ -24,7 +25,7 @@ export default function StudioWorkspaceTabs({ locale, activeStep, overview, work
   return <div className="studio-workspace-navigation page-width">
     <nav aria-label={en ? "Case sections" : "Разделы дела"}>
       {onWorkbench && <button type="button" aria-pressed={workbench} onClick={onWorkbench}>{en ? "Workbench" : "Рабочее поле"}</button>}
-      <button type="button" aria-pressed={overview} title={en ? "See the decision, recommendation and next actions." : "Посмотрите задачу, рекомендацию и следующие действия."} onClick={onOverview}>{en ? "Overview" : "Обзор"}</button>
+      <button type="button" aria-pressed={overview} title={en ? "See the decision, recommendation and next actions." : "Посмотрите задачу, рекомендацию и следующие действия."} onClick={onOverview}>{teamCase ? (en ? "Draft overview" : "Обзор черновика") : (en ? "Overview" : "Обзор")}</button>
       {sections.map(section => <button key={section.step} type="button" aria-pressed={!overview && !workbench && activeStep === section.step} title={en ? section.hintEn : section.hintRu} onClick={() => onStep(section.step)}>{en ? section.en : section.ru}</button>)}
     </nav>
     {!workbench && <details className="studio-preparation-tools" open={!overview && activeStep < 3 ? true : undefined}>

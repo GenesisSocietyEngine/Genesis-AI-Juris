@@ -1,12 +1,18 @@
 # Current progress — CaseVant
 
+## CV-001 — keep the team case in AI Studio · 9 November 2026
+
+Studio now labels the selected team case separately from the personal draft. **Case overview** returns to that team case, while **Draft overview** stays inside Studio. **Save Studio draft** shows the destination, Cases → Personal → Saved Studio drafts, and explains when a new draft still needs a title or a first item. An unsent prompt or unadded item stays in the current tab. Switching to another case does not open the previous case’s draft or remove a personal device backup.
+
+An isolated browser round trip verified a first save, return to the case, and reopening the same draft. A separate English/Russian check verified case switching and the narrow layout. The authorized title read and denial for another account passed. **Release status: candidate verified in isolation; public v203 is the previous release.** [Acceptance evidence](docs/testing/studio-team-case-cv001-2026-11-09.md) · [Living backlog and next item, CV-002](docs/development/development_backlog.md).
+
 ## UI/UX and functionality audit — 9 November 2026
 
 Audited live v203 against the signed-in MyCase dashboard and exercised English and Russian mobile layouts in an isolated fixture. Home, Contacts, Library and case sections kept the route back to the selected team case. AI Studio retained that route but dropped the visible case name and opened an empty analysis from its Case overview tab. The portal retained an unsent invitation when leaving; Review unsaved work returned keyboard focus to Calendar. Mobile case reachability, uneven buttons, mixed-language navigation and visible technical wording are also recorded.
 
 All **106 focused functional tests passed**. In a separate synthetic client/staff session, a reply appeared once on both sides and a private upload downloaded byte-for-byte. No new production writes, real client exchange or release occurred during this audit. [Audit and reproduction steps](docs/testing/ui-ux-functionality-2026-11-09.md) · [Living development backlog](docs/development/development_backlog.md) · [v203 release record](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/269).
 
-The backlog contains six reproduced findings, three verification or rollout gates and three roadmap items. Update it with this progress file every iteration. **Next: CV-001 — make the team case and Studio draft visibly distinct and provide a clear return to the case overview.**
+The backlog contains six reproduced findings, three verification or rollout gates and three roadmap items. Update it with this progress file every iteration. The first item selected from this audit was CV-001; its current status is recorded above.
 
 ## Published client portal — 9 November 2026
 

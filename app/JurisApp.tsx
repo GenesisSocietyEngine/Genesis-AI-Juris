@@ -19,6 +19,7 @@ import { registerStudioDeparture, studioDepartureFingerprint, type StudioSavedBa
 import { clearStudioEvidenceInput, emptyStudioEvidenceInput, hasStudioEvidenceInput, updateStudioEvidenceInput, type StudioEvidenceBuffers, type StudioEvidenceInput } from "./studio-evidence-buffer";
 import StudioWorkspaceTabs from "./StudioWorkspaceTabs";
 import StudioSaveStatus from "./StudioSaveStatus";
+import StudioTeamCase from "./StudioTeamCase";
 import WorkTabs from "./work/WorkTabs";
 import StudioWorkbenchSummary from "./StudioWorkbenchSummary";
 import { opensStudioWorkbench } from "./studio-workbench";
@@ -51,7 +52,7 @@ import type { CanonicalRuntimeState } from "./canonical-runtime";
 import { initialMetrics } from "./runtime-constants";
 import { LatestRequestGate } from "./latest-request";
 import { useInterfaceLocale, useWorkspaceLocation } from "./use-interface-locale";
-import { workspaceSignInPath, workspaceDestination } from "./workspace-navigation";
+import { workspaceSignInPath, workspaceDestination, selectedTeamCase } from "./workspace-navigation";
 import { createStudioAuthContinuation, readStudioAuthContinuationState, writeStudioAuthContinuation, LEGACY_STUDIO_AUTH_CONTINUATION_KEY, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
 import ReportErrorBoundary from "./ReportErrorBoundary";
 import { startReportDownload } from "./report-download";
@@ -479,6 +480,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const navigation = useNavigationController();
   const [locale, setLocale] = useInterfaceLocale();
   const workspaceLocation = useWorkspaceLocation();
+  const teamStudio = studioOnly && Boolean(selectedTeamCase(workspaceLocation));
   const [view, setView] = useState<View>(initialView);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
   const [catalogueNextCursor, setCatalogueNextCursor] = useState<string | null>(null);
@@ -746,7 +748,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     let cancelled = false;
     const restore = window.setTimeout(() => {
       try {
-      if (studioChangedBeforeRestoreRef.current || new URLSearchParams(window.location.search).has("custom_case")) return;
+      if (studioChangedBeforeRestoreRef.current || teamStudio || new URLSearchParams(window.location.search).has("custom_case")) return;
       try {
         const stored = studioStorageScope ? readStudioDeviceDraft(window.localStorage, studioStorageScope) : { status: "empty" as const };
         if (stored.status !== "empty" && stored.status !== "editable") {
@@ -800,7 +802,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       } finally { if (!cancelled) setStudioRestoreReady(true); }
     }, 0);
     return () => { cancelled = true; window.clearTimeout(restore); };
-  }, [studioStorageScope, studioAIEntitlement, autoStartCanopy, prompt, locale]);
+  }, [studioStorageScope, studioAIEntitlement, autoStartCanopy, prompt, locale, teamStudio]);
 
   useEffect(() => {
     if (studioAIEntitlement === "loading" || studioAIEntitlement === "unavailable") return;
@@ -818,11 +820,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }, [studioAIEntitlement, studioStorageScope, studioCustomCaseId]);
 
   useEffect(() => {
-    if (!studioStorageScope) return;
+    if (!studioStorageScope || teamStudio) return;
     if (!mayPersistStudioDraftOnDevice({ canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate, draft })) {
       try { removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope); } catch { /* Failed cleanup cannot replace retained work. */ }
     }
-  }, [draft, studioCanDuplicate, studioCustomCaseId, studioPrivate, studioStorageScope]);
+  }, [draft, studioCanDuplicate, studioCustomCaseId, studioPrivate, studioStorageScope, teamStudio]);
 
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
 
@@ -942,8 +944,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (!confirmed && hasWork && !window.confirm(studioReplacementMessage(locale, next.title, retention))) return false;
     try {
       if (studioStorageScope) {
-        retainStudioReplacement(window.localStorage, studioStorageScope, retention ? { draft: draftRef.current, prompt } : null);
-        removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope);
+        retainStudioReplacement(window.localStorage, studioStorageScope, retention ? { draft: draftRef.current, prompt } : null, { includeDeviceSlot: !teamStudio });
+        if (!teamStudio) removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope);
         setArchiveVersion(value => value + 1);
       }
     } catch {
@@ -983,6 +985,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete("custom_case"); cleanUrl.searchParams.delete("resume_action");
     window.history.replaceState(window.history.state, "", cleanUrl);
+    window.dispatchEvent(new Event("genesis-interface-change"));
     restoredSavedCaseRef.current = null;
     setStudioPrivate(false);
     setStudioCustomCaseId(null);
@@ -998,7 +1001,13 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (!studioCanDuplicate) return;
     const current = draftRef.current;
     const next = typeof update === "function" ? update(current) : update;
-    if (next !== current) syncStudioDraft(next);
+    if (next !== current) {
+      // The shared blank template has no durable identity. A manually named team workpad
+      // needs its own personal draft key, independent of this team case and other workpads.
+      const newTeamDraft = teamStudio && studioCustomCaseId === null && current.caseId === initialBlankDraft.caseId
+        && next.caseId === current.caseId && !current.title.trim() && Boolean(next.title.trim()) && !current.protection && !current.parent;
+      syncStudioDraft(newTeamDraft ? { ...next, caseId: "studio_work_" + crypto.randomUUID().replaceAll("-", "") } : next);
+    }
   }
   function commitStudioDraft(update: React.SetStateAction<StudioDraft>, label: string, source: "prompt" | "visual", createdAt = new Date().toISOString()) {
     if (!studioCanDuplicate) return false;
@@ -1751,7 +1760,16 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       return;
     }
     let next: StudioDraft;
-    try { next = writeStudioDeviceDraft(window.localStorage, studioStorageScope, { ...draftRef.current, updatedAt: new Date().toISOString() }); }
+    try {
+      if (teamStudio) {
+        const existing = readStudioDeviceDraft(window.localStorage, studioStorageScope), baseline = studioSavedBaseline.current;
+        if (existing.status !== "empty" && !(existing.status === "editable" && baseline?.kind === "device" && baseline.scope === studioStorageScope && baseline.fingerprint === studioDepartureFingerprint(existing.draft))) {
+          showSessionNotice(locale === "en" ? "Another device draft is already stored. Use Save Studio draft to keep this work in your workspace." : "На устройстве уже есть другой черновик. Нажмите «Сохранить черновик», чтобы сохранить эту работу в своём пространстве.");
+          return;
+        }
+      }
+      next = writeStudioDeviceDraft(window.localStorage, studioStorageScope, { ...draftRef.current, updatedAt: new Date().toISOString() });
+    }
     catch (error) { setSavedFlash(false); showSessionNotice(error instanceof Error ? error.message : "Device save failed. Your input remains in this tab."); return; }
     syncStudioDraft(next);
     studioSavedBaseline.current = { kind: "device", scope: studioStorageScope, customCaseId: null, fingerprint: studioDepartureFingerprint(next) };
@@ -2242,7 +2260,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       /></Suspense>}
       {view === "studio" && !studioRecovery && unavailableSavedCaseAccessId !== null && <StudioSavedCaseAccessNotice key={unavailableSavedCaseAccessId} id={unavailableSavedCaseAccessId} locale={locale} disabled={studioOperationPending.current || studioSession.signOutPending} retry={() => studioSessionAuthority.refresh(true, unavailableSavedCaseAccessId)}/>}
-      {view === "studio" && !studioRecovery && <>{visibleExampleLaunch && <ExampleLaunchStatus launch={visibleExampleLaunch} locale={locale} cancel={cancelCategoryDemo} retry={() => void openRegisteredExample(visibleExampleLaunch.id)}/>}<div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView departureActions={studioDepartureActions} checksReady={packageValidationSettled} evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} prepareTaxWrite={studioTaxWriteBaseline.current.prepare} onDocumentRecovery={(reason, rawText, filename) => { setSessionNotice(""); setStudioRecovery({scope: currentStudioScopeRef.current, reason, rawText, filename, canExport: false}); }} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} openUpdatedExample={openUpdatedExample} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady) || unavailableSavedCaseAccessId !== null} /></div></>}
+      {view === "studio" && !studioRecovery && <>{visibleExampleLaunch && <ExampleLaunchStatus launch={visibleExampleLaunch} locale={locale} cancel={cancelCategoryDemo} retry={() => void openRegisteredExample(visibleExampleLaunch.id)}/>}<div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView hasDeviceCopy={studioSavedBaseline.current?.kind === "device" && studioSavedBaseline.current.scope === studioStorageScope} departureActions={studioDepartureActions} checksReady={packageValidationSettled} evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} prepareTaxWrite={studioTaxWriteBaseline.current.prepare} onDocumentRecovery={(reason, rawText, filename) => { setSessionNotice(""); setStudioRecovery({scope: currentStudioScopeRef.current, reason, rawText, filename, canExport: false}); }} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} openUpdatedExample={openUpdatedExample} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady) || unavailableSavedCaseAccessId !== null} /></div></>}
       {view === "studio" && studioRecovery && recoveryVisible && <StudioRecoveryView recovery={studioRecovery} locale={locale} onReturn={() => setStudioRecovery(null)} />}
       {view === "studio" && studioRecovery && !recoveryVisible && <section className="studio-entry"><p role="status">{locale === "en" ? "Verify account access before opening the retained document." : "Подтвердите доступ аккаунта перед открытием сохранённого документа."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a></section>}
       {((view === "studio" && studioConcealed) || (view === "play" && privatePlayConcealed)) && <section className="studio-entry"><h2>{locale === "en" ? "Verify access to this workspace" : "Подтвердите доступ к workspace"}</h2><p id="studio-access-status" role="status">{studioSession.signOutPending ? pendingSignOutMessage(locale) : locale === "en" ? "Private content is concealed. Sign in, then refresh access. Unsaved input stays in this tab while access is unconfirmed." : "Приватное содержимое скрыто. Войдите и обновите доступ. Пока доступ не подтверждён, несохранённый ввод остаётся в памяти этой вкладки."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a><button type="button" disabled={studioSession.signOutPending} aria-describedby="studio-access-status" onClick={() => void studioSessionAuthority.refresh(true, activeProtectedCaseId)}>{locale === "en" ? "Refresh access" : "Обновить доступ"}</button></section>}
@@ -2340,6 +2358,7 @@ function summaryScenario(record: PublishedCaseSummary, index: number): Scenario 
 
 
 type StudioViewProps = {
+  hasDeviceCopy: boolean;
   departureActions: React.RefObject<StudioDepartureActions | null>;
   evidenceBuffers: StudioEvidenceBuffers;
   onEvidenceChange: (type: StudioNodeType, patch: Partial<StudioEvidenceInput>) => void;
@@ -2395,8 +2414,10 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ departureActions, standalone = false, checksReady, evidenceBuffers, onEvidenceChange, onEvidenceClear, onWorkspaceSaved, prepareTaxWrite, onDocumentRecovery, onAuthDeparture, operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, openUpdatedExample, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportAuthority, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
+function StudioView({ hasDeviceCopy, departureActions, standalone = false, checksReady, evidenceBuffers, onEvidenceChange, onEvidenceClear, onWorkspaceSaved, prepareTaxWrite, onDocumentRecovery, onAuthDeparture, operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, openUpdatedExample, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportAuthority, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">(customCaseId && serverFingerprint && serverPublicationFingerprint ? "saved" : "idle");
+  const workspaceLocation = useWorkspaceLocation();
+  const teamCase = standalone ? selectedTeamCase(workspaceLocation) : null;
   const [workspaceSavedAt, setWorkspaceSavedAt] = useState<string | null>(null);
   const [workspaceSavedDraft, setWorkspaceSavedDraft] = useState<StudioDraft | null>(() => customCaseId && serverFingerprint && serverPublicationFingerprint ? draft : null);
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
@@ -2529,6 +2550,11 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
   const draftWithinEnvelope = draftBytes <= STUDIO_DRAFT_SERIALIZED_LIMIT;
   // Save checks the frozen payload size directly; stale analysis must not swallow a blur-to-save click.
   const saveWithinEnvelope = !derivationsSettled || draftWithinEnvelope;
+  const saveRequirement = !draft.title.trim() && !draft.nodes.length
+    ? (locale === "en" ? "Add a draft title and one item to save." : "Чтобы сохранить черновик, добавьте название и один элемент.")
+    : !draft.title.trim() ? (locale === "en" ? "Add a draft title to save." : "Чтобы сохранить черновик, добавьте название.")
+    : !draft.nodes.length ? (locale === "en" ? "Add one item to save this draft." : "Чтобы сохранить черновик, добавьте один элемент.") : "";
+  const canSaveDraft = saveWithinEnvelope && !saveRequirement;
   const aiBaseFingerprint = studioDerivations.aiBaseFingerprint;
   const workspaceFingerprint = `${studioDerivations.publicationFingerprint}:${aiBaseFingerprint}\u0000${isPrivate ? "private" : "restricted"}`;
   const visibleWorkspaceState = (workspaceState === "saved" || workspaceState === "submitted") && !currentStudioSaveMatches({ draft, savedDraft: workspaceSavedDraft, checked: derivationsSettled, fingerprint: workspaceFingerprint, savedFingerprint: workspaceSavedFingerprint, isPrivate }) ? "idle" : workspaceState;
@@ -3223,7 +3249,7 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
   }
   useLayoutEffect(() => {
     const actions: StudioDepartureActions = {
-      canSave: () => canDuplicate && reportAuthority.allowed && !restorePending && !operationPending.current && saveWithinEnvelope && !["anonymous", "profile_required", "loading"].includes(aiEntitlement),
+      canSave: () => canDuplicate && reportAuthority.allowed && !restorePending && !operationPending.current && canSaveDraft && !["anonymous", "profile_required", "loading"].includes(aiEntitlement),
       save: async () => await shareDraft("save") === true,
       review: reviewUnsavedStudioInput,
     };
@@ -3234,6 +3260,7 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
   async function shareDraft(action: "save" | "submit") {
     // Ignore duplicate/premature activation without changing a pending save into an error.
     if (saveInFlightRef.current || workspaceState === "saving" || restorePending || (action === "submit" && !derivationsSettled)) return;
+    if (action === "save" && saveRequirement) { setWorkspaceError(saveRequirement); return; }
     pendingAuthActionRef.current = action;
     const draftAtStart = draft;
     const targetDraft = freezeStudioDraftSnapshot(draftAtStart);
@@ -3301,6 +3328,7 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
         const currentParams = new URLSearchParams(window.location.search);
         const currentStep = currentParams.get("studio_step") ?? "run_compare";
         window.history.replaceState(window.history.state, "", savedStudioPath(saved.id, currentStep, locale, currentParams.get("studio_panel"), window.location.pathname + window.location.search));
+        window.dispatchEvent(new Event("genesis-interface-change"));
         return true;
       } catch {
         if (!isCurrent()) return;
@@ -3659,21 +3687,22 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
   </>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep}${standalone ? " studio-suite-view" : ""}${showWorkbench ? " studio-workbench-view" : ""} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
 
-    {standalone && <div className="studio-suite-tabs page-width"><WorkTabs locale={locale} active={showOverview ? "cases" : "studio"} onStudio={openWorkbench} onCaseOverview={openOverview} location={typeof window === "undefined" ? "/studio" : window.location.pathname + window.location.search}/></div>}
-    <Suspense fallback={null}><StudioReleaseNotice locale={locale} canSave={canDuplicate && saveWithinEnvelope} canExport={canDuplicate && reportAuthority.allowed && derivationsSettled && (visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted")} busy={restorePending || operationPending.current} onSave={() => void shareDraft("save")} onExport={() => void exportDraft()}/></Suspense>
+    {standalone && <div className="studio-suite-tabs page-width"><WorkTabs locale={locale} active={showOverview && !teamCase ? "cases" : "studio"} onStudio={openWorkbench} onCaseOverview={teamCase ? undefined : openOverview} location={workspaceLocation}/></div>}
+    <Suspense fallback={null}><StudioReleaseNotice locale={locale} canSave={canDuplicate && canSaveDraft} canExport={canDuplicate && reportAuthority.allowed && derivationsSettled && (visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted")} busy={restorePending || operationPending.current} onSave={() => void shareDraft("save")} onExport={() => void exportDraft()}/></Suspense>
     {nodeDeletion && <Suspense fallback={null}><StudioDeleteNodeDialog draft={draft} nodeId={nodeDeletion.id} locale={locale} onCancel={() => { deletionRequest.current = null; setNodeDeletion(null); }} onConfirm={target => void confirmNodeDeletion(target)}/></Suspense>}
 
       <section className="studio-hero studio-compact-hero page-width">
         <div>
+          {teamCase && <StudioTeamCase context={teamCase} locale={locale}/>}
           <div className="studio-case-breadcrumb"><button type="button" onClick={() => { if (standalone) { openWorkbench(); return; } const url = new URL(window.location.href); url.searchParams.delete("studio_step"); url.searchParams.delete("studio_panel"); window.history.pushState(window.history.state, "", url); setOverviewSelected(false); setEditorOpened(false); }}>{locale === "en" ? "Case Studio" : "Студия кейсов"}</button><span aria-hidden="true">/</span><span>{locale === "en" ? "Working draft" : "Рабочий черновик"}</span></div>
-          <h1>{draft.title.trim() || (locale === "en" ? "Describe your case" : "Опишите свой кейс")}</h1>
-          <StudioSaveStatus state={visibleWorkspaceState} locale={locale} hasSavedCase={customCaseId !== null} savedAt={workspaceSavedAt} promptPending={Boolean(prompt.trim())} itemsPending={hasStudioEvidenceInput(evidenceBuffers)} onReview={reviewUnsavedStudioInput}/>
+          <h1>{draft.title.trim() || (teamCase ? (locale === "en" ? "Untitled Studio draft" : "Черновик Студии без названия") : (locale === "en" ? "Describe your case" : "Опишите свой кейс"))}</h1>
+          <StudioSaveStatus state={visibleWorkspaceState} locale={locale} hasSavedCase={customCaseId !== null} savedAt={workspaceSavedAt} promptPending={Boolean(prompt.trim())} itemsPending={hasStudioEvidenceInput(evidenceBuffers)} onReview={reviewUnsavedStudioInput} hasDeviceCopy={hasDeviceCopy} restoring={restorePending} readOnly={!canDuplicate} requirement={saveRequirement}/>
           {hasStudioEvidenceInput(evidenceBuffers) && <aside className="studio-evidence-pending" role="status"><p>{locale === "en" ? "Unadded working items remain in this tab. They are not included in case saves or reports until you add them." : "В этой вкладке остались недобавленные рабочие элементы. Они не включаются в сохранённый кейс и отчёты, пока вы их не добавите."}</p>{(Object.keys(evidenceBuffers) as StudioNodeType[]).filter(type => hasStudioEvidenceInput({ [type]: evidenceBuffers[type] })).map(type => <button key={type} type="button" className="secondary-cta" onClick={() => openStudioAction({ step: 3, id: "studio-evidence-composer", nodeType: type })}>{locale === "en" ? `Continue ${text.nodeTypes[type].toLowerCase()} item` : `Продолжить элемент: ${text.nodeTypes[type].toLowerCase()}`}</button>)}</aside>}
           <details className="studio-technical-controls"><summary>{locale === "en" ? "Technical view" : "Технический вид"}</summary><label className="studio-view-select"><span>{locale === "en" ? "View" : "Вид"}</span><select aria-label={locale === "en" ? "Studio view" : "Вид Студии"} value={displayMode} onChange={event => changeDisplayMode(event.target.value as "user" | "developer")}><option value="user">{locale === "en" ? "User view" : "Вид пользователя"}</option><option value="developer">{locale === "en" ? "Developer view" : "Вид разработчика"}</option></select></label></details>
         </div>
         <div className="studio-actions">
           <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
-          <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !saveWithinEnvelope || restorePending || workspaceState === "saving"} aria-describedby="studio-save-status"><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : restorePending ? (locale === "en" ? "Preparing workspace…" : "Подготовка рабочего пространства…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
+          <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !canSaveDraft || restorePending || workspaceState === "saving"} aria-describedby="studio-save-status"><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : restorePending ? (locale === "en" ? "Preparing workspace…" : "Подготовка рабочего пространства…") : (locale === "en" ? "Save Studio draft" : "Сохранить черновик")}</button>
           <button className="secondary-cta report-cta" disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} aria-describedby={reportUnavailable ? "studio-report-requirements" : undefined} onClick={() => void openCaseReport()} title={locale === "en" ? "Preview a preliminary report; independent approval is separate" : "Предпросмотр предварительного отчёта; независимое утверждение выполняется отдельно"}><Icon name="download"/>{locale === "en" ? "Create analytical report" : "Сформировать аналитический отчёт"}</button>
           {displayMode === "developer" && <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={restorePending || Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>}
           {portableStudioActions}
@@ -3694,8 +3723,8 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
     {!canDuplicate && <aside className="studio-readonly-notice page-width" role="status"><Icon name="file"/><div><b>{locale === "en" ? "Inspection-only case" : "Кейс только для просмотра"}</b><p>{locale === "en" ? "You can inspect the graph and rules, but this protected case cannot be edited, copied, exported or saved. Start a blank draft or open the worked example to author a separate case." : "Вы можете изучать схему и правила, но этот защищённый кейс нельзя редактировать, копировать, экспортировать или сохранять. Создайте новый черновик или откройте учебный пример для отдельной работы."}</p></div></aside>}
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
-    {displayMode === "user" && !showWorkbench && visibleStep !== 2 && (visibleStep === null || visibleStep < 5 || !saveWithinEnvelope) && !trainingWorkflow && canDuplicate && !["error", "conflict", "auth_required"].includes(visibleWorkspaceState) && <Suspense fallback={null}><StudioFirstCaseGuide locale={locale} hasStructure={draft.nodes.length > 0} hasTitle={Boolean(draft.title.trim())} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} busy={restorePending || workspaceState === "saving" || ((visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted") && !derivationsSettled)} busyReason={workspaceState === "saving" ? "saving" : restorePending ? "restoring" : derivationError ? "check_failed" : "checking"} canSave={saveWithinEnvelope} needsSignIn={aiEntitlement === "anonymous"} needsProfile={aiEntitlement === "profile_required"} onBrief={() => openStudioAction({step: 1, id: "studio-case-brief"})} onTitle={() => openStudioAction({step: 3, id: "studio-title"})}/></Suspense>}
-    {displayMode === "user" && !trainingWorkflow && <StudioWorkspaceTabs locale={locale} activeStep={guidedStep} overview={showOverview} workbench={showWorkbench} onWorkbench={standalone ? openWorkbench : undefined} onOverview={openOverview} onStep={selectGuidedStep}/>}
+    {displayMode === "user" && !showWorkbench && visibleStep !== 2 && (visibleStep === null || visibleStep < 5 || !saveWithinEnvelope) && !trainingWorkflow && canDuplicate && !["error", "conflict", "auth_required"].includes(visibleWorkspaceState) && <Suspense fallback={null}><StudioFirstCaseGuide locale={locale} hasStructure={draft.nodes.length > 0} hasTitle={Boolean(draft.title.trim())} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} busy={restorePending || workspaceState === "saving" || ((visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted") && !derivationsSettled)} busyReason={workspaceState === "saving" ? "saving" : restorePending ? "restoring" : derivationError ? "check_failed" : "checking"} canSave={canSaveDraft} needsSignIn={aiEntitlement === "anonymous"} needsProfile={aiEntitlement === "profile_required"} onBrief={() => openStudioAction({step: 1, id: "studio-case-brief"})} onTitle={() => openStudioAction({step: 3, id: "studio-title"})}/></Suspense>}
+    {displayMode === "user" && !trainingWorkflow && <StudioWorkspaceTabs locale={locale} activeStep={guidedStep} overview={showOverview} teamCase={Boolean(teamCase)} workbench={showWorkbench} onWorkbench={standalone ? openWorkbench : undefined} onOverview={openOverview} onStep={selectGuidedStep}/>}
     {showOverview && <Suspense fallback={<p role="status">{locale === "en" ? "Opening case overview…" : "Открывается обзор дела…"}</p>}><StudioOverview draft={draft} locale={locale} onStep={selectGuidedStep} onNode={nodeId => openOverviewNode(nodeId, true)} onAction={openOverviewAction}/></Suspense>}
     {displayMode === "user" && trainingWorkflow && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { if (operationPending.current) return; const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
     window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
@@ -3756,7 +3785,7 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
       <StudioMaterialsWorkspace draft={draft} locale={locale} attachmentPlan={activeEvidenceDrop.plan} onPlanCancel={() => setEvidenceDrop(current => current === activeEvidenceDrop ? null : current)} onNode={openOverviewNode} onApply={(expected,next,target) => { if (evidenceDragOwner.current !== activeEvidenceDrop.owner) return false; const applied = applyMaterials(expected,next); if (applied) { setEvidenceDrop(null); if (target) selectGraphNode(target); setRelationStatus(locale === "en" ? "Evidence attached in the working draft. Save separately; review is not recorded." : "Материал прикреплён в черновике. Сохраните отдельно; проверка не записана."); } return applied; }} authority={{allowed:canDuplicate && reportAuthority.allowed && !restorePending,epoch:reportAuthority.epoch,verify:reportAuthority.verify}}/>
     </StudioEvidenceAttachmentDialog></Suspense>}
 
-    {displayMode === "user" && visibleStep === 5 && <Suspense fallback={<p role="status">Checking actions…</p>}><StudioActionPanel draft={draft} checks={checks} locale={locale} checking={!derivationsSettled} canEdit={canDuplicate} onOpen={openStudioAction} onReport={() => void openCaseReport()} onSave={() => void shareDraft("save")} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} saving={workspaceState === "saving"} restoring={restorePending} withinEnvelope={saveWithinEnvelope}/></Suspense>}
+    {displayMode === "user" && visibleStep === 5 && <Suspense fallback={<p role="status">Checking actions…</p>}><StudioActionPanel draft={draft} checks={checks} locale={locale} checking={!derivationsSettled} canEdit={canDuplicate} onOpen={openStudioAction} onReport={() => void openCaseReport()} onSave={() => void shareDraft("save")} saved={visibleWorkspaceState === "saved" || visibleWorkspaceState === "submitted"} saving={workspaceState === "saving"} restoring={restorePending} withinEnvelope={saveWithinEnvelope} saveRequirement={saveRequirement}/></Suspense>}
     {visibleStep === 3 && actionTarget?.nodeType && <Suspense fallback={null}><StudioEvidenceComposer draft={draft} type={actionTarget.nodeType} locale={locale} canEdit={canDuplicate} value={evidenceBuffers[actionTarget.nodeType] ?? emptyStudioEvidenceInput()} onChange={patch => onEvidenceChange(actionTarget.nodeType!, patch)} onClear={() => onEvidenceClear(actionTarget.nodeType!)} onSave={addConnectedItem}/></Suspense>}
     {(displayMode === "developer" || visibleStep === 3) && <><details id="studio-case-settings" className="studio-settings-stack studio-settings-disclosure page-width" open={displayMode === "developer" || trainingWorkflow ? true : undefined}><summary>{locale === "en" ? "Case settings & context" : "Настройки и контекст дела"}</summary>
       <details className="studio-category-settings"><summary>{locale === "en" ? "Case category: " : "Категория дела: "}{caseTypePlaybook(draft.caseType).label[locale]} · {locale === "en" ? "Change category" : "Изменить категорию"}</summary><Suspense fallback={<p role="status">{locale === "en" ? "Loading case categories…" : "Загрузка категорий дела…"}</p>}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate || restorePending || operationPending.current} onChange={changeCaseType}/><StudioCasePlaybook locale={locale} draft={draft} phase="intake"/></Suspense></details>
@@ -3900,7 +3929,7 @@ function StudioView({ departureActions, standalone = false, checksReady, evidenc
     {displayMode === "user" && visibleStep === 6 && <section className="studio-finish page-width" aria-labelledby="studio-finish-title">
       <header><div><span>{locale === "en" ? "FINAL STEP · YOUR CASE STAYS EDITABLE" : "ФИНАЛЬНЫЙ ЭТАП · КЕЙС ОСТАЁТСЯ РЕДАКТИРУЕМЫМ"}</span><h2 id="studio-finish-title">{locale === "en" ? "Choose what happens next" : "Выберите следующее действие"}</h2></div>{validationReady ? <b className="ready">{locale === "en" ? "READY" : "ГОТОВО"}</b> : <button type="button" className="review-needed" onClick={() => returnToActions()}>{locale === "en" ? "Review needed →" : "Нужна проверка →"}</button>}</header>
       <div className="studio-finish-options">
-        <article><Icon name="save"/><span>01</span><h3>{locale === "en" ? "Keep working later" : "Продолжить позже"}</h3><p>{locale === "en" ? "Save the exact draft and visibility settings to your workspace." : "Сохраните точный черновик и настройки видимости в workspace."}</p><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !saveWithinEnvelope || restorePending || workspaceState === "saving"}>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button></article>
+        <article><Icon name="save"/><span>01</span><h3>{locale === "en" ? "Keep working later" : "Продолжить позже"}</h3><p>{locale === "en" ? "Save the exact draft and visibility settings to your workspace." : "Сохраните точный черновик и настройки видимости в workspace."}</p><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !canSaveDraft || restorePending || workspaceState === "saving"}>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button></article>
         <article><Icon name="download"/><span>02</span><h3>{locale === "en" ? "Create an analytical report" : "Сформировать аналитический отчёт"}</h3><p>{locale === "en" ? "Preview a preliminary PDF from this draft. Independent approval is a separate step in your case." : "Просмотрите предварительный PDF из этого черновика. Независимое утверждение — отдельный шаг в деле."}</p><button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} aria-describedby={reportUnavailable ? "studio-report-card-requirements" : undefined}>{locale === "en" ? "Open PDF options" : "Открыть параметры PDF"}</button>{reportUnavailable && <div id="studio-report-card-requirements">{reportRequirements}</div>}</article>
         <article><Icon name="check"/><span>03</span><h3>{locale === "en" ? "Request expert review" : "Запросить экспертную рецензию"}</h3><p>{locale === "en" ? "Submit only when validation is green and the visibility setting is correct." : "Отправляйте только после зелёной проверки и подтверждения режима видимости."}</p><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={restorePending || Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined}>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button></article>
       </div>

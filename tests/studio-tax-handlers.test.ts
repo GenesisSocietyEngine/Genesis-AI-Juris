@@ -33,13 +33,13 @@ export function save(context) {
  const flushSync=callback=>callback();
  const {draft,serverFingerprint,serverPublicationFingerprint,prepareTaxWrite,fetch,onWorkspaceSaved}=context;
  const state={workspace:'idle',error:'',draft};
- const isPrivate=false,canDuplicate=true,derivationsSettled=context.derivationsSettled??true,restorePending=context.restorePending??false,workspaceState=context.workspaceState??'idle',aiEntitlement='not_configured',locale='en';
+ const saveRequirement=context.saveRequirement??'',isPrivate=false,canDuplicate=true,derivationsSettled=context.derivationsSettled??true,restorePending=context.restorePending??false,workspaceState=context.workspaceState??'idle',aiEntitlement='not_configured',locale='en';
  const saveInFlightRef={current:false},saveOperationRef={current:0},saveMountedRef={current:true},pendingAuthActionRef={current:'save'},saveContextRef={current:{caseId:draft.caseId,version:draft.version,scope:'account'}};
  const setWorkspaceState=value=>state.workspace=value,setWorkspaceError=value=>state.error=value;
  const setWorkspaceSavedDraft=value=>state.savedDraft=value;
  const setCustomCaseId=()=>{},setPrivate=()=>{},setCanManagePrivacy=()=>{},setServerFingerprint=()=>{},setServerPublicationFingerprint=()=>{},setCopyProtectionLocked=()=>{},setWorkspaceSavedFingerprint=()=>{},setWorkspaceSavedAt=()=>{};
  const setDraft=fn=>state.draft=fn(state.draft),openWorkspaceAuthorization=()=>{throw Error('unexpected auth');};
- const window={location:{search:''},history:{state:null,replaceState(){}}};
+ const window={location:{search:'',pathname:'/studio'},history:{state:null,replaceState(){}},dispatchEvent(){}};
  ${handlers.get("shareDraft")}
  return {state,run:(action='save')=>shareDraft(action),saveContextRef};
 }
@@ -78,6 +78,14 @@ const fields = "baseline_annual_tax_cost optimized_annual_tax_cost implementatio
 const attachment: TaxAttachmentV1 = { format: "genesis-juris-tax-attachment", carrierVersion: 1, document: JSON.stringify({schema:"web-tax-authoring-artifact-v1",source:descriptor,request,edit:Object.fromEntries(fields.map(key=>[key,"12."])),bindings:[],benefits:[],required_component_ids:[],rates_confirmed:false,legacy_documents:[' {"large":18446744073709551617} '],previous_source_documents:[]},null,2)+"\n" };
 const draft = () => normalizeStudioDraft({ ...fixture, parent: null, taxAnalysis: attachment });
 const protection = {kind:"case-protection-v1" as const,copyProtected:false,copyPolicy:"fork_allowed" as const,parentCode:null,currentCode:`sha256-${"a".repeat(64)}`,seal:`hmac-sha256-${"b".repeat(64)}`};
+
+test("a working draft missing its first item stays open without a save request", async () => {
+  const input = { ...draft(), nodes: [], links: [] };
+  const reason = "Add one item to save this draft.";
+  const h = actual.save({ draft: input, saveRequirement: reason, fetch: () => assert.fail("no save before the draft has an item") });
+  await h.run(); assert.equal(h.state.workspace, "idle"); assert.equal(h.state.error, reason);
+  assert.deepEqual(h.state.draft, input);
+});
 
 test("actual save sends the verified prior carrier and frozen exact input, then adopts only its confirmed seal", async () => {
   const baseline = new StudioTaxWriteBaseline(), before = draft(), fingerprint = caseFingerprint(before);

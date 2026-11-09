@@ -119,12 +119,11 @@ test("Contacts, Library and other work views retain both case identities and rej
   const bound = verifiedWorkspaceCaseReturn(start, "org_A", [{ id: "case_A" }]);
   for (const path of ["/library", "/work?view=tasks", "/work?view=people"]) {
     const url = workspaceDestination(path, bound),
-      studio = new URL(currentCaseOverviewDestination(url)!, "https://local.test");
-    assert.equal(studio.searchParams.get("custom_case"), "51");
-    assert.equal(
-      new URL(studio.searchParams.get("return_to")!, "https://local.test").searchParams.get("dossier"),
-      "case_A",
-    );
+      overview = new URL(currentCaseOverviewDestination(url)!, "https://local.test");
+    assert.equal(overview.pathname, "/matters");
+    assert.equal(overview.searchParams.get("dossier"), "case_A");
+    assert.equal(overview.searchParams.get("section"), "overview");
+    assert.equal(overview.searchParams.get("studio_case"), "51");
   }
   assert.equal(verifiedWorkspaceCaseReturn(start, "org_A", []), start);
   assert.equal(verifiedWorkspaceCaseReturn(start, "org_B", [{ id: "case_A" }]), start);

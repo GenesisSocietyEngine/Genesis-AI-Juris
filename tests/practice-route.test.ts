@@ -466,3 +466,15 @@ test("client portal isolates each invitation, shared version, appointment, messa
   return ()=>{runtime.__practiceEnv.DOSSIER_DOCUMENTS=old;};
  });
 });
+
+test("Studio case identity returns only the authorized title and cannot read a foreign case", async () => {
+  const endpoint="?view=identity";
+  const ok=await call("detail","GET",undefined,undefined,organization,{},endpoint,caseId);
+  assert.equal(ok.status,200); assert.match(ok.headers.get("cache-control")??"",/private.*no-store/);
+  const current=await db.prepare("SELECT title FROM dossiers WHERE id=?").bind(caseId).first<string>("title");
+  assert.deepEqual(await ok.json(),{id:caseId,title:current});
+  for(const [email,org,id] of [["practice-owner@example.test",organization,oldCase],["practice-outsider@example.test",foreignOrganization,caseId],["practice-outsider@example.test",organization,caseId]]){
+    const denied=await call("detail","GET",undefined,email,org,{},endpoint,id);
+    assert.ok([403,404].includes(denied.status));assert.doesNotMatch(await denied.text(),new RegExp(current!));
+  }
+});
