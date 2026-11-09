@@ -291,7 +291,7 @@ const compiled = await build({
     build.onResolve({ filter: /\.css$/ }, args => ({ path: args.path, namespace: "css-fixture" }));
     build.onLoad({ filter: /.*/, namespace: "css-fixture" }, () => ({ contents: "export default new Proxy({}, {get: (_, key) => key});", loader: "js" }));
     build.onResolve({ filter: /^\.\/MattersClient$/ }, () => ({ path: "existing-matter-owner", namespace: "matter-fixture" }));
-    build.onLoad({ filter: /.*/, namespace: "matter-fixture" }, () => ({ contents: "import {createElement} from 'react'; export default function MattersClient(){return createElement('div', {'data-existing-matter-owner':'retained'});}", loader: "js", resolveDir: process.cwd() }));
+    build.onLoad({ filter: /.*/, namespace: "matter-fixture" }, () => ({ contents: "import {createElement} from 'react'; export default function MattersClient({collections,initialLocation}){return createElement('div', {'data-existing-matter-owner':'retained','data-entry-location':initialLocation}, collections);}", loader: "js", resolveDir: process.cwd() }));
   } }],
 });
 writeFileSync(output,compiled.outputFiles[0].text);
@@ -351,6 +351,7 @@ test("wrapper retains the existing Matter owner for deep links, exposes normal g
   const navigation = await session();
   const render = (path:string, verified=true) => renderToStaticMarkup(verified ? createElement(components.NavigationSession,{controller:navigation},createElement(components.MyCasesClient,{initialLocation:path})) : createElement(components.MyCasesClient,{initialLocation:path}));
   const matter = render("/matters?dossier=dossier_synthetic&section=documents&target=document_1");
+  assert.match(matter,/data-entry-location="\/matters\?dossier=dossier_synthetic&amp;section=documents&amp;target=document_1"/);
   assert.match(matter,/data-existing-matter-owner="retained"/); assert.match(matter,/Personal workspace/); assert.match(matter,/Each case has its own role/);
   assert.match(matter,/href="\/matters\?collection=personal"/); assert.doesNotMatch(matter,/role="tab"/);
   const personal = render("/matters?collection=personal"); assert.doesNotMatch(personal,/data-existing-matter-owner/); assert.match(personal,/Search all authorized drafts/); assert.match(personal,/role="search"/); assert.match(personal,/type="submit"/); assert.match(personal,/maxLength="120"/i);

@@ -17,6 +17,7 @@ export default async function MattersPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const location = new URL(workspacePagePath("/matters", params), "https://workspace.invalid");
   if (params.collection === "personal" || params.collection === "team") location.searchParams.set("collection", params.collection);
+  if (params.create === "case") location.searchParams.set("create", "case");
   const initialLocation = location.pathname + location.search;
   return <OrganizationBoundary signedIn={Boolean(identity)} signInUrl={chatGPTSignInPath(initialLocation)}><MyCasesClient initialLocation={initialLocation}/></OrganizationBoundary>;
 }
