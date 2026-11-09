@@ -1,10 +1,12 @@
 # Current progress — CaseVant
 
-## CV-003 — direct mobile case links · 9 November 2026
+## Published CV-003 — direct mobile case links · 9 November 2026
 
-On a phone, a direct link opens the authorized case name and requested section above the closed case picker. The Personal/Team collections and case search remain inside the picker. Enter and Space operate it; an explicit choice is kept while switching sections. A visit to Cases or New case keeps the register open. The desktop register and case reading pane remain available side by side.
+**[CaseVant v206 is live](https://casevant.pro/matters).** On a phone, a direct team case link shows its authorized case title and selected section first. Expand **Cases** to reach Personal/Team collections, case search and the register. Enter and Space operate the picker, and section changes or resizing respect an explicit choice. An ordinary visit to Cases or New case still opens the register. Desktop retains the side-by-side list and reading pane.
 
-In the 390 × 844 fixture, the short case’s portal heading moved from 1,638 px to 589 px. With a 235-character title in the Russian interface it ended at 827 px, with no horizontal scrolling. At 320 × 568, the full long title and selected section label fit on arrival; the entire primary portal command was within one screen of scrolling. Direct document targets kept keyboard focus. The 102 focused checks passed. [Acceptance notes](docs/testing/mobile-case-entry-cv003-2026-11-09.md) · [Development backlog](docs/development/development_backlog.md). Signed-in v205 reproduced the original issue; post-release verification is pending.
+On the same signed-in synthetic case at 390 × 844, the case heading moved from 1,198 to 208 px, and the portal heading from 1,751 to 639 px. The selected case and portal both fit on the first screen; the first portal command starts at 865 px. In isolation, a 235-character title stayed fully readable at 390 and 320 px, with no horizontal scrolling. On the 320 × 568 phone the entire primary command was reachable after 517 px of scrolling. Exact document links still focus their specified control. No production data was changed.
+
+[Implementation PR #275](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/275) · [Small-phone PR #276](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/276) · [Exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42632955256): 2,065 web tests passed, 3 existing skips, 2 rendered-page checks and the unchanged 47-PDF baseline. Both production addresses matched all 209 current and retained browser files and denied signed-out case and portal reads. [Acceptance notes](docs/testing/mobile-case-entry-cv003-2026-11-09.md) · [Release receipt](docs/testing/receipts/mobile-case-entry-v206-2026-11-09.json) · [Development backlog: CV-003 verified; CV-004 next](docs/development/development_backlog.md).
 
 ## Published CV-002 — review unsent portal work · 9 November 2026
 

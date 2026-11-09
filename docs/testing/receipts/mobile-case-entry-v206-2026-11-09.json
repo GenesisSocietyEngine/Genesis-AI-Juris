@@ -1,0 +1,182 @@
+{
+  "date": "2026-11-09",
+  "backlog": "CV-003",
+  "version": 206,
+  "previousVersion": 205,
+  "productionURL": "https://casevant.pro/matters",
+  "sourceCommit": "9377845798d2bf74a510935591aea4cb6bbc8abf",
+  "previousRuntimeCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+  "implementationCommit": "6b208c40dfd28e5d08799a3239680080e10c1e75",
+  "finalCandidateCommit": "e87a5602669b6a85a18207b4d3d6ba14adec6e7d",
+  "implementationPRs": [
+    275,
+    276
+  ],
+  "initialMainRun": 42631863037,
+  "candidateRun": 42632836730,
+  "mainRun": 42632955256,
+  "tests": {
+    "passed": 2065,
+    "failed": 0,
+    "existingSkips": 3,
+    "renderedHtmlPassed": 2,
+    "pdfVisual": "47 unchanged full-analysis PDF baselines, bilingual decision reports and tax PDFs",
+    "clearAudits": 2
+  },
+  "artifact": {
+    "id": 13682168226,
+    "name": "verified-web-build-9377845798d2bf74a510935591aea4cb6bbc8abf-42632955256",
+    "digest": "sha256:85477ff843c9c010151a932f4a275ddfb2864b613dc6541c3541c0db8ad03a47",
+    "expired": false
+  },
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_62b22fcdcbdc819196f9d938a33ed240",
+  "deployment": "appgdep_6af1d93de298819183073fd5b4c661de",
+  "deploymentStatus": "succeeded",
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "unchanged": true
+  },
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "unchanged": true
+  },
+  "schemaMigrationsAdded": 0,
+  "browser": {
+    "production": {
+      "viewport": [
+        390,
+        844
+      ],
+      "cssPixelOrigin": "Top of document, before keyboard interaction",
+      "previous": {
+        "caseHeadingTop": 1198,
+        "portalHeadingTop": 1751,
+        "firstCommandTop": 1977,
+        "pickerOpen": true
+      },
+      "current": {
+        "caseY": 208,
+        "caseBottom": 261,
+        "sectionY": 639,
+        "sectionBottom": 665,
+        "actionY": 865,
+        "actionBottom": 905,
+        "pickerOpenOnArrival": false,
+        "documentScrollOnArrival": 0,
+        "noOverflow": true,
+        "registerOpen": true,
+        "sameCase": true,
+        "navigationVerified": true
+      }
+    },
+    "isolated": {
+      "shortEnglish390": {
+        "oldCaseHeadingTop": 1136,
+        "oldPortalHeadingTop": 1638,
+        "oldCommandTop": 1864,
+        "caseHeadingTop": 208,
+        "portalHeadingTop": 589,
+        "commandTop": 815
+      },
+      "longRussian390": {
+        "titleCharacters": 235,
+        "caseHeadingTop": 208,
+        "caseHeadingBottom": 446,
+        "portalHeadingTop": 800,
+        "portalHeadingBottom": 827,
+        "commandTop": 1026
+      },
+      "longRussian320": {
+        "viewport": [
+          320,
+          568
+        ],
+        "titleCharacters": 235,
+        "selectedSectionLabelTop": 198,
+        "caseHeadingTop": 222,
+        "caseHeadingBottom": 452,
+        "commandTop": 1045,
+        "commandBottom": 1085,
+        "requiredScrollForCompleteCommand": 517
+      },
+      "keyboard": "Enter, Space and Tab; original selection retained across section changes and opposite viewport defaults; desktop breadcrumb reopened and focused the native summary.",
+      "exactTarget": "Documents retained its URL target and focused the upload-purpose control.",
+      "unsentPortal": "The mobile section switch identified the unsent invitation; Review restored focus to its field in the original case.",
+      "observedPortalWrites": 0
+    },
+    "sensitiveDataRecorded": false
+  },
+  "limits": [
+    "Signed-in production checks used an existing synthetic team case without changing case records; 235-character and small-phone tests used synthetic fixtures.",
+    "Wider portal controls and broader navigation translation remain separate backlog items."
+  ],
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "9377845798d2bf74a510935591aea4cb6bbc8abf",
+    "tree": "7c6cd41eab75cfb72d4b3996bb379cf2fb8b3b4f",
+    "applicationInputsSha256": "d4927fb20a996f94d89d554aeec52a9621d660c3f7776c4f075aa8f325a77653",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 732,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "9377845798d2bf74a510935591aea4cb6bbc8abf",
+    "archiveSha256": "1012fd345fec43407eaaedbedc58b85baeb96e1a8cdcdf1154e8cabda6e841f3",
+    "migrationSha256": "6629530a71301d33f791ed738fdb287f3b53a963609a51d836553de18db76f8e",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "9377845798d2bf74a510935591aea4cb6bbc8abf",
+      "applicationInputsSha256": "d4927fb20a996f94d89d554aeec52a9621d660c3f7776c4f075aa8f325a77653",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "9377845798d2bf74a510935591aea4cb6bbc8abf",
+      "applicationInputsSha256": "d4927fb20a996f94d89d554aeec52a9621d660c3f7776c4f075aa8f325a77653",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "signedOut": [
+    {
+      "origin": "https://casevant.pro",
+      "caseIdentity": 401,
+      "portalData": 401,
+      "privateNoStore": true,
+      "onlyErrorReturned": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "caseIdentity": 401,
+      "portalData": 401,
+      "privateNoStore": true,
+      "onlyErrorReturned": true
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 209,
+      "verifiedCount": 209,
+      "currentAssets": 156,
+      "retainedAssets": 53
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 209,
+      "verifiedCount": 209,
+      "currentAssets": 156,
+      "retainedAssets": 53
+    }
+  ]
+}
