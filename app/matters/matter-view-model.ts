@@ -1,15 +1,15 @@
 export const MATTER_DESTINATIONS = [
-  { key: "overview", label: "Overview", shortLabel: "Overview" },
-  { key: "tasks", label: "Tasks", shortLabel: "Tasks" },
-  { key: "calendar", label: "Calendar", shortLabel: "Calendar" },
-  { key: "workflows", label: "Workflows", shortLabel: "Workflows" },
-  { key: "portal", label: "Client portal", shortLabel: "Client portal" },
-  { key: "documents", label: "Documents & evidence", shortLabel: "Documents" },
-  { key: "evidence", label: "Evidence review", shortLabel: "Evidence" },
-  { key: "decision-packages", label: "Decision package", shortLabel: "Decision" },
-  { key: "requests", label: "Requests & deadlines", shortLabel: "Requests" },
-  { key: "outputs", label: "Reports", shortLabel: "Reports" },
-  { key: "activity", label: "Audit", shortLabel: "Audit" },
+  { key: "overview", label: "Overview", ru: "Обзор", shortLabel: "Overview" },
+  { key: "tasks", label: "Tasks", ru: "Задачи", shortLabel: "Tasks" },
+  { key: "calendar", label: "Calendar", ru: "Календарь", shortLabel: "Calendar" },
+  { key: "workflows", label: "Workflows", ru: "Рабочие процессы", shortLabel: "Workflows" },
+  { key: "portal", label: "Client portal", ru: "Клиентский портал", shortLabel: "Client portal" },
+  { key: "documents", label: "Documents & evidence", ru: "Документы и доказательства", shortLabel: "Documents" },
+  { key: "evidence", label: "Evidence review", ru: "Проверка доказательств", shortLabel: "Evidence" },
+  { key: "decision-packages", label: "Decision package", ru: "Пакет решений", shortLabel: "Decision" },
+  { key: "requests", label: "Requests & deadlines", ru: "Запросы и сроки", shortLabel: "Requests" },
+  { key: "outputs", label: "Reports", ru: "Отчёты", shortLabel: "Reports" },
+  { key: "activity", label: "Audit", ru: "Журнал действий", shortLabel: "Audit" },
 ] as const;
 
 export type MatterDestination = (typeof MATTER_DESTINATIONS)[number]["key"];
@@ -774,11 +774,33 @@ export function transitionConsequences(option: TransitionOption): string[] {
   return consequences;
 }
 
-export function statusLabel(value: string): string {
+const russianCaseStatuses: Record<MatterStatus, string> = {
+  draft: "Черновик", intake_review: "Первичная проверка", active: "В работе",
+  awaiting_input: "Ожидает сведений", internal_review: "Внутренняя проверка",
+  output_approved: "Результат утверждён", closed: "Закрыто", archived: "В архиве",
+  declined: "Отклонено", cancelled: "Отменено",
+};
+
+export function statusLabel(value: string, locale: "en" | "ru" = "en"): string {
+  if (locale === "ru" && Object.hasOwn(russianCaseStatuses, value)) return russianCaseStatuses[value as MatterStatus];
   return sentenceLabel(value);
 }
 
-export function readableMatterType(value: string): string {
+export function casePriorityLabel(value: string, locale: "en" | "ru") {
+  const labels: Record<string, string> = { low: "Низкий", normal: "Обычный", high: "Высокий", urgent: "Срочный" };
+  return locale === "ru" && Object.hasOwn(labels, value) ? labels[value] : sentenceLabel(value);
+}
+
+export function caseClassificationLabel(value: string, locale: "en" | "ru") {
+  const labels: Record<string, string> = { internal: "Для внутреннего использования", confidential: "Конфиденциально", strictly_confidential: "Строго конфиденциально" };
+  return locale === "ru" && Object.hasOwn(labels, value) ? labels[value] : sentenceLabel(value);
+}
+
+export function readableMatterType(value: string, locale: "en" | "ru" = "en"): string {
+  if (locale === "ru") {
+    if (value === "Professional matter") return "Профессиональное дело";
+    if (value === "General matter" || value === "general_matter") return "Общее дело";
+  }
   return /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(value) ? sentenceLabel(value.replaceAll("-", " ")) : value;
 }
 
@@ -787,35 +809,35 @@ export function sentenceLabel(value: string): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Not recorded";
 }
 
-export function readinessSummary(readiness: MatterReadiness): { headline: string; detail: string; blockedCount: number } {
+export function readinessSummary(readiness: MatterReadiness, locale: "en" | "ru" = "en"): { headline: string; detail: string; blockedCount: number } {
   const blocked = readiness.dimensions.filter((dimension) => dimension.state === "blocked");
   const reasons = blocked.flatMap((dimension) => dimension.reasons);
   if (readiness.ready) return {
-    headline: "Ready for the next governed step",
-    detail: "No readiness blockers are recorded at this revision.",
+    headline: locale === "ru" ? "Можно перейти к следующему этапу" : "Ready for the next governed step",
+    detail: locale === "ru" ? "Для этой версии препятствий не выявлено." : "No readiness blockers are recorded at this revision.",
     blockedCount: 0,
   };
   if (reasons.length > 0) return {
-    headline: "Not ready — professional attention required",
-    detail: reasons[0].explanation + (reasons.length > 1 ? " " + (reasons.length - 1) + " more reason" + (reasons.length === 2 ? " remains." : "s remain.") : ""),
+    headline: locale === "ru" ? "Требуется проверка специалиста" : "Not ready — professional attention required",
+    detail: reasons[0].explanation + (reasons.length > 1 ? locale === "ru" ? ` Другие причины: ${reasons.length - 1}.` : " " + (reasons.length - 1) + " more reason" + (reasons.length === 2 ? " remains." : "s remain.") : ""),
     blockedCount: reasons.length,
   };
   return {
-    headline: "Readiness has not been established",
-    detail: "Open the matter and complete the recorded professional checks before graph testing or report approval.",
+    headline: locale === "ru" ? "Готовность ещё не подтверждена" : "Readiness has not been established",
+    detail: locale === "ru" ? "Откройте дело и выполните указанные проверки перед тестированием графа или утверждением отчёта." : "Open the matter and complete the recorded professional checks before graph testing or report approval.",
     blockedCount: 0,
   };
 }
 
-export function nextAttention(matter: MatterSummary): string {
-  const readiness = readinessSummary(matter.readiness);
+export function nextAttention(matter: MatterSummary, locale: "en" | "ru" = "en"): string {
+  const readiness = readinessSummary(matter.readiness, locale);
   if (!matter.readiness.ready) return readiness.detail;
-  if (matter.status === "draft") return "Submit the draft for intake review when its core records are complete.";
-  if (matter.status === "awaiting_input") return "Review newly received information or record why the matter remains paused.";
-  if (matter.status === "internal_review") return "Complete reviewer checks and approve a current governed output.";
-  if (matter.status === "output_approved") return "Confirm closure criteria or return the matter to active work with a reason.";
-  if (matter.status === "closed") return "Retain the closed record or archive it through an explicit action.";
-  return "Review the current evidence, package validation, and governed output state.";
+  if (matter.status === "draft") return locale === "ru" ? "Заполните основные сведения и передайте черновик на первичную проверку." : "Submit the draft for intake review when its core records are complete.";
+  if (matter.status === "awaiting_input") return locale === "ru" ? "Проверьте новые сведения или укажите причину приостановки дела." : "Review newly received information or record why the matter remains paused.";
+  if (matter.status === "internal_review") return locale === "ru" ? "Завершите проверку и утвердите актуальный результат." : "Complete reviewer checks and approve a current governed output.";
+  if (matter.status === "output_approved") return locale === "ru" ? "Проверьте условия закрытия или укажите причину возврата дела в работу." : "Confirm closure criteria or return the matter to active work with a reason.";
+  if (matter.status === "closed") return locale === "ru" ? "Сохраните закрытое дело или отправьте его в архив." : "Retain the closed record or archive it through an explicit action.";
+  return locale === "ru" ? "Проверьте доказательства, результаты проверки пакета и статус отчёта." : "Review the current evidence, package validation, and governed output state.";
 }
 
 export function apiIssueFor(status: number, payload: unknown): ApiIssue {
@@ -950,9 +972,9 @@ export function destinationForDeepLink(value: string): MatterDestination {
 }
 
 export function formatMatterDate(value: string | null, locale = "en-GB", timezone?: string | null): string {
-  if (!value) return "Not recorded";
+  if (!value) return locale.startsWith("ru") ? "Не указано" : "Not recorded";
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Invalid date recorded";
+  if (!Number.isFinite(date.getTime())) return locale.startsWith("ru") ? "Некорректная дата" : "Invalid date recorded";
   try {
     return new Intl.DateTimeFormat(locale, {
       dateStyle: "medium",

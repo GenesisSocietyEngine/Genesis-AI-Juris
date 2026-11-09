@@ -22,7 +22,7 @@ const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bund
   build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); if (props?.href?.startsWith("#source-")) globalThis.__b1Citations?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
 }}] });
 mkdirSync(".artifacts/b1-render", { recursive: true }); const file = resolve(".artifacts/b1-render/component.mjs"); writeFileSync(file, built.outputFiles[0].text);
-const Parent = (await import(pathToFileURL(file).href)).AuthorizedMattersClient;
+const { AuthorizedMattersClient: Parent, SectionNavigation } = await import(pathToFileURL(file).href);
 const identity = { actorId: "actor_test", organizationId: "signed_org" };
 const dossier = { dossier_id: "case_a", title: "Confidential parent case title", permissions:{role:"owner"}, revision: 7, readiness: { dossier_id:"case_a", ready:false, computed_from_revision:7, evaluated_at:"2026-09-15T10:00:00Z", dimensions:[{dimension:"information",state:"blocked",reasons:[{code:"CRITICAL_DEADLINE_OVERDUE",explanation:"Private deadline attention",related_object_type:"deadline_reference",related_object_id:"deadline_a"}]}] } };
 function harness() {
@@ -338,6 +338,23 @@ test("C1 catalogue delivery cannot switch after a draft appears during an asynch
   notes.start("blank");const key=notes.getSnapshot().selected!;notes.edit(key,{title:"Late draft",body:"Keep this"});
   assert.equal(h.owner.enterFromCatalogue("case_newly_created"),false);assert.equal(h.owner.getSnapshot().visit?.caseId,"case_a");assert.equal(notes.getSnapshot().editors[key].draft.body,"Keep this");
   notes.discard(key);assert.equal(h.owner.enterFromCatalogue("case_newly_created"),true);h.owner.dispose();
+});
+
+test("section tabs and phone options use the same language, route keys and portal permission", () => {
+  for (const [locale, labels] of [
+    ["en", ["Overview", "Tasks", "Calendar", "Workflows", "Client portal", "Documents &amp; evidence", "Evidence review", "Decision package", "Requests &amp; deadlines", "Reports", "Audit"]],
+    ["ru", ["Обзор", "Задачи", "Календарь", "Рабочие процессы", "Клиентский портал", "Документы и доказательства", "Проверка доказательств", "Пакет решений", "Запросы и сроки", "Отчёты", "Журнал действий"]],
+  ] as const) {
+    const render = (portalAllowed: boolean) => renderToStaticMarkup(createElement(SectionNavigation, {
+      destination: "calendar", locale, portalAllowed, onChange() {},
+    }));
+    const html = render(true);
+    assert.deepEqual([...html.matchAll(/<option[^>]*>([^<]+)<\/option>/g)].map(match => match[1]), labels);
+    for (const label of labels) assert.ok(html.includes(label + "</button>"));
+    assert.match(html, /<option value="calendar" selected/);
+    assert.match(html, /id="tab-calendar" aria-selected="true" aria-controls="panel-calendar"/);
+    assert.doesNotMatch(render(false), /id="tab-portal"|value="portal"/);
+  }
 });
 
 test("a direct case entry puts its authorized title and section before a closed keyboard picker", async () => {

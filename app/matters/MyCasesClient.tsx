@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
+import { invitationRoleText } from "../invitation-client";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import { workspaceDestination } from "../workspace-navigation";
 import MattersClient from "./MattersClient";
@@ -22,7 +23,7 @@ export default function MyCasesClient({ initialLocation }: { initialLocation: st
         <a href={myCasesHref("team", location)} aria-current={view === "team" ? "page" : undefined}>{en ? "Team" : "Команда"}<small>{en ? "Organization cases" : "Дела организации"}</small></a>
       </nav>
       <p>{view === "personal" ? (en ? "Saved with your account. Shared Studio drafts are listed separately below; they are not organization cases." : "Сохранены в вашем аккаунте. Доступные вам черновики Studio показаны отдельно; это не дела организации.") : (en ? "Governed cases in the selected organization, including organizations named Personal workspace. Studio drafts stay in Personal." : "Дела выбранной организации, в том числе Personal workspace. Черновики Studio остаются в разделе «Личные». ")}</p>
-      {view === "team" && session.phase === "ready" && session.selected && <p><strong>{session.selected.name}</strong> · {en ? "Your organization role" : "Ваша роль в организации"}: {session.selected.role.replaceAll("_", " ")} · {en ? "Use the sidebar to choose another organization. Each case has its own role." : "Выберите другую организацию в боковом меню. Для каждого дела действует своя роль."}</p>}
+      {view === "team" && session.phase === "ready" && session.selected && <p><strong>{session.selected.name}</strong> · {en ? "Your organization role" : "Ваша роль в организации"}: {invitationRoleText(session.selected.role, locale)} · {en ? "Use the sidebar to choose another organization. Each case has its own role." : "Выберите другую организацию в боковом меню. Для каждого дела действует своя роль."}</p>}
     </section>;
   return view === "team" ? <MattersClient initialLocation={location} collections={collections}/> :
     <>{collections}<SavedStudioCases locale={locale} location={location} /></>;

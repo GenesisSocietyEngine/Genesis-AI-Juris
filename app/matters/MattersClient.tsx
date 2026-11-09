@@ -37,6 +37,8 @@ import {
   MATTER_DESTINATIONS,
   apiIssueFor,
   availableTransitions,
+  casePriorityLabel,
+  caseClassificationLabel,
   formatBytes,
   formatMatterDate,
   isOverdue,
@@ -129,11 +131,12 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const [filterReferenceTime] = useState(() => Date.now());
   const [createLocale] = useInterfaceLocale();
   const createText = (en:string,ru:string) => createLocale === "ru" ? ru : en;
+  const dateLocale = createLocale === "ru" ? "ru-RU" : "en-GB";
   const [createOverride,setCreateOverride] = useState<boolean|null>(null);
   const createOpen = createOverride ?? new URL(location,"https://workspace.invalid").searchParams.get("create")==="case";
   const setCreateOpen = (value:boolean|((open:boolean)=>boolean)) => setCreateOverride(typeof value==="function"?value(createOpen):value);
   const catalogueEpoch = useRef(0);
-  const loadMatter = (id: string) => { if (selectedId && id !== selectedId) { navigation.requestDeparture("link", `/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(id)}&lang=${encodeURIComponent(new URL(window.location.href).searchParams.get("lang")??"en")}`); return Promise.resolve(); } owner.enter(id); return owner.load(); };
+  const loadMatter = (id: string) => { if (selectedId && id !== selectedId) { navigation.requestDeparture("link", `/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(id)}&lang=${encodeURIComponent(createLocale)}`); return Promise.resolve(); } owner.enter(id); return owner.load(); };
   const openAction = (target: MatterActionTarget) => {
     if (target.destination === "overview" && target.id === "matter-next-actions") owner.returnToActions();
     else { owner.setQueue({ scrollAnchor: target.originActionKey ?? state.queue?.selectedKey ?? null }); void owner.open(target); }
@@ -346,12 +349,12 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
 
   const caseHeader = workspacePhase === "ready" && workspace ? <MatterHero sectionLabel={caseFirst ? sectionName(destination, createLocale) : undefined} onEdit={() => { owner.openCaseEditor(); document.getElementById("case-edit-name")?.focus(); }} editing={Boolean(owner.caseEditor)} editDisabled={owner.busy || state.updating} locale={createLocale} compact={destination !== "overview" || Boolean(owner.caseEditor)} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/> : null;
   return <>{!caseFirst && collections}<WorkspaceDrafts key={`${state.authority}:${state.targetLoading}:${state.panelOpen}`} owner={owner} scope={`${state.visit?.generation}:${destination}:${state.target?.id ?? ""}`}><main className={styles.shell}>
-    <a className={styles.skipLink} href="#matter-workspace">Skip to matter workspace</a>
-    <section className={styles.pilotNotice} aria-label="Pilot privacy limitation">
-      <strong>Pilot workspace · synthetic or de-identified files only</strong>
+    <a className={styles.skipLink} href="#matter-workspace">{createText("Skip to matter workspace", "Перейти к рабочей области дела")}</a>
+    <section className={styles.pilotNotice} aria-label={createText("Pilot privacy limitation", "Ограничения пилотной версии")}>
+      <strong>{createText("Pilot workspace · synthetic or de-identified files only", "Пилотная версия · Только синтетические или обезличенные файлы")}</strong>
       <details>
-        <summary>Data limits</summary>
-        <p>Formal production privacy controls and malware scanning are not yet claimed. Do not upload client-identifying, privileged, or live production documents.</p>
+        <summary>{createText("Data limits", "Ограничения по данным")}</summary>
+        <p>{createText("Formal production privacy controls and malware scanning are not yet claimed. Do not upload client-identifying, privileged, or live production documents.", "В пилотной версии защита конфиденциальных данных и проверка файлов на вредоносное ПО ещё не подтверждены. Не загружайте рабочие документы, сведения о клиентах или материалы, защищённые профессиональной тайной.")}</p>
       </details>
     </section>
 
@@ -366,63 +369,63 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         <div className={styles.casePickerBody}>
         {caseFirst && collections}
         <div className={styles.catalogueHeading}>
-          <div><p className={styles.eyebrow}>CASE LIBRARY</p>{workspace ? <h2 id="matter-catalogue-title">My cases</h2> : <h1 id="matter-catalogue-title">My cases</h1>}<p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
+          <div><p className={styles.eyebrow}>{createText("CASE LIBRARY", "БИБЛИОТЕКА ДЕЛ")}</p>{workspace ? <h2 id="matter-catalogue-title">{createText("My cases", "Мои дела")}</h2> : <h1 id="matter-catalogue-title">{createText("My cases", "Мои дела")}</h1>}<p className={styles.catalogueLead}>{createText("Open a case, continue your work, or start a new one.", "Откройте дело, чтобы продолжить работу, или создайте новое.")}</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
-            <span aria-hidden="true">＋</span><span className={styles.srOnly}>Create a matter</span>
+            <span aria-hidden="true">＋</span><span className={styles.srOnly}>{createText("Create a matter", "Создать дело")}</span>
           </button>
         </div>
 
-        <div className={styles.catalogueActions} aria-label="Case library actions">
-          <button type="button" onClick={() => setCreateOpen(true)}>New case</button>
-          <button type="button" onClick={() => promptImportRef.current?.click()}>Import case prompt (.md)</button>
-          <Link href={workspaceDestination("/templates",location)}>Browse templates</Link>
-          <Link href={workspaceDestination("/studio?view=demos",location)}>Browse demo cases</Link>
-          <input ref={promptImportRef} className={styles.srOnly} type="file" accept=".md,text/markdown,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCasePrompt(file); event.target.value = ""; }}/>
+        <div className={styles.catalogueActions} aria-label={createText("Case library actions", "Действия с библиотекой дел")}>
+          <button type="button" onClick={() => setCreateOpen(true)}>{createText("New case", "Новое дело")}</button>
+          <button type="button" onClick={() => promptImportRef.current?.click()}>{createText("Import case prompt (.md)", "Импортировать описание дела (.md)")}</button>
+          <Link href={workspaceDestination("/templates",location)}>{createText("Browse templates", "Открыть шаблоны")}</Link>
+          <Link href={workspaceDestination("/studio?view=demos",location)}>{createText("Browse demo cases", "Открыть примеры дел")}</Link>
+          <input ref={promptImportRef} className={styles.srOnly} type="file" aria-label={createText("Case prompt file", "Файл с описанием дела")} accept=".md,text/markdown,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCasePrompt(file); event.target.value = ""; }}/>
         </div>
 
         <div className={styles.catalogueTools}>
-          <label className={styles.field}><span>Search cases</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Title or reference…"/></label>
-          <label className={styles.field}><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MatterStatus | "all")}>
-            {STATUS_FILTERS.map((status) => <option key={status} value={status}>{status === "all" ? "All statuses" : statusLabel(status)}</option>)}
+          <label className={styles.field}><span>{createText("Search cases", "Поиск дел")}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={createText("Title or reference…", "Название или номер…")}/></label>
+          <label className={styles.field}><span>{createText("Status", "Статус")}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MatterStatus | "all")}>
+            {STATUS_FILTERS.map((status) => <option key={status} value={status}>{status === "all" ? createText("All statuses", "Все статусы") : statusLabel(status, createLocale)}</option>)}
           </select></label>
           <details className={styles.advancedFilters}>
-            <summary>More filters</summary>
+            <summary>{createText("More filters", "Дополнительные фильтры")}</summary>
             <div>
-              <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{readableMatterType(type)}</option>)}</select></label>
-              <label className={styles.field}><span>Ownership</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">Owned and shared</option><option value="owned">Owned by me</option><option value="shared">Shared with me</option></select></label>
-              <label className={styles.field}><span>Recent activity</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
+              <label className={styles.field}><span>{createText("Case type", "Тип дела")}</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{createText("All case types", "Все типы дел")}</option>{catalogueTypes.map((type) => <option key={type} value={type}>{readableMatterType(type, createLocale)}</option>)}</select></label>
+              <label className={styles.field}><span>{createText("Ownership", "Принадлежность")}</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">{createText("Owned and shared", "Мои и доступные мне")}</option><option value="owned">{createText("Owned by me", "Мои дела")}</option><option value="shared">{createText("Shared with me", "Доступные мне")}</option></select></label>
+              <label className={styles.field}><span>{createText("Recent activity", "Последние изменения")}</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">{createText("Any time", "За всё время")}</option><option value="7">{createText("Last 7 days", "За 7 дней")}</option><option value="30">{createText("Last 30 days", "За 30 дней")}</option><option value="90">{createText("Last 90 days", "За 90 дней")}</option></select></label>
             </div>
           </details>
         </div>
 
-        <div className={styles.catalogueCount} role="status">{filteredCatalogue.length} case{filteredCatalogue.length === 1 ? "" : "s"}</div>
-        {cataloguePhase === "loading" && <LoadingState compact label="Loading your cases"/>}
+        <div className={styles.catalogueCount} role="status">{createLocale === "ru" ? `Дел: ${filteredCatalogue.length}` : `${filteredCatalogue.length} case${filteredCatalogue.length === 1 ? "" : "s"}`}</div>
+        {cataloguePhase === "loading" && <LoadingState compact label={createText("Loading your cases", "Загрузка списка дел")}/>}
         {(cataloguePhase === "error" || cataloguePhase === "permission") && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()} compact/>}
-        {cataloguePhase === "empty" && <div className={styles.catalogueEmpty}><strong>No matters yet</strong><span>Create a synthetic or de-identified pilot workspace to begin.</span></div>}
-        {cataloguePhase === "ready" && filteredCatalogue.length === 0 && <div className={styles.catalogueEmpty}><strong>No matching matters</strong><span>Clear the search or choose another lifecycle status.</span></div>}
-        <div className={styles.matterList} aria-label="Authorised matters">
+        {cataloguePhase === "empty" && <div className={styles.catalogueEmpty}><strong>{createText("No matters yet", "Дел пока нет")}</strong><span>{createText("Create a synthetic or de-identified pilot workspace to begin.", "Начните с создания дела с синтетическими или обезличенными данными.")}</span></div>}
+        {cataloguePhase === "ready" && filteredCatalogue.length === 0 && <div className={styles.catalogueEmpty}><strong>{createText("No matching matters", "Дела не найдены")}</strong><span>{createText("Clear the search or choose another lifecycle status.", "Очистите поиск или выберите другой статус.")}</span></div>}
+        <div className={styles.matterList} aria-label={createText("Authorised matters", "Доступные дела")}>
           {filteredCatalogue.map((matter) => {
-            const summary = readinessSummary(matter.readiness);
+            const summary = readinessSummary(matter.readiness, createLocale);
             return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { void loadMatter(matter.id); }} aria-pressed={matter.id === selectedId}>
-              <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
+              <span className={styles.matterCardTop}><b>{matter.reference === "Unreferenced matter" ? createText("Unreferenced matter", "Номер не указан") : matter.reference}</b><em>{statusLabel(matter.status, createLocale)}</em></span>
               <strong>{matter.title}</strong>
-              <span>{readableMatterType(matter.typeLabel)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
+              <span>{readableMatterType(matter.typeLabel, createLocale)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
               {view === "developer" && <>
-                <span>{matter.permissions.role === "owner" ? "Owned by me" : "Shared with me"} · {sentenceLabel(matter.permissions.role)}</span>
-                <span>Owner: {matter.ownerName} · {matter.documentCount} document{matter.documentCount === 1 ? "" : "s"}</span>
-                <span>Priority: {sentenceLabel(matter.priority)}</span>
+                <span>{matter.permissions.role === "owner" ? createText("Owned by me", "Моё дело") : createText("Shared with me", "Предоставлен доступ")} · {sentenceLabel(matter.permissions.role)}</span>
+                <span>{createText("Owner", "Владелец")}: {matter.ownerName} · {createLocale === "ru" ? `Документов: ${matter.documentCount}` : `${matter.documentCount} document${matter.documentCount === 1 ? "" : "s"}`}</span>
+                <span>{createText("Priority", "Приоритет")}: {casePriorityLabel(matter.priority, createLocale)}</span>
               </>}
-              <span>{matter.keyDeadlineAt ? "Next deadline: " + formatMatterDate(matter.keyDeadlineAt, "en-GB", matter.keyDeadlineTimezone) : "No key deadline recorded"}</span>
+              <span>{matter.keyDeadlineAt ? createText("Next deadline: ", "Ближайший срок: ") + formatMatterDate(matter.keyDeadlineAt, dateLocale, matter.keyDeadlineTimezone) : createText("No key deadline recorded", "Срок не указан")}</span>
               <span className={styles.readinessLine}>{summary.headline}</span>
-              <small>Updated {formatMatterDate(matter.updatedAt)}</small>
+              <small>{createText("Updated", "Обновлено")} {formatMatterDate(matter.updatedAt, dateLocale)}</small>
             </button>;
           })}
         </div>
-        {catalogue.length >= 200 ? <p className={styles.catalogueLimit}>Catalogue view is bounded to 200 matters. Refine safe metadata filters to narrow the list.</p> : catalogueCursor && <button type="button" className={styles.catalogueMore} onClick={() => void loadMoreCatalogue()} disabled={mutationKey !== null}>{mutationKey === "catalogue-more" ? "Loading matters…" : "Load more authorised matters"}</button>}
+        {catalogue.length >= 200 ? <p className={styles.catalogueLimit}>{createText("Catalogue view is bounded to 200 matters. Refine safe metadata filters to narrow the list.", "В списке отображается до 200 дел. Уточните фильтры, чтобы сузить поиск.")}</p> : catalogueCursor && <button type="button" className={styles.catalogueMore} onClick={() => void loadMoreCatalogue()} disabled={mutationKey !== null}>{mutationKey === "catalogue-more" ? createText("Loading matters…", "Загрузка…") : createText("Load more authorised matters", "Показать ещё дела")}</button>}
         </div>
       </details>
 
-      <section className={styles.content} id="matter-workspace" aria-label="Selected matter workspace">
+      <section className={styles.content} id="matter-workspace" aria-label={createText("Selected matter workspace", "Рабочая область выбранного дела")}>
 
         {createOpen && <section className={styles.createPanel} id="create-matter-panel" aria-labelledby="create-matter-title">
           <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>{createText("CASE DETAILS","СВЕДЕНИЯ О ДЕЛЕ")}</p><h2 id="create-matter-title">{createText("New case","Новое дело")}</h2></div><button type="button" className={styles.textButton} onClick={() => setCreateOpen(false)}>{createText("Close","Закрыть")}</button></div>
@@ -443,19 +446,19 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {cataloguePhase === "empty" && !createOpen && <EmptyWorkspace onCreate={() => setCreateOpen(true)}/>}
         {cataloguePhase === "permission" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {cataloguePhase === "error" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
-        {selectedId && workspacePhase === "loading" && <LoadingState label="Opening your case"/>}
+        {selectedId && workspacePhase === "loading" && <LoadingState label={createText("Opening your case", "Открываем дело")}/>}
         {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && loadIssue && <IssueState issue={loadIssue} onRetry={() => void loadMatter(selectedId)}/>}
 
         {workspacePhase === "ready" && workspace && <>
-          {!caseFirst && <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" aria-controls="matter-case-picker" onClick={showPicker}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>}
+          {!caseFirst && <nav className={styles.breadcrumbs} aria-label={createText("Case breadcrumb", "Путь к делу")}><button type="button" aria-controls="matter-case-picker" onClick={showPicker}>{createText("My cases", "Мои дела")}</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{sectionName(destination, createLocale)}</strong></>}</nav>}
           {!caseFirst && caseHeader}
           <nav className={styles.caseModeNavigation} aria-label={createText("Case workspace", "Рабочая область дела")}><button type="button" aria-current="page" onClick={() => setDestination("overview")}><WorkspaceIcon name="cases"/>{createText("Case overview", "Обзор дела")}</button><a href={workspaceDestination("/studio?studio_panel=workbench", workspaceDestination(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(workspace.matter.id)}&section=${destination}`, location))}><WorkspaceIcon name="studio"/>{createText("AI Studio", "ИИ Студия")}</a></nav>
           <SectionNavigation destination={destination} onChange={setDestination} portalAllowed={currentOrganization?.role!=="auditor"&&["owner","contributor"].includes(workspace.matter.permissions.role)} locale={createLocale}/>
-          {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>Return to the originating report →</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
-          {state.collection.availability !== "current" && <p className={styles.pilotNotice} role="status">{state.updating ? "Updating case actions…" : "Showing the last verified case. Action totals and readiness are not current."} <button type="button" onClick={() => void owner.load()} disabled={state.updating}>Update case actions</button></p>}
-          {!state.panelOpen && owner.retainedReviews().length > 0 && <section className={styles.panel} aria-label="Retained reviews"><h2>Continue a review</h2><p>Reopen the original operation or its saved receipt.</p>{owner.retainedReviews().map(([key, review]) => <button type="button" key={key} onClick={() => void owner.openReview(key.startsWith("deadline:") ? "deadline" : "citation", review.scope.recordId)}>{review.getSnapshot().receipt ? "Open saved review receipt" : "Check pending review"} · {(review.getSnapshot().authorityVisible ? review.getSnapshot().record?.record.title : null) ?? "Selected record"}</button>)}</section>}
-          {state.targetLoading && <p role="status">Opening the exact record…</p>}
-          {state.targetIssue && <section role="alert"><p>The selected record could not be opened ({state.targetIssue.kind.replaceAll("_", " ")}).</p><button type="button" onClick={() => state.target && void owner.open(state.target)}>Retry exact record</button><button type="button" onClick={() => owner.returnToActions()}>Return to actions</button></section>}
+          {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>{createText("← Back to case actions", "← К действиям по делу")}</button><span>{createText("Confirmed changes refresh this case’s readiness.", "После подтверждения изменений готовность дела пересчитывается.")}</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>{createText("Return to the originating report →", "Вернуться к исходному отчёту →")}</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>{createText("Return to the originating request →", "Вернуться к исходному запросу →")}</button>}</div>}
+          {state.collection.availability !== "current" && <p className={styles.pilotNotice} role="status">{state.updating ? createText("Updating case actions…", "Обновляем действия по делу…") : createText("Showing the last verified case. Action totals and readiness are not current.", "Показана последняя проверенная версия дела. Количество действий и сведения о готовности могут быть устаревшими.")} <button type="button" onClick={() => void owner.load()} disabled={state.updating}>{createText("Update case actions", "Обновить действия по делу")}</button></p>}
+          {!state.panelOpen && owner.retainedReviews().length > 0 && <section className={styles.panel} aria-label={createText("Retained reviews", "Сохранённые проверки")}><h2>{createText("Continue a review", "Продолжить проверку")}</h2><p>{createText("Reopen the original operation or its saved receipt.", "Откройте исходную операцию или подтверждение её сохранения.")}</p>{owner.retainedReviews().map(([key, review]) => <button type="button" key={key} onClick={() => void owner.openReview(key.startsWith("deadline:") ? "deadline" : "citation", review.scope.recordId)}>{review.getSnapshot().receipt ? createText("Open saved review receipt", "Открыть подтверждение проверки") : createText("Check pending review", "Посмотреть незавершённую проверку")} · {(review.getSnapshot().authorityVisible ? review.getSnapshot().record?.record.title : null) ?? createText("Selected record", "Выбранная запись")}</button>)}</section>}
+          {state.targetLoading && <p role="status">{createText("Opening the exact record…", "Открываем запись…")}</p>}
+          {state.targetIssue && <section role="alert"><p>{createText("The selected record could not be opened", "Не удалось открыть выбранную запись")} ({state.targetIssue.kind.replaceAll("_", " ")}).</p><button type="button" onClick={() => state.target && void owner.open(state.target)}>{createText("Retry exact record", "Попробовать открыть запись снова")}</button><button type="button" onClick={() => owner.returnToActions()}>{createText("Return to actions", "Вернуться к действиям")}</button></section>}
           {state.panelOpen && state.panel && <div id="disposition-review-panel" tabIndex={-1} className={styles.panel}><DispositionRecovery controller={state.panel} signInHref={workspaceSignInPath(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(selectedId!)}`)} citations={workspace.matter.anchors.filter(anchor => anchor.reviewState === "accepted" && !anchor.retiredAt && workspace.documents.some(document => document.id === anchor.documentId && document.currentVersionId === anchor.documentVersionId)).map(anchor => ({ id: anchor.id, label: anchor.documentTitle + " · " + (anchor.excerpt ?? "Citation") }))} onReturn={() => owner.returnToActions()}/>{state.panel.getSnapshot().authorityVisible && state.panel.getSnapshot().receipt && <button type="button" onClick={() => void owner.open({ destination: "activity", id: "audit-" + state.panel!.getSnapshot().receipt!.auditEventId })}>Open original audit receipt →</button>}</div>}
           {!state.panelOpen && !state.targetIssue && !state.targetLoading && <>
           <div key={state.visit?.generation} className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>
@@ -483,28 +486,30 @@ export function WorkspaceAccessState({ authority, onRetry, signInHref }: { autho
 function caseStatusTone(status: MatterStatus) { return status === "active" ? "open" : ["closed", "output_approved"].includes(status) ? "completed" : ["awaiting_input", "intake_review", "internal_review"].includes(status) ? "today" : "past"; }
 
 function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, editDisabled, locale, sectionLabel, compact = false }: { sectionLabel?: string; onEdit: () => void; editing: boolean; editDisabled: boolean; locale: "en" | "ru"; matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void; compact?: boolean }) {
-  const readiness = readinessSummary(matter.readiness);
+  const t = (en: string, ru: string) => locale === "ru" ? ru : en;
+  const readiness = readinessSummary(matter.readiness, locale);
+  const reference = matter.reference === "Unreferenced matter" ? t("Unreferenced matter", "Номер не указан") : matter.reference;
   const editCommand = matter.permissions.canWrite && <button type="button" id="case-edit-command" className={styles.secondaryButton} disabled={editDisabled} onClick={onEdit} aria-expanded={editing} aria-controls={editing ? "case-editor-title" : undefined}><WorkspaceIcon name="cases"/>{locale === "ru" ? editing ? "Продолжить редактирование" : "Редактировать дело" : editing ? "Continue editing" : "Edit case"}</button>;
-  const technicalDetails = <details className="cv-technical"><summary>Technical details</summary>
+  const technicalDetails = <details className="cv-technical"><summary>{t("Technical details", "Технические сведения")}</summary>
     <fieldset className={styles.viewToggle}>
-      <legend>Workspace detail</legend>
-      <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>User view</button>
-      <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>Developer view</button>
+      <legend>{t("Workspace detail", "Режим отображения")}</legend>
+      <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>{t("User view", "Обычный вид")}</button>
+      <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>{t("Developer view", "Для разработчика")}</button>
     </fieldset>
-    <p>Case revision: {matter.revision}</p>
-    {view === "developer" && <dl className={styles.developerStrip} aria-label="Developer matter diagnostics">
-      <div><dt>Dossier ID</dt><dd><code>{matter.id}</code></dd></div>
-      <div><dt>Owner actor ID</dt><dd><code>{matter.ownerActorId ?? "not returned"}</code></dd></div>
-      <div><dt>Schema / contract</dt><dd><code>{matter.rawSchemaVersion ?? "?"} / {matter.contractVersion ?? "not returned"}</code></dd></div>
-      <div><dt>Build</dt><dd><code>{matter.buildVersion ?? "not returned"}</code></dd></div>
+    <p>{t("Case revision", "Версия дела")}: {matter.revision}</p>
+    {view === "developer" && <dl className={styles.developerStrip} aria-label={t("Developer matter diagnostics", "Диагностика дела для разработчика")}>
+      <div><dt>{t("Dossier ID", "Идентификатор дела")}</dt><dd><code>{matter.id}</code></dd></div>
+      <div><dt>{t("Owner actor ID", "Идентификатор владельца")}</dt><dd><code>{matter.ownerActorId ?? t("not returned", "нет данных")}</code></dd></div>
+      <div><dt>{t("Schema / contract", "Схема / контракт")}</dt><dd><code>{matter.rawSchemaVersion ?? "?"} / {matter.contractVersion ?? t("not returned", "нет данных")}</code></dd></div>
+      <div><dt>{t("Build", "Сборка")}</dt><dd><code>{matter.buildVersion ?? t("not returned", "нет данных")}</code></dd></div>
     </dl>}</details>;
   return <header className={styles.matterHero}>
     <div className={styles.heroTop}>
       <div className={styles.heroIdentity}>
-        {sectionLabel ? <p className={styles.entrySection}><WorkspaceIcon name="cases"/>{sectionLabel}</p> : <p className={styles.eyebrow}>{matter.reference}</p>}
+        {sectionLabel ? <p className={styles.entrySection}><WorkspaceIcon name="cases"/>{sectionLabel}</p> : <p className={styles.eyebrow}>{reference}</p>}
         <h1>{matter.title}</h1>
-        <p>{readableMatterType(matter.typeLabel)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
-        <div className="cv-badges"><span className="cv-status" data-tone={caseStatusTone(matter.status)}><span className="cv-status-dot" aria-hidden="true"/>{statusLabel(matter.status)}</span><span className="cv-status" data-tone={matter.priority === "urgent" ? "overdue" : matter.priority === "high" ? "today" : "past"}>{sentenceLabel(matter.priority)} priority</span></div>
+        <p>{readableMatterType(matter.typeLabel, locale)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
+        <div className="cv-badges"><span className="cv-status" data-tone={caseStatusTone(matter.status)}><span className="cv-status-dot" aria-hidden="true"/>{statusLabel(matter.status, locale)}</span><span className="cv-status" data-tone={matter.priority === "urgent" ? "overdue" : matter.priority === "high" ? "today" : "past"}>{locale === "ru" ? "Приоритет: " + casePriorityLabel(matter.priority, locale) : sentenceLabel(matter.priority) + " priority"}</span></div>
       </div>
       {!sectionLabel && editCommand}
     </div>
@@ -513,22 +518,22 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
     <summary>{sectionLabel
       ? (locale === "ru" ? "Сведения и действия" : "Case details and actions") + " · " +
         (matter.readiness.ready ? (locale === "ru" ? "Готово" : "Ready") : (locale === "ru" ? "Требует внимания" : "Needs attention"))
-      : <>Case details &amp; checks · {statusLabel(matter.status)} · {readiness.headline}</>}</summary>
+      : <>{t("Case details & checks", "Сведения о деле и проверки")} · {statusLabel(matter.status, locale)} · {readiness.headline}</>}</summary>
     {sectionLabel && editCommand}
 
     <dl className={styles.heroFacts}>
-      {sectionLabel && <div><dt>{locale === "ru" ? "Номер дела" : "Case reference"}</dt><dd>{matter.reference}</dd></div>}
-      <div><dt>Owner</dt><dd>{matter.ownerName}</dd></div>
-      <div><dt>Lifecycle status</dt><dd><span className={styles.stateToken}>{statusLabel(matter.status)}</span>{matter.statusReason && <small>{matter.statusReason}</small>}</dd></div>
-      <div><dt>Priority & classification</dt><dd>{sentenceLabel(matter.priority)} · {sentenceLabel(matter.classification)}</dd></div>
-      <div><dt>Key deadline</dt><dd>{formatMatterDate(matter.keyDeadlineAt, "en-GB", matter.keyDeadlineTimezone)}{matter.keyDeadlineTimezone && <small>{matter.keyDeadlineTimezone}</small>}</dd></div>
+      {sectionLabel && <div><dt>{locale === "ru" ? "Номер дела" : "Case reference"}</dt><dd>{reference}</dd></div>}
+      <div><dt>{t("Owner", "Владелец")}</dt><dd>{matter.ownerName}</dd></div>
+      <div><dt>{t("Lifecycle status", "Статус дела")}</dt><dd><span className={styles.stateToken}>{statusLabel(matter.status, locale)}</span>{matter.statusReason && <small>{matter.statusReason}</small>}</dd></div>
+      <div><dt>{t("Priority & classification", "Приоритет и конфиденциальность")}</dt><dd>{casePriorityLabel(matter.priority, locale)} · {caseClassificationLabel(matter.classification, locale)}</dd></div>
+      <div><dt>{t("Key deadline", "Ближайший срок")}</dt><dd>{matter.keyDeadlineAt ? formatMatterDate(matter.keyDeadlineAt, t("en-GB", "ru-RU"), matter.keyDeadlineTimezone) : t("Not recorded", "Не указан")}{matter.keyDeadlineTimezone && <small>{matter.keyDeadlineTimezone}</small>}</dd></div>
     </dl>
 
     <div className={styles.attentionGrid}>
-      <ActionTile title="Review the next case action" detail={nextAttention(matter)} next="Open actions" onClick={onOpenActions}/>
+      <ActionTile title={t("Review the next case action", "Посмотреть следующее действие по делу")} detail={nextAttention(matter, locale)} next={t("Open actions", "Открыть действия")} onClick={onOpenActions}/>
       <section className={matter.readiness.ready ? styles.readySummary : styles.blockedSummary} aria-labelledby="readiness-summary-title">
-        <span className={styles.statusWord}>{matter.readiness.ready ? "READY" : "NOT READY"}</span>
-        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{readiness.blockedCount} item{readiness.blockedCount === 1 ? "" : "s"} need attention.{view === "developer" ? " Lifecycle status is separate." : ""}</small></div>
+        <span className={styles.statusWord}>{matter.readiness.ready ? t("READY", "ГОТОВО") : t("NOT READY", "НЕ ГОТОВО")}</span>
+        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{locale === "ru" ? `Требуют внимания: ${readiness.blockedCount}.` : `${readiness.blockedCount} item${readiness.blockedCount === 1 ? "" : "s"} need attention.`}{view === "developer" ? t(" Lifecycle status is separate.", " Статус дела указывается отдельно.") : ""}</small></div>
       </section>
     </div>
 
@@ -539,13 +544,14 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
 }
 
 function sectionName(key: MatterDestination, locale: "en" | "ru") {
-  return key === "portal" && locale === "ru" ? "Клиентский портал" : MATTER_DESTINATIONS.find(item => item.key === key)!.label;
+  const section = MATTER_DESTINATIONS.find(item => item.key === key)!;
+  return locale === "ru" ? section.ru : section.label;
 }
 
 export function SectionNavigation({ destination, onChange, portalAllowed=true, locale="en" }: { destination: MatterDestination; onChange: (destination: MatterDestination) => void; portalAllowed?:boolean; locale?:"en"|"ru" }) {
   const sections=MATTER_DESTINATIONS.filter(item=>item.key!=="portal"||portalAllowed).map(item=>({...item,label:sectionName(item.key, locale)}));
-  return <nav className={styles.sectionNavigation} aria-label="Matter sections">
-    <div className={styles.sectionTabs} role="tablist" aria-label="Matter workspace destinations">
+  return <nav className={styles.sectionNavigation} aria-label={locale === "ru" ? "Разделы дела" : "Matter sections"}>
+    <div className={styles.sectionTabs} role="tablist" aria-label={locale === "ru" ? "Навигация по разделам дела" : "Matter workspace destinations"}>
       {sections.map((item, index) => <button key={item.key} type="button" role="tab" id={"tab-" + item.key} aria-selected={destination === item.key} aria-controls={"panel-" + item.key} tabIndex={destination === item.key ? 0 : -1} onClick={() => onChange(item.key)} onKeyDown={(event) => {
         const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
         if (!keys.includes(event.key)) return;
@@ -606,7 +612,7 @@ export function OverviewSection({
     && matter.permissions.canTransition;
   return <div className={styles.sectionStack}>
     {caseEditor}
-    <SectionHeading eyebrow="CASE WORKSPACE" title="Overview" description="See what needs attention, resolve the evidence gaps and prepare the decision package."/>
+    <SectionHeading eyebrow={["CASE WORKSPACE", "РАБОЧАЯ ОБЛАСТЬ ДЕЛА"]} title={["Overview", "Обзор"]} description={["See what needs attention, resolve the evidence gaps and prepare the decision package.", "Проверьте, что требует внимания, дополните доказательства и подготовьте пакет решений."]}/>
     {actionCenter ?? <p>Open the case workspace to review its current action collection.</p>}
     <div className={styles.twoColumn}>
       <section className={styles.panel} aria-labelledby="readiness-dimensions-title">
@@ -682,7 +688,7 @@ export function DocumentsSection({ matter, documents, activity, onNavigate, issu
     setSelection({ caseId: matter.id, origin: focusedDocumentId, id });
   }
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="CASE MATERIALS" title="Documents & evidence" description="Read source documents, compare their versions and keep every citation connected to its original evidence."/>
+    <SectionHeading eyebrow={["CASE MATERIALS", "МАТЕРИАЛЫ ДЕЛА"]} title={["Documents & evidence", "Документы и доказательства"]} description={["Read source documents, compare their versions and keep every citation connected to its original evidence.", "Читайте исходные документы, сравнивайте версии и проверяйте ссылки на доказательства."]}/>
     {issue && <IssueState issue={issue} compact/>}
     <section id="document-upload" className={styles.uploadPanel} aria-labelledby="safe-upload-title">
       <div><p className={styles.eyebrow}>SAFE PILOT INTAKE</p><h3 id="safe-upload-title">Add a document or version</h3><p>PDF and DOCX up to 25 MiB; TXT and Markdown up to 5 MiB. Filename, media type, size, and content are validated again by the server. No client preview reads the file body.</p></div>
@@ -753,7 +759,7 @@ function EvidenceSection({ focusedCitationId, onOpenDisposition, matter, documen
 }) {
   const anchorMap = useMemo(() => new Map(matter.anchors.map((anchor) => [anchor.id, anchor])), [matter.anchors]);
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="PROFESSIONAL REVIEW" title="Evidence" description="Accepted professional records and AI-proposed changes are deliberately separate."/>
+    <SectionHeading eyebrow={["PROFESSIONAL REVIEW", "ПРОФЕССИОНАЛЬНАЯ ПРОВЕРКА"]} title={["Evidence", "Проверка доказательств"]} description={["Accepted professional records and AI-proposed changes are deliberately separate.", "Утверждённые записи и предложенные ИИ изменения показаны отдельно."]}/>
     {issue && <IssueState issue={issue} compact/>}
     <AiProposalGenerationControls matter={matter} documents={documents} mutationKey={mutationKey} onGenerate={onGenerate}/>
     <ManualEvidenceControls matter={matter} documents={documents} packages={packages} mutationKey={mutationKey} onCreateAnchor={onCreateAnchor} onCreateAssertion={onCreateAssertion} onLinkEvidence={onLinkEvidence}/>
@@ -919,7 +925,7 @@ export function DecisionPackagesSection({ onNavigate, focusedPackageId, matter, 
   const selectedPackage = packages.find(item => item.id === focusedPackageId);
   const decisionLocation = useWorkspaceLocation();
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="REASONING & DECISIONS" title="Decision maps & reports" description="Build a decision map in AI Case Studio, link a published version to this case, or save evidence for a case report."/>
+    <SectionHeading eyebrow={["REASONING & DECISIONS", "ОБОСНОВАНИЕ РЕШЕНИЙ"]} title={["Decision maps & reports", "Карты решений и отчёты"]} description={["Build a decision map in AI Case Studio, link a published version to this case, or save evidence for a case report.", "Создайте карту решений в ИИ Студии, свяжите опубликованную версию с делом или сохраните доказательства для отчёта."]}/>
     {issue && <IssueState issue={issue} compact/>}
     <div className={styles.decisionLayout}>
       <aside id="package-actions" className={styles.panel + " " + styles.decisionActions}><div className={styles.panelHeading}><h3>Work with a decision map</h3><span>Revision {matter.revision}</span></div>{!matter.permissions.canWrite && !matter.permissions.canGenerateOutput ? <><div id="package-link" style={{ marginBottom: "1rem" }}><NoPermission detail="Ask a case contributor or owner to link the exact decision package."/></div><div id="snapshot-create"><NoPermission detail="Ask a case owner, contributor or reviewer to save an evidence snapshot."/></div></> : <>
@@ -975,7 +981,7 @@ export function RequestsSection({ focusedDeadlineId, onOpenDisposition, matter, 
     requestAnimationFrame(() => focusActionTarget("request-response"));
   }
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="CASE WORK" title="Tasks & reviews" description="Track missing information, who is responsible and when it is needed. Source and proposal reviews remain in Evidence review."/>
+    <SectionHeading eyebrow={["CASE WORK", "РАБОТА ПО ДЕЛУ"]} title={["Tasks & reviews", "Запросы и сроки"]} description={["Track missing information, who is responsible and when it is needed. Source and proposal reviews remain in Evidence review.", "Отслеживайте недостающие сведения, ответственных и сроки. Проверки источников и предложений доступны в разделе проверки доказательств."]}/>
     {issue && <IssueState issue={issue} compact/>}
     <div className={styles.twoColumn}>
       <RequestQueue key={matter.id} requests={requests} focusedRequestId={focusedRequestId} locale={locale} renderRequest={request => { const overdue = isOverdue(request.dueAt, request.status); return <article id={"request-" + request.id} key={request.id} className={styles.requestCard} data-overdue={overdue || undefined}><div className={styles.recordHeading}><span className={styles.stateToken}>{overdue ? "OVERDUE · OPEN" : sentenceLabel(request.status)}</span><b>{sentenceLabel(request.priority)} priority</b></div><h4>{request.question}</h4><p>{request.reason}</p><dl><div><dt>Responsible</dt><dd>{request.requestedFrom ?? "Not assigned"}</dd></div><div><dt>Due</dt><dd>{formatMatterDate(request.dueAt, "en-GB", request.timezone)}{request.timezone ? " · " + request.timezone : ""}</dd></div><div><dt>Decision readiness</dt><dd>{view === "developer" ? (request.readinessReasonCode ?? "Not returned") : request.status === "open" ? "Awaiting information" : request.status === "received" ? "Information received" : sentenceLabel(request.status)}</dd></div>{view === "developer" && <div><dt>Request ID</dt><dd><code>{request.id}</code></dd></div>}</dl>{request.status === "open" && <button type="button" className={styles.secondaryButton} onClick={() => openRequest(request.id)}>Provide requested information →</button>}{request.status === "received" && <p className={styles.successBanner}>Information received{request.satisfyingDocumentId ? ": " + (documents.find(document => document.id === request.satisfyingDocumentId)?.title ?? "Linked case document") : request.satisfyingEvidenceLinkId ? " · linked case evidence" : ""}.{request.satisfyingDocumentId && onNavigate && <button type="button" className={styles.linkButton} onClick={() => onNavigate({ destination: "documents", id: "document-" + request.satisfyingDocumentId })}>Review the linked source →</button>}</p>}</article>; }}/>
@@ -1017,7 +1023,7 @@ export function OutputsSection({ onNavigate, matter, outputs, snapshots, issue, 
   const reportLocation = useWorkspaceLocation();
   const currentSnapshots = snapshots.filter(snapshot => snapshot.sealed === true && snapshot.dossierRevision === matter.revision && snapshot.manifestDigest).sort((left, right) => (right.dossierRevision ?? 0) - (left.dossierRevision ?? 0));
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="DECISION OUTPUTS" title="Reports" description="Generate a report from a saved evidence snapshot, then request independent approval. You will see when later evidence makes a report out of date."/>
+    <SectionHeading eyebrow={["DECISION OUTPUTS", "РЕЗУЛЬТАТЫ"]} title={["Reports", "Отчёты"]} description={["Generate a report from a saved evidence snapshot, then request independent approval. You will see when later evidence makes a report out of date.", "Создайте отчёт на основе сохранённого набора доказательств и запросите независимое утверждение. Если доказательства изменятся, вы увидите, что отчёт устарел."]}/>
     <section className={styles.panel} aria-label="Analytical PDF formats"><div className={styles.panelHeading}><h3>Base · Medium · Full analytical PDFs</h3><span>For Case Studio drafts</span></div><p>Open your saved draft in Case Studio and choose Create analytical report. Base includes findings, recommendations and calculations; Medium adds the decision tree; Full offers detailed records and audit options.</p><p>The reports below use saved evidence snapshots and have a separate approval process.</p><a href={workspaceDestination("/studio?studio_panel=workbench",reportLocation)} className={styles.secondaryButton}>Open AI Studio</a></section>
     {issue && <IssueState issue={issue} compact/>}
     <div className={styles.twoColumn}>
@@ -1029,15 +1035,17 @@ export function OutputsSection({ onNavigate, matter, outputs, snapshots, issue, 
 
 function ActivitySection({ onNavigate, activity, cursor, issue, view, mutationKey, onLoadMore }: { onNavigate:(target:MatterActionTarget)=>void; activity: ActivityItem[]; cursor: string | null; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onLoadMore: () => void }) {
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="ATTRIBUTABLE HISTORY" title="Audit" description="See who reviewed evidence, changed the case or approved a report. Earlier decisions remain part of the history."/>
+    <SectionHeading eyebrow={["ATTRIBUTABLE HISTORY", "ИСТОРИЯ ИЗМЕНЕНИЙ"]} title={["Audit", "Журнал действий"]} description={["See who reviewed evidence, changed the case or approved a report. Earlier decisions remain part of the history.", "Посмотрите, кто проверил доказательства, изменил дело или утвердил отчёт. Предыдущие решения сохраняются в истории."]}/>
     {issue && <IssueState issue={issue} compact/>}
     {activity.length === 0 && !issue ? <EmptyState title="No activity returned" detail="The server has not returned an attributable audit event for this matter."/> : <ol id="audit-register" className={styles.timeline}>{activity.map((event) => <li id={"audit-" + event.id} key={event.id}><div className={styles.timelineMarker} aria-hidden="true">{event.sequence ?? "·"}</div><article><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(event.eventType)}</span><h3>{sentenceLabel(event.summaryCode)}</h3></div><time dateTime={event.occurredAt ?? undefined}>{formatMatterDate(event.occurredAt)}</time></div>{event.reviewReason && <p>{event.reviewReason}</p>}{event.reviewRecordId && ["HISTORICAL_DEADLINE_DISPOSED","SOURCE_ANCHOR_RETIRED"].includes(event.summaryCode) && <button type="button" className={styles.linkButton} onClick={()=>onNavigate({destination:event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"requests":"evidence",id:(event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"deadline-":"source-")+event.reviewRecordId})}>Open reviewed record →</button>}<p>Actor: {event.actorRole ? sentenceLabel(event.actorRole) : "Role not returned"}{view === "developer" && event.actorId ? " · " + event.actorId : ""}</p>{view === "developer" && <dl className={styles.factList}><div><dt>Event ID</dt><dd><code>{event.id}</code></dd></div><div><dt>Object</dt><dd><code>{event.objectType ?? "?"} / {event.objectId ?? "?"}</code></dd></div><div><dt>Digest</dt><dd><code>{event.eventDigest ?? "not returned"}</code></dd></div>{event.detail && <div><dt>Bounded detail</dt><dd><pre>{event.detail}</pre></dd></div>}</dl>}</article></li>)}</ol>}
     {activity.length >= MAX_ACTIVITY_ITEMS ? <p className={styles.paginationNote}>Client activity is bounded to 500 events. Use a refined server query for older history.</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "activity-more" ? "Loading history…" : "Load older activity"}</button>}
   </div>;
 }
 
-function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <header className={styles.sectionHeading}><p className={styles.eyebrow}>{eyebrow}</p><div><h2>{title}</h2><p>{description}</p></div></header>;
+function SectionHeading({ eyebrow, title, description }: { eyebrow: [string, string]; title: [string, string]; description: [string, string] }) {
+  const [locale] = useInterfaceLocale();
+  const index = locale === "ru" ? 1 : 0;
+  return <header className={styles.sectionHeading}><p className={styles.eyebrow}>{eyebrow[index]}</p><div><h2>{title[index]}</h2><p>{description[index]}</p></div></header>;
 }
 
 function IssueState({ issue, onRetry, compact = false }: { issue: ApiIssue; onRetry?: () => void; compact?: boolean }) {
@@ -1047,11 +1055,14 @@ function IssueState({ issue, onRetry, compact = false }: { issue: ApiIssue; onRe
 }
 
 function LoadingState({ label, compact = false }: { label: string; compact?: boolean }) {
-  return <div className={compact ? styles.loadingCompact : styles.loadingState} role="status" aria-live="polite"><span className={styles.loadingMark} aria-hidden="true"/><div><strong>{label}</strong><span>Private metadata only; document bodies are not preloaded.</span></div></div>;
+  const [locale] = useInterfaceLocale();
+  return <div className={compact ? styles.loadingCompact : styles.loadingState} role="status" aria-live="polite"><span className={styles.loadingMark} aria-hidden="true"/><div><strong>{label}</strong><span>{locale === "ru" ? "Загружаются только метаданные. Содержимое документов не загружается заранее." : "Private metadata only; document bodies are not preloaded."}</span></div></div>;
 }
 
 function EmptyWorkspace({ onCreate }: { onCreate: () => void }) {
-  return <section className={styles.emptyWorkspace}><p className={styles.eyebrow}>YOUR CASE WORKSPACE</p><h1>Bring a case into focus.</h1><p>Collect documents and evidence, assign reviews, and prepare an explainable decision package.</p><button className={styles.primaryButton} type="button" onClick={onCreate}>Create a case</button><small>Synthetic or de-identified material only during this pilot boundary.</small></section>;
+  const [locale] = useInterfaceLocale();
+  const t = (en: string, ru: string) => locale === "ru" ? ru : en;
+  return <section className={styles.emptyWorkspace}><p className={styles.eyebrow}>{t("YOUR CASE WORKSPACE", "ВАШИ ДЕЛА")}</p><h1>{t("Bring a case into focus.", "Создайте первое дело")}</h1><p>{t("Collect documents and evidence, assign reviews, and prepare an explainable decision package.", "Собирайте документы и доказательства, назначайте проверки и готовьте обоснование решения.")}</p><button className={styles.primaryButton} type="button" onClick={onCreate}>{t("Create a case", "Создать дело")}</button><small>{t("Synthetic or de-identified material only during this pilot boundary.", "В пилотной версии используйте только синтетические или обезличенные материалы.")}</small></section>;
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {

@@ -1,8 +1,14 @@
 # Current progress — CaseVant
 
-## CV-004 · Mobile portal controls · 9 November 2026
+## CV-005 · Case navigation in English and Russian · 9 November 2026
 
-The portal view buttons now share a height on phones and wrap their labels at word boundaries. In an isolated Chrome layout check, all three buttons measured 44 px at 320 and 390 px in English and Russian. Desktop controls measured 36 px. All 27 portal departure and practice-route tests passed. Signed-in production verification is pending. [Measurements](docs/testing/mobile-portal-controls-cv004.md) · [Development backlog](docs/development/development_backlog.md).
+All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).
+
+## Published CV-004 · Mobile portal controls · 9 November 2026
+
+**[CaseVant v207 is live](https://casevant.pro/matters).** At 390 CSS pixels in the signed-in synthetic case, the three portal view buttons measured 44 px each in English and Russian. Previously they measured 61.5/61.5/40 px and 83.25/61.5/61.5 px respectively. Enter activated all three views in both languages with visible focus and no horizontal page scrolling. The desktop buttons measured 37.75 px in the live application.
+
+[PR #278](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/278) passed all 18 checks before merge. The [exact-main web/PDF build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42652679030) supplied the released archive. Both production origins served all 210 current and retained assets on the final check. [Measurements and release record](docs/testing/mobile-portal-controls-cv004.md).
 
 ## Published CV-003 — direct mobile case links · 9 November 2026
 
