@@ -7,6 +7,7 @@ The [original audit](ui-ux-functionality-2026-11-09.md) measured the case worksp
 | 390 × 844 direct to Client portal | Case heading, top | Portal heading, top–bottom | First portal command, top | Picker on arrival |
 | --- | ---: | ---: | ---: | --- |
 | v205, signed-in production synthetic case | 1,198 | 1,751–1,778 | 1,977 | Open |
+| v206, same signed-in production synthetic case | 208 | 639–665 | 865 | Closed |
 | v205, isolated short English title | 1,136 | 1,638–1,664 | 1,864 | Open |
 | Candidate, same short English title | 208 | 589–616 | 815 | Closed |
 | Candidate, 235-character title in the Russian interface | 208 | 800–827 | 1,026 | Closed |
@@ -23,4 +24,4 @@ Both candidate titles were fully displayed, with no horizontal page scrolling. T
 
 No change to data storage, case permissions or submission behavior. Mobile portal button sizing and broader navigation translation are separate backlog items (CV-004 and CV-005).
 
-**Release status:** Verified in isolation against the v205 baseline. Repeat the same signed-in production direct link after publication before moving CV-003 to Verified.
+**Published verification · v206:** Reopened the same signed-in synthetic production URL used on v205 at 390 × 844. The picker was closed; the case and requested portal were visible on arrival with no horizontal overflow. Stay on the same case when switching sections; a deliberate open or close remained in effect. The register was still keyboard-accessible, and an unselected visit used its separate register-first behavior. This check only navigated the existing case. Long titles and exact document targets were exercised in the isolated fixture. [Implementation](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/275) · [Small-phone refinement](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/276) · [Exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42632955256) · [Release receipt](receipts/mobile-case-entry-v206-2026-11-09.json).
