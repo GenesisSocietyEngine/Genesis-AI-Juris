@@ -1,0 +1,383 @@
+.portal {
+  --ink: #182f42;
+  --blue: #0d568d;
+  --line: #cbd8e2;
+  --muted: #485e70;
+  box-sizing: border-box;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: clamp(12px, 2.3vw, 30px);
+  display: grid;
+  gap: 14px;
+  color: var(--ink);
+  font:
+    400 15px/1.45 "Segoe UI",
+    system-ui,
+    sans-serif;
+  background: #f5f8fb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.portal * {
+  box-sizing: border-box;
+}
+.portal :is(h1, h2, h3, p, ul, ol) {
+  margin: 0;
+}
+.portal :is(h1, h2) {
+  font-size: clamp(23px, 3vw, 32px);
+  line-height: 1.15;
+}
+.portal h3 {
+  font-size: 19px;
+}
+.portal small {
+  color: var(--muted);
+}
+.portal :is(button, a) {
+  min-height: 36px;
+  padding: 6px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: white;
+  border: 1px solid #aebfcd;
+  border-radius: 5px;
+  color: #174664;
+  font:
+    600 14px/1.35 "Segoe UI",
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+}
+.portal :is(button, a):hover {
+  background: #e8f2fa;
+}
+.portal :is(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid #2279ae;
+  outline-offset: 2px;
+}
+.portal button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.portal .primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+.portal .primary:hover {
+  background: #08446e;
+}
+.hero,
+.toolbar,
+.identity,
+.actions,
+.tabs,
+.fields {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hero {
+  gap: 14px;
+}
+.hero small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--blue);
+}
+.hero p,
+.card > p {
+  color: var(--muted);
+}
+.mark,
+.icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 7px;
+  background: #e0ebfc;
+  color: #215da1;
+  width: 34px;
+  height: 34px;
+}
+.mark {
+  width: 48px;
+  height: 48px;
+  background: #dcebf6;
+}
+.mark svg {
+  width: 28px;
+  height: 28px;
+}
+.icon[data-kind="event"] {
+  background: #e6f2eb;
+  color: #246345;
+}
+.pilot {
+  border-left: 3px solid #b18127;
+  background: #fff9ec;
+  color: #654e24;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.toolbar,
+.identity,
+.card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: clamp(12px, 1.5vw, 20px);
+}
+.toolbar {
+  align-items: end;
+}
+.toolbar label {
+  flex: 1 1 240px;
+}
+.identity {
+  justify-content: space-between;
+}
+.identity > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.card,
+.card form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.card form {
+  align-items: end;
+}
+.card :is(form, button, a) {
+  justify-self: start;
+}
+.card form,
+.card label {
+  width: 100%;
+}
+.card :is(textarea, select, input) {
+  max-width: 100%;
+}
+.fields label {
+  flex: 1 1 220px;
+}
+.portal label {
+  display: grid;
+  gap: 5px;
+  color: #344e61;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+}
+.portal :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #9dafbd;
+  border-radius: 4px;
+  min-height: 36px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  padding: 6px 9px;
+}
+.tabs {
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  background: transparent;
+  border-color: transparent;
+  border-bottom: 3px solid transparent;
+  border-radius: 4px 4px 0 0;
+}
+.tabs button[aria-pressed="true"] {
+  background: #e2eef7;
+  border-bottom-color: #17679f;
+  color: #064a7c;
+}
+.rows,
+.messages {
+  list-style: none;
+  padding: 0;
+}
+.rows li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding: 11px 0;
+}
+.rows li > div:first-of-type {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.rows small {
+  display: block;
+}
+.messages {
+  display: grid;
+  gap: 8px;
+}
+.messages li {
+  border-left: 3px solid #5985a3;
+  background: #f1f6fa;
+  padding: 10px 14px;
+  border-radius: 4px;
+}
+.messages li[data-side="client"] {
+  border-color: #408374;
+  background: #eff7f4;
+}
+.messages li > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.messages p {
+  white-space: pre-wrap;
+  margin-top: 5px;
+}
+.messages time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.error,
+.note {
+  padding: 9px 12px;
+  border-radius: 4px;
+}
+.error {
+  background: #fff0eb;
+  color: #823722;
+}
+.note {
+  background: #e8f6ef;
+  color: #24543e;
+}
+@media (max-width: 600px) {
+  .portal {
+    padding: 12px;
+    gap: 10px;
+  }
+  .hero {
+    align-items: flex-start;
+  }
+  .hero > div {
+    flex: 1;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 7px 5px;
+    font-size: 13px;
+  }
+  .tabs button svg {
+    width: 16px;
+  }
+  .toolbar label {
+    flex-basis: 100%;
+  }
+  .rows li {
+    align-items: flex-start;
+  }
+  .portal :is(button, a) {
+    min-height: 40px;
+  }
+  .card {
+    padding: 12px;
+  }
+  .fields {
+    display: grid;
+  }
+  .fields label {
+    width: 100%;
+  }
+  .messages li > div {
+    align-items: flex-start;
+  }
+}
+
+.portal label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+.portal .check input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  flex: none;
+}
+.clientTools {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hero .clientTools small {
+  letter-spacing: normal;
+  text-transform: none;
+}
+.current {
+  flex: 1;
+  display: grid;
+  align-self: center;
+  gap: 2px;
+}
+.current small {
+  font-weight: 600;
+}
+.current strong {
+  font-size: 18px;
+}
+.external {
+  margin: clamp(8px, 3vh, 32px) auto;
+  max-width: 1040px;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px 12px;
+  }
+  .hero .mark {
+    width: 38px;
+    height: 38px;
+  }
+  .hero .clientTools {
+    grid-column: 1/-1;
+    margin: 0;
+    width: 100%;
+  }
+  .hero .clientTools small {
+    flex: 1 1 110px;
+    min-width: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .current {
+    flex: 1 1 100%;
+  }
+  .toolbar {
+    align-items: center;
+  }
+}

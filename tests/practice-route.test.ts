@@ -1,3 +1,4 @@
+import {portalScenarios} from "./portal-scenarios";
 import {calendarScenarios} from "./calendar-delivery-scenarios";
 import {workflows as caseworkScenarios,prospect as prospectScenario} from "./casework-scenarios";
 import assert from "node:assert/strict";
@@ -18,7 +19,8 @@ const runtime=globalThis as unknown as {__practiceEnv:{DB:D1Database;DOSSIER_DOC
 let organization:string, foreignOrganization:string, caseId:string, oldCase:string;
 const legacyId="firm_doc_"+"d".repeat(64),legacyBytes="Synthetic v193 original";
 async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="", dossier=caseId) {
-  const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
+  const native=body instanceof FormData, binary=route==="portalFile"&&typeof body==="string";
+  const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"",...(native?{}:{"content-type":"application/json"}),...extraHeaders},body:body===undefined?undefined:native?body:binary?body:JSON.stringify(body)});
   return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:dossier,token:dossier})}));
 }
 before(async()=>{
@@ -28,7 +30,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={calendarDispatch:"app/api/calendar/dispatch/route.ts",calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={portalTransitions:"app/api/dossiers/[dossierId]/transitions/route.ts",portalStaff:"app/api/portal/staff/route.ts",portalClient:"app/api/portal/client/route.ts",portalFile:"app/api/portal/file/route.ts",portalDocuments:"app/api/dossiers/[dossierId]/documents/route.ts",calendarDispatch:"app/api/calendar/dispatch/route.ts",calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:"import {getDb} from './db';import {dispatch} from './app/calendar/delivery';export const runCalendar=(...args)=>dispatch(getDb(),...args);\n"+Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -67,7 +69,7 @@ before(async()=>{
       const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
       const snapshot=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
       const old=await snapshot();await migrate(entry);assert.deepEqual(await snapshot(),old,"all populated v197 tables including intake answers survive unchanged");
-    }else if(entry.idx===33||entry.idx===34){
+    }else if(entry.idx===33||entry.idx===34||entry.idx===35){
       const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
       const rows=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
       const snapshot=await rows();await migrate(entry);assert.deepEqual(await rows(),snapshot,"all existing rows survive the next work migration");
@@ -455,4 +457,12 @@ test("scheduler accepts a bounded signed assertion through hosting without an Au
     const bad=await hit({assertion:unsigned+"."+Buffer.alloc(256).toString("base64url")});assert.equal(bad.status,403);assert.equal(bad.headers.get("X-CaseVant-Check"),"signature");
     globalThis.fetch=async()=>new Response(null,{status:503});const offline=await hit({assertion});assert.equal(offline.status,503);assert.equal(offline.headers.get("X-CaseVant-Check"),"issuer");
   }finally{globalThis.fetch=original;}
+});
+
+test("client portal isolates each invitation, shared version, appointment, message and upload, including revocation during storage",async()=>{
+ await portalScenarios(call,db,organization,foreignOrganization,(method,after)=>{
+  const old=runtime.__practiceEnv.DOSSIER_DOCUMENTS!;let armed=true;
+  runtime.__practiceEnv.DOSSIER_DOCUMENTS=new Proxy(old,{get(target,property){const value=Reflect.get(target,property,target);if(property===method)return async(...args:unknown[])=>{const result=await value.apply(target,args);if(armed){armed=false;await after();}return result;};return typeof value==="function"?value.bind(target):value;}});
+  return ()=>{runtime.__practiceEnv.DOSSIER_DOCUMENTS=old;};
+ });
 });

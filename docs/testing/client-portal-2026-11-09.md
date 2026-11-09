@@ -1,0 +1,18 @@
+# Client portal — 9 November 2026
+
+The acceptance target is an independent client sign-in that exposes only deliberately shared items for one client and one case. Staff keep their selected case when returning to Overview, Calendar, Library or AI Studio. The reference is the [MyCase Client Portal Overview](https://supportcenter.mycase.com/en/articles/9369919-mycase-client-portal-overview); CaseVant uses its existing Outlook-style workspace and pilot data policy.
+
+Only a case owner can invite or revoke; an active owner or contributor can share individual items and exchange messages. An invitation lasts seven days and requires both the private link and the invited address signed in through ChatGPT. Staff deliver the link themselves. Portal access does not enroll the client in the firm or the case team. A revoked or expired invitation must not unlock earlier history through a new grant.
+
+A document share pins its exact governed file version. A shared event exposes only its reviewed title and time, and a change to these fields hides it until shared again. Internal event notes, evidence metadata, staff identities and other clients are excluded. Each client has an isolated chronological conversation. Uploads remain separate from evidence and require an authenticated download with a matching stored checksum. This pilot accepts PDF, plain text, JPEG and PNG up to 5 MiB per file and 100 MiB or 100 files per recipient grant. File checks are format and integrity checks, not malware scanning.
+
+No client email, real case or real client document is needed for acceptance. No payment, signature, automatic client email or external notification is part of this release.
+
+## Review and verification
+
+- Exercised the real route handlers against a migrated, populated Miniflare D1 database and private R2 bucket. All pre-existing rows and database objects survived migration 0035. The test uploads two governed versions, downloads the exact shared bytes, refuses cross-recipient reads, and proves that sharing a replacement retires the earlier URL.
+- Accepted an invitation only with the correct signed-in provider identity and private link. Tested wrong account, replay, expired invite, firm membership without case access, contributor versus owner, denied staff routes, case closure and reopening. Re-inviting a client starts a separate conversation and does not expose the revoked grant.
+- Checked authenticated file retrieval, format/size/path and pilot attestation checks, immutable receipts, retry conflicts, cross-origin rejection, withdrawal during a download, and revocation during an upload. An interrupted upload can leave a private pending object, never a received file. No malware scan, automatic evidence admission, or delivery by email is claimed.
+- Confirmed message ordering, exact retry deduplication, visibility to both sides, and older pages. Date-only events show that no time was set. Rescheduling then restoring the original date does not restore a withdrawn share.
+- Browser: accepted a synthetic invitation, read a shared brief and appointment, posted a reply, uploaded a text file and saw it under Received on both sides. The same case ID persisted through Portal → Overview → Calendar → Portal. Revoking the recipient hid the client content on refresh and left the team's conversation visible. Desktop English and 390 px Russian were inspected; the narrow page had no horizontal overflow.
+- Verification used synthetic identities. Actual hosted sign-in continuation, production migration, private object storage on the production binding, and external client onboarding require a release. Production remains v202.
