@@ -185,6 +185,9 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   useEffect(() => {
     if (!selectedId) return;
     const url = new URL(window.location.href);
+    if (url.searchParams.get("dossier") !== selectedId) {
+      for (const key of ["studio_case", "studio_panel", "studio_step", "return_to"]) url.searchParams.delete(key);
+    }
     url.searchParams.set("dossier", selectedId); url.searchParams.set("section", destination);
     const target = state.targetActive && destination !== "overview" && state.target?.destination === destination ? state.target : null;
     if (target) url.searchParams.set("target", target.id); else url.searchParams.delete("target");

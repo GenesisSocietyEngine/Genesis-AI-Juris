@@ -42,6 +42,11 @@ export async function GET(_request: Request, routeContext: RouteContext) {
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "read");
   if (isResponse(access)) return access;
+  if (new URL(_request.url).searchParams.get("view") === "identity") {
+    // Studio needs the case name, not the dossier contents. Apply the same
+    // final identity/participant check and private caching as the full record.
+    return finalizeDossierRead(context, access, dossierJson({ id: access.dossier.id, title: access.dossier.title }));
+  }
   return finalizeDossierRead(context, access, dossierJson(await detailPayload(context, access)));
 }
 

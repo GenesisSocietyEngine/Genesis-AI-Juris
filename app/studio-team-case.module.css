@@ -1,0 +1,21 @@
+.case {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: .45rem .8rem;
+  margin-bottom: .65rem;
+  border-inline-start: 3px solid #246a9e;
+  border-radius: 4px;
+  background: #edf5fc;
+  color: #143b58;
+}
+.case .icon { display: grid; flex: none; place-items: center; color: #216496; }
+.icon svg { width: 20px; height: 20px; }
+.case > div { display: grid; min-width: 0; gap: .08rem; }
+.case > div > span { font: 600 .75rem/1.3 "Segoe UI", system-ui, sans-serif; color: #425f73; }
+.case strong { font: 600 1rem/1.35 "Segoe UI", system-ui, sans-serif; overflow-wrap: anywhere; }
+@media (forced-colors: active) { .case { border: 1px solid CanvasText; } }

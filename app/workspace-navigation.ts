@@ -79,12 +79,32 @@ export function resumeWorkspaceDestination(destination: string, current: string)
   } catch { return destination; }
 }
 
-/** The case tab returns to the active case; the firm-wide list is a fallback. */
+/** A personal Studio draft may accompany a team case but never identifies it.
+ * Only the current case or a same-suite return path can supply the team's ID. */
+export function selectedTeamCase(current: string) {
+  const page = new URL(safeWorkspaceReturn(current, "/"), ORIGIN);
+  const teamPage = (u: URL) => u.pathname === "/matters" || u.pathname === "/canopy";
+  const back = safeWorkspaceReturn(page.searchParams.get("return_to"), "");
+  const origin = teamPage(page) ? page : back ? new URL(back, ORIGIN) : null;
+  if (!origin || !teamPage(origin) || origin.searchParams.get("collection") === "personal") return null;
+  const id = origin.searchParams.get("dossier");
+  if (!id || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return null;
+  const outer = page.searchParams.get("organization"), inner = origin.searchParams.get("organization");
+  if (outer && inner && outer !== inner) return null;
+  const organization = outer || inner;
+  const params = new URLSearchParams({ collection: "team", dossier: id, section: "overview" });
+  if (organization) params.set("organization", organization);
+  const overview = workspaceDestination("/matters?" + params, current);
+  return { id, organization, overview };
+}
+
+/** The suite tab opens the team record first. A standalone personal draft
+ * retains its analytical overview when there is no team case to return to. */
 export function currentCaseOverviewDestination(current: string): string | null {
+  const team = selectedTeamCase(current);
+  if (team) return team.overview;
   const studio = workspaceDestination("/studio?studio_panel=overview", current);
-  if (new URL(studio, ORIGIN).searchParams.has("custom_case")) return studio;
-  const matter = workspaceDestination("/matters", current);
-  return new URL(matter, ORIGIN).searchParams.has("dossier") ? matter : null;
+  return new URL(studio, ORIGIN).searchParams.has("custom_case") ? studio : null;
 }
 
 /** History between views of this same mounted Studio is not a page departure. */

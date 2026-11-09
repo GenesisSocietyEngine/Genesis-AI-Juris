@@ -51,7 +51,7 @@ function harness(confirm = true) {
   const catalogueLaunchRef = { current: 0 };
   const functions = runInNewContext(code, {
     URL, Event, structuredClone, createExampleWorkingCopy, locale: "en", categoryDemoPrompt, prompt: state.prompt, draftRef, studioStorageScope: scope,
-    studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false,
+    studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false, teamStudio: false,
     studioSessionAuthority: { getSnapshot: () => identity }, catalogueLaunchRef, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: contextRef,
     starterCancelledRef: { current: false }, studioEvidenceBuffersRef: buffersRef, studioTimelineRef: timelineRef,
     studioSavedBaseline: { current: null }, savedCaseRequestRef: { current: 0 }, restoredSavedCaseRef: { current: null }, studioChangedBeforeRestoreRef: { current: false },
@@ -117,6 +117,17 @@ test("two same-category copies have distinct identity and restore without saved 
   retainStudioReplacement(storage, scope, { draft, prompt: "second" });
   const entries = readStudioArchive(storage, scope); assert.equal(entries.length, 2); assert.notEqual(entries[0].id, entries[1].id);
   const restored = restoreArchivedStudioDraft(entries[1]); assert.equal(restored.parent, null); assert.equal(restored.protection, undefined); assert.notEqual(restored.caseId, draft.caseId); assert.equal(entries[1].prompt, "second"); assert.deepEqual(readStudioArchive(storage, otherScope), []);
+});
+test("team draft replacement preserves the unrelated device slot and archives only the working draft", () => {
+  const storage = memory(), current = buildCategoryDemo("contract_review", "en");
+  const key = studioDeviceDraftKey(scope), original = "{unknown-device-copy";
+  storage.setItem(key, original);
+  retainStudioReplacement(storage, scope, null, { includeDeviceSlot: false });
+  assert.deepEqual(readStudioArchive(storage, scope), []);
+  retainStudioReplacement(storage, scope, { draft: current, prompt: "team draft only" }, { includeDeviceSlot: false });
+  const entries = readStudioArchive(storage, scope);
+  assert.equal(entries.length, 1); assert.equal(entries[0].prompt, "team draft only");
+  assert.equal(entries[0].original, undefined); assert.equal(storage.getItem(key), original);
 });
 test("full archive never evicts the only copy of an unrelated draft", () => {
   const storage = memory(), draft = buildCategoryDemo("tax_planning", "en");
