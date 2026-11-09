@@ -1,10 +1,12 @@
 # Current progress — CaseVant
 
-## CV-002 — identify unsent portal work · 9 November 2026
+## Published CV-002 — review unsent portal work · 9 November 2026
 
-The portal departure warning names an unsent invitation, an unsent reply and a file waiting to be uploaded. **Review unsent work** reopens the last edited field that still has changes. **Stay here** keeps the selected case, recipient, text and file. Only an explicit discard continues the attempted switch. The existing Outlook-style dialog is used in the case workspace and the independent client portal.
+**[CaseVant v205 is live](https://casevant.pro/matters).** When leaving the portal, the warning names each unfinished invitation, reply or selected upload. **Review unsent work** opens the most recently edited field that still has changes. **Stay here** keeps the original case, recipient and draft. Discard leaves without sending; restoring the original values allows navigation without a warning.
 
-Verified in isolation with staff and client sessions: the exact invitation name, email, reply and file controls received keyboard focus; restored forms navigated cleanly; switching to a second case after discard did not carry the reply across. A Russian phone-width check confirmed three 44 px actions. The fixture recorded zero portal writes. [Acceptance notes](docs/testing/portal-departure-cv002-2026-11-09.md) · [Development backlog](docs/development/development_backlog.md). Production verification is pending; v204 remains the live baseline.
+In the same signed-in synthetic team case, v204 returned Review to Calendar; v205 reopened the invitation and focused the edited client-facing name. No invitation was created or sent. Separate staff and client browser sessions verified email, reply and file focus, multiple unfinished items, case switching, sign-out and Russian at 390 px. The isolated test server recorded zero portal writes.
+
+[PR #273](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/273) · [Merged source](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/commit/ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8) · [Exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42623001696): 2,063 web tests passed, 3 existing skips, 2 rendered-page checks and the unchanged 47-PDF baseline. Both production addresses matched all 216 current and retained browser files and denied signed-out access to portal data. [Acceptance notes](docs/testing/portal-departure-cv002-2026-11-09.md) · [Release receipt](docs/testing/receipts/portal-departure-v205-2026-11-09.json) · [Development backlog: CV-002 verified; CV-003 next](docs/development/development_backlog.md).
 
 ## Published CV-001 — keep the team case in AI Studio · 9 November 2026
 
