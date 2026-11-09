@@ -748,7 +748,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     let cancelled = false;
     const restore = window.setTimeout(() => {
       try {
-      if (studioChangedBeforeRestoreRef.current || teamStudio || new URLSearchParams(window.location.search).has("custom_case")) return;
+      if (teamStudio) return; // A team workpad never inherits the last personal device draft.
+      if (studioChangedBeforeRestoreRef.current || new URLSearchParams(window.location.search).has("custom_case")) return;
       try {
         const stored = studioStorageScope ? readStudioDeviceDraft(window.localStorage, studioStorageScope) : { status: "empty" as const };
         if (stored.status !== "empty" && stored.status !== "editable") {
