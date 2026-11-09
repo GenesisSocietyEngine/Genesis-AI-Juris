@@ -11,6 +11,7 @@ import { isWorkspaceDepartureClick } from "./departure-click";
 import type { DepartureRisk, DeparturePlan, DepartureChange } from "./navigation-controller";
 import { organizationDisplayLabel } from "./organization-label";
 import { departureChangeLabel } from "./departure-presentation";
+import { portalWarning } from "./portal/departure";
 
 export const WORKSPACE_PAGES = [
   { path: "/work?view=home", view: "home", en: "Home", ru: "Главная", icon: "home" },
@@ -129,6 +130,12 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   }
   const liveChanges = navigation.departureChanges();
   const pendingChanges = liveChanges.length ? liveChanges : pending?.changes ?? [];
+  const portalOnly = pendingChanges.length > 0 && pendingChanges.every(change => change.startsWith("portal_"));
+  function reviewDeparture(pendingOperation: boolean) {
+    confirmRef.current?.close();
+    cancelPending(); closeDrawer();
+    if (pendingOperation) navigation.reviewPending(); else navigation.reviewUnsaved();
+  }
   const contents=<>
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
@@ -191,17 +198,17 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     </a>
     {mobile?<><button type="button" className="genesis-menu-toggle" ref={menuButton} aria-label={en?"Open navigation":"Открыть навигацию"} aria-expanded={drawerOpen} aria-controls="genesis-navigation-drawer" onClick={()=>{drawerRef.current?.showModal();setDrawerOpen(true);}}>{en?"Menu":"Меню"}</button><dialog id="genesis-navigation-drawer" className="genesis-navigation-drawer" ref={drawerRef} aria-label={en?"Workspace menu":"Меню рабочего пространства"} onClose={()=>setDrawerOpen(false)} onClick={event=>{if(event.target===event.currentTarget)closeDrawer(true);}}><div className="genesis-drawer-inner"><button type="button" className="genesis-drawer-close" onClick={()=>closeDrawer(true)}>{en?"Close menu":"Закрыть меню"}</button>{contents}</div></dialog></>:<div className="genesis-nav-body">{contents}</div>}
   </header>
-  <dialog className="genesis-navigation-confirm" ref={confirmRef} onCancel={cancelPending} aria-labelledby="navigation-confirm-title">
-    <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):(en?"Keep your changes before leaving":"Сохраните изменения перед выходом")}</h2>
+  <dialog className="genesis-navigation-confirm" ref={confirmRef} onCancel={cancelPending} aria-labelledby="navigation-confirm-title" aria-describedby={pending?.risk === "dirty" ? "navigation-confirm-changes" : undefined}>
+    <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):portalOnly?portalWarning[locale].title:(en?"Keep your changes before leaving":"Сохраните изменения перед выходом")}</h2>
     {pending?.risk==="pending"?<p>{en?"An operation is still running or its save is unconfirmed. Return to the current work to check it before switching.":"Операция ещё выполняется или сохранение не подтверждено. Вернитесь к работе и проверьте результат перед переходом."}</p>:<>
-      <ul>{pendingChanges.map(change=><li key={change}>{departureChangeLabel(change,locale)}</li>)}</ul>
-      <p>{en?"Previously saved work remains available. Leaving discards the changes listed above.":"Сохранённая работа останется доступна. При выходе перечисленные выше изменения будут отменены."}</p>
+      <ul id="navigation-confirm-changes">{pendingChanges.map(change=><li key={change}>{departureChangeLabel(change,locale)}</li>)}</ul>
+      <p>{portalOnly?portalWarning[locale].detail:en?"Previously saved work remains available. Leaving discards the changes listed above.":"Сохранённая работа останется доступна. При выходе перечисленные выше изменения будут отменены."}</p>
     </>}
     {pending && saveDepartureIssue === pending && <p role="alert">{en?"Some work is still unsaved, or saving could not be confirmed. Review it before leaving.":"Часть работы не сохранена либо сохранение не подтверждено. Проверьте её перед выходом."}</p>}
     {savingDeparture&&<p role="status">{en?"Saving your changes…":"Сохранение изменений…"}</p>}
     <div><button type="button" onClick={cancelPending} autoFocus>{en?"Stay here":"Остаться"}</button>
-      {pending?.risk==="pending"?<button type="button" onClick={()=>{cancelPending();closeDrawer();navigation.reviewPending();}}>{en?"Return to current work":"Вернуться к работе"}</button>:<>
-        {navigation.canSaveBeforeDeparture()||savingDeparture?<button type="button" className="departure-save" disabled={savingDeparture} onClick={()=>void saveAndContinue()}>{savingDeparture?(en?"Saving…":"Сохранение…"):(en?"Save and continue":"Сохранить и продолжить")}</button>:<button type="button" className="departure-save" onClick={()=>{cancelPending();closeDrawer();navigation.reviewUnsaved();}}>{en?"Review unsaved work":"Проверить несохранённую работу"}</button>}
+      {pending?.risk==="pending"?<button type="button" onClick={()=>reviewDeparture(true)}>{en?"Return to current work":"Вернуться к работе"}</button>:<>
+        {navigation.canSaveBeforeDeparture()||savingDeparture?<button type="button" className="departure-save" disabled={savingDeparture} onClick={()=>void saveAndContinue()}>{savingDeparture?(en?"Saving…":"Сохранение…"):(en?"Save and continue":"Сохранить и продолжить")}</button>:<button type="button" className="departure-save" onClick={()=>reviewDeparture(false)}>{portalOnly?portalWarning[locale].review:en?"Review unsaved work":"Проверить несохранённую работу"}</button>}
         <button type="button" className="departure-discard" disabled={savingDeparture} onClick={()=>{if(pending&&pending.authority===navigation.authorityVersion)void depart(pending.kind,pending.id,true,pending.target,pending.plan);else setPending(null);}}>{en?"Discard unsaved work and continue":"Отменить несохранённое и продолжить"}</button>
       </>}{pending?.risk==="pending"&&navigation.canSignOut&&<button type="button" onClick={()=>void depart("signout")}>{en?"Sign out now":"Выйти сейчас"}</button>}</div>
   </dialog></>;

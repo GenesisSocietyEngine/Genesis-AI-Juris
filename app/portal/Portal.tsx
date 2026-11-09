@@ -1,10 +1,12 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WorkspaceIcon } from "../CaseVantIcon";
 import StatusBadge from "../StatusBadge";
 import { useNavigationController } from "../NavigationSession";
 import { useInterfaceLocale } from "../use-interface-locale";
 import { portalFormGuard, fileLimit, type PortalView } from "./contracts";
+import { editPortalField, portalDraftReview, type PortalField } from "./departure";
+import PortalDepartureDialog from "./PortalDepartureDialog";
 import s from "./portal.module.css";
 type Props = {
   caseId?: string;
@@ -16,6 +18,8 @@ type Props = {
 type Tab = "shared" | "uploads" | "messages";
 type Draft = { action: string; id: string; grant?: string; [key: string]: unknown };
 type Job = { body: Draft; file?: File };
+type Visit = { scope: string; epoch: number };
+const signOutHref = "/signout-with-chatgpt?return_to=%2Fportal";
 const label: Record<string, [string, string]> = {
   active: ["Active", "Активен"],
   invited: ["Invited", "Приглашён"],
@@ -52,6 +56,13 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<Job | null>(null),
     [locked, setLocked] = useState(false);
+  const [recent, setRecent] = useState<PortalField[]>([]),
+    [focusRequest, requestFocus] = useState<(Visit & { field: PortalField }) | null>(null),
+    [departure, setDeparture] = useState<(Visit & { to: string | null }) | null>(null);
+  const appliedFocus = useRef<typeof focusRequest>(null), leaving = useRef(false);
+  const signOutLink = useRef<HTMLAnchorElement>(null);
+  const emailInput = useRef<HTMLInputElement>(null), labelInput = useRef<HTMLInputElement>(null),
+    replyInput = useRef<HTMLTextAreaElement>(null);
   const epoch = useRef(0),
     alive = useRef(false),
     work = useRef(false),
@@ -66,13 +77,39 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
   const selected = view?.grants.find((g) => g.id === view.selected),
     id = selected?.id || "",
     write = !!selected && !!view?.canWrite && ["active", "invited"].includes(selected.status);
-  const risk =
-    pending || busy
-      ? "pending"
-      : message.trim() || file || email || (composeInvite && name !== caseName)
-        ? "dirty"
-        : "clear";
+  const scope = JSON.stringify([caseId, selection, account, id]);
+  const emailDirty = !!email, labelDirty = recent.includes("label") && name !== caseName;
+  const replyDirty = !!message.trim(), uploadDirty = !!file;
+  const draftReview = useMemo(() => portalDraftReview(
+    { email: team && emailDirty, label: team && labelDirty, reply: replyDirty, upload: uploadDirty }, recent,
+  ), [team, emailDirty, labelDirty, replyDirty, uploadDirty, recent]);
+  const risk = pending || busy ? "pending" : draftReview.changes.length ? "dirty" : "clear";
+  function edited(field: PortalField) {
+    leaving.current = false;
+    setRecent(old => old[0] === field ? old : editPortalField(old, field));
+  }
+  function reviewDraft() {
+    const field = draftReview.field;
+    if (!field || risk !== "dirty" || !view || locked) { panel.current?.focus(); return; }
+    if (field === "email" || field === "label") setComposeInvite(true);
+    else {
+      if (field === "reply") setComposeInvite(false);
+      setTab(field === "reply" ? "messages" : "uploads");
+    }
+    requestFocus({ field, scope, epoch: epoch.current });
+  }
+  // Focus the actual input after its panel is visible and the native dialog has closed.
+  // Do not replay a delayed focus into a new recipient, case or revoked form.
+  useLayoutEffect(() => {
+    if (!focusRequest || appliedFocus.current === focusRequest) return;
+    appliedFocus.current = focusRequest;
+    if (focusRequest.scope !== scope || focusRequest.epoch !== epoch.current || !view || locked || risk !== "dirty") return;
+    const node = { email: emailInput, label: labelInput, reply: replyInput, upload: fileInput }[focusRequest.field].current;
+    if (node && !node.disabled) node.focus();
+    else panel.current?.focus();
+  }, [focusRequest, scope, view, locked, risk]);
   const reset = useCallback(() => {
+    setRecent([]); requestFocus(null); setDeparture(null);
     setLink("");
     setMessage("");
     setFile(null);
@@ -219,7 +256,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
         setView(null);
         setLink("");
       },
-      restore = () => current();
+      restore = () => { leaving.current = false; current(); };
     window.addEventListener("focus", current);
     window.addEventListener("pagehide", suspend);
     window.addEventListener("pageshow", restore);
@@ -234,28 +271,47 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       document.removeEventListener("visibilitychange", current);
     };
   }, [wanted, ready, signedIn, refresh]);
+  const reviewGuard = useEffectEvent(reviewDraft);
+  // Keep the registered review action bound to the current field and recipient.
+  useLayoutEffect(() => {
+    if (!team) return;
+    return nav.register(portalFormGuard, {
+      risk: () => risk,
+      changes: () => draftReview.changes,
+      lock: setLocked,
+      suspend: () => {
+        ++request.current;
+        setView(null);
+        setLink("");
+      },
+      deny: hide,
+      review: () => reviewGuard(),
+    });
+  }, [team, nav, risk, hide, draftReview.changes]);
   useEffect(() => {
-    if (team)
-      return nav.register(portalFormGuard, {
-        risk: () => risk,
-        lock: setLocked,
-        suspend: () => {
-          ++request.current;
-          setView(null);
-          setLink("");
-        },
-        deny: hide,
-        review: () => panel.current?.focus(),
-      });
+    if (team) return;
     const warn = (e: BeforeUnloadEvent) => {
-      if (risk !== "clear") {
+      if (risk !== "clear" && !leaving.current) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [nav, team, risk, hide]);
+  }, [team, risk]);
+  function attemptSwitch(next: string) {
+    if (next === id || work.current || risk === "pending") return;
+    if (risk === "dirty") setDeparture({ to: next, scope, epoch: epoch.current });
+    else select(next);
+  }
+  function discardDeparture() {
+    setDeparture(null);
+    if (!departure || departure.scope !== scope || departure.epoch !== epoch.current || work.current || risk === "pending" || locked) return;
+    if (departure.to === null) {
+      leaving.current = true;
+      signOutLink.current?.click();
+    } else if (view?.grants.some(grant => grant.id === departure.to)) select(departure.to);
+  }
   function select(next: string) {
     hide();
     setAccess("loading");
@@ -473,7 +529,11 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
           <div className={s.clientTools}>
             {account && signedIn && <small>{account}</small>}
             <button onClick={() => setLocale(ru ? "en" : "ru")}>{ru ? "English" : "Русский"}</button>
-            {signedIn && <a href="/signout-with-chatgpt?return_to=%2Fportal">{t("Sign out", "Выйти")}</a>}
+            {signedIn && <a ref={signOutLink} href={signOutHref} onClick={event => {
+              if (leaving.current || risk !== "dirty" || event.button || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+              event.preventDefault();
+              setDeparture({ to: null, scope, epoch: epoch.current });
+            }}>{t("Sign out", "Выйти")}</a>}
           </div>
         )}
       </header>
@@ -579,10 +639,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                       aria-label={team ? t("Client", "Клиент") : t("Current case", "Текущее дело")}
                       value={id}
                       disabled={disabled}
-                      onChange={(e) => {
-                        if (risk !== "clear") setConfirm("switch:" + e.target.value);
-                        else select(e.target.value);
-                      }}
+                      onChange={(e) => attemptSwitch(e.target.value)}
                     >
                       {view.grants.map((g) => (
                         <option key={g.id} value={g.id}>
@@ -618,7 +675,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                   {t("Refresh", "Обновить")}
                 </button>
               </div>
-              {composeInvite && (
+              {composeInvite && team && view.canInvite && view.canWrite && (
                 <form
                   className={s.card}
                   onSubmit={(e) => {
@@ -640,8 +697,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                         required
                         type="email"
                         maxLength={254}
+                        ref={emailInput}
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => { edited("email"); setEmail(e.target.value); }}
                         disabled={disabled}
                       />
                     </label>
@@ -650,8 +708,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                       <input
                         required
                         maxLength={150}
+                        ref={labelInput}
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { edited("label"); setName(e.target.value); }}
                         disabled={disabled}
                       />
                     </label>
@@ -713,31 +772,13 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                       </div>
                     </div>
                   )}
-                  {confirm && (
+                  {confirm === "revoke" && (
                     <div className={s.card} role="alert">
-                      <p>
-                        {confirm === "revoke"
-                          ? t(
-                              "Revoke this client’s access to all shared items and messages? The team keeps the history.",
-                              "Закрыть клиенту доступ ко всем материалам и сообщениям? История сохранится у команды.",
-                            )
-                          : t(
-                              "Discard the unsaved draft and switch?",
-                              "Отменить несохранённый черновик и переключиться?",
-                            )}
-                      </p>
+                      <p>{t("Revoke this client’s access to all shared items and messages? The team keeps the history.",
+                        "Закрыть клиенту доступ ко всем материалам и сообщениям? История сохранится у команды.")}</p>
                       <div className={s.actions}>
                         <button onClick={() => setConfirm("")}>{t("Stay here", "Остаться")}</button>
-                        <button
-                          disabled={disabled}
-                          onClick={() =>
-                            confirm === "revoke" ? act("revoke", { id }) : select(confirm.slice(7))
-                          }
-                        >
-                          {confirm === "revoke"
-                            ? t("Confirm revocation", "Подтвердить отзыв")
-                            : t("Discard and switch", "Отменить и перейти")}
-                        </button>
+                        <button disabled={disabled} onClick={() => act("revoke", { id })}>{t("Confirm revocation", "Подтвердить отзыв")}</button>
                       </div>
                     </div>
                   )}
@@ -846,8 +887,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                       </ul>
                     </section>
                   )}
-                  {thread && tab === "uploads" && (
-                    <section className={s.card}>
+                  {thread && (tab === "uploads" || !!file) && (
+                    <section className={s.card} hidden={tab !== "uploads"}>
                       <h3>{t("Client uploads", "Файлы клиента")}</h3>
                       <p>
                         {t(
@@ -873,6 +914,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                               ref={fileInput}
                               disabled={disabled}
                               onChange={(e) => {
+                                edited("upload");
                                 const f = e.target.files?.[0];
                                 setAck(false);
                                 if (f && (!f.size || f.size > fileLimit)) {
@@ -891,12 +933,16 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                               }}
                             />
                           </label>
+                          {file && <p className={s.pendingFile} role="status">{t("Selected for upload: ", "Выбран для загрузки: ")}<strong>{file.name}</strong>{" "}
+                            <button type="button" disabled={disabled} onClick={() => {
+                              setFile(null); setAck(false); if (fileInput.current) fileInput.current.value = "";
+                            }}>{t("Clear selection", "Снять выбор")}</button></p>}
                           <label className={s.check}>
                             <input
                               type="checkbox"
                               checked={ack}
                               disabled={!file || disabled}
-                              onChange={(e) => setAck(e.target.checked)}
+                              onChange={(e) => { edited("upload"); setAck(e.target.checked); }}
                             />
                             {t(
                               "This file is synthetic or de-identified.",
@@ -975,9 +1021,10 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                             <textarea
                               maxLength={4000}
                               rows={3}
+                              ref={replyInput}
                               value={message}
                               disabled={disabled}
-                              onChange={(e) => setMessage(e.target.value)}
+                              onChange={(e) => { edited("reply"); setMessage(e.target.value); }}
                             />
                           </label>
                           <button className={s.primary} disabled={!message.trim() || disabled}>
@@ -994,6 +1041,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
           )}
         </>
       )}
+      {departure && departure.scope === scope && risk === "dirty" && view && !locked &&
+        <PortalDepartureDialog locale={locale} changes={draftReview.changes} signOut={departure.to === null}
+          stay={() => setDeparture(null)} review={() => { setDeparture(null); reviewDraft(); }} discard={discardDeparture}/>}
     </section>
   );
 }
