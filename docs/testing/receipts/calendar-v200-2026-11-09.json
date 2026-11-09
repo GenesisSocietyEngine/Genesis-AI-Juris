@@ -1,0 +1,130 @@
+{
+  "date": "2026-11-09",
+  "version": 200,
+  "previousVersion": 199,
+  "sourceCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+  "previousRuntimeCommit": "536713a2abb95980d8979e39201ba9e805e872e8",
+  "candidateCommit": "aa4a83f157f2200eab085484a0e2e58d26f4f477",
+  "implementationPR": 263,
+  "candidateRun": 42578995693,
+  "mainRun": 42580119985,
+  "tests": {
+    "passed": 2051,
+    "failed": 0,
+    "skipped": 3,
+    "fullPdfBaselineCount": 47,
+    "focusedChecksPassed": 22,
+    "migrationChecksPassed": 2,
+    "independentIcalendarParser": "icalendar 6.3.2"
+  },
+  "artifact": {
+    "id": 13657460301,
+    "name": "verified-web-build-867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72-42580119985",
+    "digest": "sha256:af4fd5cc1ed9c45474906c19a08225b35d5009847984f30eac884cc6157d60e8",
+    "expired": false
+  },
+  "deployment": "appgdep_6af179c9a2888191bc60a8859c4e04b7",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_59215522d4788191843e9c58f5d60824",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 200
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+    "tree": "5bd4facd2ce8ed2dbee33c85a9f12e5b2e068aeb",
+    "applicationInputsSha256": "5011ac029658e1bdf21ad83bd1f6276c6c62f8391372c0197ed0fbbe3d9f4696",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 713,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+    "archiveSha256": "70a14847100ac96eb24dd786adf01398813b9da858e4dd4f790dd6455148da91",
+    "migrationSha256": "3be3cc9fc69801504ca74ed2f46b2e8106316527d4d3fd671594a83966e704f3",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+      "applicationInputsSha256": "5011ac029658e1bdf21ad83bd1f6276c6c62f8391372c0197ed0fbbe3d9f4696",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+      "applicationInputsSha256": "5011ac029658e1bdf21ad83bd1f6276c6c62f8391372c0197ed0fbbe3d9f4696",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 151,
+      "retained": 69,
+      "verified": 220,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 151,
+      "retained": 69,
+      "verified": 220,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "synthetic": "Save, discard guard, return to original case, personal dismissal, independent cancellation and link management; 36 px desktop, 44 px narrow, no form overflow.",
+    "production": "Signed-in firm Calendar connections and personal Reminders rendered; private link remained off."
+  },
+  "limits": [
+    "One-way subscriptions only; providers determine refresh and can retain downloaded copies.",
+    "Fixed reminder times; queued email is processed approximately every ten minutes.",
+    "Live external subscription refresh and real-mailbox delivery were not exercised."
+  ],
+  "boundaries": [
+    {
+      "origin": "https://casevant.pro",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    }
+  ],
+  "scheduler": {
+    "run": 42581278756,
+    "checkOnly": true,
+    "status": "failed",
+    "http": 403,
+    "emailSent": false
+  },
+  "diagnostics": {
+    "run": 42581656191,
+    "nonSecretClaimsVerified": true,
+    "untrustedBranchDeniedOnBothOrigins": true
+  }
+}

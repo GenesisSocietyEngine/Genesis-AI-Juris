@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-09",
+  "version": 201,
+  "previousVersion": 200,
+  "sourceCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+  "previousRuntimeCommit": "867fea251a1c3da07fe6f8f35a0aa7f5b4e89f72",
+  "candidateCommit": "45525fe9899380adebab741d65dafe6b2213d1f4",
+  "implementationPR": 264,
+  "candidateRun": 42582108167,
+  "mainRun": 42583273475,
+  "tests": {
+    "passed": 2052,
+    "failed": 0,
+    "skipped": 3,
+    "fullPdfBaselineCount": 47,
+    "focusedAssertionChecks": 2
+  },
+  "artifact": {
+    "id": 13659225325,
+    "name": "verified-web-build-673310f1218023e2e4ac2dc58d6b1f892530002c-42583273475",
+    "digest": "sha256:64c5c79a0a36cb00e9018829f5f3d67611928723fb0f3a687aa10f7bbe738b99",
+    "expired": false
+  },
+  "deployment": "appgdep_6af181754a1c81919869885a6b8a1931",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ae5145243d648191807294198e75ea3b",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 201
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+    "tree": "5c431edf4f4e81abd0bf79d7e5da285863284507",
+    "applicationInputsSha256": "2a5aaf8a9758072189682fc7a3f62391d82de70020bc864cc5f5d0de68683455",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 713,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+    "archiveSha256": "067a379924f9a26c31167a9ccd26a1cc16d24757c8a863635fef9ed4ca1a6764",
+    "migrationSha256": "3be3cc9fc69801504ca74ed2f46b2e8106316527d4d3fd671594a83966e704f3",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+      "applicationInputsSha256": "2a5aaf8a9758072189682fc7a3f62391d82de70020bc864cc5f5d0de68683455",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+      "applicationInputsSha256": "2a5aaf8a9758072189682fc7a3f62391d82de70020bc864cc5f5d0de68683455",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 151,
+      "retained": 52,
+      "verified": 203,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 151,
+      "retained": 52,
+      "verified": 203,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Signed-in Calendar, settings and personal Reminders rendered with a disabled unpublished link."
+  },
+  "limits": [
+    "One-way subscriptions only; providers determine refresh and can retain downloaded copies.",
+    "Fixed reminder times; queued email is processed approximately every ten minutes.",
+    "Live external subscription refresh and real-mailbox delivery were not exercised."
+  ],
+  "scheduler": {
+    "run": 42584896903,
+    "status": "failure",
+    "summary": "Error: Calendar dispatch unavailable: 503 (issuer)",
+    "checkOnly": true,
+    "sent": false,
+    "deliveryReady": false
+  },
+  "boundaries": [
+    {
+      "origin": "https://casevant.pro",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    }
+  ],
+  "previousImplementationPR": 263
+}
