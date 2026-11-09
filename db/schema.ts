@@ -1877,3 +1877,26 @@ export const calendarReminders = sqliteTable("calendar_reminders", {
 },t=>[uniqueIndex("calendar_reminder_operation").on(t.organizationId,t.sender,t.operation,t.recipient),
   index("calendar_reminder_dispatch").on(t.state,t.availableAt),index("calendar_reminder_inbox").on(t.organizationId,t.scope,t.recipient,t.dueAt),
   index("calendar_reminder_outbox").on(t.organizationId,t.scope,t.sender,t.dueAt)]);
+
+export const portalGrants = sqliteTable("portal_grants", {
+  id: text("id").primaryKey(), organizationId: text("organization_id").notNull(), caseId: text("case_id").notNull(),
+  email: text("email").notNull(), label: text("label").notNull(), state: text("state").notNull().default("invited"),
+  issuer: text("issuer").notNull(), createdAt: text("created_at").notNull(), expiresAt: text("expires_at").notNull(),
+  acceptedAt: text("accepted_at"), revokedAt: text("revoked_at"), revokedBy: text("revoked_by")
+}, t => [
+  foreignKey({columns:[t.organizationId,t.caseId],foreignColumns:[dossierOrganizationBindings.organizationId,dossierOrganizationBindings.dossierId]}),
+  uniqueIndex("portal_current_recipient").on(t.caseId,t.email).where(sql`${t.state} != 'revoked'`),
+  index("portal_client_cases").on(t.email,t.state),check("portal_grant_state",sql`${t.state} IN ('invited','active','revoked')`)
+]);
+export const portalEntries = sqliteTable("portal_entries", {
+  seq: integer("seq").primaryKey({autoIncrement:true}), id: text("id").notNull().unique(),
+  grantId: text("grant_id").notNull().references(()=>portalGrants.id),
+  kind: text("kind").notNull(), author: text("author").notNull(), actor: text("actor").notNull(),
+  target: text("target").notNull(), title: text("title").notNull(), detail: text("detail").notNull(), stamp: text("stamp").notNull(),
+}, t=>[index("portal_thread_order").on(t.grantId,t.kind,t.seq),index("portal_share_history").on(t.grantId,t.kind,t.target,t.seq),
+  check("portal_entry_kind",sql`${t.kind} IN ('message','document','event','withdraw')`),check("portal_entry_author",sql`${t.author} IN ('team','client')`)]);
+export const portalUploads = sqliteTable("portal_uploads", {
+  id:text("id").primaryKey(),grantId:text("grant_id").notNull().references(()=>portalGrants.id),name:text("name").notNull(),
+  media:text("media").notNull(),size:integer("size").notNull(),digest:text("digest").notNull(),state:text("state").notNull(),
+  stamp:text("stamp").notNull(),
+}, t=>[index("portal_received").on(t.grantId,t.state,t.stamp),check("portal_upload_state",sql`${t.state} IN ('pending','received')`),check("portal_upload_size",sql`${t.size} BETWEEN 1 AND 5242880`)]);

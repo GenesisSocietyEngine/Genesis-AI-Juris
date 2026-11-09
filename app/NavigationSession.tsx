@@ -16,7 +16,7 @@ export function useNavigationController() { return useContext(NavigationSessionC
 export function useNavigationSession() { const controller = useNavigationController(); return useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot); }
 export async function clearNavigationStorage(email?: string) {
   clearOrganizationSelection();
-  try { for (const key of ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis-studio-auth-continuation-v2", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"]) window.sessionStorage.removeItem(key); } catch { /* Navigation and privacy must not depend on storage availability. */ }
+  try { for (const key of ["casevant-portal-signin", "genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis-studio-auth-continuation-v2", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"]) window.sessionStorage.removeItem(key); } catch { /* Navigation and privacy must not depend on storage availability. */ }
   if (email) {
     // Explicit, server-confirmed sign-out retains the existing privacy cleanup,
     // including future records in this verified account's slots. Ordinary
@@ -32,6 +32,7 @@ export default function NavigationSession({ children, controller: supplied }: {c
   const en=new URL(location,"https://workspace.invalid").searchParams.get("lang")!=="ru";
   useEffect(() => subscribeSessionBoundary(controller.sessionBoundary), [controller]);
   useEffect(() => {
+    if (window.location.pathname.replace(/\/$/, "") === "/portal") return; // Client identity and invitations are independent of professional workspace membership.
     const refresh = () => { void controller.refresh(selection); };
     refresh(); window.addEventListener("focus",refresh);
     const restored = (event:PageTransitionEvent) => { if(event.persisted) { controller.invalidate("expired"); refresh(); } };
@@ -39,6 +40,7 @@ export default function NavigationSession({ children, controller: supplied }: {c
     return () => { window.removeEventListener("focus",refresh);window.removeEventListener("pageshow",restored); };
   }, [controller, selection]);
   useEffect(() => {
+    if (window.location.pathname.replace(/\/$/, "") === "/portal") return;
     const removeHistory=installDepartureHistory(window,controller);
     const warn = (event: BeforeUnloadEvent) => { if (controller.warnBeforeUnload()) { event.preventDefault(); event.returnValue = ""; } };
     // Capture ordinary page links before React/Next routing. This covers the

@@ -3,6 +3,7 @@ export const MATTER_DESTINATIONS = [
   { key: "tasks", label: "Tasks", shortLabel: "Tasks" },
   { key: "calendar", label: "Calendar", shortLabel: "Calendar" },
   { key: "workflows", label: "Workflows", shortLabel: "Workflows" },
+  { key: "portal", label: "Client portal", shortLabel: "Client portal" },
   { key: "documents", label: "Documents & evidence", shortLabel: "Documents" },
   { key: "evidence", label: "Evidence review", shortLabel: "Evidence" },
   { key: "decision-packages", label: "Decision package", shortLabel: "Decision" },

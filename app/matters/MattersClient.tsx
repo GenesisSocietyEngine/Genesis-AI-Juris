@@ -1,5 +1,7 @@
 "use client";
 
+import Portal from "../portal/Portal";
+import {portalFormGuard} from "../portal/contracts";
 import {calendarFormGuard} from "../calendar/contracts";
 import Link from "next/link";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
@@ -85,13 +87,14 @@ export default function MattersClient() {
 
 export function AuthorizedMattersClient({ actorId, organizationId, controller: supplied }: { actorId: string; organizationId: string; controller?: WorkspaceController }) {
   const navigation = useNavigationController();
+  const currentOrganization = useActiveOrganization();
   const location = useWorkspaceLocation();
   const [owner] = useState(() => supplied ?? new WorkspaceController({ identity: { actorId, organizationId }, transport: (path, init) => fetch(path, init) }));
   const state = useSyncExternalStore(owner.subscribe, owner.getSnapshot, owner.getSnapshot);
   const workspace = state.bundle;
   const selectedId = state.visit?.caseId ?? null;
   const destination = state.destination;
-  const setDestination = (value: MatterDestination) => { if(value!==destination&&navigation.riskFor(calendarFormGuard)!=="clear"){const next=new URL(window.location.href);next.searchParams.set("section",value);navigation.requestDeparture("link",next.pathname+next.search);return;}owner.navigate(value); };
+  const setDestination = (value: MatterDestination) => { if(value!==destination&&(navigation.riskFor(calendarFormGuard)!=="clear"||navigation.riskFor(portalFormGuard)!=="clear")){const next=new URL(window.location.href);next.searchParams.set("section",value);navigation.requestDeparture("link",next.pathname+next.search);return;}owner.navigate(value); };
   const workspacePhase: LoadPhase = state.loading ? "loading" : state.authority === "granted" && workspace ? "ready" : state.issue ? "error" : "permission";
   const loadIssue = state.issue;
   const notice = state.notice;
@@ -424,7 +427,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => { const title=document.getElementById("matter-catalogue-title"); const picker=title?.closest("details"); if(picker)picker.open=true;title?.scrollIntoView({block:"start"}); }}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
           <MatterHero onEdit={() => { owner.openCaseEditor(); document.getElementById("case-edit-name")?.focus(); }} editing={Boolean(owner.caseEditor)} editDisabled={owner.busy || state.updating} locale={createLocale} compact={destination !== "overview" || Boolean(owner.caseEditor)} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
           <nav className={styles.caseModeNavigation} aria-label={createText("Case workspace", "Рабочая область дела")}><button type="button" aria-current="page" onClick={() => setDestination("overview")}><WorkspaceIcon name="cases"/>{createText("Case overview", "Обзор дела")}</button><a href={workspaceDestination("/studio?studio_panel=workbench", workspaceDestination(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(workspace.matter.id)}&section=${destination}`, location))}><WorkspaceIcon name="studio"/>{createText("AI Studio", "ИИ Студия")}</a></nav>
-          <SectionNavigation destination={destination} onChange={setDestination}/>
+          <SectionNavigation destination={destination} onChange={setDestination} portalAllowed={currentOrganization?.role!=="auditor"&&["owner","contributor"].includes(workspace.matter.permissions.role)} locale={createLocale}/>
           {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>Return to the originating report →</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
           {state.collection.availability !== "current" && <p className={styles.pilotNotice} role="status">{state.updating ? "Updating case actions…" : "Showing the last verified case. Action totals and readiness are not current."} <button type="button" onClick={() => void owner.load()} disabled={state.updating}>Update case actions</button></p>}
           {!state.panelOpen && owner.retainedReviews().length > 0 && <section className={styles.panel} aria-label="Retained reviews"><h2>Continue a review</h2><p>Reopen the original operation or its saved receipt.</p>{owner.retainedReviews().map(([key, review]) => <button type="button" key={key} onClick={() => void owner.openReview(key.startsWith("deadline:") ? "deadline" : "citation", review.scope.recordId)}>{review.getSnapshot().receipt ? "Open saved review receipt" : "Check pending review"} · {(review.getSnapshot().authorityVisible ? review.getSnapshot().record?.record.title : null) ?? "Selected record"}</button>)}</section>}
@@ -440,6 +443,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
             {destination === "requests" && <RequestsSection focusedDeadlineId={actionTarget?.id.startsWith("deadline-") ? actionTarget.id.slice(9) : undefined} onOpenDisposition={(kind, id) => openAction({ destination: kind === "deadline" ? "requests" : "evidence", id: (kind === "deadline" ? "deadline-" : "source-") + id })} key={`${workspace.matter.id}:${actionTarget?.caseId === selectedId ? actionTarget.requestId ?? "" : ""}`} focusedRequestId={actionTarget?.caseId === selectedId ? actionTarget.requestId : undefined} onNavigate={openAction} onUpdateDeadline={(fields) => void mutate(dossierPath, "deadline-update", fields, "Key deadline saved. Case readiness has been refreshed.", "PUT")} matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
             {destination === "outputs" && <OutputsSection onNavigate={openAction} matter={workspace.matter} outputs={workspace.outputs} snapshots={workspace.snapshots} issue={workspace.issues.outputs} view={view} mutationKey={mutationKey} onGenerate={(fields) => void mutate(dossierPath + "/outputs", "output-generate", fields, "Governed output request recorded against an immutable snapshot.")} onApprove={(output) => void mutate(dossierPath + "/outputs", "output-approve-" + output.id, { action: "approve", outputId: output.id }, "Reviewer approval recorded for the snapshot-bound output.")}/>}
             {(["tasks", "calendar", "workflows"] as const).map(mode => destination === mode ? <PracticeWorkspace key={mode} owner={owner} mode={mode}/> : null)}
+            {destination === "portal" && <Portal key={workspace.matter.id} caseId={workspace.matter.id} selection={organizationId} caseName={workspace.matter.title}/>}
             {destination === "activity" && <ActivitySection onNavigate={openAction} activity={workspace.activity} cursor={workspace.activityCursor} issue={workspace.issues.activity} view={view} mutationKey={mutationKey} onLoadMore={() => void loadMoreActivity()}/>}
           </div>
           </>}
@@ -503,22 +507,23 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
   </header>;
 }
 
-export function SectionNavigation({ destination, onChange }: { destination: MatterDestination; onChange: (destination: MatterDestination) => void }) {
+export function SectionNavigation({ destination, onChange, portalAllowed=true, locale="en" }: { destination: MatterDestination; onChange: (destination: MatterDestination) => void; portalAllowed?:boolean; locale?:"en"|"ru" }) {
+  const sections=MATTER_DESTINATIONS.filter(item=>item.key!=="portal"||portalAllowed).map(item=>({...item,label:item.key==="portal"&&locale==="ru"?"Клиентский портал":item.label}));
   return <nav className={styles.sectionNavigation} aria-label="Matter sections">
     <div className={styles.sectionTabs} role="tablist" aria-label="Matter workspace destinations">
-      {MATTER_DESTINATIONS.map((item, index) => <button key={item.key} type="button" role="tab" id={"tab-" + item.key} aria-selected={destination === item.key} aria-controls={"panel-" + item.key} tabIndex={destination === item.key ? 0 : -1} onClick={() => onChange(item.key)} onKeyDown={(event) => {
+      {sections.map((item, index) => <button key={item.key} type="button" role="tab" id={"tab-" + item.key} aria-selected={destination === item.key} aria-controls={"panel-" + item.key} tabIndex={destination === item.key ? 0 : -1} onClick={() => onChange(item.key)} onKeyDown={(event) => {
         const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
         if (!keys.includes(event.key)) return;
         event.preventDefault();
-        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? MATTER_DESTINATIONS.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + MATTER_DESTINATIONS.length) % MATTER_DESTINATIONS.length;
-        const next = MATTER_DESTINATIONS[nextIndex];
+        const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? sections.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + sections.length) % sections.length;
+        const next = sections[nextIndex];
         onChange(next.key);
         document.getElementById("tab-" + next.key)?.focus();
       }}>
-        <WorkspaceIcon name={item.key === "calendar" ? "calendar" : item.key === "tasks" || item.key === "requests" ? "tasks" : item.key === "workflows" || item.key === "decision-packages" ? "flow" : item.key === "outputs" ? "report" : item.key === "overview" ? "cases" : "studio"}/>{item.label}
+        <WorkspaceIcon name={item.key === "portal" ? "people" : item.key === "calendar" ? "calendar" : item.key === "tasks" || item.key === "requests" ? "tasks" : item.key === "workflows" || item.key === "decision-packages" ? "flow" : item.key === "outputs" ? "report" : item.key === "overview" ? "cases" : "studio"}/>{item.label}
       </button>)}
     </div>
-    <label className={styles.mobileSectionSelect}><span>Workspace section</span><select value={destination} onChange={(event) => onChange(event.target.value as MatterDestination)}>{MATTER_DESTINATIONS.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+    <label className={styles.mobileSectionSelect}><span>Workspace section</span><select value={destination} onChange={(event) => onChange(event.target.value as MatterDestination)}>{sections.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
   </nav>;
 }
 
