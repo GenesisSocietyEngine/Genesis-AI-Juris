@@ -1,5 +1,6 @@
 "use client";
 
+import {calendarFormGuard} from "../calendar/contracts";
 import Link from "next/link";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import { stageCasePrompt } from "./case-prompt-departure";
@@ -90,7 +91,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const workspace = state.bundle;
   const selectedId = state.visit?.caseId ?? null;
   const destination = state.destination;
-  const setDestination = (value: MatterDestination) => owner.navigate(value);
+  const setDestination = (value: MatterDestination) => { if(value!==destination&&navigation.riskFor(calendarFormGuard)!=="clear"){const next=new URL(window.location.href);next.searchParams.set("section",value);navigation.requestDeparture("link",next.pathname+next.search);return;}owner.navigate(value); };
   const workspacePhase: LoadPhase = state.loading ? "loading" : state.authority === "granted" && workspace ? "ready" : state.issue ? "error" : "permission";
   const loadIssue = state.issue;
   const notice = state.notice;

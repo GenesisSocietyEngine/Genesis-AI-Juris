@@ -1,0 +1,40 @@
+name: Calendar reminder delivery
+on:
+  schedule:
+    - cron: "3-59/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: Check the queue without delivering any email
+        type: boolean
+        default: true
+permissions: {}
+concurrency:
+  group: calendar-reminder-delivery
+  cancel-in-progress: false
+jobs:
+  dispatch:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      id-token: write
+    steps:
+      - name: Process due reminders
+        env:
+          CHECK_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.check_only }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const endpoint="https://casevant.pro/api/calendar/dispatch";
+          const url=new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+          url.searchParams.set("audience",endpoint);
+          const assertion=await fetch(url,{headers:{Authorization:"Bearer "+process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN},redirect:"error"});
+          if(!assertion.ok)throw Error("Scheduler identity unavailable: "+assertion.status);
+          const {value}=await assertion.json();
+          const response=await fetch(endpoint+(process.env.CHECK_ONLY==="true"?"?check=1":""),{method:"POST",headers:{Authorization:"Bearer "+value},redirect:"error",signal:AbortSignal.timeout(160000)});
+          if(!response.ok)throw Error("Calendar dispatch unavailable: "+response.status);
+          const result=await response.json();
+          console.log("Due: %d; accepted: %d; delivered: %d; retries: %d; failed: %d; uncertain: %d; cancelled: %d",result.due,result.accepted,result.delivered,result.retry,result.failed,result.unknown,result.cancelled);
+          if(!result.configured||result.failed||result.unknown)process.exitCode=1;
+          JS

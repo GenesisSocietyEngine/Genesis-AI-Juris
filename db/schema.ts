@@ -1857,3 +1857,23 @@ export const dossierWorkingNoteApplications = sqliteTable("dossier_working_note_
   foreignKey({columns:[t.dossierId,t.sourceLinkId],foreignColumns:[dossierWorkingNoteSources.dossierId,dossierWorkingNoteSources.id]}),
   check("working_note_applications_action_check",sql`${t.action} in ('link','unlink')`),
 ]);
+
+export const calendarFeeds = sqliteTable("calendar_feeds", {
+  id: text("id").primaryKey(), organizationId: text("organization_id").notNull().references(()=>organizations.id),
+  scope: text("scope").notNull(), owner: text("owner").notNull(), revision: integer("revision").notNull(),
+  active: integer("active").notNull(), operation: text("operation").notNull(),
+},t=>[uniqueIndex("calendar_feed_owner").on(t.organizationId,t.scope,t.owner)]);
+export const calendarWithdrawals = sqliteTable("calendar_withdrawals", {
+  organizationId:text("organization_id").notNull(), scope:text("scope").notNull(), item:text("item").notNull(),
+  dueDate:text("due_date").notNull(), timing:text("timing"), revision:integer("revision").notNull(), stamp:text("stamp").notNull(),
+},t=>[uniqueIndex("calendar_withdrawal_item").on(t.organizationId,t.scope,t.item)]);
+export const calendarReminders = sqliteTable("calendar_reminders", {
+  id:text("id").primaryKey(), organizationId:text("organization_id").notNull().references(()=>organizations.id),
+  scope:text("scope").notNull(), item:text("item").notNull(), sender:text("sender").notNull(), recipient:text("recipient").notNull(),
+  operation:text("operation").notNull(), digest:text("digest").notNull(), dueAt:text("due_at").notNull(), channel:text("channel").notNull(),
+  state:text("state").notNull(), dismissed:integer("dismissed").notNull().default(0), attempts:integer("attempts").notNull().default(0),
+  availableAt:text("available_at").notNull(), firstAttempt:text("first_attempt"), lease:text("lease"), providerId:text("provider_id"),
+  destinationHash:text("destination_hash"), createdAt:text("created_at").notNull(),
+},t=>[uniqueIndex("calendar_reminder_operation").on(t.organizationId,t.sender,t.operation,t.recipient),
+  index("calendar_reminder_dispatch").on(t.state,t.availableAt),index("calendar_reminder_inbox").on(t.organizationId,t.scope,t.recipient,t.dueAt),
+  index("calendar_reminder_outbox").on(t.organizationId,t.scope,t.sender,t.dueAt)]);
