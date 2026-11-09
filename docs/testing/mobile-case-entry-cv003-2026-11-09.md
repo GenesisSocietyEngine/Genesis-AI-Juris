@@ -1,0 +1,24 @@
+# CV-003 · Direct mobile case links · 9 November 2026
+
+A direct link to a team case should show the authorized case name and requested section before the register. At 390 × 844, the section heading should fit on the first screen and its first command be reachable within one screen of scrolling. An ordinary Cases or New case visit should still start with an open register. The picker must work with a keyboard, and an explicit open or close must survive section changes.
+
+The [original audit](ui-ux-functionality-2026-11-09.md) measured the case workspace without the outer Personal/Team collections. This iteration included those collections, the real navigation shell and the pilot notice. Positions below are CSS pixels from the top of a freshly opened document, with no scripted scroll.
+
+| 390 × 844 direct to Client portal | Case heading, top | Portal heading, top–bottom | First portal command, top | Picker on arrival |
+| --- | ---: | ---: | ---: | --- |
+| v205, signed-in production synthetic case | 1,198 | 1,751–1,778 | 1,977 | Open |
+| v205, isolated short English title | 1,136 | 1,638–1,664 | 1,864 | Open |
+| Candidate, same short English title | 208 | 589–616 | 815 | Closed |
+| Candidate, 235-character title in the Russian interface | 208 | 800–827 | 1,026 | Closed |
+
+Both candidate titles were fully displayed, with no horizontal page scrolling. The short and long names use separate synthetic case records. The heading for the requested section and the actual section selector agree. The case header keeps its status badges and shows readiness in the **Case details and actions** disclosure; the case editor and technical details are available inside. The pilot privacy limitation stays visible.
+
+- Enter opens the native case picker and leaves focus on its summary. Tab reaches the collection links. Space closes the picker and its search field leaves the tab order. The summary is 44 px high on the tested phone.
+- Opening the picker, selecting Calendar, closing it and selecting Client portal kept the chosen state and the same case. An unselected visit kept the register open after the first case automatically loaded.
+- Explicitly opening the picker before narrowing to a phone kept it open; explicitly closing it before widening to desktop kept it closed. The phone section selector still raised the CV-002 warning for an unsent invitation and Review focused the same field and case. Nothing was sent.
+- At desktop width, the register was open beside the case. After closing it, **My cases** reopened the picker and moved keyboard focus to its summary.
+- The parent-render regressions cover direct links, ordinary and New case visits, nested return links, access still being checked and access being suspended. The full focused set passed all 102 checks, including the case editor, portal departure guards and return navigation.
+
+No change to data storage, case permissions or submission behavior. Mobile portal button sizing and broader navigation translation are separate backlog items (CV-004 and CV-005).
+
+**Release status:** Verified in isolation against the v205 baseline. Repeat the same signed-in production direct link after publication before moving CV-003 to Verified.

@@ -15,8 +15,7 @@ export default function MyCasesClient({ initialLocation }: { initialLocation: st
   const [locale] = useInterfaceLocale();
   const session = useNavigationSession();
   const en = locale === "en", view = myCasesView(location);
-  return <>
-    <section className={styles.switcher} aria-label={en ? "My cases storage" : "Хранилище моих кейсов"}>
+  const collections = <section className={styles.switcher} aria-label={en ? "My cases storage" : "Хранилище моих кейсов"}>
       {view === "team" ? <h2>{en ? "Cases" : "Дела"}</h2> : <h1>{en ? "My cases" : "Мои кейсы"}</h1>}
       <nav aria-label={en ? "Personal or Team cases" : "Личные или командные кейсы"}>
         <a href={myCasesHref("personal", location)} aria-current={view === "personal" ? "page" : undefined}>{en ? "Personal" : "Личные"}<small>{en ? "Saved Studio drafts" : "Черновики Studio"}</small></a>
@@ -24,9 +23,9 @@ export default function MyCasesClient({ initialLocation }: { initialLocation: st
       </nav>
       <p>{view === "personal" ? (en ? "Saved with your account. Shared Studio drafts are listed separately below; they are not organization cases." : "Сохранены в вашем аккаунте. Доступные вам черновики Studio показаны отдельно; это не дела организации.") : (en ? "Governed cases in the selected organization, including organizations named Personal workspace. Studio drafts stay in Personal." : "Дела выбранной организации, в том числе Personal workspace. Черновики Studio остаются в разделе «Личные». ")}</p>
       {view === "team" && session.phase === "ready" && session.selected && <p><strong>{session.selected.name}</strong> · {en ? "Your organization role" : "Ваша роль в организации"}: {session.selected.role.replaceAll("_", " ")} · {en ? "Use the sidebar to choose another organization. Each case has its own role." : "Выберите другую организацию в боковом меню. Для каждого дела действует своя роль."}</p>}
-    </section>
-    {view === "team" ? <MattersClient /> : <SavedStudioCases locale={locale} location={location} />}
-  </>;
+    </section>;
+  return view === "team" ? <MattersClient initialLocation={location} collections={collections}/> :
+    <>{collections}<SavedStudioCases locale={locale} location={location} /></>;
 }
 
 export function SavedStudioCases({ locale, location }: { locale: "en" | "ru"; location: string }) {

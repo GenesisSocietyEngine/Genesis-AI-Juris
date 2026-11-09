@@ -6,6 +6,7 @@ import {calendarFormGuard} from "../calendar/contracts";
 import Link from "next/link";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import { stageCasePrompt } from "./case-prompt-departure";
+import { initialCaseLayout, isDirectCaseEntry, subscribeCaseLayout, wideCaseLayout } from "./case-entry";
 import WorkingNotes from "./WorkingNotes";
 import CaseDetailsEditor from "./CaseDetailsEditor";
 import PublishedMapPicker from "./PublishedMapPicker";
@@ -80,12 +81,13 @@ const STATUS_FILTERS: Array<MatterStatus | "all"> = [
   "output_approved", "closed", "archived", "declined", "cancelled",
 ];
 
-export default function MattersClient() {
+type CaseEntryProps = { initialLocation?: string; collections?: ReactNode };
+export default function MattersClient(props: CaseEntryProps) {
   const organization = useActiveOrganization();
-  return organization ? <AuthorizedMattersClient key={organization.selection} actorId={organization.actorId} organizationId={organization.selection}/> : null;
+  return organization ? <AuthorizedMattersClient {...props} key={organization.selection} actorId={organization.actorId} organizationId={organization.selection}/> : null;
 }
 
-export function AuthorizedMattersClient({ actorId, organizationId, controller: supplied }: { actorId: string; organizationId: string; controller?: WorkspaceController }) {
+export function AuthorizedMattersClient({ actorId, organizationId, controller: supplied, initialLocation, collections }: CaseEntryProps & { actorId: string; organizationId: string; controller?: WorkspaceController }) {
   const navigation = useNavigationController();
   const currentOrganization = useActiveOrganization();
   const location = useWorkspaceLocation();
@@ -108,13 +110,17 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const [cataloguePhase, setCataloguePhase] = useState<LoadPhase>("loading");
   const [catalogueIssue, setCatalogueIssue] = useState<ApiIssue | null>(null);
   const [view, setView] = useState<MatterView>("user");
-  const catalogueElement = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const wide = window.matchMedia("(min-width: 1200px)");
-    const update = () => { if (catalogueElement.current) catalogueElement.current.open = wide.matches || !selectedId; };
-    update(); wide.addEventListener("change", update);
-    return () => wide.removeEventListener("change", update);
-  }, [selectedId]);
+  const [directEntry] = useState(() => isDirectCaseEntry(initialLocation ?? location));
+  const wide = useSyncExternalStore(subscribeCaseLayout, wideCaseLayout, initialCaseLayout);
+  const caseFirst = directEntry && !wide;
+  const [pickerChoice, setPickerChoice] = useState<boolean | null>(null);
+  const pickerOpen = pickerChoice ?? !caseFirst;
+  const pickerSummary = useRef<HTMLElement>(null);
+  const openingExactLink = useRef(false);
+  function showPicker() {
+    setPickerChoice(true);
+    pickerSummary.current?.focus();
+  }
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MatterStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -132,7 +138,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
     if (target.destination === "overview" && target.id === "matter-next-actions") owner.returnToActions();
     else { owner.setQueue({ scrollAnchor: target.originActionKey ?? state.queue?.selectedKey ?? null }); void owner.open(target); }
   };
-  const loadCatalogue = useCallback(async (preferredId?: string) => {
+  const loadCatalogue = useCallback(async (preferredId?: string, entrySection?: MatterDestination) => {
     const ticket = owner.capture(), request = ++catalogueEpoch.current;
     setCataloguePhase("loading"); setCatalogueIssue(null);
     try {
@@ -143,7 +149,13 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
       setCataloguePhase(items.length ? "ready" : "empty");
       // An authorized selected case need not be in the first catalogue page.
       const id = preferredId ?? owner.getSnapshot().visit?.caseId ?? items[0]?.id;
-      if (id) { if (!owner.enterFromCatalogue(id)) return null; const visit = owner.getSnapshot().visit; await owner.load(); return owner.getSnapshot().visit === visit ? visit : null; }
+      if (id) {
+        if (!owner.enterFromCatalogue(id)) return null;
+        if (entrySection) owner.navigate(entrySection);
+        const visit = owner.getSnapshot().visit;
+        await owner.load();
+        return owner.getSnapshot().visit === visit ? visit : null;
+      }
     } catch (error) {
       if (!owner.current(ticket) || request !== catalogueEpoch.current) return;
       const issue = error instanceof WorkspaceApiError ? apiIssueFor(error.status, error.payload) : apiIssueFor(500, {});
@@ -165,11 +177,13 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
     const params = new URL(window.location.href).searchParams;
     void Promise.resolve().then(async () => {
       if (cancelled) return;
-      const visit = await loadCatalogue(params.get("dossier") ?? undefined);
-      if (cancelled || !visit || visit !== owner.getSnapshot().visit) return;
       const section = MATTER_DESTINATIONS.find(item => item.key === params.get("section"))?.key;
-      if (section) owner.navigate(section);
       const target = params.get("target");
+      openingExactLink.current = Boolean(section && target);
+      const visit = await loadCatalogue(params.get("dossier") ?? undefined, section);
+      if (cancelled) return;
+      openingExactLink.current = false;
+      if (!visit || visit !== owner.getSnapshot().visit) return;
       if (section && target) void owner.open({ destination: section, id: target, requestId: params.get("request") ?? undefined });
     });
     return () => { cancelled = true; };
@@ -183,7 +197,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
     else if (next.authority === "granted" && next.bundle) setCatalogue(items => items.map(item => item.id === next.bundle!.matter.id ? next.bundle!.matter : item));
   }), [owner]);
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId || openingExactLink.current) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("dossier") !== selectedId) {
       for (const key of ["studio_case", "studio_panel", "studio_step", "return_to"]) url.searchParams.delete(key);
@@ -328,9 +342,10 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   }
   const dossierPath = workspace ? "/api/dossiers/" + encodeURIComponent(workspace.matter.id) : "";
 
-  if (["session_expired", "account_changed", "case_denied"].includes(state.authority)) return <WorkspaceAccessState authority={state.authority} onRetry={() => { if (state.authority === "account_changed") { window.location.reload(); return; } if (selectedId && state.authority === "case_denied") owner.enter(selectedId); void loadCatalogue(selectedId ?? undefined); }} signInHref={workspaceSignInPath(`/matters?organization=${encodeURIComponent(organizationId)}${selectedId ? "&dossier=" + encodeURIComponent(selectedId) : ""}`)}/>;
+  if (["session_expired", "account_changed", "case_denied"].includes(state.authority)) return <>{collections}<WorkspaceAccessState authority={state.authority} onRetry={() => { if (state.authority === "account_changed") { window.location.reload(); return; } if (selectedId && state.authority === "case_denied") owner.enter(selectedId); void loadCatalogue(selectedId ?? undefined); }} signInHref={workspaceSignInPath(`/matters?organization=${encodeURIComponent(organizationId)}${selectedId ? "&dossier=" + encodeURIComponent(selectedId) : ""}`)}/></>;
 
-  return <WorkspaceDrafts key={`${state.authority}:${state.targetLoading}:${state.panelOpen}`} owner={owner} scope={`${state.visit?.generation}:${destination}:${state.target?.id ?? ""}`}><main className={styles.shell}>
+  const caseHeader = workspacePhase === "ready" && workspace ? <MatterHero sectionLabel={caseFirst ? sectionName(destination, createLocale) : undefined} onEdit={() => { owner.openCaseEditor(); document.getElementById("case-edit-name")?.focus(); }} editing={Boolean(owner.caseEditor)} editDisabled={owner.busy || state.updating} locale={createLocale} compact={destination !== "overview" || Boolean(owner.caseEditor)} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/> : null;
+  return <>{!caseFirst && collections}<WorkspaceDrafts key={`${state.authority}:${state.targetLoading}:${state.panelOpen}`} owner={owner} scope={`${state.visit?.generation}:${destination}:${state.target?.id ?? ""}`}><main className={styles.shell}>
     <a className={styles.skipLink} href="#matter-workspace">Skip to matter workspace</a>
     <section className={styles.pilotNotice} aria-label="Pilot privacy limitation">
       <strong>Pilot workspace · synthetic or de-identified files only</strong>
@@ -341,10 +356,15 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
     </section>
 
     {state.authority === "granted" && workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
-    <div className={styles.workspaceLayout}>
-      <details ref={catalogueElement} className={styles.catalogue} open>
-        <summary className={styles.casePickerSummary}><WorkspaceIcon name="cases"/><strong>Cases</strong><span>Choose or create a case</span></summary>
+    <div className={styles.workspaceLayout} data-case-first={caseFirst || undefined}>
+      {caseFirst && caseHeader}
+      <details id="matter-case-picker" className={styles.catalogue} open={pickerOpen}>
+        <summary ref={pickerSummary} className={styles.casePickerSummary} onClick={event => {
+          // Keyboard activation also dispatches click. Keep the choice outside the keyed workspace DOM.
+          event.preventDefault(); setPickerChoice(!pickerOpen);
+        }}><WorkspaceIcon name="cases"/><strong>{createText("Cases", "Дела")}</strong><span>{createText("Choose or create a case", "Выбрать или создать дело")}</span></summary>
         <div className={styles.casePickerBody}>
+        {caseFirst && collections}
         <div className={styles.catalogueHeading}>
           <div><p className={styles.eyebrow}>CASE LIBRARY</p>{workspace ? <h2 id="matter-catalogue-title">My cases</h2> : <h1 id="matter-catalogue-title">My cases</h1>}<p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
@@ -427,8 +447,8 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && loadIssue && <IssueState issue={loadIssue} onRetry={() => void loadMatter(selectedId)}/>}
 
         {workspacePhase === "ready" && workspace && <>
-          <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => { const title=document.getElementById("matter-catalogue-title"); const picker=title?.closest("details"); if(picker)picker.open=true;title?.scrollIntoView({block:"start"}); }}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
-          <MatterHero onEdit={() => { owner.openCaseEditor(); document.getElementById("case-edit-name")?.focus(); }} editing={Boolean(owner.caseEditor)} editDisabled={owner.busy || state.updating} locale={createLocale} compact={destination !== "overview" || Boolean(owner.caseEditor)} matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
+          {!caseFirst && <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" aria-controls="matter-case-picker" onClick={showPicker}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>}
+          {!caseFirst && caseHeader}
           <nav className={styles.caseModeNavigation} aria-label={createText("Case workspace", "Рабочая область дела")}><button type="button" aria-current="page" onClick={() => setDestination("overview")}><WorkspaceIcon name="cases"/>{createText("Case overview", "Обзор дела")}</button><a href={workspaceDestination("/studio?studio_panel=workbench", workspaceDestination(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(workspace.matter.id)}&section=${destination}`, location))}><WorkspaceIcon name="studio"/>{createText("AI Studio", "ИИ Студия")}</a></nav>
           <SectionNavigation destination={destination} onChange={setDestination} portalAllowed={currentOrganization?.role!=="auditor"&&["owner","contributor"].includes(workspace.matter.permissions.role)} locale={createLocale}/>
           {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.originOutputId && <button type="button" onClick={() => openAction({ destination: "outputs", id: "output-" + actionTarget.originOutputId, originOutputId: actionTarget.originOutputId, originSnapshotId: actionTarget.originSnapshotId })}>Return to the originating report →</button>}{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
@@ -453,7 +473,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         </>}
       </section>
     </div>
-  </main></WorkspaceDrafts>;
+  </main></WorkspaceDrafts></>;
 }
 
 export function WorkspaceAccessState({ authority, onRetry, signInHref }: { authority: string; onRetry: () => void; signInHref: string }) {
@@ -462,23 +482,42 @@ export function WorkspaceAccessState({ authority, onRetry, signInHref }: { autho
 
 function caseStatusTone(status: MatterStatus) { return status === "active" ? "open" : ["closed", "output_approved"].includes(status) ? "completed" : ["awaiting_input", "intake_review", "internal_review"].includes(status) ? "today" : "past"; }
 
-function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, editDisabled, locale, compact = false }: { onEdit: () => void; editing: boolean; editDisabled: boolean; locale: "en" | "ru"; matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void; compact?: boolean }) {
+function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, editDisabled, locale, sectionLabel, compact = false }: { sectionLabel?: string; onEdit: () => void; editing: boolean; editDisabled: boolean; locale: "en" | "ru"; matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void; compact?: boolean }) {
   const readiness = readinessSummary(matter.readiness);
+  const editCommand = matter.permissions.canWrite && <button type="button" id="case-edit-command" className={styles.secondaryButton} disabled={editDisabled} onClick={onEdit} aria-expanded={editing} aria-controls={editing ? "case-editor-title" : undefined}><WorkspaceIcon name="cases"/>{locale === "ru" ? editing ? "Продолжить редактирование" : "Редактировать дело" : editing ? "Continue editing" : "Edit case"}</button>;
+  const technicalDetails = <details className="cv-technical"><summary>Technical details</summary>
+    <fieldset className={styles.viewToggle}>
+      <legend>Workspace detail</legend>
+      <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>User view</button>
+      <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>Developer view</button>
+    </fieldset>
+    <p>Case revision: {matter.revision}</p>
+    {view === "developer" && <dl className={styles.developerStrip} aria-label="Developer matter diagnostics">
+      <div><dt>Dossier ID</dt><dd><code>{matter.id}</code></dd></div>
+      <div><dt>Owner actor ID</dt><dd><code>{matter.ownerActorId ?? "not returned"}</code></dd></div>
+      <div><dt>Schema / contract</dt><dd><code>{matter.rawSchemaVersion ?? "?"} / {matter.contractVersion ?? "not returned"}</code></dd></div>
+      <div><dt>Build</dt><dd><code>{matter.buildVersion ?? "not returned"}</code></dd></div>
+    </dl>}</details>;
   return <header className={styles.matterHero}>
     <div className={styles.heroTop}>
       <div className={styles.heroIdentity}>
-        <p className={styles.eyebrow}>{matter.reference}</p>
+        {sectionLabel ? <p className={styles.entrySection}><WorkspaceIcon name="cases"/>{sectionLabel}</p> : <p className={styles.eyebrow}>{matter.reference}</p>}
         <h1>{matter.title}</h1>
         <p>{readableMatterType(matter.typeLabel)}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
         <div className="cv-badges"><span className="cv-status" data-tone={caseStatusTone(matter.status)}><span className="cv-status-dot" aria-hidden="true"/>{statusLabel(matter.status)}</span><span className="cv-status" data-tone={matter.priority === "urgent" ? "overdue" : matter.priority === "high" ? "today" : "past"}>{sentenceLabel(matter.priority)} priority</span></div>
       </div>
-      {matter.permissions.canWrite && <button type="button" id="case-edit-command" className={styles.secondaryButton} disabled={editDisabled} onClick={onEdit} aria-expanded={editing} aria-controls={editing ? "case-editor-title" : undefined}><WorkspaceIcon name="cases"/>{locale === "ru" ? editing ? "Продолжить редактирование" : "Редактировать дело" : editing ? "Continue editing" : "Edit case"}</button>}
+      {!sectionLabel && editCommand}
     </div>
 
     <details className={styles.caseChecks} key={compact ? "compact" : "overview"}>
-    <summary>Case details & checks · {statusLabel(matter.status)} · {readiness.headline}</summary>
+    <summary>{sectionLabel
+      ? (locale === "ru" ? "Сведения и действия" : "Case details and actions") + " · " +
+        (matter.readiness.ready ? (locale === "ru" ? "Готово" : "Ready") : (locale === "ru" ? "Требует внимания" : "Needs attention"))
+      : <>Case details &amp; checks · {statusLabel(matter.status)} · {readiness.headline}</>}</summary>
+    {sectionLabel && editCommand}
 
     <dl className={styles.heroFacts}>
+      {sectionLabel && <div><dt>{locale === "ru" ? "Номер дела" : "Case reference"}</dt><dd>{matter.reference}</dd></div>}
       <div><dt>Owner</dt><dd>{matter.ownerName}</dd></div>
       <div><dt>Lifecycle status</dt><dd><span className={styles.stateToken}>{statusLabel(matter.status)}</span>{matter.statusReason && <small>{matter.statusReason}</small>}</dd></div>
       <div><dt>Priority & classification</dt><dd>{sentenceLabel(matter.priority)} · {sentenceLabel(matter.classification)}</dd></div>
@@ -493,25 +532,18 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
       </section>
     </div>
 
+    {sectionLabel && technicalDetails}
     </details>
-    <details className="cv-technical"><summary>Technical details</summary>
-    <fieldset className={styles.viewToggle}>
-      <legend>Workspace detail</legend>
-      <button type="button" aria-pressed={view === "user"} onClick={() => setView("user")}>User view</button>
-      <button type="button" aria-pressed={view === "developer"} onClick={() => setView("developer")}>Developer view</button>
-    </fieldset>
-    <p>Case revision: {matter.revision}</p>
-    {view === "developer" && <dl className={styles.developerStrip} aria-label="Developer matter diagnostics">
-      <div><dt>Dossier ID</dt><dd><code>{matter.id}</code></dd></div>
-      <div><dt>Owner actor ID</dt><dd><code>{matter.ownerActorId ?? "not returned"}</code></dd></div>
-      <div><dt>Schema / contract</dt><dd><code>{matter.rawSchemaVersion ?? "?"} / {matter.contractVersion ?? "not returned"}</code></dd></div>
-      <div><dt>Build</dt><dd><code>{matter.buildVersion ?? "not returned"}</code></dd></div>
-    </dl>}</details>
+    {!sectionLabel && technicalDetails}
   </header>;
 }
 
+function sectionName(key: MatterDestination, locale: "en" | "ru") {
+  return key === "portal" && locale === "ru" ? "Клиентский портал" : MATTER_DESTINATIONS.find(item => item.key === key)!.label;
+}
+
 export function SectionNavigation({ destination, onChange, portalAllowed=true, locale="en" }: { destination: MatterDestination; onChange: (destination: MatterDestination) => void; portalAllowed?:boolean; locale?:"en"|"ru" }) {
-  const sections=MATTER_DESTINATIONS.filter(item=>item.key!=="portal"||portalAllowed).map(item=>({...item,label:item.key==="portal"&&locale==="ru"?"Клиентский портал":item.label}));
+  const sections=MATTER_DESTINATIONS.filter(item=>item.key!=="portal"||portalAllowed).map(item=>({...item,label:sectionName(item.key, locale)}));
   return <nav className={styles.sectionNavigation} aria-label="Matter sections">
     <div className={styles.sectionTabs} role="tablist" aria-label="Matter workspace destinations">
       {sections.map((item, index) => <button key={item.key} type="button" role="tab" id={"tab-" + item.key} aria-selected={destination === item.key} aria-controls={"panel-" + item.key} tabIndex={destination === item.key ? 0 : -1} onClick={() => onChange(item.key)} onKeyDown={(event) => {
@@ -526,7 +558,7 @@ export function SectionNavigation({ destination, onChange, portalAllowed=true, l
         <WorkspaceIcon name={item.key === "portal" ? "people" : item.key === "calendar" ? "calendar" : item.key === "tasks" || item.key === "requests" ? "tasks" : item.key === "workflows" || item.key === "decision-packages" ? "flow" : item.key === "outputs" ? "report" : item.key === "overview" ? "cases" : "studio"}/>{item.label}
       </button>)}
     </div>
-    <label className={styles.mobileSectionSelect}><span>Workspace section</span><select value={destination} onChange={(event) => onChange(event.target.value as MatterDestination)}>{sections.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+    <label className={styles.mobileSectionSelect}><span>{locale === "ru" ? "Раздел дела" : "Workspace section"}</span><select value={destination} onChange={(event) => onChange(event.target.value as MatterDestination)}>{sections.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
   </nav>;
 }
 

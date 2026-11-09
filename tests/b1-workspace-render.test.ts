@@ -339,3 +339,38 @@ test("C1 catalogue delivery cannot switch after a draft appears during an asynch
   assert.equal(h.owner.enterFromCatalogue("case_newly_created"),false);assert.equal(h.owner.getSnapshot().visit?.caseId,"case_a");assert.equal(notes.getSnapshot().editors[key].draft.body,"Keep this");
   notes.discard(key);assert.equal(h.owner.enterFromCatalogue("case_newly_created"),true);h.owner.dispose();
 });
+
+test("a direct case entry puts its authorized title and section before a closed keyboard picker", async () => {
+  const h = harness();
+  const render = () => renderToStaticMarkup(createElement(Parent, {
+    ...identity, controller: h.owner, initialLocation: "/matters?dossier=case_a&section=calendar",
+    collections: createElement("nav", { "aria-label": "Case collections" }),
+  }));
+  try {
+    h.owner.enter("case_a"); h.owner.navigate("calendar");
+    assert.doesNotMatch(render(), /Confidential parent case title/);
+    await h.owner.load();
+    const html = render(), picker = html.indexOf('id="matter-case-picker"');
+    assert.match(html, /<details id="matter-case-picker"[^>]*><summary/);
+    assert.doesNotMatch(html, /<details id="matter-case-picker"[^>]* open/);
+    const title = html.indexOf("<h1>Confidential parent case title</h1>");
+    assert.ok(title > 0 && title < picker);
+    assert.match(html.slice(0, title), /Calendar/);
+    assert.ok(html.indexOf('aria-label="Case collections"') > picker);
+    assert.match(html, /id="panel-calendar"/);
+    h.owner.suspendAuthority();
+    assert.doesNotMatch(render(), /Confidential parent case title|id="panel-calendar"/);
+  } finally { h.owner.dispose(); }
+});
+
+test("an unselected or create visit keeps the picker open even after the catalogue selects a case", async () => {
+  const h = harness();
+  try {
+    h.owner.enter("case_a"); await h.owner.load();
+    for (const initialLocation of ["/matters?collection=team", "/matters?dossier=case_a&create=case", "/matters?return_to=%2Fmatters%3Fdossier%3Dcase_a"]) {
+      const html = renderToStaticMarkup(createElement(Parent, { ...identity, controller: h.owner, initialLocation }));
+      assert.match(html, /<details id="matter-case-picker"[^>]* open/);
+      assert.ok(html.indexOf('id="matter-case-picker"') < html.indexOf("<h1>Confidential parent case title</h1>"));
+    }
+  } finally { h.owner.dispose(); }
+});
