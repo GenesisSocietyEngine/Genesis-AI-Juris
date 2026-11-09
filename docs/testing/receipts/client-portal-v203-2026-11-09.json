@@ -1,0 +1,181 @@
+{
+  "date": "2026-11-09",
+  "version": 203,
+  "previousVersion": 202,
+  "sourceCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+  "previousRuntimeCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+  "candidateCommit": "03fa62969e1e0fc29251af1493fe3d8a0b5212d4",
+  "implementationPR": 267,
+  "candidateRun": 42598873761,
+  "mainRun": 42600498511,
+  "tests": {
+    "passed": 2054,
+    "failed": 0,
+    "existingSkips": 3,
+    "renderedHtmlPassed": 2,
+    "pdfVisual": "47 unchanged full-analysis PDF baselines; bilingual decision and tax PDF checks passed",
+    "clearAudits": 2
+  },
+  "artifact": {
+    "id": 13665428491,
+    "name": "verified-web-build-d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6-42600498511",
+    "digest": "sha256:acb4ef1e9dfc858d308a617b114dc1ff41ac36cd5568cac6faef0c50761344f7",
+    "expired": false
+  },
+  "deployment": "appgdep_6af1a231e5988191b1166c454f9e2c63",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_7b18c04fa5cc8191b2950243b7848f01",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 203
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+    "tree": "36615c243a190efdb4bb085adc52b0fa6cf03e14",
+    "applicationInputsSha256": "472dcc271be2271acb44f33a663f23cf93643ac879305f27cafbbf12b43a075b",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 727,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+    "archiveSha256": "8e3c728d489264237ef6467d659010989f0ced05cf5dfe2aa4a262947836a991",
+    "migrationSha256": "6629530a71301d33f791ed738fdb287f3b53a963609a51d836553de18db76f8e",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+      "applicationInputsSha256": "472dcc271be2271acb44f33a663f23cf93643ac879305f27cafbbf12b43a075b",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+      "applicationInputsSha256": "472dcc271be2271acb44f33a663f23cf93643ac879305f27cafbbf12b43a075b",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 154,
+      "retained": 70,
+      "verified": 224,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 154,
+      "retained": 70,
+      "verified": 224,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Authenticated hosted provider session opened /portal, displayed no shared cases and recovered from a denied case selection. The case owner used the existing clearly synthetic production smoke case. A non-deliverable test recipient began with no shares. Added a synthetic text fixture, shared only v1, downloaded identical bytes via the authorized staff portal, denied the signed-in non-recipient, withdrew the share and denied the original staff URL, then revoked the grant. Overview → Calendar → Client portal retained one case ID.",
+    "isolated": "A separate synthetic client accepted its invitation, uploaded a file and exchanged messages. Tests cover retry, race, another client, stale events, and revocation during reads/writes. Browser checks covered English desktop and Russian at 390 px.",
+    "limitations": "The production grant was never sent or redeemed. A first-time external provider login, client-originated upload and client-authored reply were not repeated on production."
+  },
+  "limits": [
+    "Pilot: synthetic or de-identified material only. File-format and integrity checks are not malware scanning.",
+    "Revocation controls later requests and cannot recall copies already downloaded.",
+    "Provider sign-in, supplied identities and synthetic versus real-client operations are reported separately in browser evidence."
+  ],
+  "featureMerge": "94f3781a5130d5244a7507fff18a23fcc7862380",
+  "sourceProgressPR": 268,
+  "productionURL": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+  "clientURL": "https://casevant.pro/portal",
+  "scheduler": {
+    "run": 42602199587,
+    "status": "success",
+    "summary": "Due: 0; accepted: 0; delivered: 0; retries: 0; failed: 0; uncertain: 0; cancelled: 0",
+    "checkOnly": true,
+    "sent": false
+  },
+  "migration": {
+    "file": "drizzle/0035_client_portal.sql",
+    "verifiedArchiveSha256": "6629530a71301d33f791ed738fdb287f3b53a963609a51d836553de18db76f8e",
+    "hostedEvidence": "Sites completed the migration-backed publication. Authenticated reads, a staff grant, a document share, withdrawal and revocation were exercised on the hosted database. Document and upload file lookups for a missing recipient returned the private denial, not a database error."
+  },
+  "http": [
+    {
+      "origin": "https://casevant.pro",
+      "portalStatus": 200,
+      "signInVisible": true,
+      "requests": [
+        {
+          "resource": "/api/portal/client",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        },
+        {
+          "resource": "/api/portal/staff",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        },
+        {
+          "resource": "/api/portal/file",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        }
+      ]
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "portalStatus": 200,
+      "signInVisible": true,
+      "requests": [
+        {
+          "resource": "/api/portal/client",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        },
+        {
+          "resource": "/api/portal/staff",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        },
+        {
+          "resource": "/api/portal/file",
+          "status": 401,
+          "privateNoStore": true,
+          "privateData": false
+        }
+      ]
+    }
+  ],
+  "syntheticProductionChanges": {
+    "scope": "Existing designated production smoke case only",
+    "newCase": false,
+    "newGovernedFileVersions": 1,
+    "fileKind": "Small synthetic text release fixture",
+    "sharedVersion": 1,
+    "downloadMatchedOriginal": true,
+    "recipientDomain": "example.invalid",
+    "recipientNotified": false,
+    "grantState": "revoked",
+    "documentShareState": "withdrawn",
+    "realClientShared": false
+  }
+}
