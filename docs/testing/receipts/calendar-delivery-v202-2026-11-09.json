@@ -1,0 +1,148 @@
+{
+  "date": "2026-11-09",
+  "version": 202,
+  "previousVersion": 201,
+  "sourceCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+  "previousRuntimeCommit": "673310f1218023e2e4ac2dc58d6b1f892530002c",
+  "candidateCommit": "177145ad35092a155ce62a7b14bcebe831f07159",
+  "implementationPR": 265,
+  "candidateRun": 42585450881,
+  "mainRun": 42586786443,
+  "tests": {
+    "passed": 2053,
+    "failed": 0,
+    "skipped": 3,
+    "fullPdfBaselineCount": 47,
+    "focusedCalendarAndPracticeTests": 22,
+    "schedulerTransportTests": 2,
+    "workerAndCalendarChecks": 3,
+    "independentCalendarReader": "icalendar 6.3.2",
+    "workerPublicIssuerStatus": 200,
+    "dependencyAuditFindings": 0
+  },
+  "artifact": {
+    "id": 13660056956,
+    "name": "verified-web-build-ac0e79663ede09bf21d17d5e1361740f3c9539cb-42586786443",
+    "digest": "sha256:227eb05e1fbba313cf8a4dabcb4cf1838531ce982d14295cbfc2633d0eed299e",
+    "expired": false
+  },
+  "deployment": "appgdep_6af188961a24819191be345930bef7be",
+  "deploymentStatus": "succeeded",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_bdc5557c519c8191ba7763c7218f7766",
+  "environment": {
+    "same": true,
+    "revision": 42,
+    "entries": 13
+  },
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "same": true,
+    "version": 202
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+    "tree": "2e991f00f5762671308cb3e8f9f2069d5c0137d2",
+    "applicationInputsSha256": "4a3bb36a92728049069d8ac21603945ba14086bcd99a5a0d28e096b9714f345f",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 714,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+    "archiveSha256": "98863a42e6d1cc2e2904ccd23c5506d81e6e48e8ce72237a6650b0c9ea6382ed",
+    "migrationSha256": "3be3cc9fc69801504ca74ed2f46b2e8106316527d4d3fd671594a83966e704f3",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+      "applicationInputsSha256": "4a3bb36a92728049069d8ac21603945ba14086bcd99a5a0d28e096b9714f345f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "ac0e79663ede09bf21d17d5e1361740f3c9539cb",
+      "applicationInputsSha256": "4a3bb36a92728049069d8ac21603945ba14086bcd99a5a0d28e096b9714f345f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "current": 151,
+      "retained": 52,
+      "verified": 203,
+      "passed": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "current": 151,
+      "retained": 52,
+      "verified": 203,
+      "passed": true
+    }
+  ],
+  "browser": {
+    "production": "Signed-in v202 Calendar opened Outlook and Google settings, Link off, recipient reminders and Scheduled by me. No private feed was enabled.",
+    "synthetic": "Same case from Calendar to Reminders and back; unsaved form retained on Stay here. Save, dismiss and per-recipient cancellation; Russian narrow layout, 36/44 px buttons."
+  },
+  "limits": [
+    "One-way subscriptions only; providers determine refresh and can retain downloaded copies.",
+    "Fixed reminder times; queued email is processed approximately every ten minutes.",
+    "Live external subscription refresh and real-mailbox delivery were not exercised."
+  ],
+  "boundaries": [
+    {
+      "origin": "https://casevant.pro",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "unknownFeed": 404,
+      "head": 404,
+      "anonymousManagement": 401,
+      "unauthorizedDispatcher": 403,
+      "privateCache": true
+    }
+  ],
+  "scheduler": {
+    "run": 42588565287,
+    "status": "success",
+    "summary": "Due: 0; accepted: 0; delivered: 0; retries: 0; failed: 0; uncertain: 0; cancelled: 0",
+    "checkOnly": true,
+    "sent": false
+  },
+  "history": [
+    {
+      "version": 200,
+      "implementationPR": 263,
+      "checkOnlyStatus": 403,
+      "run": 42581278756
+    },
+    {
+      "version": 201,
+      "implementationPR": 264,
+      "checkOnlyStatus": 503,
+      "run": 42584896903
+    },
+    {
+      "version": 202,
+      "implementationPR": 265,
+      "checkOnlyStatus": 200,
+      "run": 42588565287
+    }
+  ]
+}
