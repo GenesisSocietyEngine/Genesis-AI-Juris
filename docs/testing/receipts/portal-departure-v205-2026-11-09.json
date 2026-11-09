@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-09",
+  "backlog": "CV-002",
+  "version": 205,
+  "previousVersion": 204,
+  "productionURL": "https://casevant.pro/matters",
+  "sourceCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+  "previousRuntimeCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+  "candidateCommit": "db314c8431556fd3950ddb6a177a3daf5c022e50",
+  "implementationPR": 273,
+  "candidateRun": 42622676843,
+  "mainRun": 42623001696,
+  "tests": {
+    "passed": 2063,
+    "failed": 0,
+    "existingSkips": 3,
+    "renderedHtmlPassed": 2,
+    "pdfVisual": "47 unchanged full-analysis PDF baselines, bilingual decision reports and tax PDFs",
+    "clearAudits": 2
+  },
+  "artifact": {
+    "id": 13678460480,
+    "name": "verified-web-build-ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8-42623001696",
+    "digest": "sha256:c47254d07000f51b01cedfd5ced547eda0271f17188d5da25849f09285579419",
+    "expired": false
+  },
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_1f5d6e0d17748191957d8ea91f68db97",
+  "deployment": "appgdep_6af1c9b085508191a375e6f78ab03f57",
+  "deploymentStatus": "succeeded",
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "unchanged": true
+  },
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "unchanged": true
+  },
+  "schemaMigrationsAdded": 0,
+  "browser": {
+    "production": [
+      "v204: leaving an edited invitation displayed generic workspace changes. Review focused the Calendar tab.",
+      "v205, same synthetic case: the dialog identified the unsent invitation. Stay retained the text and recipient; Review reopened the collapsed form, focused the edited client-facing case name and preserved the prior case selection.",
+      "Restoring the original value allowed Calendar to open in the same case without a warning. No portal form was submitted."
+    ],
+    "isolated": [
+      "Staff invitation name/email and message, independent client reply and pending file. With several unsent items the list included both, and Review focused the last remaining edit.",
+      "Case and recipient switches, Stay, Escape, explicit discard, sign-out review and sign-out discard; the selected filename and acknowledgement survived a hidden upload tab. The second case opened without the old reply.",
+      "Russian at 390 by 844 pixels: the dialog fit and all three actions were 44 px high. Stay had initial focus; Review restored keyboard focus to the reply."
+    ],
+    "observedPortalWriteRequests": 0,
+    "writeCounterScope": "Synthetic fixture after test data setup; excludes read-only refreshes."
+  },
+  "limits": [
+    "Active external client, upload and multiple-recipient journeys used synthetic sessions; no real client was invited, messaged, uploaded to or signed out during production verification.",
+    "Browser reload/close warnings remain native. No change to portal authorization, sharing, file handling on the server or receipt retry."
+  ],
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+    "tree": "fc61d4f7673cf24ef730b9e97b49ae4d3a648ea8",
+    "applicationInputsSha256": "6ae6d7dfc6e860c90eebf0e42640e26e389d5344f245cb5f235dd4b30a5f7f30",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 731,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+    "archiveSha256": "a43ba2da0c965cc120c3a7d09eab224419400b61aa064857129ac2605ec6e74a",
+    "migrationSha256": "6629530a71301d33f791ed738fdb287f3b53a963609a51d836553de18db76f8e",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+      "applicationInputsSha256": "6ae6d7dfc6e860c90eebf0e42640e26e389d5344f245cb5f235dd4b30a5f7f30",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "ee45a427d972ce640ad921b4fd65e6f1b5ef8fd8",
+      "applicationInputsSha256": "6ae6d7dfc6e860c90eebf0e42640e26e389d5344f245cb5f235dd4b30a5f7f30",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "signedOut": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 401,
+      "privateNoStore": true,
+      "noPortalDataReturned": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 401,
+      "privateNoStore": true,
+      "noPortalDataReturned": true
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 216,
+      "verifiedCount": 216,
+      "currentAssets": 156,
+      "retainedAssets": 60
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 216,
+      "verifiedCount": 216,
+      "currentAssets": 156,
+      "retainedAssets": 60
+    }
+  ]
+}

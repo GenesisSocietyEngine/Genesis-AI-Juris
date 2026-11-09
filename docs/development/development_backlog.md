@@ -1,14 +1,13 @@
 # CaseVant development backlog
 
-**Last reviewed: 9 November 2026 · live version: v204.** This is the working queue for the web product. [Current delivery](../../current_progress.md) records what shipped; this file records what should change or still needs proof. **CV-002 is waiting for production verification.** Isolated staff and client checks passed for invitations, replies and pending uploads. [CV-002 acceptance](../testing/portal-departure-cv002-2026-11-09.md). Next open item: CV-003 (mobile case entry). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
+**Last reviewed: 9 November 2026 · live version: v205.** This is the working queue for the web product. [Current delivery](../../current_progress.md) records what shipped; this file records what should change or still needs proof. **CV-001 and CV-002 are verified.** The unsent portal warning and keyboard return were checked on v205. [CV-002 acceptance](../testing/portal-departure-cv002-2026-11-09.md). Next open item: CV-003 (mobile case entry). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
 
 ## Confirmed findings
 
-The v203 audit reproduced six issues against the public site or its isolated 390 px fixture. Four remain open; CV-002 is waiting for production verification and CV-001 is recorded under Verified below. The **area** identifies the part of the product that should take the item.
+The v203 audit reproduced six issues against the public site or its isolated 390 px fixture. Four remain open. CV-001 and CV-002 are recorded under Verified below. The **area** identifies the part of the product that should take the item.
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-002 · P2 | Waiting for verification | Saving / keyboard navigation | An unsent portal invitation is protected, but the warning calls it generic workspace changes. “Review unsaved work” returns focus to Calendar instead of the edited field. | Name the unsent invitation, reply or selected upload as applicable. Review reveals and focuses the relevant field; Stay retains the original value and recipient. Clean navigation raises no warning. Reviewing or leaving must never create an invitation, send a reply or upload a file. |
 | CV-003 · P2 | Open | Mobile case workspace | On a direct case-to-portal link at 390 × 844, the open case register precedes the selected case. In the fixture the portal begins at 1,421 px and its first command at 1,682 px. | A direct link to a selected case puts the case identity and current section within the first screen, with its first action reachable within one viewport of scrolling. Keep the picker keyboard-accessible, respect an explicit open/close choice, and keep it available on an unselected visit. Retest short and long names. |
 | CV-004 · P2 | Open | Portal / responsive controls | At 390 px the English portal view buttons measure 61/61/40 px high; Russian measures 82/61/61 px and splits words mid-word. Common actions are 40 px. | Use equal-height buttons within this group, readable whole-word labels and a 44 px minimum touch target on narrow screens. Keep normal desktop controls compact, selected and focus states distinct, and no horizontal page scrolling. Verify both languages. |
 | CV-005 · P2 | Open | Localization / case sections | Russian portal content sits inside an English case picker, technical disclosure and section selector. Ten of eleven section options are still English. | Translate the surrounding case navigation, section names, accessible names and disclosure labels. Test a full round trip through the case, calendar and portal in both locales; leave user-entered titles unchanged. |
@@ -18,6 +17,7 @@ The v203 audit reproduced six issues against the public site or its isolated 390
 
 | ID / priority | Status | Outcome and evidence |
 | --- | --- | --- |
+| CV-002 · P2 | Verified · public v205 | The warning identifies every unsent invitation, reply and selected file. Review reopened and focused the edited invitation name in the same live case; isolated staff and independent client sessions covered email, reply, file, multiple drafts, explicit discard, and a 390 px Russian dialog. Stay kept the case and recipient; no portal writes in the isolated check. [PR #273](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/273) · [Acceptance](../testing/portal-departure-cv002-2026-11-09.md) · [Release receipt](../testing/receipts/portal-departure-v205-2026-11-09.json). |
 | CV-001 · P1 | Verified · public v204 | AI Studio shows the selected team case, personal draft and save destination. In production, Draft overview stayed in Studio and Case overview reopened the exact team case. Isolated EN/RU and 390 px checks covered no linked draft, an existing draft, the first save and a switch to another case. [PR #271](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/271) · [Acceptance](../testing/studio-team-case-cv001-2026-11-09.md) · [Release receipt](../testing/receipts/studio-case-context-v204-2026-11-09.json). |
 
 ## Verification gates
@@ -32,7 +32,7 @@ These are **not confirmed defects**. “Waiting for verification” means there 
 
 ## Planned product work
 
-These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#feature-coverage-and-implementation-requirements). They are **Planned** and have not shipped in v204. Sequence them after the relevant prerequisites and verified user journeys above.
+These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#feature-coverage-and-implementation-requirements). They are **Planned** and have not shipped in v205. Sequence them after the relevant prerequisites and verified user journeys above.
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
@@ -51,6 +51,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |
+| 2026-11-09 · public v205 | CV-002 moved from Waiting for verification to Verified after a before-and-after check on the same signed-in synthetic case. | [Exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42623001696) · [Release receipt](../testing/receipts/portal-departure-v205-2026-11-09.json). Next: CV-003 (mobile case entry). |
 | 2026-11-09 · CV-002 candidate | The warning lists unfinished portal forms and Review focuses the last field that still has changes. Stay preserves the case and recipient; clean forms navigate freely. | [Staff, client and narrow Russian acceptance](../testing/portal-departure-cv002-2026-11-09.md); zero portal writes. Verify the signed-in invitation journey after release. |
 | 2026-11-09 · public v204 | CV-001 moved from Waiting for verification to Verified after the live case → Studio → case round trip. | [Exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42614569437) · [Public release receipt](../testing/receipts/studio-case-context-v204-2026-11-09.json). Next: CV-002. |
 | 2026-11-09 · CV-001 candidate | Team case, personal draft title and save destination are distinct. Case overview returns to the selected team case; an actual first save and reopen passed. | [Acceptance notes](../testing/studio-team-case-cv001-2026-11-09.md). Isolated English/Russian and 390 px checks passed. Verify the published version before closure; next open defect: CV-002. |
