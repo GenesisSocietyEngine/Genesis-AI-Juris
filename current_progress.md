@@ -2,9 +2,9 @@
 
 ## Calendar subscriptions and recipient reminders — 9 November 2026
 
-The implementation adds private, read-only Outlook and Google Calendar subscriptions for one selected case or for firm work. Edit dates in CaseVant; calendar clients refresh on their own schedule. Reminders can be scheduled for named participants in CaseVant or by email, with an individual status and dismissal for each person. The selected case carries through Calendar, Reminders and the return to the case.
+**[v200 is public](https://casevant.pro/work?view=calendar).** Private read-only Outlook and Google calendar links and independent in-app reminders are available. [PR #263](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/263) and [exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42580119985) passed 2,051 tests with 3 existing skips and all 47 PDF baselines. The signed-in screens and 220 browser files passed on the live service.
 
-The focused database, delivery and calendar-format checks passed (22 tests). The English browser save and dismissal and narrow Russian layout were verified with synthetic data. Release verification is pending; the previous public version is v199. [Acceptance and limits](docs/testing/calendar-delivery-2026-11-09.md)
+[Check-only production run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42581278756) received 403 from unattended email dispatch. No email was sent. The follow-up transports the same signed, short-lived GitHub assertion in a bounded POST body and keeps repository, workflow, branch, audience, signature and expiry verification. Live email readiness is pending a successful scheduler check. [Acceptance](docs/testing/calendar-delivery-2026-11-09.md)
 
 ## Published workflow milestone scheduling — 8 November 2026
 

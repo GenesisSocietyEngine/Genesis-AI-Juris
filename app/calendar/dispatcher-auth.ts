@@ -2,13 +2,20 @@ const issuer = "https://token.actions.githubusercontent.com",
   repo = "GenesisSocietyEngine/Genesis-AI-Juris",
   audience = "https://casevant.pro/api/calendar/dispatch";
 function decode(value: string) {
-  return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const base = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(base.padEnd(Math.ceil(base.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
 }
-export async function authorized(token: string, transport: typeof fetch = fetch, now = Date.now()) {
+export type AssertionStatus = "verified" | "missing" | "claims" | "issuer" | "signature";
+export async function verifyAssertion(
+  token: string,
+  transport: typeof fetch = fetch,
+  now = Date.now(),
+): Promise<AssertionStatus> {
+  let stage: AssertionStatus = "claims";
   try {
-    if (!token || token.length > 12000) return false;
+    if (!token || token.length > 12000) return "missing";
     const parts = token.split(".");
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return "claims";
     const parse = (s: string) => JSON.parse(new TextDecoder().decode(decode(s)));
     const [h, p] = parts.slice(0, 2).map(parse);
     if (
@@ -28,29 +35,38 @@ export async function authorized(token: string, transport: typeof fetch = fetch,
       p.nbf > now / 1000 + 30 ||
       p.exp - p.nbf > 900
     )
-      return false;
+      return "claims";
+    stage = "issuer";
     const res = await transport(issuer + "/.well-known/jwks", {
       redirect: "error",
+      headers: { Accept: "application/json", "User-Agent": "CaseVant calendar dispatcher" },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return false;
+    if (!res.ok) return "issuer";
     const jwks = (await res.json()) as { keys: (JsonWebKey & { kid: string })[] };
     const key = jwks.keys.find((k) => k.kid === h.kid && k.kty === "RSA" && k.use !== "enc");
-    if (!key) return false;
+    if (!key?.n || !key.e) return "issuer";
+    stage = "signature";
     const cryptoKey = await crypto.subtle.importKey(
       "jwk",
-      key,
+      { kty: "RSA", n: key.n, e: key.e, alg: "RS256", ext: true },
       { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
       false,
       ["verify"],
     );
-    return crypto.subtle.verify(
+    return (await crypto.subtle.verify(
       "RSASSA-PKCS1-v1_5",
       cryptoKey,
       decode(parts[2]),
       new TextEncoder().encode(parts[0] + "." + parts[1]),
-    );
+    ))
+      ? "verified"
+      : "signature";
   } catch {
-    return false;
+    return stage;
   }
+}
+
+export async function authorized(token: string, transport: typeof fetch = fetch, now = Date.now()) {
+  return (await verifyAssertion(token, transport, now)) === "verified";
 }

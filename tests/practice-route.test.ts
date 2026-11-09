@@ -28,7 +28,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={calendarDispatch:"app/api/calendar/dispatch/route.ts",calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:"import {getDb} from './db';import {dispatch} from './app/calendar/delivery';export const runCalendar=(...args)=>dispatch(getDb(),...args);\n"+Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -440,3 +440,19 @@ test("named milestone writes, historical template receipts and manual legacy dat
 });
 
 test("calendar subscriptions and recipient delivery preserve authority, dates, independent receipts and retries",async()=>calendarScenarios(call,db,(routes as unknown as {runCalendar:Parameters<typeof calendarScenarios>[2]}).runCalendar));
+
+test("scheduler accepts a bounded signed assertion through hosting without an Authorization header",async()=>{
+  const now=Math.floor(Date.now()/1000),repo="GenesisSocietyEngine/Genesis-AI-Juris",issuer="https://token.actions.githubusercontent.com";
+  const keys=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
+  const enc=(v:unknown)=>Buffer.from(JSON.stringify(v)).toString("base64url"),unsigned=enc({alg:"RS256",kid:"probe"})+"."+enc({iss:issuer,aud:"https://casevant.pro/api/calendar/dispatch",repository:repo,repository_id:"1311507341",repository_owner_id:"308170479",ref:"refs/heads/main",workflow_ref:repo+"/.github/workflows/calendar-delivery.yml@refs/heads/main",event_name:"workflow_dispatch",nbf:now-300,exp:now+300});
+  const assertion=unsigned+"."+Buffer.from(await crypto.subtle.sign("RSASSA-PKCS1-v1_5",keys.privateKey,new TextEncoder().encode(unsigned))).toString("base64url");
+  const key=await crypto.subtle.exportKey("jwk",keys.publicKey),original=globalThis.fetch;
+  const hit=(body:unknown)=>call("calendarDispatch","POST",body,undefined,undefined,undefined,"?check=1");
+  try{
+    globalThis.fetch=async(url,init)=>String(url)===issuer+"/.well-known/jwks"?Response.json({keys:[{...key,kid:"probe",use:"sig"}]}):original(url,init);
+    assert.equal((await hit({})).status,403);assert.equal((await hit({assertion:"x".repeat(12501)})).status,403);
+    const good=await hit({assertion});assert.equal(good.status,200);assert.equal((await good.json() as {due:number}).due,0);
+    const bad=await hit({assertion:unsigned+"."+Buffer.alloc(256).toString("base64url")});assert.equal(bad.status,403);assert.equal(bad.headers.get("X-CaseVant-Check"),"signature");
+    globalThis.fetch=async()=>new Response(null,{status:503});const offline=await hit({assertion});assert.equal(offline.status,503);assert.equal(offline.headers.get("X-CaseVant-Check"),"issuer");
+  }finally{globalThis.fetch=original;}
+});
