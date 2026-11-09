@@ -1,10 +1,12 @@
 # Current progress — CaseVant
 
-## CV-001 — keep the team case in AI Studio · 9 November 2026
+## Published CV-001 — keep the team case in AI Studio · 9 November 2026
 
-Studio now labels the selected team case separately from the personal draft. **Case overview** returns to that team case, while **Draft overview** stays inside Studio. **Save Studio draft** shows the destination, Cases → Personal → Saved Studio drafts, and explains when a new draft still needs a title or a first item. An unsent prompt or unadded item stays in the current tab. Switching to another case does not open the previous case’s draft or remove a personal device backup.
+**[CaseVant v204 is live](https://casevant.pro/studio).** Studio now labels the selected team case separately from the personal draft. **Case overview** returns to that team case, while **Draft overview** stays inside Studio. **Save Studio draft** shows the destination, Cases → Personal → Saved Studio drafts, and explains when a new draft still needs a title or a first item. An unsent prompt or unadded item stays in the current tab. Switching to another case does not open the previous case’s draft or remove a personal device backup.
 
-An isolated browser round trip verified a first save, return to the case, and reopening the same draft. A separate English/Russian check verified case switching and the narrow layout. The authorized title read and denial for another account passed. **Release status: candidate verified in isolation; public v203 is the previous release.** [Acceptance evidence](docs/testing/studio-team-case-cv001-2026-11-09.md) · [Living backlog and next item, CV-002](docs/development/development_backlog.md).
+In signed-in production, the team name stayed visible in Studio and Draft overview; Case overview returned to the same case and section. English and Russian browser checks in isolation covered switching cases and opening an existing saved draft. A first save using **Save and continue** returned to the selected case and reopened the exact new draft. No production case or draft was changed during verification.
+
+[PR #271](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/271) shipped from [the merged source](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/commit/b321dca29098c24300c2bf796441a8ee1fbf9d23). The [exact-main checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42614569437) passed 2,059 web tests with three existing skips, two rendered-page checks and the unchanged 47-PDF baseline. Both production addresses matched all 241 current and retained browser files, and both denied signed-out title reads. No schema or sharing changes. [Acceptance notes](docs/testing/studio-team-case-cv001-2026-11-09.md) · [Release receipt](docs/testing/receipts/studio-case-context-v204-2026-11-09.json) · [Development backlog: CV-001 verified; CV-002 next](docs/development/development_backlog.md).
 
 ## UI/UX and functionality audit — 9 November 2026
 

@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-09",
+  "backlog": "CV-001",
+  "version": 204,
+  "previousVersion": 203,
+  "productionURL": "https://casevant.pro/studio",
+  "sourceCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+  "previousRuntimeCommit": "d06d2b6e4ea8ec6ef263c4777ea13cbd97d29fc6",
+  "candidateCommit": "5111c35fbd7ba541817983a722d27b36c480a3d6",
+  "implementationPR": 271,
+  "candidateRun": 42614475235,
+  "mainRun": 42614569437,
+  "tests": {
+    "passed": 2059,
+    "failed": 0,
+    "existingSkips": 3,
+    "renderedHtmlPassed": 2,
+    "pdfVisual": "47 unchanged full-analysis PDF baselines, bilingual decision reports and tax PDFs",
+    "clearAudits": 2
+  },
+  "artifact": {
+    "id": 13672622289,
+    "name": "verified-web-build-b321dca29098c24300c2bf796441a8ee1fbf9d23-42614569437",
+    "digest": "sha256:3612fc52216eab475dfe1cbfc5a1bfc83a5d04448239664185872fc4cbc85226",
+    "expired": false
+  },
+  "provenance": {
+    "passed": true,
+    "sourceCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+    "tree": "e88bded953bc1801b76c63abbba11d1193a88ed7",
+    "applicationInputsSha256": "8ba436943d1d16c23d6e2b5bc5684eaf0eedbb6807440ef58de392bcbb41af1f",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "files": 729,
+    "nodeVersion": "v22.23.2"
+  },
+  "archive": {
+    "sourceCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+    "archiveSha256": "16e6e9110300bb36298c056b4b5ce0a1b27e474953b3370ff17cc8b9172bf025",
+    "migrationSha256": "6629530a71301d33f791ed738fdb287f3b53a963609a51d836553de18db76f8e",
+    "bindings": {
+      "d1": "DB",
+      "r2": "DOSSIER_DOCUMENTS"
+    },
+    "verified": true
+  },
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_4720ef04b4f48191ac2c62056705d21d",
+  "deployment": "appgdep_6af1bbb7832c81919e17c2b29697f2e1",
+  "deploymentStatus": "succeeded",
+  "access": {
+    "mode": "public",
+    "revision": 2,
+    "unchanged": true
+  },
+  "environment": {
+    "revision": 42,
+    "entries": 13,
+    "unchanged": true
+  },
+  "schemaMigrationsAdded": 0,
+  "live": [
+    {
+      "origin": "https://casevant.pro",
+      "verified": true,
+      "sourceCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+      "applicationInputsSha256": "8ba436943d1d16c23d6e2b5bc5684eaf0eedbb6807440ef58de392bcbb41af1f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": true,
+      "sourceCommit": "b321dca29098c24300c2bf796441a8ee1fbf9d23",
+      "applicationInputsSha256": "8ba436943d1d16c23d6e2b5bc5684eaf0eedbb6807440ef58de392bcbb41af1f",
+      "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+    }
+  ],
+  "assets": [
+    {
+      "origin": "https://casevant.pro",
+      "assetCount": 241,
+      "verifiedCount": 241,
+      "currentAssets": 155,
+      "retainedAssets": 86
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "assetCount": 241,
+      "verifiedCount": 241,
+      "currentAssets": 155,
+      "retainedAssets": 86
+    }
+  ],
+  "signedOut": [
+    {
+      "origin": "https://casevant.pro",
+      "status": 401,
+      "privateNoStore": true,
+      "noIdentityReturned": true
+    },
+    {
+      "origin": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "status": 401,
+      "privateNoStore": true,
+      "noIdentityReturned": true
+    }
+  ],
+  "browser": {
+    "production": [
+      "An existing named synthetic team case opened in AI Studio with its correct case name and a separate untitled draft.",
+      "The personal draft destination was visible and linked to the Personal collection. The disabled first save explained the title and first item requirement.",
+      "Draft overview stayed in Studio. Case overview returned to the exact selected team record and overview section; no Studio ID was invented."
+    ],
+    "isolated": [
+      "Blank and existing personal drafts; clean case switch; English and Russian including a 390 × 844 viewport.",
+      "First save of a manually named draft after adding a Trigger; Save and continue returned to the same team case, whose Studio tab reopened the exact new personal draft.",
+      "An unsent prompt blocked departure and stayed intact on Stay here. Unrelated device backups were preserved in regression coverage."
+    ]
+  },
+  "limits": [
+    "No production draft or team case was created or edited during acceptance; first-time persistence and switching between two synthetic cases were exercised in isolation.",
+    "No change to sharing, case permissions, schema or approval rules."
+  ]
+}
