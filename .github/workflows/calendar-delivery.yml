@@ -32,8 +32,8 @@ jobs:
           const assertion=await fetch(url,{headers:{Authorization:"Bearer "+process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN},redirect:"error"});
           if(!assertion.ok)throw Error("Scheduler identity unavailable: "+assertion.status);
           const {value}=await assertion.json();
-          const response=await fetch(endpoint+(process.env.CHECK_ONLY==="true"?"?check=1":""),{method:"POST",headers:{Authorization:"Bearer "+value},redirect:"error",signal:AbortSignal.timeout(160000)});
-          if(!response.ok)throw Error("Calendar dispatch unavailable: "+response.status);
+          const response=await fetch(endpoint+(process.env.CHECK_ONLY==="true"?"?check=1":""),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({assertion:value}),redirect:"error",signal:AbortSignal.timeout(160000)});
+          if(!response.ok){const reason=response.headers.get("X-CaseVant-Check");throw Error("Calendar dispatch unavailable: "+response.status+(["missing","claims","issuer","signature"].includes(reason)?" ("+reason+")":""));}
           const result=await response.json();
           console.log("Due: %d; accepted: %d; delivered: %d; retries: %d; failed: %d; uncertain: %d; cancelled: %d",result.due,result.accepted,result.delivered,result.retry,result.failed,result.unknown,result.cancelled);
           if(!result.configured||result.failed||result.unknown)process.exitCode=1;

@@ -1,12 +1,18 @@
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
-import { authorized } from "../../../calendar/dispatcher-auth";
+import { readJsonObject } from "../../../request-security";
+import { verifyAssertion } from "../../../calendar/dispatcher-auth";
 import { dispatch } from "../../../calendar/delivery";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  const bearer = request.headers.get("authorization") ?? "";
-  if (!bearer.startsWith("Bearer ") || !(await authorized(bearer.slice(7))))
-    return new Response(null, { status: 403, headers: { "Cache-Control": "no-store" } });
+  const body = await readJsonObject(request, 12500);
+  const token = typeof body?.assertion === "string" ? body.assertion : "";
+  const status = await verifyAssertion(token);
+  if (status !== "verified")
+    return new Response(null, {
+      status: status === "issuer" ? 503 : 403,
+      headers: { "Cache-Control": "no-store", "X-CaseVant-Check": status },
+    });
   const result = await dispatch(
     getDb(),
     env as Parameters<typeof dispatch>[1],
