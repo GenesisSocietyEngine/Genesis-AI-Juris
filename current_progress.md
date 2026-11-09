@@ -2,9 +2,9 @@
 
 ## Client portal — 9 November 2026
 
-The candidate adds **Client portal** inside the selected case and a separate client sign-in. Owners invite or revoke one recipient; staff share specific document versions and dated events, receive private uploads and exchange messages. New versions and rescheduled events require a fresh share. Returning to Overview, Calendar or the portal preserves the selected case. A refresh also keeps the selected recipient and any draft reply when another staff member opens a new client conversation.
+Merged in [PR #267](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/267) at [94f3781a](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/commit/94f3781a5130d5244a7507fff18a23fcc7862380). Staff open **Client portal** inside the selected case. Clients sign in to a separate portal. Owners invite or revoke one recipient; staff share specific document versions and dated events, receive private uploads and exchange messages. New versions and rescheduled events require a fresh share. Returning to Overview, Calendar or the portal preserves the selected case. A refresh also keeps the selected recipient and any draft reply when another staff member opens a new client conversation.
 
-Desktop English and 390 px Russian browser checks covered shared items, uploads, replies and revocation. Local D1/R2 tests verified recipient isolation, file integrity and access changes during transfers. Production remains **v202**; no production migration or client invitations were performed. [Portal review and boundaries](docs/testing/client-portal-2026-11-09.md).
+Desktop English and 390 px Russian browser checks covered shared items, uploads, replies and revocation. Local D1/R2 tests verified recipient isolation, file integrity and access changes during transfers. Production remains **v202**; no production migration or client invitations were performed. The [web and PDF checks](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42598873761) passed 2,054 tests with 3 existing skips, both rendered-page tests and the unchanged 47-PDF baseline. [Portal review and boundaries](docs/testing/client-portal-2026-11-09.md).
 
 ## Published calendar subscriptions and personal reminders — 9 November 2026
 
