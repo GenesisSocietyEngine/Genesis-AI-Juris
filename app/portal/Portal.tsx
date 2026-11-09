@@ -150,6 +150,25 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
         }
         const data = (await res.json()) as PortalView;
         if (!alive.current || tag !== request.current) return;
+        // Returning to a used invitation may reopen an existing grant, never redeem it twice.
+        if (!team) {
+          const u = new URL(location.href),
+            invitationId = new URLSearchParams(u.hash.slice(1)).get("invite")?.split(".")[0];
+          if (invitationId && data.grants.some((g) => g.id === invitationId && g.status === "active")) {
+            u.hash = "";
+            u.searchParams.set("access", invitationId);
+            history.replaceState(history.state, "", u);
+            setInvite("");
+            setIssue("");
+            setPending((p) => (p?.body.action === "accept" && p.body.id === invitationId ? null : p));
+            if (data.selected !== invitationId) {
+              setView(null);
+              setAccess("loading");
+              setWanted(invitationId);
+              return;
+            }
+          }
+        }
         setView((old) =>
           before && old?.selected === data.selected && old?.thread && data.thread
             ? {
@@ -167,10 +186,13 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
             : data,
         );
         setAccess("ready");
-        if (!team && data.selected && !grant) {
-          const u = new URL(location.href);
-          u.searchParams.set("access", data.selected);
-          history.replaceState(history.state, "", u);
+        // Pin the first server-selected thread on both sides. Later invitations cannot retarget a draft.
+        if (data.selected && !grant) {
+          if (!team) {
+            const u = new URL(location.href);
+            u.searchParams.set("access", data.selected);
+            history.replaceState(history.state, "", u);
+          }
           setWanted(data.selected);
         }
       } catch {
@@ -277,6 +299,18 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       if (!res.ok) {
         if (res.status >= 500) throw Error();
         setPending(null);
+        if (body.action === "accept" && res.status === 404) {
+          const current = await fetch(api + "&grant=" + encodeURIComponent(body.id), {
+            cache: "no-store",
+            credentials: "same-origin",
+          });
+          if (!alive.current || mark !== epoch.current) return;
+          if (current.ok) {
+            await refresh(body.id);
+            setWanted(body.id);
+            return;
+          }
+        }
         if ([401, 403, 404].includes(res.status) && body.action !== "accept") {
           hide();
           setAccess(res.status === 401 ? "signin" : "denied");

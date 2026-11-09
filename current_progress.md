@@ -2,7 +2,7 @@
 
 ## Client portal — 9 November 2026
 
-The candidate adds **Client portal** inside the selected case and a separate client sign-in. Owners invite or revoke one recipient; staff share specific document versions and dated events, receive private uploads and exchange messages. New versions and rescheduled events require a fresh share. Returning to Overview, Calendar or the portal preserves the selected case.
+The candidate adds **Client portal** inside the selected case and a separate client sign-in. Owners invite or revoke one recipient; staff share specific document versions and dated events, receive private uploads and exchange messages. New versions and rescheduled events require a fresh share. Returning to Overview, Calendar or the portal preserves the selected case. A refresh also keeps the selected recipient and any draft reply when another staff member opens a new client conversation.
 
 Desktop English and 390 px Russian browser checks covered shared items, uploads, replies and revocation. Local D1/R2 tests verified recipient isolation, file integrity and access changes during transfers. Production remains **v202**; no production migration or client invitations were performed. [Portal review and boundaries](docs/testing/client-portal-2026-11-09.md).
 
