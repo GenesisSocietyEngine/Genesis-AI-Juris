@@ -4,7 +4,7 @@
 
 On a phone, a direct link opens the authorized case name and requested section above the closed case picker. The Personal/Team collections and case search remain inside the picker. Enter and Space operate it; an explicit choice is kept while switching sections. A visit to Cases or New case keeps the register open. The desktop register and case reading pane remain available side by side.
 
-In the 390 × 844 fixture, the short case’s portal heading moved from 1,638 px to 589 px. With a 235-character title in the Russian interface it ended at 827 px, with no horizontal scrolling. The 102 focused checks passed. [Acceptance notes](docs/testing/mobile-case-entry-cv003-2026-11-09.md) · [Development backlog](docs/development/development_backlog.md). Signed-in v205 reproduced the original issue; post-release verification is pending.
+In the 390 × 844 fixture, the short case’s portal heading moved from 1,638 px to 589 px. With a 235-character title in the Russian interface it ended at 827 px, with no horizontal scrolling. At 320 × 568, the full long title and selected section label fit on arrival; the entire primary portal command was within one screen of scrolling. Direct document targets kept keyboard focus. The 102 focused checks passed. [Acceptance notes](docs/testing/mobile-case-entry-cv003-2026-11-09.md) · [Development backlog](docs/development/development_backlog.md). Signed-in v205 reproduced the original issue; post-release verification is pending.
 
 ## Published CV-002 — review unsent portal work · 9 November 2026
 

@@ -19,6 +19,8 @@ Both candidate titles were fully displayed, with no horizontal page scrolling. T
 - At desktop width, the register was open beside the case. After closing it, **My cases** reopened the picker and moved keyboard focus to its summary.
 - The parent-render regressions cover direct links, ordinary and New case visits, nested return links, access still being checked and access being suspended. The full focused set passed all 102 checks, including the case editor, portal departure guards and return navigation.
 
+**Smaller phone and exact links.** At 320 × 568 in Russian, the first candidate placed the primary portal command at 1,209 px with the 235-character title. The small-phone layout gives the title more width and uses 20 px text. The section label now starts at 198 px, the full title spans 222–452 px, and the command spans 1,045–1,085 px: the whole command is reachable within one screen of scrolling (1,136 px from the document top). There was no horizontal overflow or automatic scroll. A direct Documents link with an exact upload target kept its section and target in the URL and focused the upload-purpose field without selecting or uploading a file.
+
 No change to data storage, case permissions or submission behavior. Mobile portal button sizing and broader navigation translation are separate backlog items (CV-004 and CV-005).
 
 **Release status:** Verified in isolation against the v205 baseline. Repeat the same signed-in production direct link after publication before moving CV-003 to Verified.
