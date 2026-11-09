@@ -1,5 +1,7 @@
 # CaseVant / MyCase comparative delivery programme — 6 November 2026
 
+For current priorities, verification gates and dated iteration decisions, use the [living development backlog](development_backlog.md). This programme remains the source for the broader comparison and roadmap.
+
 The user requests five complete comparison, amendment, test, publication and post-publication audit cycles. v181 is the starting production baseline, not one of these five cycles. Preserve the Outlook-style navigation, compact commands, contiguous lists and reading panes. Do not copy vendor assets or represent unimplemented integrations as working features.
 
 **Completed 6 November 2026:** all five core-operation cycles are published and audited, through public v186. [Evidence and receipts](../testing/MYCASE_FIVE_CYCLES_REVIEW.md), [working guide](CASEVANT_FIRM_WORK_GUIDE.md), [CaseVant Line icon rules](CASEVANT_LINE_ICONS.md). Broader feature gaps and acceptance requirements below remain open; completion of five cycles is not full MyCase parity.

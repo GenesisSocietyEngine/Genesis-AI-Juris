@@ -2,6 +2,8 @@
 
 Keep `current_progress.md` current after implementation, verification and release milestones and at handoff, as explicitly requested by the product owner on 6 November 2026.
 
+For **every CaseVant iteration**, including audit-, verification- and documentation-only work, update [the development backlog](docs/development/development_backlog.md) and [current progress](current_progress.md) together. Start with a stable backlog ID or add one for a distinct finding. At handoff, record the date, scope/ID, status change (or no change), evidence, remaining limitation and next action. Keep completed IDs and distinguish a tested fix from a production-verified fix. See the backlog’s maintenance rules.
+
 The product owner requires review and evaluation after every step, for all future work in this repository.
 
 For CaseVant product changes, read `docs/development/CASEVANT_PRODUCT_DEVELOPMENT_INSTRUCTIONS.md` for the data/workflow invariants, acceptance matrix, prioritized follow-on work and release procedure. Reverify current source and deployment rather than treating a historical audit as current acceptance.
