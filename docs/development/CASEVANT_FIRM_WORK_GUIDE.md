@@ -23,3 +23,9 @@ Open **Library → Intake forms** to collect internal case information. Under **
 **AI Case Studio** remains the destination for AI-assisted case reasoning and reviewed proposals. Its evidence, alternative scenarios and outcome reports are separate from operational task completion. Applying a firm workflow does not certify an outcome, calculate a legal deadline or silently accept an AI suggestion.
 
 The next-major interface uses contiguous rows, compact commands and a reading pane. On narrow screens, selected details move above the results. Labels remain visible alongside the original CaseVant Line icons.
+
+### Subscribe and schedule personal reminders
+
+From an open case, choose **Calendar → Manage connections**. Check the case name before creating a private link. In Outlook choose **Add calendar → Subscribe from web**; in Google Calendar on a computer choose **Other calendars → + → From URL**. Paste the link. Changes belong in CaseVant. Replace a link to invalidate the old address, or turn it off to stop all future reads. Downloaded copies may remain.
+
+Choose **New reminder**, an open task/event, recipients, time zone and delivery method. **Schedule reminder** saves it; **Cancel** discards the form. Under **Reminders**, **For me** shows your reminders for the named calendar; **Scheduled by me** shows a separate receipt for each recipient. Pick a case filter (or firm work) to view another calendar. Dismissing a reminder affects only you. Fixed reminder times do not move when a task date changes; completing the work cancels pending reminders.

@@ -71,6 +71,7 @@ export class NavigationController {
     if(!staged.current()||!this.departureIntent){staged.cancel?.();return;}
     this.departureIntent(kind,id,staged);
   }
+  riskFor(key:object):DepartureRisk { return this.guards.get(key)?.risk() ?? "clear"; }
   register(key: object, guard: Guard) { this.guards.set(key, guard); return () => { if (this.guards.get(key) === guard) this.guards.delete(key); }; }
   registerWorkspace(owner: WorkspaceController) {
     this.workspaces.add(owner);

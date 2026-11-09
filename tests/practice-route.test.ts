@@ -1,3 +1,4 @@
+import {calendarScenarios} from "./calendar-delivery-scenarios";
 import {workflows as caseworkScenarios,prospect as prospectScenario} from "./casework-scenarios";
 import assert from "node:assert/strict";
 import { test, before, after } from "node:test";
@@ -18,7 +19,7 @@ let organization:string, foreignOrganization:string, caseId:string, oldCase:stri
 const legacyId="firm_doc_"+"d".repeat(64),legacyBytes="Synthetic v193 original";
 async function call(route:string,method="GET",body?:unknown,email="practice-owner@example.test",org=organization,extraHeaders?:Record<string,string>, query="", dossier=caseId) {
   const request=new Request("https://practice.test/api/work"+query,{method,headers:{origin:"https://practice.test","sec-fetch-site":"same-origin","oai-authenticated-user-email":email,"x-genesis-organization":org??"","content-type":"application/json",...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)});
-  return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:dossier})}));
+  return storage.run(request,()=>routes[route][method as "GET"|"POST"](request,{params:Promise.resolve({dossierId:dossier,token:dossier})}));
 }
 before(async()=>{
   mf=new Miniflare({workers:[{config:{name:"practice-test",type:"worker",compatibilityDate:"2026-09-01",manifest:{mainModule:"index.mjs",modules:{"index.mjs":{type:"esm",contents:"export default {fetch(){return new Response('test')}}"}}},env:{DB:{type:"d1",name:"practice-test"},DOSSIER_DOCUMENTS:{type:"r2",name:"practice-documents"}}},dev:{}}]});
@@ -27,8 +28,8 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
-  const result=await build({stdin:{contents:Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
+  const paths={calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const result=await build({stdin:{contents:"import {getDb} from './db';import {dispatch} from './app/calendar/delivery';export const runCalendar=(...args)=>dispatch(getDb(),...args);\n"+Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
   }}]});
@@ -66,10 +67,10 @@ before(async()=>{
       const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
       const snapshot=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
       const old=await snapshot();await migrate(entry);assert.deepEqual(await snapshot(),old,"all populated v197 tables including intake answers survive unchanged");
-    }else if(entry.idx===33){
+    }else if(entry.idx===33||entry.idx===34){
       const prior=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all<{name:string}>()).results;
       const rows=async()=> (await db.batch(prior.map(v=>db.prepare('SELECT * FROM "'+v.name+'"')))).map(v=>v.results);
-      const snapshot=await rows();await migrate(entry);assert.deepEqual(await rows(),snapshot,"all v198 records and historical plans survive the milestone upgrade");
+      const snapshot=await rows();await migrate(entry);assert.deepEqual(await rows(),snapshot,"all existing rows survive the next work migration");
     }else await migrate(entry);
   }
   assert.deepEqual((await rows()).map(v=>v.results),beforeRows,"upgrading a populated v193 database must preserve every pre-existing row");
@@ -437,3 +438,5 @@ test("named milestone writes, historical template receipts and manual legacy dat
   assert.equal((await call("practice","POST",{...move,expectedRevision:3},outsider,foreignOrganization,undefined,"",oldCase)).status,400);
   await assert.rejects(db.prepare("UPDATE case_workflow_milestones SET workflow='changed' WHERE dossier_id=?").bind(caseId).run(),/immutable/);
 });
+
+test("calendar subscriptions and recipient delivery preserve authority, dates, independent receipts and retries",async()=>calendarScenarios(call,db,(routes as unknown as {runCalendar:Parameters<typeof calendarScenarios>[2]}).runCalendar));
