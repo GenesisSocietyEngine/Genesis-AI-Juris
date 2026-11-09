@@ -1,3 +1,4 @@
+import type { PortalChange } from "./portal/departure";
 import type { ClientOrganization } from "./organization-client";
 import { validOrganizationReceipt } from "./organizations/organization-admin-model";
 import type { WorkspaceController } from "./matters/workspace-controller";
@@ -5,7 +6,7 @@ import { readWithTimeout } from "./read-with-timeout";
 import { pendingSignOutMessage, publishSessionBoundary, type SessionBoundary } from "./session-boundary";
 
 export type DepartureRisk = "clear" | "dirty" | "pending";
-export type DepartureChange = "studio_case" | "studio_prompt" | "studio_items" | "contact" | "case_work" | "intake" | "workspace";
+export type DepartureChange = PortalChange | "studio_case" | "studio_prompt" | "studio_items" | "contact" | "case_work" | "intake" | "workspace";
 export type NavigationIdentity = { displayName: string; email: string; authSource: "chatgpt" | "local" };
 export type NavigationState = { phase: "checking" | "ready" | "anonymous" | "expired" | "denied" | "error" | "leaving"; identity: NavigationIdentity | null; actorId: string | null; organizations: ClientOrganization[]; selected: ClientOrganization | null; profileRequired: boolean; issue: string; busy: boolean; endingSession: boolean; signOutPending: boolean };
 type Guard = { risk: () => DepartureRisk; suspend: () => void; deny: () => void; review?: () => void; lock?: (value:boolean) => void; changes?: () => DepartureChange[]; canSave?: () => boolean; save?: () => Promise<boolean> };

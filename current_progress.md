@@ -1,5 +1,11 @@
 # Current progress — CaseVant
 
+## CV-002 — identify unsent portal work · 9 November 2026
+
+The portal departure warning names an unsent invitation, an unsent reply and a file waiting to be uploaded. **Review unsent work** reopens the last edited field that still has changes. **Stay here** keeps the selected case, recipient, text and file. Only an explicit discard continues the attempted switch. The existing Outlook-style dialog is used in the case workspace and the independent client portal.
+
+Verified in isolation with staff and client sessions: the exact invitation name, email, reply and file controls received keyboard focus; restored forms navigated cleanly; switching to a second case after discard did not carry the reply across. A Russian phone-width check confirmed three 44 px actions. The fixture recorded zero portal writes. [Acceptance notes](docs/testing/portal-departure-cv002-2026-11-09.md) · [Development backlog](docs/development/development_backlog.md). Production verification is pending; v204 remains the live baseline.
+
 ## Published CV-001 — keep the team case in AI Studio · 9 November 2026
 
 **[CaseVant v204 is live](https://casevant.pro/studio).** Studio now labels the selected team case separately from the personal draft. **Case overview** returns to that team case, while **Draft overview** stays inside Studio. **Save Studio draft** shows the destination, Cases → Personal → Saved Studio drafts, and explains when a new draft still needs a title or a first item. An unsent prompt or unadded item stays in the current tab. Switching to another case does not open the previous case’s draft or remove a personal device backup.

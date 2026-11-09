@@ -381,3 +381,7 @@
     align-items: center;
   }
 }
+
+.portal [hidden] { display: none; }
+.pendingFile { color: var(--ink); }
+.pendingFile strong { overflow-wrap: anywhere; }
