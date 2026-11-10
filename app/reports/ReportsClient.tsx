@@ -61,6 +61,7 @@ export function ReportsWorkspace({
     [saving, setSaving] = useState(false),
     [name, setName] = useState(""),
     [notice, setNotice] = useState("");
+  const saveAttempt = useRef<{ signature: string; id: string } | null>(null);
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => pending.current?.abort(), []);
   useEffect(() => {
@@ -140,6 +141,22 @@ export function ReportsWorkspace({
       if (!abort.signal.aborted) setBusy(false);
     }
   }
+  function saveConfiguration(configuration: Config) {
+    if (!name.trim() || saving) return;
+    const signature = JSON.stringify([name.trim(), configuration]);
+    if (saveAttempt.current?.signature !== signature) {
+      saveAttempt.current = {
+        signature,
+        id: "report_" + crypto.randomUUID().replaceAll("-", ""),
+      };
+    }
+    void changeSaved({
+      action: "save",
+      id: saveAttempt.current.id,
+      name: name.trim(),
+      config: configuration,
+    });
+  }
   async function changeSaved(body: Record<string, unknown>) {
     setSaving(true);
     setIssue("");
@@ -152,8 +169,9 @@ export function ReportsWorkspace({
         },
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { scope: string; saved: Saved[] };
-      if (!res.ok || data.scope !== scope) throw Error();
+      const data = (await res.json()) as { scope: string; id: string };
+      if (!res.ok || data.scope !== scope || body.id !== data.id) throw Error();
+      if (body.action === "save") saveAttempt.current = null;
       setNotice(
         body.action === "save"
           ? t("Report configuration saved.", "Настройки отчёта сохранены.")
@@ -487,13 +505,7 @@ export function ReportsWorkspace({
                 className={styles.screen}
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (name.trim())
-                    void changeSaved({
-                      action: "save",
-                      id: "report_" + crypto.randomUUID().replaceAll("-", ""),
-                      name,
-                      config: output.config,
-                    });
+                  saveConfiguration(output.config);
                 }}
               >
                 <label>

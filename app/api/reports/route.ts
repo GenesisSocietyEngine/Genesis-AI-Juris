@@ -45,7 +45,8 @@ export async function POST(request: Request) {
     eq(saved.organizationId, c.organization!.id),
     eq(saved.actorRef, c.actor.actorId),
   );
-  if (body.action === "remove") await c.db.delete(saved).where(owner);
+  if (body.action === "remove")
+    await c.db.batch([c.db.delete(saved).where(owner)]);
   else {
     if (
       body.action !== "save" ||
@@ -57,16 +58,18 @@ export async function POST(request: Request) {
       return dossierJson({ error: "Invalid configuration" }, 400);
     const config = JSON.stringify(body.config),
       name = body.name.trim();
-    await c.db
-      .insert(saved)
-      .values({
-        id: body.id,
-        organizationId: c.organization!.id,
-        actorRef: c.actor.actorId,
-        name,
-        config,
-      })
-      .onConflictDoNothing();
+    await c.db.batch([
+      c.db
+        .insert(saved)
+        .values({
+          id: body.id,
+          organizationId: c.organization!.id,
+          actorRef: c.actor.actorId,
+          name,
+          config,
+        })
+        .onConflictDoNothing(),
+    ]);
     const [current] = await c.db
       .select({ config: saved.config, name: saved.name })
       .from(saved)

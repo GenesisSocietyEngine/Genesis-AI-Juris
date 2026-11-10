@@ -4,6 +4,8 @@
 
 **Last reviewed on 10 November 2026. Public version v208.** CV-001 through CV-005 are verified. CV-006 awaits signed-in verification after release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
 
+Reports release verification now includes a second staff role in the isolated migrated database and a lost-response save retry. The production EN/RU check follows publication.
+
 ## Confirmed findings
 
 The v203 audit identified six issues. Five have been verified on the published site.

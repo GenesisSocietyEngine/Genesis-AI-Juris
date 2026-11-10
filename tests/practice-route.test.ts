@@ -107,8 +107,9 @@ test("billing receipts reconcile with the financial report and remain scoped to 
   assert.equal(outsider.status,403);
   const privateReport={action:"save",id:"report_"+"8".repeat(32),name:"Synthetic balance report",config:defaults("balances")};
   assert.equal((await reportCall("reports","POST",privateReport)).status,200);
+  assert.equal((await reportCall("reports","POST",privateReport)).status,200);
   const list=await (await reportCall("reports")).json() as {saved:{id:string}[]};
-  assert.ok(list.saved.some(r=>r.id===privateReport.id));
+  assert.equal(list.saved.filter(r=>r.id===privateReport.id).length,1,"replaying a saved configuration cannot duplicate it");
   const foreignList=await (await reportCall("reports","GET",undefined,"practice-outsider@example.test",foreignOrganization)).json() as {saved:unknown[]};
   assert.deepEqual(foreignList.saved,[]);
   const colleague="report-contributor@example.test";
