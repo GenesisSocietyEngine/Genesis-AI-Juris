@@ -1,21 +1,21 @@
 # CaseVant development backlog
 
-**Last reviewed: 10 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
+**Last reviewed on 10 November 2026. Public version v208.** CV-001 through CV-005 are verified. CV-006 awaits signed-in verification after release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
 
 ## Confirmed findings
 
-The v203 audit reproduced six issues against the public site or its isolated 390 px fixture. Four are verified. CV-005 awaits release verification and CV-006 is open. The **area** identifies the part of the product that should take the item.
+The v203 audit identified six issues. Five have been verified on the published site.
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-005 · P2 | Waiting for verification | Localization / case sections | Russian portal content sits inside an English case picker, technical disclosure and section selector. Ten of eleven section options are still English. | Translate the surrounding case navigation, section names, accessible names and disclosure labels. Test a full round trip through the case, calendar and portal in both locales; leave user-entered titles unchanged. |
-| CV-006 · P2 | Open | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
+| CV-006 · P2 | Waiting for verification | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
 | CV-013 · P2 | Waiting for verification | AI Studio / document storage | Sources & evidence lacks an upload entry. | Choose the Studio draft, team case, firm library or templates explicitly. Reopen original files, verify authorization, versions and template import. [Candidate review](../testing/studio-document-destinations-cv013.md). |
 
 ## Verified
 
 | ID / priority | Status | Outcome and evidence |
 | --- | --- | --- |
+| CV-005 · P2 | Verified · public v208 | Signed-in desktop and 390 px navigation passed all four bilingual round trips. [Release record](../testing/case-navigation-cv005.md). |
 | CV-004 · P2 | Verified · public v207 | All three portal views measured 44 px in both languages on the same signed-in 390 px case. Keyboard activation, focus, compact desktop controls and page width passed. [PR #278](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/278) · [Production measurements](../testing/mobile-portal-controls-cv004.md). |
 | CV-003 · P2 | Verified · public v206 | Mobile direct links show their selected case and section before the register. In the same signed-in case at 390 × 844 the portal heading moved from 1,751 to 639 px. Isolated short/235-character titles, keyboard, empty selection, resizing, desktop, and exact document targets passed. [Implementation](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/275) · [Small-phone refinement](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/276) · [Acceptance](../testing/mobile-case-entry-cv003-2026-11-09.md) · [Release receipt](../testing/receipts/mobile-case-entry-v206-2026-11-09.json). |
 | CV-002 · P2 | Verified · public v205 | The warning identifies every unsent invitation, reply and selected file. Review reopened and focused the edited invitation name in the same live case; isolated staff and independent client sessions covered email, reply, file, multiple drafts, explicit discard, and a 390 px Russian dialog. Stay kept the case and recipient; no portal writes in the isolated check. [PR #273](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/273) · [Acceptance](../testing/portal-departure-cv002-2026-11-09.md) · [Release receipt](../testing/receipts/portal-departure-v205-2026-11-09.json). |
@@ -54,6 +54,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |
+| 2026-11-10 · v208 | Verified CV-005 on both layouts and implemented the CV-006 Overview candidate. | [CV-006 checks](../testing/case-overview-cv006.md). Signed-in acceptance follows publication. |
+| 2026-11-10 · candidates | Studio document destinations, practice billing and non-accounting reports await integration. | [Documents #280](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280) · [Billing #281](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/281) · [Reports #282](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/282). |
 | 2026-11-09 · CV-005 | All eleven section names, the picker, breadcrumbs and disclosures follow the active locale. Both isolated desktop and mobile round trips retained the case title. | [Candidate acceptance](../testing/case-navigation-cv005.md). Verify after release. |
 | 2026-11-09 · public v207 | CV-004 moved to Verified after the signed-in portal passed in both languages. | [Production measurements and exact-main release](../testing/mobile-portal-controls-cv004.md#published-verification). |
 | 2026-11-09 · CV-004 | Mobile portal controls moved from Open to Waiting for verification. English and Russian labels fit whole words and the three buttons shared a height at every measured width. | [Isolated Chrome measurements and 27 regression tests](../testing/mobile-portal-controls-cv004.md). Recheck the signed-in case portal on release. |

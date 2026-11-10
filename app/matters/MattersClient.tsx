@@ -24,6 +24,7 @@ import { useNavigationController } from "../NavigationSession";
 import { WorkspaceApiError, workspaceIssue } from "./workspace-data";
 import { workspaceSignInPath, workspaceDestination } from "../workspace-navigation";
 import ActionTile, { focusActionTarget } from "../ActionTile";
+import { overviewAction } from "./overview-action-copy";
 import MatterActionCenter from "./MatterActionCenter";
 import { actionForFinding, type MatterActionTarget } from "./matter-actions";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -134,7 +135,11 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   const dateLocale = createLocale === "ru" ? "ru-RU" : "en-GB";
   const [createOverride,setCreateOverride] = useState<boolean|null>(null);
   const createOpen = createOverride ?? new URL(location,"https://workspace.invalid").searchParams.get("create")==="case";
-  const setCreateOpen = (value:boolean|((open:boolean)=>boolean)) => setCreateOverride(typeof value==="function"?value(createOpen):value);
+  const setCreateOpen = (open:boolean) => setCreateOverride(open);
+  function toggleCreateForm(open:boolean) {
+    setCreateOpen(open);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(open ? '#create-matter-panel input[name="title"]' : '#new-case-command')?.focus());
+  }
   const catalogueEpoch = useRef(0);
   const loadMatter = (id: string) => { if (selectedId && id !== selectedId) { navigation.requestDeparture("link", `/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(id)}&lang=${encodeURIComponent(createLocale)}`); return Promise.resolve(); } owner.enter(id); return owner.load(); };
   const openAction = (target: MatterActionTarget) => {
@@ -370,13 +375,11 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {caseFirst && collections}
         <div className={styles.catalogueHeading}>
           <div><p className={styles.eyebrow}>{createText("CASE LIBRARY", "БИБЛИОТЕКА ДЕЛ")}</p>{workspace ? <h2 id="matter-catalogue-title">{createText("My cases", "Мои дела")}</h2> : <h1 id="matter-catalogue-title">{createText("My cases", "Мои дела")}</h1>}<p className={styles.catalogueLead}>{createText("Open a case, continue your work, or start a new one.", "Откройте дело, чтобы продолжить работу, или создайте новое.")}</p></div>
-          <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
-            <span aria-hidden="true">＋</span><span className={styles.srOnly}>{createText("Create a matter", "Создать дело")}</span>
-          </button>
+
         </div>
 
         <div className={styles.catalogueActions} aria-label={createText("Case library actions", "Действия с библиотекой дел")}>
-          <button type="button" onClick={() => setCreateOpen(true)}>{createText("New case", "Новое дело")}</button>
+          {cataloguePhase !== "empty" && <button type="button" id="new-case-command" aria-expanded={createOpen} onClick={() => toggleCreateForm(true)}>{createText("New case", "Новое дело")}</button>}
           <button type="button" onClick={() => promptImportRef.current?.click()}>{createText("Import case prompt (.md)", "Импортировать описание дела (.md)")}</button>
           <Link href={workspaceDestination("/templates",location)}>{createText("Browse templates", "Открыть шаблоны")}</Link>
           <Link href={workspaceDestination("/studio?view=demos",location)}>{createText("Browse demo cases", "Открыть примеры дел")}</Link>
@@ -428,7 +431,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
       <section className={styles.content} id="matter-workspace" aria-label={createText("Selected matter workspace", "Рабочая область выбранного дела")}>
 
         {createOpen && <section className={styles.createPanel} id="create-matter-panel" aria-labelledby="create-matter-title">
-          <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>{createText("CASE DETAILS","СВЕДЕНИЯ О ДЕЛЕ")}</p><h2 id="create-matter-title">{createText("New case","Новое дело")}</h2></div><button type="button" className={styles.textButton} onClick={() => setCreateOpen(false)}>{createText("Close","Закрыть")}</button></div>
+          <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>{createText("CASE DETAILS","СВЕДЕНИЯ О ДЕЛЕ")}</p><h2 id="create-matter-title">{createText("New case","Новое дело")}</h2></div><button type="button" className={styles.textButton} onClick={() => toggleCreateForm(false)}>{createText("Close","Закрыть")}</button></div>
           <p>{createText("Name your case and choose its jurisdiction, confidentiality and priority.","Укажите название, юрисдикцию, конфиденциальность и приоритет дела.")}</p>
           <form className={styles.formGrid} onSubmit={createMatter}>
             <label className={styles.field}><span>{createText("Title","Название")}</span><input name="title" required maxLength={240}/></label>
@@ -443,7 +446,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         {state.targetActive && state.targetNotice && state.target?.destination === destination && <div className={styles.pilotNotice} role="status">{state.targetNotice}</div>}
         {actionIssue && <IssueState issue={actionIssue} onRetry={actionIssue.kind === "stale" && workspace ? () => void loadMatter(workspace.matter.id) : undefined}/>}
 
-        {cataloguePhase === "empty" && !createOpen && <EmptyWorkspace onCreate={() => setCreateOpen(true)}/>}
+        {cataloguePhase === "empty" && !createOpen && <EmptyWorkspace onCreate={() => toggleCreateForm(true)}/>}
         {cataloguePhase === "permission" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {cataloguePhase === "error" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {selectedId && workspacePhase === "loading" && <LoadingState label={createText("Opening your case", "Открываем дело")}/>}
@@ -462,7 +465,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           {state.panelOpen && state.panel && <div id="disposition-review-panel" tabIndex={-1} className={styles.panel}><DispositionRecovery controller={state.panel} signInHref={workspaceSignInPath(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(selectedId!)}`)} citations={workspace.matter.anchors.filter(anchor => anchor.reviewState === "accepted" && !anchor.retiredAt && workspace.documents.some(document => document.id === anchor.documentId && document.currentVersionId === anchor.documentVersionId)).map(anchor => ({ id: anchor.id, label: anchor.documentTitle + " · " + (anchor.excerpt ?? "Citation") }))} onReturn={() => owner.returnToActions()}/>{state.panel.getSnapshot().authorityVisible && state.panel.getSnapshot().receipt && <button type="button" onClick={() => void owner.open({ destination: "activity", id: "audit-" + state.panel!.getSnapshot().receipt!.auditEventId })}>Open original audit receipt →</button>}</div>}
           {!state.panelOpen && !state.targetIssue && !state.targetLoading && <>
           <div key={state.visit?.generation} className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>
-            {destination === "overview" && <OverviewSection enrollmentCompletion={state.enrollmentCompletion} roster={state.roster} onRefreshMembers={() => void owner.load()} caseEditor={<CaseDetailsEditor owner={owner} locale={createLocale}/>} actionCenter={<MatterActionCenter collection={state.collection} queue={state.queue!} onQueueChange={patch => owner.setQueue(patch)} onOpen={openAction} onRefresh={() => void owner.load()}/>} requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Case status updated.")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
+            {destination === "overview" && <OverviewSection enrollmentCompletion={state.enrollmentCompletion} roster={state.roster} onRefreshMembers={() => void owner.load()} caseEditor={<CaseDetailsEditor owner={owner} locale={createLocale}/>} actionCenter={<MatterActionCenter locale={createLocale} canApprove={workspace.matter.permissions.canApprove} collection={state.collection} queue={state.queue!} onQueueChange={patch => owner.setQueue(patch)} onOpen={openAction} onRefresh={() => void owner.load()}/>} requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Case status updated.")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
             {destination === "documents" && <CaseDocuments key={state.visit?.generation} owner={owner} canWrite={workspace.matter.permissions.canWrite} sources={<DocumentsSection focusedDocumentId={actionTarget?.caseId === selectedId && actionTarget.id.startsWith("document-") && actionTarget.id !== "document-upload" ? actionTarget.id.slice(9) : undefined} matter={workspace.matter} documents={workspace.documents} activity={workspace.activity} onNavigate={openAction} issue={workspace.issues.documents} view={view} mutationKey={mutationKey} onUpload={uploadDocument} onReview={(document, decision) => void mutate(dossierPath + "/documents/" + encodeURIComponent(document.id) + "/review", "document-review-" + document.id, { decision }, decision === "accepted_source" ? "Document accepted as a governed source." : "Document rejection recorded.")}/>}/>}
             {destination === "evidence" && <EvidenceSection focusedCitationId={actionTarget?.id.startsWith("source-") ? actionTarget.id.slice(7) : undefined} onOpenDisposition={(kind, id) => openAction({ destination: kind === "deadline" ? "requests" : "evidence", id: (kind === "deadline" ? "deadline-" : "source-") + id })} matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onSupersedeAssertion={(assertion) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "supersede", assertionId: assertion.id }, "Assertion superseded with history preserved. Review or create its replacement before relying on the decision.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
             {destination === "decision-packages" && <DecisionPackagesSection onNavigate={openAction} focusedPackageId={actionTarget?.caseId === selectedId ? actionTarget.packageRefId : undefined} matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
@@ -530,10 +533,10 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
     </dl>
 
     <div className={styles.attentionGrid}>
-      <ActionTile title={t("Review the next case action", "Посмотреть следующее действие по делу")} detail={nextAttention(matter, locale)} next={t("Open actions", "Открыть действия")} onClick={onOpenActions}/>
+      <ActionTile title={t("Review the next case action", "Посмотреть следующее действие по делу")} detail={matter.readiness.ready ? nextAttention(matter, locale) : t("See what needs attention before continuing.", "Проверьте, что нужно сделать дальше.")} next={t("Open actions", "Открыть действия")} onClick={onOpenActions}/>
       <section className={matter.readiness.ready ? styles.readySummary : styles.blockedSummary} aria-labelledby="readiness-summary-title">
         <span className={styles.statusWord}>{matter.readiness.ready ? t("READY", "ГОТОВО") : t("NOT READY", "НЕ ГОТОВО")}</span>
-        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{locale === "ru" ? `Требуют внимания: ${readiness.blockedCount}.` : `${readiness.blockedCount} item${readiness.blockedCount === 1 ? "" : "s"} need attention.`}{view === "developer" ? t(" Lifecycle status is separate.", " Статус дела указывается отдельно.") : ""}</small></div>
+        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><details><summary>{t("Record details","Сведения о записи")}</summary><p>{readiness.detail}</p></details><small>{locale === "ru" ? `Требуют внимания: ${readiness.blockedCount}.` : `${readiness.blockedCount} item${readiness.blockedCount === 1 ? "" : "s"} need attention.`}{view === "developer" ? t(" Lifecycle status is separate.", " Статус дела указывается отдельно.") : ""}</small></div>
       </section>
     </div>
 
@@ -601,6 +604,8 @@ export function OverviewSection({
 }) {
   const [selectedTransition, setSelectedTransition] = useWorkspaceDraft("overview-transition", "");
   const [reason, setReason] = useWorkspaceDraft("overview-transition-reason", "");
+  const [locale] = useInterfaceLocale();
+  const t = (en:string,ru:string)=>locale==="ru"?ru:en;
   const transitions = availableTransitions(matter.status, matter.permissions.role);
   const option = transitions.find((item) => item.to === selectedTransition) ?? null;
   const currentOutput = outputs.some((output) => output.state === "current");
@@ -616,28 +621,34 @@ export function OverviewSection({
     {actionCenter ?? <p>Open the case workspace to review its current action collection.</p>}
     <div className={styles.twoColumn}>
       <section className={styles.panel} aria-labelledby="readiness-dimensions-title">
-        <div className={styles.panelHeading}><h3 id="readiness-dimensions-title">Readiness by professional check</h3><span>{matter.readiness.dimensions.length || 10} dimensions</span></div>
+        <div className={styles.panelHeading}><h3 id="readiness-dimensions-title">{t("Readiness by professional check","Проверки по делу")}</h3><span>{matter.readiness.dimensions.length || 10} {t("checks","проверок")}</span></div>
         {matter.readiness.dimensions.length === 0 ? <EmptyState title="Readiness has not been computed" detail="Refresh this case to check what needs attention."/> : <div className={styles.readinessGrid}>
           {matter.readiness.dimensions.map((dimension) => <article key={dimension.dimension} className={styles.readinessItem}>
-            <div><strong>{sentenceLabel(dimension.dimension)}</strong><span className={styles.stateToken}>{dimension.state === "not_applicable" ? "Not applicable" : dimension.state === "ready" ? "Ready" : "Blocked"}</span></div>
-            {dimension.reasons.length === 0 ? <p>{dimension.state === "ready" ? "No blocker recorded." : "No action required for this matter."}</p> : <ul>{dimension.reasons.map((finding) => <li key={finding.code + (finding.relatedObjectId ?? "")}>{view === "developer" && <b>{finding.code}</b>}<span>{finding.explanation}</span>{finding.deepLink && <button type="button" className={styles.linkButton} onClick={() => onNavigate(actionForFinding(finding, snapshots, outputs, matter.revision).target)} aria-label={"Open readiness source for " + finding.code}>Open related record</button>}</li>)}</ul>}
+            <div><strong>{sentenceLabel(dimension.dimension)}</strong><span className={styles.stateToken}>{dimension.state === "not_applicable" ? t("Not applicable","Не применимо") : dimension.state === "ready" ? t("Ready","Готово") : t("Blocked","Требует внимания")}</span></div>
+            {dimension.reasons.length === 0 ? <p>{dimension.state === "ready" ? t("No blocker recorded.","Препятствий нет.") : t("No action required for this matter.","Действия не требуются.")}</p> : <ul>{dimension.reasons.map(finding => {
+              const action = actionForFinding(finding, snapshots, outputs, matter.revision);
+              const label = overviewAction(action.title,action.target,locale,matter.permissions.canApprove);
+              return <li key={finding.code + (finding.relatedObjectId ?? "")}>{finding.deepLink ? <button type="button" className={styles.linkButton} onClick={()=>onNavigate(action.target)}>{label}</button> : <span>{label}</span>}
+                {finding.code==="REVIEWER_APPROVAL_MISSING" && <strong>{t("An independent reviewer must approve the report.","Отчёт должен утвердить независимый проверяющий.")}</strong>}
+                <details><summary>{t("Record details","Сведения о записи")}</summary>{view==="developer"&&<code>{finding.code}</code>}<p>{finding.explanation}</p></details></li>;
+            })}</ul>}
           </article>)}
         </div>}
       </section>
 
       <section className={styles.panel} aria-labelledby="lifecycle-action-title">
-        <div className={styles.panelHeading}><h3 id="lifecycle-action-title">Case status</h3><span className="cv-status" data-tone={caseStatusTone(matter.status)}>{statusLabel(matter.status)}</span></div>
-        {!matter.permissions.canTransition || transitions.length === 0 ? <NoPermission detail={"Your " + matter.permissions.role + " role cannot change this case status."}/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); if (option && canSubmit) onTransition(option, reason.trim()); }}>
-          <label className={styles.field}><span>Change status to</span><select value={selectedTransition} onChange={(event) => setSelectedTransition(event.target.value)} required><option value="">Choose a status…</option>{transitions.map((item) => <option key={item.to} value={item.to}>{statusLabel(item.to)}</option>)}</select></label>
-          {option?.requiresReason && <label className={styles.field}><span>Reason (required)</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1_000} required/></label>}
-          {option && <div className={styles.consequenceBox}><strong>Consequences before you confirm</strong><ul>{transitionConsequences(option).map((item) => <li key={item}>{item}</li>)}</ul>{option.requiresCurrentOutput && !currentOutput && <p role="alert">Blocked: no current governed output is visible.</p>}{option.requiresReviewerApproval && !currentReviewerApproval && <p role="alert">Blocked: the current output has no attributable reviewer approval.</p>}</div>}
+        <div className={styles.panelHeading}><h3 id="lifecycle-action-title">{t("Case status","Статус дела")}</h3><span className="cv-status" data-tone={caseStatusTone(matter.status)}>{statusLabel(matter.status,locale)}</span></div>
+        {!matter.permissions.canTransition || transitions.length === 0 ? <NoPermission detail={t("You do not have permission to change this case status.","У вас нет прав на изменение статуса дела.")}/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); if (option && canSubmit) onTransition(option, reason.trim()); }}>
+          <label className={styles.field}><span>{t("Change status to","Изменить статус на")}</span><select value={selectedTransition} onChange={(event) => setSelectedTransition(event.target.value)} required><option value="">{t("Choose a status…","Выберите статус…")}</option>{transitions.map((item) => <option key={item.to} value={item.to}>{statusLabel(item.to,locale)}</option>)}</select></label>
+          {option?.requiresReason && <label className={styles.field}><span>{t("Reason (required)","Причина (обязательно)")}</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1_000} required/></label>}
+          {option && <div className={styles.consequenceBox}><p>{option.preservesCurrentOutput ? t("The approved report will stay current.","Утверждённый отчёт останется актуальным.") : t("You may need to update the report after changing status.","После смены статуса может потребоваться обновить отчёт.")}</p><details><summary>{t("Status change details","Подробности смены статуса")}</summary><ul>{transitionConsequences(option).map((item) => <li key={item}>{item}</li>)}</ul></details>{option.requiresCurrentOutput && !currentOutput && <p role="alert">{t("Generate the report before changing the case status.","Перед изменением статуса подготовьте отчёт.")}</p>}{option.requiresReviewerApproval && !currentReviewerApproval && <p role="alert">{t("An independent reviewer must approve the report first.","Сначала независимый проверяющий должен утвердить отчёт.")}</p>}</div>}
           <button className={styles.primaryButton} disabled={!canSubmit || mutationKey !== null}>{mutationKey === "transition" ? "Updating status…" : option ? "Confirm " + statusLabel(option.to) : "Choose a status"}</button>
         </form>}
         <dl className={styles.factList}>
-          <div><dt>Participant role</dt><dd>{sentenceLabel(matter.permissions.role)}</dd></div>
+          <div><dt>{t("Participant role","Роль в деле")}</dt><dd>{sentenceLabel(matter.permissions.role)}</dd></div>
           {view === "developer" && <div><dt>Current revision</dt><dd>{matter.revision}</dd></div>}
-          <div><dt>Created</dt><dd>{formatMatterDate(matter.createdAt)}</dd></div>
-          <div><dt>Updated</dt><dd>{formatMatterDate(matter.updatedAt)}</dd></div>
+          <div><dt>{t("Created","Создано")}</dt><dd>{formatMatterDate(matter.createdAt)}</dd></div>
+          <div><dt>{t("Updated","Обновлено")}</dt><dd>{formatMatterDate(matter.updatedAt)}</dd></div>
         </dl>
 
       </section>
@@ -645,7 +656,7 @@ export function OverviewSection({
     <div className={styles.twoColumn}>
       <section className={styles.panel} aria-labelledby="participant-register-title">
         <div className={styles.panelHeading}>
-          <h3 id="participant-register-title">Participant register</h3>
+          <h3 id="participant-register-title">{t("Participant register","Участники дела")}</h3>
           <span>{matter.participants.filter((participant) => participant.status === "active").length} active</span>
         </div>
         {matter.participants.length === 0
@@ -662,8 +673,8 @@ export function OverviewSection({
       </section>
       <aside className={styles.panel} aria-labelledby="participant-enrollment-title">
         <div className={styles.panelHeading}>
-          <h3 id="participant-enrollment-title">Enroll a participant</h3>
-          <span>Owner only</span>
+          <h3 id="participant-enrollment-title">{t("Enroll a participant","Добавить участника")}</h3>
+          <span>{t("Owner only","Только владелец дела")}</span>
         </div>
         {!matter.permissions.canManageParticipants
           ? <NoPermission detail="The participant register is visible, but only the Matter owner can enroll an account."/>
@@ -1066,7 +1077,7 @@ function LoadingState({ label, compact = false }: { label: string; compact?: boo
 function EmptyWorkspace({ onCreate }: { onCreate: () => void }) {
   const [locale] = useInterfaceLocale();
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
-  return <section className={styles.emptyWorkspace}><p className={styles.eyebrow}>{t("YOUR CASE WORKSPACE", "ВАШИ ДЕЛА")}</p><h1>{t("Bring a case into focus.", "Создайте первое дело")}</h1><p>{t("Collect documents and evidence, assign reviews, and prepare an explainable decision package.", "Собирайте документы и доказательства, назначайте проверки и готовьте обоснование решения.")}</p><button className={styles.primaryButton} type="button" onClick={onCreate}>{t("Create a case", "Создать дело")}</button><small>{t("Synthetic or de-identified material only during this pilot boundary.", "В пилотной версии используйте только синтетические или обезличенные материалы.")}</small></section>;
+  return <section className={styles.emptyWorkspace}><p className={styles.eyebrow}>{t("YOUR CASE WORKSPACE", "ВАШИ ДЕЛА")}</p><h1>{t("Bring a case into focus.", "Создайте первое дело")}</h1><p>{t("Collect documents and evidence, assign reviews, and prepare an explainable decision package.", "Собирайте документы и доказательства, назначайте проверки и готовьте обоснование решения.")}</p><button className={styles.primaryButton} type="button" id="new-case-command" onClick={onCreate}>{t("Create a case", "Создать дело")}</button><small>{t("Synthetic or de-identified material only during this pilot boundary.", "В пилотной версии используйте только синтетические или обезличенные материалы.")}</small></section>;
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {

@@ -4,9 +4,15 @@
 
 Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. Case uploads support version descriptions and searchable tags. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).
 
-## CV-005 · Case navigation in English and Russian · 9 November 2026
+## Published CV-005 · Case navigation · 10 November 2026
 
-All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).
+[CaseVant v208](https://casevant.pro/matters) serves the merged CV-005 build. Both origins passed all 208 asset checks. In the signed-in synthetic case, Overview → Calendar → Client portal → Overview preserved the case ID and title in English and Russian on desktop and at 390 CSS px. Each language exposed eleven destinations. [Release verification](docs/testing/case-navigation-cv005.md).
+
+## CV-006 · Case Overview · 10 November 2026
+
+Overview now names the next available action, including saving evidence, generating a report and requesting an independent review. The approval requirement and status-change warnings stay visible. Record details are separately expandable. The case picker has a single creation entry. The isolated fixture confirmed the Russian action, disclosure and title-field focus. Production verification is pending. [Acceptance notes](docs/testing/case-overview-cv006.md).
+
+The review branches also include [Studio document destinations](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280), [EUR billing and reconciliation](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/281) and [18 practice reports](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/282). The Reports change builds on Billing.
 
 ## Published CV-004 · Mobile portal controls · 9 November 2026
 
