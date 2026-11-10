@@ -1,0 +1,17 @@
+{
+  "receiptSchemaVersion": 2,
+  "caseId": "five_flats_three_borders_rent146000_working_20260923",
+  "caseVersion": "1.0.0",
+  "profileId": "tax_position_memorandum",
+  "rendererVersion": "1.0.0",
+  "caseFingerprint": "sha256-f3cc75e5bf9fe0b5dca8957cd2d2be5788635701e8bc24279ebd9603dae32c39",
+  "reportFingerprint": "sha256-b00889b3a884618ca13b79d2ca7b88a5c25cbdb7a5c0fd8dc0600aceda349457",
+  "generatedAt": "2026-09-28T05:11:02.936Z",
+  "status": "draft",
+  "audience": "internal",
+  "layoutSchemaVersion": 1,
+  "layoutAlgorithmVersion": "1.1.0",
+  "layoutRendererVersion": "2.1.0",
+  "layoutFingerprint": "sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5",
+  "presentationFingerprint": "sha256-ff080f35e2a426f130c48c93e0ef2a84c06df456d4d9d276d34bb4d5b88cd84e"
+}
