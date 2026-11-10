@@ -2,6 +2,8 @@
 
 ## CV-019 · Recent activities
 
+PR #286 merged after all 18 checks passed. The React loading-state correction passed both web jobs. Release preparation on 11 November restored 11 long-path test artifacts omitted from the Windows checkout and verified its complete tree against the merged source. Production acceptance is pending publication.
+
 Implemented and locally verified. After integration, verify Home and history on the signed-in site in EN/RU with an owner and a restricted case participant. Confirm invoice access, exact document links, deleted work and pagination. [Acceptance notes](../testing/recent-activities-cv019.md).
 
 **Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).

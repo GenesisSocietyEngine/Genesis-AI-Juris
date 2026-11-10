@@ -2,6 +2,8 @@
 
 ## CV-019 · Recent activities · 10 November 2026
 
+PR #286 merged after all 18 checks passed. The React loading-state correction passed both web jobs. Release preparation on 11 November restored 11 long-path test artifacts omitted from the Windows checkout and verified its complete tree against the merged source. Production acceptance is pending publication.
+
 The Home dashboard now has a bilingual six-row feed and a full history page. The candidate uses recorded case, note, file, billing and work changes with organization and case authorization. Browser checks covered filter selection, empty results, older records and Russian mobile layout. Signed-in production verification follows release. [Audit and acceptance](docs/testing/recent-activities-cv019.md).
 
 ## Combined release and bilingual audit · 10 November 2026
