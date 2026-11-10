@@ -1,0 +1,39 @@
+{
+  "version": 210,
+  "commit": "076ef3bf53133dc0ffe8ea056989fd964bf416cb",
+  "previousVersion": 209,
+  "deployment": "appgdep_6af3730519ec819189a1bbe4112f5a7e",
+  "status": "succeeded",
+  "archive": "sha256:fc2da3a4914b3ef757e5666f59269450067f4ffe3277e115f3b1e7e04a7c1610",
+  "mainBuildRun": 42854193206,
+  "verifiedAssetsByOrigin": {
+    "https://casevant.pro": 248,
+    "https://genesis-juris-web.maxim-hayan.chatgpt.site": 248
+  },
+  "signedInReportsRun": {
+    "en": 18,
+    "ru": 18
+  },
+  "filteredRevenueEUR": {
+    "billed": 50,
+    "collected": 20,
+    "expenses": 0,
+    "minutes": 30
+  },
+  "filteredBalanceEUR": {
+    "due": 30,
+    "trust": 0
+  },
+  "localizedCsvsVerified": [
+    "en",
+    "ru"
+  ],
+  "savedConfigurationReopenedAfterReload": true,
+  "catalogWidthCssPx": 390,
+  "signedOutGuardVerified": [
+    "en",
+    "ru"
+  ],
+  "independentRoleVerification": "isolated database suite",
+  "openFinding": "CV-014"
+}
