@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { casePublicationFingerprint } from "./case-integrity";
 import { startReportDownload } from "./report-download";
 import { workspaceDestination } from "./workspace-navigation";
@@ -16,22 +16,24 @@ export default function StudioDocumentUpload({ draft, locale, authority, onApply
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const [destination, choose] = useState("");
   const location = useWorkspaceLocation();
-  const [message, report] = useState("");
-  const [busy, setBusy] = useState(false);
-  const context = useRef(0);
-  const active = useRef(false);
+  const scope = useMemo(() => ({ draft, locale, destination, epoch: authority?.epoch, allowed: authority?.allowed }), [draft, locale, destination, authority?.epoch, authority?.allowed]);
+  const context = useRef<typeof scope | null>(null);
+  const active = useRef<typeof scope | null>(null);
+  const [pending, setPending] = useState<typeof scope | null>(null);
+  const [feedback, setFeedback] = useState<{scope: typeof scope; text: string} | null>(null);
+  const busy = pending === scope;
+  const message = feedback?.scope === scope ? feedback.text : "";
+  const report = (text: string) => setFeedback({scope, text});
   useLayoutEffect(() => {
-    context.current++;
-    active.current = false;
-    setBusy(false);
-    report("");
-    return () => { context.current++; };
-  }, [draft, locale, authority?.epoch, authority?.allowed, destination]);
+    context.current = scope;
+    return () => { context.current = null; };
+  }, [scope]);
   async function upload(files: File[]) {
-    if (!authority?.allowed || !onApply || active.current) return;
+    if (!authority?.allowed || !onApply || active.current === scope) return;
     const ticket = context.current;
-    active.current = true;
-    setBusy(true);
+    active.current = scope;
+    report("");
+    setPending(scope);
     try {
       if (!files.length || files.some(file => !file.size || file.size > MAX_SOURCE_BYTES)) throw new Error();
       const permitted = await authority.verify();
@@ -49,7 +51,7 @@ export default function StudioDocumentUpload({ draft, locale, authority, onApply
     } catch {
       if (ticket === context.current) report(t("Could not attach this file. Check its format, size and remaining draft space.", "Не удалось прикрепить файл. Проверьте формат, размер и свободное место в черновике."));
     } finally {
-      if (ticket === context.current) { active.current = false; setBusy(false); }
+      if (ticket === context.current) { active.current = null; setPending(null); }
     }
   }
 
