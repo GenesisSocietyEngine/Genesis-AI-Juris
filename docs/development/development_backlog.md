@@ -32,6 +32,8 @@ The v203 audit identified six issues. Five have been verified on the published s
 
 ## Verification gates
 
+**Native import dialog:** Two Reports runs reproduced the cancellation assertion in the first and second synthetic probes. The candidate now keeps the dialog stationary while it closes and records platform metrics separately. Verify the exact candidate on iOS; a fixture pass alone does not close the native issue.
+
 These are **not confirmed defects**. “Waiting for verification” means there is a specific check or dependency, not that deployed behavior failed.
 
 | ID / priority | State · area | Evidence still needed |

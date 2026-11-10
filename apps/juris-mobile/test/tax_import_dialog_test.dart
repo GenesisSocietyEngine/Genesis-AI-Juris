@@ -287,6 +287,10 @@ void main() {
         await tester.pump();
         tester.view.viewInsets = const FakeViewPadding();
         await tester.pump(const Duration(milliseconds: 50));
+        // The obscuring keyboard can disappear before the modal leaves the
+        // tree. Its outgoing layout must not jump to the new editor inset.
+        expect(dialog, findsOneWidget);
+        expect(MediaQuery.viewInsetsOf(tester.element(dialog)).bottom, 250);
         expect(tester.takeException(), isNull);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

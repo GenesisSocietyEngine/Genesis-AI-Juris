@@ -1126,8 +1126,29 @@ final class _TaxImportDialogState extends State<_TaxImportDialog> {
     super.dispose();
   }
 
+  EdgeInsets _editingInsets = EdgeInsets.zero;
+
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final route = ModalRoute.of(context);
+    final insets = media.viewInsets;
+    // Keep a closing dialog in its last editing position. The keyboard and
+    // route reverse transitions run independently; fresh keyboard geometry
+    // is useful to the underlying editor, not to the outgoing modal.
+    if (route?.animation?.status != AnimationStatus.reverse &&
+        insets.isNonNegative &&
+        insets.horizontal.isFinite &&
+        insets.vertical.isFinite) {
+      _editingInsets = insets;
+    }
+    return MediaQuery(
+      data: media.copyWith(viewInsets: _editingInsets),
+      child: _dialog(context),
+    );
+  }
+
+  Widget _dialog(BuildContext context) => AlertDialog(
         title: Text(_t('Import a saved analysis', 'Импорт анализа')),
         content: SizedBox(
           width: 520,
