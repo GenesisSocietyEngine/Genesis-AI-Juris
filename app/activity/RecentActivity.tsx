@@ -156,7 +156,6 @@ function Feed({
       query.set("before", cursor.stamp);
       query.set("id", cursor.id);
     }
-    setStatus("loading");
     (async () => {
       const response = await fetch("/api/activity?" + query, {
         headers: { "x-genesis-organization": scope },
@@ -306,7 +305,7 @@ function Feed({
       {status === "error" && (
         <p role="alert">
           {t("Could not load activity.", "Не удалось загрузить действия.")}{" "}
-          <button onClick={() => setRetry((x) => x + 1)}>
+          <button onClick={() => { setStatus("loading"); setRetry((x) => x + 1); }}>
             {t("Retry", "Повторить")}
           </button>
         </p>
@@ -319,7 +318,7 @@ function Feed({
       {history ? (
         more &&
         status === "ready" && (
-          <button onClick={() => setCursor(rows[rows.length - 1])}>
+          <button onClick={() => { setStatus("loading"); setCursor(rows[rows.length - 1]); }}>
             {t("Show older activity", "Показать более ранние действия")}
           </button>
         )
