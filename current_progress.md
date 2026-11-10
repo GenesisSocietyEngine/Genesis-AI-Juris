@@ -1,10 +1,14 @@
 # Current progress — CaseVant
 
-On 10 November the CV-005 release remained gated on iOS CI. The simulator log reader now starts before installed-bundle verification and gets a bounded startup interval before launch. All 58 phase-harness tests passed locally.
+## Published CV-005 · Case navigation · 10 November 2026
 
-## CV-005 · Case navigation in English and Russian · 9 November 2026
+[CaseVant v208](https://casevant.pro/matters) serves the merged CV-005 build. Both origins passed all 208 asset checks. In the signed-in synthetic case, Overview → Calendar → Client portal → Overview preserved the case ID and title in English and Russian on desktop and at 390 CSS px. Each language exposed eleven destinations. [Release verification](docs/testing/case-navigation-cv005.md).
 
-All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).
+## CV-006 · Case Overview · 10 November 2026
+
+Overview now names the next available action, including saving evidence, generating a report and requesting an independent review. The approval requirement and status-change warnings stay visible. Record details are separately expandable. The case picker has a single creation entry. The isolated fixture confirmed the Russian action, disclosure and title-field focus. Production verification is pending. [Acceptance notes](docs/testing/case-overview-cv006.md).
+
+The review branches also include [Studio document destinations](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280), [EUR billing and reconciliation](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/281) and [18 practice reports](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/282). The Reports change builds on Billing.
 
 ## Published CV-004 · Mobile portal controls · 9 November 2026
 
