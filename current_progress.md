@@ -2,7 +2,7 @@
 
 ## Combined release and bilingual audit · 10 November 2026
 
-CV-006 [#283](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/283) merged after 18 green checks. The combined release and signed-in acceptance are pending. The [audit record](docs/testing/bilingual-release-2026-11-10.md) distinguishes v208 observations from candidate tests, including an untranslated lead stage in Russian Reports.
+CV-006 [#283](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/283) and document destinations [#280](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280) each merged after 18 green checks. The combined release and signed-in acceptance are pending. The [audit record](docs/testing/bilingual-release-2026-11-10.md) distinguishes v208 observations from candidate tests, including an untranslated lead stage in Russian Reports and a separately reproduced native tax-dialog defect.
 
 ## Practice reports · 10 November 2026
 
