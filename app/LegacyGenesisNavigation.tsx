@@ -20,6 +20,7 @@ export const WORKSPACE_PAGES = [
   { path: "/matters", view: "matters", en: "Cases", ru: "Дела", icon: "cases" },
   { path: "/studio?studio_panel=workbench", view: "studio", en: "AI Studio", ru: "ИИ Студия", icon: "studio" },
   { path: "/work?view=people", view: "people", en: "Contacts", ru: "Контакты", icon: "people" },
+  { path: "/reports", view: "reports", en: "Reports", ru: "Отчёты", icon: "document" },
   { path: "/billing", view: "billing", en: "Billing", ru: "Счета", icon: "document" },
   { path: "/work?view=workflows", view: "workflows", en: "Workflows", ru: "Процессы", icon: "flow" },
 ] as const;

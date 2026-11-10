@@ -1,0 +1,11 @@
+# Practice reports
+
+On 10 November 2026 the signed-in MyCase walkthrough opened all eighteen non-accounting reports, Saved reports and the dashboard. On Events it opened the column, sort, group and calculation panels, ran the report and observed the print, export, refresh and save controls.
+
+CaseVant Reports reads authorized billing journals, case and firm work plans, and the firm contact directory. The source APIs check organization and case access. A failed source request suppresses the entire result. Reports include seven financial views, three case and contact views, five productivity views and three lead views. Users can change the period for dated reports, filter by text in a chosen column, select columns, sort, group and sum a numeric column. A saved configuration belongs to the staff actor and organization. Opening it runs the current sources again. Rows export to UTF-8 CSV and print through the browser.
+
+Financial reports use EUR. Aggregate balances use the closing date. The fee allocation report attributes billed time to its recorded user and assigns collected cents proportionally to invoice lines. Residual cents follow largest remainders in line order. Expense shares are excluded from attorney fees. Consultation revenue requires the explicit consultation invoice flag. Staff record referral sources and estimates on prospect contacts. Pipeline values are unweighted estimates. An absent estimate stays blank. Staff can mark a dated case work item as a limitations date. Ordinary calendar deadlines are excluded from this report.
+
+The isolated browser verified the eighteen-entry catalog and grouped one synthetic prospect by stage, summed EUR 1,250 and reopened the saved configuration through fixture transport. Report regressions cover catalog defaults, aging, proportional receipts, unrecorded versus zero, CSV formula escaping and explicit limitations classification. Migration breakpoint verification and contact and billing regressions passed.
+
+This implementation uses CaseVant's recorded fields and a single sort, group and sum. MyCase-specific attorney origination splits, multiple trust bank accounts, workbook export and column pinning are outside the candidate. Production needs the billing journal in migration 0036 and private configurations in 0037, followed by signed-in English/Russian and separate-role verification.

@@ -1,0 +1,108 @@
+.page {
+  max-width: 76rem;
+  margin: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+  color: var(--workspace-ink, #21313d);
+}
+.page h1 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  margin: 0.5rem 0 1rem;
+}
+.page section {
+  border-top: 1px solid #bdc9ce;
+  margin: 1.5rem 0;
+  padding: 0.5rem 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.7rem;
+}
+.page button,
+.page select,
+.page input:not([type="checkbox"]),
+.page summary {
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #95a7b2;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+.page button,
+.page summary {
+  cursor: pointer;
+}
+.page button:hover,
+.page summary:hover {
+  background: #e7eff0;
+}
+.page button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.page form > button {
+  margin: 0.65rem 0;
+  background: #164e56;
+  color: white;
+}
+.page label {
+  display: grid;
+  gap: 0.25rem;
+}
+.page label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.page fieldset {
+  margin: 0.7rem 0;
+  border: 1px solid #bdc9ce;
+  padding: 1rem;
+}
+.page select,
+.page input {
+  max-width: 100%;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.table {
+  overflow: auto;
+  max-width: 100%;
+}
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  padding: 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid #ccd5d9;
+}
+.table th {
+  background: #ebf0f0;
+}
+@media print {
+  .screen,
+  .actions {
+    display: none !important;
+  }
+  .page {
+    padding: 0;
+  }
+  .table {
+    overflow: visible;
+  }
+  .table th,
+  .table td {
+    font-size: 9pt;
+    padding: 3pt;
+  }
+}

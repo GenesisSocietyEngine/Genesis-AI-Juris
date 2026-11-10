@@ -26,6 +26,7 @@ export type BillingEvent = {
   installments?: number;
   reference?: string;
   recipient?: string;
+  consultation?: boolean;
   receipt?: { id: string; title: string; version: string };
 };
 export type BillingRow = {
@@ -160,7 +161,7 @@ export function buildBillingEvent(
     const due = date(input.due);
     if (due < event.date || cents <= 0)
       throw Error("Check the due date and invoice total.");
-    return { ...event, entries, cents, due, recipient: note(input.recipient) };
+    return { ...event, ...(input.consultation === "on" ? { consultation: true } : {}), entries, cents, due, recipient: note(input.recipient) };
   }
   if (
     kind === "trust_deposit" ||

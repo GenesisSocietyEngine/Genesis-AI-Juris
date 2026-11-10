@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are implemented on the billing candidate. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
+
 **Last reviewed: 10 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
 
 ## Confirmed findings

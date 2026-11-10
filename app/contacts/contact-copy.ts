@@ -49,6 +49,7 @@ const messages: Record<string, [string, string]> = {
   ],
   name: ["Enter a name.", "Введите имя или название."],
   kind: ["Use person or company for the contact type.", "Укажите тип person или company."],
+  forecastEUR: ["Enter a euro amount with up to two decimal places.", "Введите сумму в евро с точностью до цента."],
   leadStage: ["Choose a prospect stage.", "Выберите этап обращения."],
   relationship: ["Choose a valid relationship.", "Выберите вид отношений."],
   company: ["Choose an available company.", "Выберите доступную компанию."],

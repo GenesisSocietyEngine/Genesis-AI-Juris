@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       after = decoded.after;
     }
   } catch { return dossierJson({ error: "Invalid work cursor. Refresh the firm view." }, 400); }
-  const rows = await context.db.select({ id: dossiers.id, title: dossiers.title, role: dossierParticipants.role, grant: dossierParticipants.id,
+  const rows = await context.db.select({ id: dossiers.id, title: dossiers.title, reference: dossiers.reference, status: dossiers.status, createdAt: dossiers.createdAt, role: dossierParticipants.role, grant: dossierParticipants.id,
     milestones: sql<string>`(SELECT json_group_array(json_object('workflow', m.workflow, 'dates', json_extract(m.schedule,'$.dates')))
       FROM case_workflow_milestones m WHERE m.dossier_id=${dossiers.id} AND NOT EXISTS
       (SELECT 1 FROM case_workflow_milestones later WHERE later.dossier_id=m.dossier_id AND later.workflow=m.workflow AND later.revision>m.revision))`,
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   // Recheck the exact grants, including the pagination lookahead, after all reads.
   const grants = ids.length ? await context.db.select({ id: dossierParticipants.id, role: dossierParticipants.role }).from(dossierParticipants).where(and(inArray(dossierParticipants.dossierId, ids), eq(dossierParticipants.userId, context.actor.userId), eq(dossierParticipants.actorId, context.actor.actorId), eq(dossierParticipants.status, "active"))) : [];
   if (rows.some(row => !grants.some(g => g.id === row.grant && g.role === row.role))) return dossierJson({ error: "Case access changed. Refresh the firm view." }, 409);
-  return dossierJson({ scope, cases: page.map(row => ({ id: row.id, title: row.title, workflowMilestones: JSON.parse(row.milestones), canWrite:["owner","contributor"].includes(row.role), plan: row.plan ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN,
+  return dossierJson({ scope, cases: page.map(row => ({ id: row.id, title: row.title, reference: row.reference, status: row.status, createdAt: row.createdAt, workflowMilestones: JSON.parse(row.milestones), canWrite:["owner","contributor"].includes(row.role), plan: row.plan ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN,
     participants: people.filter(p => p.caseId === row.id).map(p => ({ id: p.id, actorId: p.actorId, name: p.name, active: p.status === "active" })) })),
     nextCursor: rows.length > 25 ? btoa(JSON.stringify({ scope, after: page.at(-1)!.id })) : null });
 }

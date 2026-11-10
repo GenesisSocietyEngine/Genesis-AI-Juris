@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## Practice reports · 10 November 2026
+
+The Reports candidate contains all 18 MyCase reports outside Accounting. The signed-in walkthrough covered each catalog entry and the Events customization and result screens. The local browser grouped a synthetic lead, calculated EUR 1,250 and reopened its saved configuration. Release requires the billing journal and saved-report migration 0037. [Acceptance notes](docs/testing/practice-reports.md).
+
 ## CV-011 · Practice billing · 10 November 2026
 
 The candidate records case time, expenses, invoices, payments, trust activity and statement reconciliation in EUR. A synthetic browser round trip showed EUR 30 outstanding after a EUR 20 payment against a EUR 50 invoice. Production migration and role verification remain pending. [Review](docs/testing/practice-billing-cv011.md) · [Backlog](docs/development/development_backlog.md).
