@@ -10,7 +10,7 @@ Reports release verification now includes a second staff role in the isolated mi
 
 ## Confirmed findings
 
-The v203 audit identified six issues. Five have been verified on the published site.
+All six original v203 findings have been verified on the published site. The open findings below came from the subsequent audit.
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
@@ -68,6 +68,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |
+| 2026-11-10 · public v209 | CV-006, CV-011 and CV-013 moved to Verified for the scoped workflows. Opened CV-014–018 for localization, navigation and native acceptance. | [Signed-in audit](../testing/bilingual-release-2026-11-10.md) · [Release receipt](../testing/receipts/workspace-billing-v209.json). Next: Reports production acceptance. |
 | 2026-11-10 · v208 | Verified CV-005 on both layouts and implemented the CV-006 Overview candidate. | [CV-006 checks](../testing/case-overview-cv006.md). Signed-in acceptance follows publication. |
 | 2026-11-10 · candidates | Studio document destinations, practice billing and non-accounting reports await integration. | [Documents #280](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280) · [Billing #281](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/281) · [Reports #282](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/282). |
 | 2026-11-09 · CV-005 | All eleven section names, the picker, breadcrumbs and disclosures follow the active locale. Both isolated desktop and mobile round trips retained the case title. | [Candidate acceptance](../testing/case-navigation-cv005.md). Verify after release. |
