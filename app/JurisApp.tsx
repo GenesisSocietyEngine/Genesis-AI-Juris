@@ -3192,7 +3192,7 @@ function StudioView({ hasDeviceCopy, departureActions, standalone = false, check
     const current = materialContext.current;
     if (!current.allowed || operationPending.current || casePublicationFingerprint(current.draft) !== expected || next.caseId !== current.draft.caseId || next.version !== current.draft.version) return false;
     materialContext.current = { ...current, draft: next };
-    applyCaseChange("evidence connections", next); return true;
+    applyCaseChange(next.sourceFiles !== current.draft.sourceFiles ? "source documents" : "evidence connections", next); return true;
   }
   async function confirmNodeDeletion(target: string | null) {
     const pending = nodeDeletion; if (!pending || operationPending.current) return;

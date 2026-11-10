@@ -1,6 +1,6 @@
 # CaseVant development backlog
 
-**Last reviewed: 9 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
+**Last reviewed: 10 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
 
 ## Confirmed findings
 
@@ -10,6 +10,7 @@ The v203 audit reproduced six issues against the public site or its isolated 390
 | --- | --- | --- | --- | --- |
 | CV-005 · P2 | Waiting for verification | Localization / case sections | Russian portal content sits inside an English case picker, technical disclosure and section selector. Ten of eleven section options are still English. | Translate the surrounding case navigation, section names, accessible names and disclosure labels. Test a full round trip through the case, calendar and portal in both locales; leave user-entered titles unchanged. |
 | CV-006 · P2 | Open | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
+| CV-013 · P2 | Waiting for verification | AI Studio / document storage | Sources & evidence lacks an upload entry. | Choose the Studio draft, team case, firm library or templates explicitly. Reopen original files, verify authorization, versions and template import. [Candidate review](../testing/studio-document-destinations-cv013.md). |
 
 ## Verified
 
@@ -48,6 +49,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 10 November 2026 · CV-013 was reproduced in Studio. The candidate connects all three document libraries and adds draft attachments, version descriptions and template import. Isolated checks passed. Signed-in release acceptance remains pending.
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |

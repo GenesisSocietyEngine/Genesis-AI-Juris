@@ -1,7 +1,7 @@
 import { safeWorkspaceReturn, workspaceDestination } from "./workspace-navigation";
 
 /** Navigation provenance only: a return URL never creates a Studio–Matter association. */
-export function studioGovernedEvidenceDestination(location: string) {
+export function studioGovernedEvidenceDestination(location: string, section: "evidence" | "documents" = "evidence") {
   const origin = "https://workspace.invalid";
   const source = new URL(safeWorkspaceReturn(location), origin);
   const previous = new URL(safeWorkspaceReturn(source.searchParams.get("return_to"), "/"), origin);
@@ -14,7 +14,8 @@ export function studioGovernedEvidenceDestination(location: string) {
   const returning = Boolean(dossier && dossier.length <= 2048 && sameOrganization);
   if (returning) {
     target.searchParams.set("dossier", dossier!);
-    target.searchParams.set("section", "evidence");
+    target.searchParams.set("section", section);
+    if (section === "documents") target.searchParams.set("target", "document-upload");
   }
   return { href: target.pathname + target.search, returning };
 }

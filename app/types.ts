@@ -344,6 +344,7 @@ export type CaseProtectionV1 = {
 };
 
 export type StudioDraft = {
+  sourceFiles?: import('./studio-source-files').StudioSourceFile[];
   caseId: string;
   /** Stable reference identity; working-copy identity is independently generated. */
   exampleSource?: ExampleSourceReference;

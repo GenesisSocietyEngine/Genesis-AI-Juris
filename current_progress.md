@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-013 · Studio document destinations · 10 November 2026
+
+Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. The case upload supports version descriptions. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).
+
 ## CV-005 · Case navigation in English and Russian · 9 November 2026
 
 All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).
