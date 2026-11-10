@@ -1,0 +1,11 @@
+# CV-019 · Recent activities
+
+On 10 November 2026 the signed-in MyCase walkthrough covered all six Home filters, the full history link and the Deleted history filter. Home showed six entries in its All view. The document filter narrowed the list to an upload. An empty category displayed “No recent activity available.” Rows included an actor, action, linked context, relative timestamp with an exact date, and the recorded web channel. History added deposit requests, time entries and expenses.
+
+CaseVant Home shows six entries. View all activity carries the category into the history page, which loads older entries in batches of 30. Each row uses a recorded timestamp and shows the actor when a display name is available. Case and document links preserve organization and language. Invoice links open Billing for the authorized case. The Deleted filter compares adjacent versions of firm and case work plans to recover removed tasks and events. Voided financial entries remain journal operations.
+
+The feed reads existing records without a migration. Case metadata follows active participant access and the selected organization. Invoice metadata additionally requires billing access in that case. Case grants and billing roles are rechecked before the response. Note bodies, document bytes and financial amounts are outside the response. A universal client channel and historical contact-to-case links are unavailable from these sources.
+
+The SQLite regression covers created, changed, unchanged and removed work, restricted billing, revoked participation, foreign firm files and pagination with equal timestamps. The query also executed against a fresh database containing all 38 migrations. In a synthetic browser, Home switched to an empty Deleted filter and Tasks opened filtered history. Loading older activity retained the first entry. Russian history at 390 CSS pixels had one main heading, no horizontal overflow and no visible button shorter than 44 pixels.
+
+Production acceptance remains open. Check account switching, document and invoice destinations, and the same case from two authorized roles after release. Large-organization latency has not been measured.

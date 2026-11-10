@@ -1,5 +1,9 @@
 # CaseVant development backlog
 
+## CV-019 · Recent activities
+
+Implemented and locally verified. After integration, verify Home and history on the signed-in site in EN/RU with an owner and a restricted case participant. Confirm invoice access, exact document links, deleted work and pagination. [Acceptance notes](../testing/recent-activities-cv019.md).
+
 **Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).
 
 **Reports shipped in v210.** All 18 non-accounting reports ran in both languages. Saved configuration reload, scoped CSV downloads, ledger totals, signed-out access and the mobile catalog passed. CV-014 remains open for Russian stage labels. The isolated database suite covered a second staff role. A second production identity is still needed for an independent live check of saved-report isolation. [Acceptance notes](../testing/practice-reports.md).

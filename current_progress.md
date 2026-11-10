@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-019 · Recent activities · 10 November 2026
+
+The Home dashboard now has a bilingual six-row feed and a full history page. The candidate uses recorded case, note, file, billing and work changes with organization and case authorization. Browser checks covered filter selection, empty results, older records and Russian mobile layout. Signed-in production verification follows release. [Audit and acceptance](docs/testing/recent-activities-cv019.md).
+
 ## Combined release and bilingual audit · 10 November 2026
 
 **Public v210.** All 18 non-accounting reports ran on the signed-in site in both English and Russian. A saved case revenue report reopened after reload with EUR 50 billed and EUR 20 collected. The balance report showed EUR 30 due. Both downloaded CSVs contained one scoped row and localized headers. The Russian lead forecast still displays the system stage in English (CV-014). [Release receipt](docs/testing/receipts/practice-reports-v210.json).

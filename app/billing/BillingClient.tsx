@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useNavigationSession } from "../NavigationSession";
-import { useInterfaceLocale } from "../use-interface-locale";
+import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
 import {
   billingState,
   buildBillingEvent,
@@ -25,7 +25,7 @@ type Data = {
 };
 export default function BillingClient() {
   const session = useNavigationSession(),
-    [locale] = useInterfaceLocale();
+    [locale] = useInterfaceLocale(), location = useWorkspaceLocation();
   if (
     session.phase !== "ready" ||
     session.busy ||
@@ -37,6 +37,7 @@ export default function BillingClient() {
     <BillingWorkspace
       key={session.actorId + ":" + session.selected.selection}
       scope={session.selected.selection}
+      initialCase={new URL(location, "https://workspace.invalid").searchParams.get("dossier") ?? ""}
       locale={locale}
     />
   );
@@ -44,12 +45,14 @@ export default function BillingClient() {
 export function BillingWorkspace({
   scope,
   locale,
+  initialCase = "",
 }: {
   scope: string;
   locale: "en" | "ru";
+  initialCase?: string;
 }) {
   const t = (en: string, ru: string) => (locale === "en" ? en : ru);
-  const [caseId, setCase] = useState(""),
+  const [caseId, setCase] = useState(initialCase),
     [loaded, setLoaded] = useState<Data | null>(null),
     [refresh, setRefresh] = useState(0),
     [issue, setIssue] = useState("");
@@ -68,6 +71,11 @@ export function BillingWorkspace({
           },
         );
         const value = (await res.json()) as Data;
+        if (caseId && (res.status === 403 || res.status === 404) && !abort.signal.aborted) {
+          setLoaded(null);
+          setCase("");
+          return;
+        }
         if (
           !res.ok ||
           value?.scope !== scope ||
