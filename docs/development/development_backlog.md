@@ -1,6 +1,6 @@
 # CaseVant development backlog
 
-**Bilingual quality audit:** Track the [combined release verification](../testing/bilingual-release-2026-11-10.md). CV-014 · P2: Russian Reports shows the stored lead stage `consultation` instead of the directory label “Консультация”. Verify system labels in result rows, grouping, filters and CSV; preserve user-entered names and descriptions. CV-015 · P3: the workspace home logo still announces “Home” in the Russian interface; localize its accessible name and verify it in each language.
+**Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).
 
 **Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are implemented on the billing candidate. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
 
@@ -14,6 +14,8 @@ The v203 audit identified six issues. Five have been verified on the published s
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-014 · P2 | Open | Reports / localization | The Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
+| CV-015 · P3 | Open | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
 | CV-006 · P2 | Waiting for verification | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
 | CV-013 · P2 | Waiting for verification | AI Studio / document storage | Sources & evidence lacks an upload entry. | Choose the Studio draft, team case, firm library or templates explicitly. Reopen original files, verify authorization, versions and template import. [Candidate review](../testing/studio-document-destinations-cv013.md). |
 
