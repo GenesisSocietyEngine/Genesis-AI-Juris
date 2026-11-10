@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+On 10 November the CV-005 release remained gated on iOS CI. The simulator log reader now starts before installed-bundle verification and gets a bounded startup interval before launch. All 58 phase-harness tests passed locally.
+
 ## CV-005 · Case navigation in English and Russian · 9 November 2026
 
 All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).

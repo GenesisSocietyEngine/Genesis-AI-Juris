@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+10 November release gate for CV-005: repeat native acceptance with the revised simulator capture timing, then verify the released case navigation in both languages.
+
 **Last reviewed: 9 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
 
 ## Confirmed findings
