@@ -378,6 +378,7 @@ function BillingForm({
               </select>
             </label>
           )}
+          {kind === "invoice" && <label><input type="checkbox" name="consultation" />{t("Consultation fee invoice", "Счёт за консультацию")}</label>}
           {kind === "invoice" && (
             <label>
               {t("Bill to", "Получатель счёта")}

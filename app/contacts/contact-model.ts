@@ -4,6 +4,8 @@ export type ContactStatus = "active" | "archived";
 export const relationships = ["prospect", "client", "former_client", "professional"] as const;
 export type Relationship = (typeof relationships)[number];
 export type ContactProfile = {
+  referralSource?: string;
+  forecastEUR?: string;
   leadStage?: (typeof leadStages)[number] | "";
   relationship: Relationship | "";
   kind: ContactKind;
@@ -31,11 +33,15 @@ export const limits = {
   companyId: 100,
   website: 500,
   address: 500,
+  referralSource: 120,
+  forecastEUR: 12,
 };
 export const blankContact = (kind: ContactKind): ContactProfile => ({
   kind,
   relationship: "",
   leadStage: "",
+  referralSource: "",
+  forecastEUR: "",
   name: "",
   email: "",
   phone: "",
@@ -73,6 +79,7 @@ export function contactProfile(raw: unknown): ContactProfile {
   )
     throw Error("leadStage");
   result.leadStage = stage as ContactProfile["leadStage"];
+  if (result.forecastEUR && !/^\d{1,9}([.,]\d{1,2})?$/.test(result.forecastEUR)) throw Error("forecastEUR");
   if (!result.name) throw Error("name");
   if (result.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(result.email)) throw Error("email");
   if (result.website) {

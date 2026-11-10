@@ -1915,3 +1915,10 @@ export const billingEvents = sqliteTable("billing_events", {
   uniqueIndex("billing_actor_operation").on(t.organizationId, t.actorRef, t.operationKey),
   check("billing_positive_sequence", sql`${t.sequence} > 0`),
 ]);
+export const savedPracticeReports = sqliteTable("saved_practice_reports", {
+  id:text("id").primaryKey(),
+  organizationId:text("organization_id").notNull().references(()=>organizations.id),
+  actorRef:text("actor_ref").notNull(),
+  name:text("name").notNull(),
+  config:text("config").notNull(),
+}, t=>[index("saved_reports_owner").on(t.organizationId,t.actorRef)]);

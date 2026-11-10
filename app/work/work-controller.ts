@@ -82,7 +82,7 @@ export class WorkController {
     if(!this.context()||!this.state.loaded||this.state.locked||this.state.saving||this.state.workPending||this.state.workDraft||this.state.draft||this.state.pending)return;
     const matter=this.state.cases.find(c=>c.id===caseId);
     if(caseId ? !matter?.canWrite : !this.state.canWriteFirm)return;
-    const fields=item?{kind:item.kind,title:item.title,description:item.description,dueDate:item.dueDate,assignee:item.assignee,priority:item.priority,status:item.status,checklist:item.checklist,...(item.timing!==undefined?{timing:item.timing}:{}),...(item.reminder!==undefined?{reminder:item.reminder}:{})}:{kind,title:"",description:"",dueDate:null,assignee:null,priority:"normal" as const,status:"open" as const,checklist:[]};
+    const fields=item?{...(item.limitation?{limitation:true}:{}),kind:item.kind,title:item.title,description:item.description,dueDate:item.dueDate,assignee:item.assignee,priority:item.priority,status:item.status,checklist:item.checklist,...(item.timing!==undefined?{timing:item.timing}:{}),...(item.reminder!==undefined?{reminder:item.reminder}:{})}:{kind,title:"",description:"",dueDate:null,assignee:null,priority:"normal" as const,status:"open" as const,checklist:[]};
     this.publish({workDraft:{caseId,...(item?{id:item.id}:{}),expectedRevision:caseId?matter!.plan.revision:this.state.firmPlan.revision,item:fields},issue:""});
   }
   updateWork(draft:WorkDraft) {if(this.state.workDraft&&!this.state.workPending&&!this.state.saving&&!this.state.locked)this.publish({workDraft:draft});}

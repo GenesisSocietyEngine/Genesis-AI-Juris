@@ -1,6 +1,10 @@
 # CaseVant development backlog
 
+**Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are implemented on the billing candidate. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
+
 **Last reviewed on 10 November 2026. Public version v208.** CV-001 through CV-005 are verified. CV-006 awaits signed-in verification after release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
+
+Reports release verification now includes a second staff role in the isolated migrated database and a lost-response save retry. The production EN/RU check follows publication.
 
 ## Confirmed findings
 
@@ -22,6 +26,8 @@ The v203 audit identified six issues. Five have been verified on the published s
 | CV-001 · P1 | Verified · public v204 | AI Studio shows the selected team case, personal draft and save destination. In production, Draft overview stayed in Studio and Case overview reopened the exact team case. Isolated EN/RU and 390 px checks covered no linked draft, an existing draft, the first save and a switch to another case. [PR #271](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/271) · [Acceptance](../testing/studio-team-case-cv001-2026-11-09.md) · [Release receipt](../testing/receipts/studio-case-context-v204-2026-11-09.json). |
 
 ## Verification gates
+
+**Native import dialog:** Two Reports runs reproduced the cancellation assertion in the first and second synthetic probes. The candidate now keeps the dialog stationary while it closes and records platform metrics separately. Verify the exact candidate on iOS; a fixture pass alone does not close the native issue.
 
 These are **not confirmed defects**. “Waiting for verification” means there is a specific check or dependency, not that deployed behavior failed.
 

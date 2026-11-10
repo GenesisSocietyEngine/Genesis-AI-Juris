@@ -7,6 +7,7 @@ export type PracticeItem = {
   dueDate: string | null; assignee: string | null; priority: "low" | "normal" | "high";
   status: "open" | "completed"; checklist: { title: string; done: boolean }[];
   workflow: string | null; workflowTitle?: string;
+  limitation?: boolean;
   timing?: EventTiming | null; reminder?: WorkReminder | null; series?: SeriesOccurrence;
 };
 export type PracticePlan = { revision: number; items: PracticeItem[]; schedulingVersion?: 1 };
@@ -60,11 +61,12 @@ export function workflowPreview(templateId: string, dates: unknown, configured?:
 export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | "workflow" | "workflowTitle" | "series"> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter a task or event.");
   const item = value as Record<string, unknown>;
-  if (Object.keys(item).some(key => !["kind", "title", "description", "dueDate", "assignee", "priority", "status", "checklist", "timing", "reminder"].includes(key))) throw new Error("Unsupported work-item field.");
+  if (Object.keys(item).some(key => !["kind", "title", "description", "dueDate", "assignee", "priority", "status", "checklist", "timing", "reminder", "limitation"].includes(key))) throw new Error("Unsupported work-item field.");
   if (item.kind !== "task" && item.kind !== "event") throw new Error("Choose task or event.");
   if (typeof item.title !== "string" || !item.title.trim() || item.title.length > 240) throw new Error("Enter a title of up to 240 characters.");
   if (typeof item.description !== "string" || item.description.length > 4000) throw new Error("Use up to 4,000 description characters.");
   if (item.dueDate !== null && !validPracticeDate(item.dueDate)) throw new Error("Choose a valid date.");
+  if (item.limitation !== undefined && (typeof item.limitation !== "boolean" || (item.limitation && !item.dueDate))) throw Error("A limitations date is required.");
   if (item.kind === "event" && item.dueDate === null) throw new Error("An all-day event needs a date.");
   if (item.assignee !== null && (typeof item.assignee !== "string" || item.assignee.length > 120)) throw new Error("Choose a case participant.");
   if (!["low", "normal", "high"].includes(String(item.priority)) || !["open", "completed"].includes(String(item.status))) throw new Error("Choose a valid priority and status.");
@@ -72,7 +74,7 @@ export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | 
   const timing = item.timing == null ? item.timing : readTiming(item.timing);
   const reminder = item.reminder == null ? item.reminder : readReminder(item.reminder);
   if (timing && (item.kind!=="event" || item.dueDate!==timing.start.local.slice(0,10))) throw Error("Timed events need a matching start date; tasks cannot carry event times.");
-  return { ...(item.timing!==undefined ? {timing:timing as EventTiming|null} : {}), ...(item.reminder!==undefined ? {reminder:reminder as WorkReminder|null} : {}), kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
+  return { ...(item.limitation ? {limitation:true} : {}), ...(item.timing!==undefined ? {timing:timing as EventTiming|null} : {}), ...(item.reminder!==undefined ? {reminder:reminder as WorkReminder|null} : {}), kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
 }
 export function changePracticePlan(plan: PracticePlan, command: Record<string, unknown>, newId: () => string, configured?: WorkflowTemplate, now = Date.now()): PracticePlan {
   const items = [...plan.items];

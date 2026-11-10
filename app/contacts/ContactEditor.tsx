@@ -67,7 +67,7 @@ export default function ContactEditor({
           required={key === "name"}
           maxLength={limits[key]}
           autoComplete="off"
-          value={d.profile[key]}
+          value={d.profile[key] ?? ""}
           onChange={(e) => controller.setProfile(key, e.target.value)}
         />
       </label>
@@ -157,6 +157,7 @@ export default function ContactEditor({
                   </select>
                 </label>
               )}
+              {d.profile.relationship === "prospect" && <>{field("referralSource", t("Referral source", "Источник обращения"))}{field("forecastEUR", t("Estimated case value (EUR)", "Оценочная стоимость дела (EUR)"))}</>}
               {field("group", t("Group", "Группа"))}
               {field("email", t("Email", "Эл. почта"), "email")}
               {field("phone", t("Phone", "Телефон"), "tel")}
