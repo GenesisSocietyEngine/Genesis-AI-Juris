@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-011 · Practice billing · 10 November 2026
+
+The candidate records case time, expenses, invoices, payments, trust activity and statement reconciliation in EUR. A synthetic browser round trip showed EUR 30 outstanding after a EUR 20 payment against a EUR 50 invoice. Production migration and role verification remain pending. [Review](docs/testing/practice-billing-cv011.md) · [Backlog](docs/development/development_backlog.md).
+
 ## CV-013 · Studio document destinations · 10 November 2026
 
 Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. Case uploads support version descriptions and searchable tags. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).

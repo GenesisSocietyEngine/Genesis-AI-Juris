@@ -1,6 +1,6 @@
 const ORIGIN = "https://workspace.invalid";
 const RESERVED = new Set(["/signin-with-chatgpt", "/signout-with-chatgpt", "/callback"]);
-const PAGES = new Set(["/", "/studio", "/templates", "/library", "/matters", "/work", "/canopy", "/organizations", "/invitations", "/account"]);
+const PAGES = new Set(["/", "/billing", "/studio", "/templates", "/library", "/matters", "/work", "/canopy", "/organizations", "/invitations", "/account"]);
 
 /** A return destination is a same-origin browser page, never an auth callback or API. */
 export function safeWorkspaceReturn(value: unknown, fallback = "/studio"): string {

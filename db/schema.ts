@@ -1900,3 +1900,18 @@ export const portalUploads = sqliteTable("portal_uploads", {
   media:text("media").notNull(),size:integer("size").notNull(),digest:text("digest").notNull(),state:text("state").notNull(),
   stamp:text("stamp").notNull(),
 }, t=>[index("portal_received").on(t.grantId,t.state,t.stamp),check("portal_upload_state",sql`${t.state} IN ('pending','received')`),check("portal_upload_size",sql`${t.size} BETWEEN 1 AND 5242880`)]);
+
+export const billingEvents = sqliteTable("billing_events", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  caseId: text("case_id").notNull().references(() => dossiers.id),
+  sequence: integer("sequence").notNull(),
+  operationKey: text("operation_key").notNull(),
+  actorRef: text("actor_ref").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  event: text("event", { mode: "json" }).$type<import("../app/billing/model").BillingEvent>().notNull(),
+  createdAt: text("created_at").notNull(),
+}, t => [
+  uniqueIndex("billing_case_sequence").on(t.organizationId, t.caseId, t.sequence),
+  uniqueIndex("billing_actor_operation").on(t.organizationId, t.actorRef, t.operationKey),
+  check("billing_positive_sequence", sql`${t.sequence} > 0`),
+]);

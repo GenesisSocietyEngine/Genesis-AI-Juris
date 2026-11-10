@@ -38,7 +38,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
-| CV-011 | Practice finance | Define roles, currency/rounding, corrections and audit history for time and expense capture before invoice or payment writes. Case estimates are not financial records. |
+| CV-011 | Practice finance · Waiting for verification | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Apply migration 0036 and verify access and persistence on the signed-in site. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
 
 ## Update this file every iteration
