@@ -82,11 +82,7 @@ void main() {
               'right': value.right,
               'bottom': value.bottom,
             };
-        final dialogs = find.byType(AlertDialog);
-        final media = dialogs.evaluate().isEmpty
-            ? null
-            : MediaQuery.maybeOf(tester.element(dialogs.first));
-        return {
+        final metrics = <String, Object?>{
           'phase': phase,
           'checkpoint': _checkpoints.current,
           'device_pixel_ratio': view.devicePixelRatio,
@@ -94,10 +90,26 @@ void main() {
           'physical_height': view.physicalSize.height,
           'view_insets': insets(view.viewInsets),
           'view_padding': insets(view.viewPadding),
-          if (media != null) 'dialog_view_insets': insets(media.viewInsets),
-          'focused_widget_type':
-              '${FocusManager.instance.primaryFocus?.context?.widget.runtimeType}',
         };
+        // Widget traversal can be unavailable inside the original build
+        // exception. Keep the platform geometry and the original exception.
+        try {
+          final dialogs = find.byType(AlertDialog);
+          if (dialogs.evaluate().isNotEmpty) {
+            final media = tester
+                .element(dialogs.first)
+                .getInheritedWidgetOfExactType<MediaQuery>()
+                ?.data;
+            if (media != null) {
+              metrics['dialog_view_insets'] = insets(media.viewInsets);
+            }
+          }
+          metrics['focused_widget_type'] =
+              '${FocusManager.instance.primaryFocus?.context?.widget.runtimeType}';
+        } on Object catch (error) {
+          metrics['widget_snapshot_error_type'] = '${error.runtimeType}';
+        }
+        return metrics;
       },
       publish: (evidence) {
         binding.reportData = {
