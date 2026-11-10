@@ -35,5 +35,19 @@
     ],
     "mobileContentAndScrollWidth": 390,
     "newCaseControlsWhenPickerExpanded": 1
+  },
+  "versionHistory": {
+    "teamCase": {
+      "immutableVersions": 2,
+      "tagRetained": true,
+      "versionTwoDownloadedBytes": 93,
+      "versionTwoSha256": "04beb4c65ab732ab6dde3c1062b73724f528acbdd410f2c5c7b4478fc9f5b73d"
+    },
+    "firmLibrary": {
+      "versionTwoCurrent": true,
+      "versionOneOriginal": true,
+      "versionOneAfterReplacementMatched": true,
+      "versionTwoDownloadChecksumConfirmed": false
+    }
   }
 }
