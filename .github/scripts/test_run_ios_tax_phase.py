@@ -207,6 +207,7 @@ class SystemLogTests(unittest.TestCase):
             identity = log_identity()
             output = pathlib.Path(temp) / "events.jsonl"
             try:
+                self.assertTrue(reader.output_started.wait(timeout=2))
                 deadline = time.monotonic() + 2
                 while identity.uri is None and time.monotonic() < deadline:
                     reader.drain(identity, output)
@@ -365,6 +366,7 @@ class PhaseLifecycleTests(unittest.TestCase):
             if phase_name != "write":
                 (evidence / "write-input-bundle.json").write_bytes(phase.manifest(bundle))
             reader = Mock()
+            reader.process.poll.return_value = None
             reader.process.pid = 456
             reader.started_at = phase.utc_now().isoformat()
             commands = []

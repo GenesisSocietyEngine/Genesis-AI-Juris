@@ -354,7 +354,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(navigationMarkup, /href="\/matters"/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
-  assert.match(client, /<details className="cv-technical"><summary>Technical details<\/summary>/);
+  assert.match(client, /<details className="cv-technical"><summary>\{t\("Technical details", "Технические сведения"\)\}<\/summary>/);
   assert.doesNotMatch(client, /loaded authorised matter/);
   assert.doesNotMatch(client, /aria-label="Product navigation"/);
   assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);

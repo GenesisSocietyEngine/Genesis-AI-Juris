@@ -218,6 +218,7 @@ class LogReader:
         require(not output.exists() and not output.with_suffix(".stderr.log").exists(),
                 "System-log evidence already exists")
         self.started_at = utc_now().isoformat()
+        self.output_started = threading.Event()
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.total_bytes = 0
         self.counter_lock = threading.Lock()
@@ -243,6 +244,7 @@ class LogReader:
                     stream.flush()
                     text = decoder.decode(data)
                     if channel == "stdout":
+                        self.output_started.set()
                         for event in parser.feed(text):
                             self.events.put((utc_now().isoformat(), event))
                 tail = decoder.decode(b"", final=True)
@@ -569,11 +571,7 @@ def run(args):
     installed = pathlib.Path(container)
     require(installed.name == "Runner.app" and installed.parent.parent == expected_parent,
             "Installed container is outside selected Simulator")
-    copied = manifest(installed)
-    require(copied == built, "Installed bundle differs from built application")
-    (evidence / f"{args.phase}-installed-bundle.json").write_bytes(copied)
     executable = installed / "Runner"
-    existing_runner(executable)
     predicate = flutter_log_predicate(executable)
     reader = LogReader(["xcrun", "simctl", "spawn", args.device, "log", "stream", "--style", "json",
                         "--predicate", predicate], evidence / f"{args.phase}-system.log")
@@ -581,6 +579,14 @@ def run(args):
     identity = None
     pid = None
     try:
+        copied = manifest(installed)
+        require(copied == built, "Installed bundle differs from built application")
+        (evidence / f"{args.phase}-installed-bundle.json").write_bytes(copied)
+        # Some simulator versions buffer the stream header. Give those readers
+        # a bounded startup interval without requiring a particular banner.
+        reader.output_started.wait(timeout=5)
+        require(reader.process.poll() is None, "Owned system-log reader exited before launch")
+        existing_runner(executable)
         started = utc_now()
         launched = command(["xcrun", "simctl", "launch", args.device, APP, *FLAGS], check=False)
         (evidence / f"{args.phase}-launch.stdout.log").write_bytes(launched.stdout)
