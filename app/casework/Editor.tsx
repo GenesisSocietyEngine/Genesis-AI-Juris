@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { CaseworkController } from "./controller";
+import { readTemplateText } from "./read-template-text";
 import { fields, label, stages, tokens, tokenLabel, type Locale } from "./model";
 import { words, message } from "./presentation";
 import StatusBadge from "../StatusBadge";
@@ -20,6 +21,8 @@ export default function CaseworkEditor({
     modal = useRef<HTMLDialogElement>(null),
     area = useRef<HTMLTextAreaElement>(null),
     [discard, setDiscard] = useState(false);
+  const [importError, setImportError] = useState(false);
+  const importSequence = useRef(0);
   useEffect(() => {
     const n = modal.current,
       o = document.activeElement;
@@ -162,6 +165,22 @@ export default function CaseworkEditor({
           )}
           {d.action === "template" && (
             <>
+              {!d.body && <label>{t("Import template text from DOCX or TXT", "Загрузить текст шаблона из DOCX или TXT")}
+                <input type="file" accept=".docx,.txt" onChange={async event => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  const sequence = ++importSequence.current;
+                  setImportError(false);
+                  if (!file) return;
+                  const current = () => c.getSnapshot().draft === d && c.editable() && sequence === importSequence.current;
+                  try {
+                    const body = await readTemplateText(file);
+                    if (current()) c.update({ body, title: d.title || file.name.replace(/\.[^.]+$/, "").slice(0,120) });
+                  } catch { if (current()) setImportError(true); }
+                }}/>
+                <small>{t("Review the imported paragraphs and merge fields before saving. Maximum 16,000 characters.", "Перед сохранением проверьте текст и поля подстановки. До 16 000 символов.")}</small>
+              </label>}
+              {importError && <p role="alert">{t("Could not read template text. Choose a DOCX or UTF-8 text file up to 2 MiB.", "Не удалось прочитать текст шаблона. Выберите файл DOCX или текст UTF-8 размером до 2 МиБ.")}</p>}
               <label>
                 {t("Template text", "Текст шаблона")}
                 <textarea

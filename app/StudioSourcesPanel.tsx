@@ -10,6 +10,7 @@ import styles from "./studio-overview.module.css";
 import StudioSourcePacketExport from "./StudioSourcePacketExport";
 import StudioExampleUpgrade from "./StudioExampleUpgrade";
 import StudioConvertedSourcePacket from "./StudioConvertedSourcePacket";
+import StudioDocumentUpload from "./StudioDocumentUpload";
 import StudioMaterialsWorkspace from "./StudioMaterialsWorkspace";
 import StudioProvenanceRegister from "./StudioProvenanceRegister";
 import type { MaterialReadingMemory } from "./studio-material-search";
@@ -21,7 +22,8 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
   packetAuthority?: { allowed: boolean; epoch: number; verify: () => Promise<() => boolean> };
 }) {
   const model = studioOverview(draft, locale);
-  const evidenceDestination = studioGovernedEvidenceDestination(useWorkspaceLocation());
+  const location = useWorkspaceLocation();
+  const evidenceDestination = studioGovernedEvidenceDestination(location);
   const root = useRef<HTMLElement>(null);
   const [notice, setNotice] = useState("");
   const [technicalOpen, setTechnicalOpen] = useState(false);
@@ -56,6 +58,7 @@ export default function StudioSourcesPanel({ draft, locale, onStep, onNode, onAc
   }
   return <section ref={root} className={styles.workspace} aria-labelledby="studio-sources-title">
     <header className={styles.header}><div><p className={styles.eyebrow}>{t("CASE MATERIALS", "МАТЕРИАЛЫ ДЕЛА")}</p><h2 id="studio-sources-title">{t("Sources and evidence", "Источники и материалы")}</h2></div><span className={styles.status}>{t("Review not recorded here", "Проверка здесь не зафиксирована")}</span></header>
+    <StudioDocumentUpload draft={draft} locale={locale} authority={packetAuthority} onApply={onMaterialsChange} team={studioGovernedEvidenceDestination(location, "documents")}/>
     <div className={styles.sourceCards} aria-label={t("Explore sources and evidence", "Открыть источники и материалы")}>
       {([
         ["studio-source-documents", t("Reference documents", "Эталонные документы"), model.documentCount ?? t("Not attached", "Не приложены"), t("Open source material", "Открыть материалы")],

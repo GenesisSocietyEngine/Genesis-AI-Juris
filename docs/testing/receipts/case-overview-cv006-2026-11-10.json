@@ -1,0 +1,9 @@
+{
+  "date": "2026-11-10",
+  "scope": "CV-006 local candidate",
+  "fixture": "Synthetic blocked case with a missing report and independent approval",
+  "russianDesktop": {"groupedActions":1,"approvalWarningVisible":true,"originalExplanationInitiallyVisible":false,"originalExplanationVisibleAfterDisclosure":true},
+  "englishMobile": {"viewportCssPixels":390,"caseCreationEntriesInOpenPicker":1,"openingFocus":"title","closingFocus":"new-case-command","actionAccessibleName":"Save the evidence for the report"},
+  "focusedTestsPassed":34,
+  "signedInCandidateVerified":false
+}
