@@ -1,6 +1,6 @@
 # CaseVant development backlog
 
-**Last reviewed: 9 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
+**Last reviewed: 10 November 2026 · live version: v207.** CV-001 through CV-004 are verified. CV-005 passed the isolated bilingual navigation checks and awaits signed-in release verification. CV-006 is the next open implementation item. [Current delivery](../../current_progress.md). [Iteration audit and reproduction steps](../testing/ui-ux-functionality-2026-11-09.md) · [Product roadmap](MYCASE_COMPETITIVE_CYCLES.md)
 
 ## Confirmed findings
 
@@ -37,7 +37,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
-| CV-011 | Practice finance | Define roles, currency/rounding, corrections and audit history for time and expense capture before invoice or payment writes. Case estimates are not financial records. |
+| CV-011 | Practice finance · Waiting for verification | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Apply migration 0036 and verify access and persistence on the signed-in site. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
 
 ## Update this file every iteration
@@ -48,6 +48,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 10 November 2026 · CV-011 moved from Planned to Waiting for verification after the MyCase walkthrough, synthetic billing journey and database checks. Production acceptance is pending.
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |

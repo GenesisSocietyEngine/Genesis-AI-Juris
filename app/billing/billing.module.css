@@ -1,0 +1,78 @@
+.page {
+  max-width: 68rem;
+  margin: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+  color: var(--workspace-ink, #202e3e);
+}
+.page h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin: 0;
+}
+.page h2 {
+  font-size: 1.3rem;
+  margin: 1.5rem 0 0.75rem;
+}
+.page header p,
+.page dt {
+  color: #546175;
+}
+.page section {
+  border-top: 1px solid #c7d0d8;
+  margin-top: 1.5rem;
+}
+.page label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+.page label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.page select,
+.page input:not([type="checkbox"]),
+.page button {
+  min-height: 44px;
+  border: 1px solid #a4b3bf;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+.page form > fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+.page button {
+  background: #174e56;
+  color: white;
+  cursor: pointer;
+}
+.totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+}
+.totals div {
+  border-bottom: 2px solid #55787a;
+  padding: 0.75rem 0;
+}
+.totals dd {
+  margin: 0.4rem 0;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.page ul {
+  padding-inline-start: 1.2rem;
+}
+.page li,
+.page summary {
+  padding: 0.45rem 0;
+  overflow-wrap: anywhere;
+}

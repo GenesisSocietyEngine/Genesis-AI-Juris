@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-011 · Practice billing · 10 November 2026
+
+The candidate records case time, expenses, invoices, payments, trust activity and statement reconciliation in EUR. A synthetic browser round trip showed EUR 30 outstanding after a EUR 20 payment against a EUR 50 invoice. Production migration and role verification remain pending. [Review](docs/testing/practice-billing-cv011.md) · [Backlog](docs/development/development_backlog.md).
+
 ## CV-005 · Case navigation in English and Russian · 9 November 2026
 
 All eleven case destinations, the section selector, breadcrumbs, picker filters and disclosure labels follow the interface language. In a synthetic browser session the same user-entered title stayed visible through Overview → Calendar → Client portal → Overview in both languages, using desktop tabs and the 390 px selector. TypeScript and 63 focused tests passed. Signed-in release verification is pending. [Acceptance notes](docs/testing/case-navigation-cv005.md) · [Development backlog](docs/development/development_backlog.md).
