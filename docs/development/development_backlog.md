@@ -2,15 +2,15 @@
 
 ## CV-019 · Recent activities
 
-PR #286 merged after all 18 checks passed. The React loading-state correction passed both web jobs. Release preparation on 11 November restored 11 long-path test artifacts omitted from the Windows checkout and verified its complete tree against the merged source. Production acceptance is pending publication.
+Published in v211 on 11 November 2026 after PR #286 passed all 18 checks. Both origins verified 250 assets from the exact-main build. Signed-in EN/RU filters, selected-category history, 30-to-33 pagination, mobile layout, invoice case context, organization isolation and signed-out guards passed. [Release receipt](../testing/receipts/recent-activities-v211.json).
 
-Implemented and locally verified. After integration, verify Home and history on the signed-in site in EN/RU with an owner and a restricted case participant. Confirm invoice access, exact document links, deleted work and pagination. [Acceptance notes](../testing/recent-activities-cv019.md).
+Core verified on production; remaining verification stays open for a second production identity, populated Deleted history and large-organization latency. The SQLite suite covers removed work, restricted billing and revoked participants. The document destination selected the correct file but displayed a contradictory unavailable notice, tracked separately as CV-020. [Acceptance notes](../testing/recent-activities-cv019.md).
 
 **Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).
 
 **Reports shipped in v210.** All 18 non-accounting reports ran in both languages. Saved configuration reload, scoped CSV downloads, ledger totals, signed-out access and the mobile catalog passed. CV-014 remains open for Russian stage labels. The isolated database suite covered a second staff role. A second production identity is still needed for an independent live check of saved-report isolation. [Acceptance notes](../testing/practice-reports.md).
 
-**Last reviewed on 10 November 2026. Public version v210.** CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
+**Last reviewed on 11 November 2026. Public version v211.** CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
 
 ## Confirmed findings
 
@@ -18,6 +18,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-020 · P2 | Open | Activity → case document | The correct synthetic document is selected, but the Russian case view also reports that the exact record is unavailable. | Remove the false failure notice after successful target resolution; retain a clear unavailable state for missing or unauthorized documents. Verify EN/RU, reload, version selection and denied access. |
 | CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
 | CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
@@ -67,6 +68,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · CV-019 published in v211 after PR #286's 18 green checks and exact-main CI. Scoped bilingual production acceptance completed; CV-020 opened for the false document target notice. Second-identity and populated deletion live checks remain pending. [Audit](../testing/recent-activities-cv019.md) · [Receipt](../testing/receipts/recent-activities-v211.json). Next: address CV-020 and retain the existing prioritized rollout gates.
 
 - 10 November 2026 · CV-013 was reproduced in Studio. The candidate connects all three document libraries and adds draft attachments, case tags, version descriptions and template import. Isolated checks passed. Signed-in release acceptance remains pending.
 

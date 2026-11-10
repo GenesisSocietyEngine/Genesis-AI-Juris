@@ -1,10 +1,12 @@
 # Current progress — CaseVant
 
-## CV-019 · Recent activities · 10 November 2026
+## CV-019 · Recent activities · 11 November 2026
 
-PR #286 merged after all 18 checks passed. The React loading-state correction passed both web jobs. Release preparation on 11 November restored 11 long-path test artifacts omitted from the Windows checkout and verified its complete tree against the merged source. Production acceptance is pending publication.
+**Public v211.** PR #286 merged after all 18 checks passed, including both corrected web jobs. The exact-main build of `cb6f5a890e7dbd5eaaa8e0c193a2737fa872dc7d` passed and supplied the release. Both production origins verified all 250 current and retained assets. [Release receipt](docs/testing/receipts/recent-activities-v211.json).
 
-The Home dashboard now has a bilingual six-row feed and a full history page. The candidate uses recorded case, note, file, billing and work changes with organization and case authorization. Browser checks covered filter selection, empty results, older records and Russian mobile layout. Signed-in production verification follows release. [Audit and acceptance](docs/testing/recent-activities-cv019.md).
+Signed-in English/Russian filters, Home-to-history selection and pagination from 30 to 33 rows passed. At 390 CSS pixels, history fits both languages with 44-pixel minimum buttons. A second organization's feed contained none of the personal workspace's records; a case link with that organization was denied and reopened with the correct organization. Signed-out history is guarded in both languages. Temporary synthetic work was completed. [Audit and acceptance](docs/testing/recent-activities-cv019.md).
+
+**Remaining:** CV-020 tracks an incorrect unavailable-record notice after the document activity link successfully selects its file. Populated deletion and restricted-participant behavior passed isolated database tests; live Deleted was empty and a second production identity was not exercised. Large-organization latency remains unmeasured.
 
 ## Combined release and bilingual audit · 10 November 2026
 
