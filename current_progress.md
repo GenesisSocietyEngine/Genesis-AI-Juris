@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## Combined release and bilingual audit · 10 November 2026
+
+CV-006 [#283](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/283) merged after 18 green checks. The combined release and signed-in acceptance are pending. The [audit record](docs/testing/bilingual-release-2026-11-10.md) distinguishes v208 observations from candidate tests, including an untranslated lead stage in Russian Reports.
+
 ## Practice reports · 10 November 2026
 
 The integrated database acceptance test reconciled EUR 50 billed, EUR 20 collected and EUR 30 outstanding and checked owner, contributor and outside-organization access. In a browser fixture, retrying a save after a lost reply produced one saved report.

@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**Bilingual quality audit:** Track the [combined release verification](../testing/bilingual-release-2026-11-10.md). CV-014 · P2: Russian Reports shows the stored lead stage `consultation` instead of the directory label “Консультация”. Verify system labels in result rows, grouping, filters and CSV; preserve user-entered names and descriptions. CV-015 · P3: the workspace home logo still announces “Home” in the Russian interface; localize its accessible name and verify it in each language.
+
 **Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are implemented on the billing candidate. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
 
 **Last reviewed on 10 November 2026. Public version v208.** CV-001 through CV-005 are verified. CV-006 awaits signed-in verification after release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
