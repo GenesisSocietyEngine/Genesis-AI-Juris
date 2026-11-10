@@ -15,6 +15,7 @@ export default function DocumentUploadForm({ caseId, classification, documents, 
   const [documentId, setDocumentId] = useWorkspaceDraft(`${caseId}:upload:documentId`, "");
   const [title, setTitle] = useWorkspaceDraft(`${caseId}:upload:title`, "");
   const [sourceNote, setSourceNote] = useWorkspaceDraft(`${caseId}:upload:sourceNote`, "");
+  const [tags, setTags] = useWorkspaceDraft(`${caseId}:upload:tags`, "");
   const [documentType, setDocumentType] = useWorkspaceDraft(`${caseId}:upload:type`, "");
   const [newClassification, setNewClassification] = useWorkspaceDraft(`${caseId}:upload:classification`, classification);
   // Unknown origins are ineligible. The server still verifies ownership,
@@ -28,7 +29,7 @@ export default function DocumentUploadForm({ caseId, classification, documents, 
     if (busy || missingTarget) { event.preventDefault(); return; }
     onUpload(event);
   }} onReset={() => {
-    setDocumentId(""); setTitle(""); setSourceNote(""); setDocumentType(""); setNewClassification(classification);
+    setDocumentId(""); setTitle(""); setSourceNote(""); setTags(""); setDocumentType(""); setNewClassification(classification);
   }}>
     <label className={styles.field} data-own-drafts><span>Upload purpose</span><select name="documentId" value={documentId} onChange={event => setDocumentId(event.target.value)} disabled={busy} aria-describedby={locked ? "upload-version-context" : undefined}>
       <option value="">Create a new logical document</option>
@@ -47,6 +48,7 @@ export default function DocumentUploadForm({ caseId, classification, documents, 
       : "A new version keeps this document’s title, type and classification. Earlier versions remain in its history."}</p>}
     <label className={styles.fileField}><span>Choose one source file</span><input name="file" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown" required disabled={busy}/><small>Unsupported or image-only attachments may be retained as “not extractable”; they are never presented as analysed.</small></label>
     <label className={styles.checkField}><input name="privacyAcknowledged" type="checkbox" value="true" required disabled={busy}/><span>I confirm this pilot file is synthetic or de-identified and contains no live privileged or client-identifying material.</span></label>
+    {!locked && <label className={styles.field} data-own-drafts><span>Tags (comma-separated, optional)</span><input name="tags" value={tags} onChange={event => setTags(event.target.value)} maxLength={780} disabled={busy}/></label>}
     <label className={styles.field} data-own-drafts><span>Version description (optional)</span><textarea name="sourceNote" value={sourceNote} onChange={event => setSourceNote(event.target.value)} maxLength={1000} disabled={busy}/></label>
     <button className={styles.primaryButton} disabled={busy || missingTarget}>{mutationKey === "upload" ? "Uploading…" : locked ? "Upload new version" : "Upload document"}</button>
   </form>;

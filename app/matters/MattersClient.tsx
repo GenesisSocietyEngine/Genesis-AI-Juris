@@ -680,9 +680,12 @@ export function DocumentsSection({ matter, documents, activity, onNavigate, issu
   const documentFilter = filters.scope === filterScope ? filters.status : "all";
   const setQuery = (value: string) => setFilters({ scope: filterScope, query: value, status: documentFilter });
   const setDocumentFilter = (value: string) => setFilters({ scope: filterScope, query, status: value });
+  const [tagSelection, setTagSelection] = useState({ scope: filterScope, value: "" });
+  const availableTags = [...new Set(documents.flatMap(item => item.tags))].sort((a, b) => a.localeCompare(b));
+  const tag = tagSelection.scope === filterScope && availableTags.includes(tagSelection.value) ? tagSelection.value : "";
   const [selection, setSelection] = useState<{ caseId: string; origin?: string; id: string } | null>(null);
   const requestedId = selection?.caseId === matter.id && selection.origin === focusedDocumentId ? selection.id : focusedDocumentId;
-  const documentMatches = documents.filter(item => (documentFilter === "all" || (documentFilter === "review" ? ["received", "under_review"].includes(item.status) : item.status === documentFilter)) && [item.title, item.type, ...item.tags, ...item.versions.map(version => version.originalFilename)].join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const documentMatches = documents.filter(item => (!tag || item.tags.includes(tag)) && (documentFilter === "all" || (documentFilter === "review" ? ["received", "under_review"].includes(item.status) : item.status === documentFilter)) && [item.title, item.type, ...item.tags, ...item.versions.map(version => version.originalFilename)].join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const selectedDocument = documentMatches.find(item => item.id === requestedId) ?? documentMatches[0];
   function selectDocument(id: string) {
     setSelection({ caseId: matter.id, origin: focusedDocumentId, id });
@@ -699,7 +702,8 @@ export function DocumentsSection({ matter, documents, activity, onNavigate, issu
       <div className={documentStyles.toolbar}>
         <label>Find a document<input type="search" maxLength={240} value={query} placeholder="Title, filename, type or tag" onChange={event => setQuery(event.target.value)}/></label>
         <label>Document status<select value={documentFilter} onChange={event => setDocumentFilter(event.target.value)}><option value="all">All documents</option><option value="review">Needs review</option><option value="accepted_source">Accepted sources</option><option value="rejected">Rejected</option></select></label>
-        {(query || documentFilter !== "all") && <button type="button" onClick={() => setFilters({ scope: filterScope, query: "", status: "all" })}>Reset filters</button>}
+        {availableTags.length > 0 && <label>Browse by tag<select value={tag} onChange={event => setTagSelection({scope: filterScope, value: event.target.value})}><option value="">All tags</option>{availableTags.map(value => <option key={value}>{value}</option>)}</select></label>}
+        {(query || tag || documentFilter !== "all") && <button type="button" onClick={() => { setFilters({ scope: filterScope, query: "", status: "all" }); setTagSelection({ scope: filterScope, value: "" }); }}>Reset filters</button>}
       </div>
       <p className={documentStyles.count} role="status">{documentMatches.length} of {documents.length} loaded documents · Metadata search</p>
     {documents.length === 0 && !issue ? <EmptyState title="No documents in this matter" detail="Add the first synthetic or de-identified source when your role permits."/> : <div className={documentStyles.split}>

@@ -50,7 +50,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 ## Iteration history
 
-- 10 November 2026 · CV-013 was reproduced in Studio. The candidate connects all three document libraries and adds draft attachments, version descriptions and template import. Isolated checks passed. Signed-in release acceptance remains pending.
+- 10 November 2026 · CV-013 was reproduced in Studio. The candidate connects all three document libraries and adds draft attachments, case tags, version descriptions and template import. Isolated checks passed. Signed-in release acceptance remains pending.
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |

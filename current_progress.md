@@ -2,7 +2,7 @@
 
 ## CV-013 · Studio document destinations · 10 November 2026
 
-Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. The case upload supports version descriptions. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).
+Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. Case uploads support version descriptions and searchable tags. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).
 
 ## CV-005 · Case navigation in English and Russian · 9 November 2026
 

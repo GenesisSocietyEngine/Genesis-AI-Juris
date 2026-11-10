@@ -42,6 +42,7 @@ export type DossierDocumentUploadForm = {
   expectedRevision: number;
   documentId: string | null;
   sourceNote: string | null;
+  tags?: string[];
   idempotencyKey: string | null;
   declaredMediaType: string;
 };
@@ -294,6 +295,7 @@ export async function uploadIntentDigests(
     document_type: form.documentType,
     classification: form.classification,
     source_note: form.sourceNote,
+    ...(form.tags?.length ? { tags: form.tags } : {}),
     original_filename: prepared.originalFilename,
     media_type: prepared.mediaType,
     byte_length: prepared.byteLength,
@@ -402,7 +404,7 @@ export async function stageOrResumeUploadIntent(input: {
       isProvisional: true,
       classification: input.form.classification,
       status: "received",
-      tags: [],
+      tags: input.form.tags ?? [],
       externalSystemReference: null,
       createdByActorRef: input.context.actor.actorId,
       updatedByActorRef: input.context.actor.actorId,
