@@ -1,0 +1,39 @@
+{
+  "commit": "c49e3abf35a52b0878a3d5805524c42d3d3b0ec6",
+  "status": "succeeded",
+  "version": 209,
+  "id": "appgdep_6af32afffc8c8191975f0f75b0aa7c3d",
+  "archive": "sha256:477f51979369c2e2ff4f6b0c5d86ff4245d36136a677ea04bc9db18b70694ee0",
+  "previousCommit": "dce964658e24ffcc14acbc9878e8da8c3a607837",
+  "mainBuildRun": 42832560974,
+  "currentAssets": 158,
+  "retainedPreviousAssets": 86,
+  "verifiedAssetsByOrigin": {
+    "casevant.pro": 244,
+    "genesis-juris-web.maxim-hayan.chatgpt.site": 244
+  },
+  "syntheticOriginal": {
+    "bytes": 70,
+    "sha256": "4a180e783407be60895c09de2fc19c9f407ecb78322807cc31ac450104d4df97",
+    "verifiedDownloads": [
+      "Studio",
+      "team case",
+      "firm library"
+    ]
+  },
+  "billingEUR": {
+    "billed": 50,
+    "recordedPayment": 20,
+    "outstanding": 30,
+    "trust": 0,
+    "reconciliationPersisted": true
+  },
+  "caseOverview": {
+    "languages": [
+      "en",
+      "ru"
+    ],
+    "mobileContentAndScrollWidth": 390,
+    "newCaseControlsWhenPickerExpanded": 1
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Combined release and bilingual audit · 10 November 2026
 
-CV-006 [#283](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/283) and document destinations [#280](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/280) each merged after 18 green checks. The combined release and signed-in acceptance are pending. The [audit record](docs/testing/bilingual-release-2026-11-10.md) distinguishes v208 observations from candidate tests, including an untranslated lead stage in Russian Reports and a separately reproduced native tax-dialog defect.
+**Public v209:** CV-006, Studio document destinations and EUR Billing are verified on the signed-in site in English and Russian. The three PRs merged with 18 green checks each; Billing merged before Reports. Three original downloads matched their source bytes, the saved Studio draft reopened, and an externally recorded EUR 20 receipt left EUR 30 on a EUR 50 invoice after reconciliation and reload. [Production receipt](docs/testing/receipts/workspace-billing-v209.json) · [Bilingual quality audit](docs/testing/bilingual-release-2026-11-10.md). Reports has its own release gate.
 
 ## Practice reports · 10 November 2026
 

@@ -4,7 +4,7 @@
 
 **Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are implemented on the billing candidate. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
 
-**Last reviewed on 10 November 2026. Public version v208.** CV-001 through CV-005 are verified. CV-006 awaits signed-in verification after release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
+**Last reviewed on 10 November 2026. Public version v209.** CV-001 through CV-006, CV-011 and CV-013 are verified for the scoped workflows. Reports awaits its own release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
 
 Reports release verification now includes a second staff role in the isolated migrated database and a lost-response save retry. The production EN/RU check follows publication.
 
@@ -15,15 +15,17 @@ The v203 audit identified six issues. Five have been verified on the published s
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
 | CV-016 · P1 native acceptance | Open | Mobile tax editor / keyboard dismissal | The native import Cancel probe again triggered a negative-padding framework assertion. Original-frame geometry was unavailable. | Preserve independent view and dialog metrics on framework failure; reproduce the originating geometry, address its cause and pass all six restart phases with assertions intact. [Evidence](../testing/bilingual-release-2026-11-10.md). |
+| CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
 | CV-014 · P2 | Open | Reports / localization | The Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
 | CV-015 · P3 | Open | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
-| CV-006 · P2 | Waiting for verification | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
-| CV-013 · P2 | Waiting for verification | AI Studio / document storage | Sources & evidence lacks an upload entry. | Choose the Studio draft, team case, firm library or templates explicitly. Reopen original files, verify authorization, versions and template import. [Candidate review](../testing/studio-document-destinations-cv013.md). |
 
 ## Verified
 
 | ID / priority | Status | Outcome and evidence |
 | --- | --- | --- |
+| CV-013 · P2 | Verified · public v209 | Four explicit destinations in EN/RU, saved Studio draft reopened, case and firm files retained identical originals, UTF-8 bilingual template imported and saved as version 1. [Receipt](../testing/receipts/workspace-billing-v209.json). |
+| CV-011 | Verified · public v209 | EUR 50 billed, EUR 20 recorded and reconciled; EUR 30 persisted after reload. Separate-role boundaries verified in isolated tests. [Audit](../testing/bilingual-release-2026-11-10.md). |
+| CV-006 · P2 | Verified · public v209 | One creation entry in both languages; keyboard title focus, plain next actions, independent-review warning and record details passed, including at 390 px. |
 | CV-005 · P2 | Verified · public v208 | Signed-in desktop and 390 px navigation passed all four bilingual round trips. [Release record](../testing/case-navigation-cv005.md). |
 | CV-004 · P2 | Verified · public v207 | All three portal views measured 44 px in both languages on the same signed-in 390 px case. Keyboard activation, focus, compact desktop controls and page width passed. [PR #278](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/278) · [Production measurements](../testing/mobile-portal-controls-cv004.md). |
 | CV-003 · P2 | Verified · public v206 | Mobile direct links show their selected case and section before the register. In the same signed-in case at 390 × 844 the portal heading moved from 1,751 to 639 px. Isolated short/235-character titles, keyboard, empty selection, resizing, desktop, and exact document targets passed. [Implementation](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/275) · [Small-phone refinement](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/276) · [Acceptance](../testing/mobile-case-entry-cv003-2026-11-09.md) · [Release receipt](../testing/receipts/mobile-case-entry-v206-2026-11-09.json). |
@@ -49,7 +51,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
-| CV-011 | Practice finance · Waiting for verification | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Apply migration 0036 and verify access and persistence on the signed-in site. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
+| CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
 
 ## Update this file every iteration

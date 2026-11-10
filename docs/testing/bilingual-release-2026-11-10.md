@@ -14,9 +14,19 @@ In the Russian synthetic report preview, the lead forecast showed an English sys
 
 ## Publication and signed-in acceptance
 
+Uploads, Billing and CV-006 each merged with 18 successful checks. Billing merged before Reports. The deployment is split so signed-in acceptance for the three merged features can start while the corrected Reports head runs CI. The focused native regression failed against the old dialog (`expected 250, actual 0`) and passed against the corrected dialog; all 12 focused tests and Flutter analysis passed on the pinned Flutter 3.44.8 SDK.
+
 Release-engineering observation: the iOS workflows launch on both branch pushes and pull requests, each with a separate concurrency group. On Billing’s unchanged commit, [one restart run passed](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42807178176) while [the other](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42807169139/attempts/1) timed out at the legacy reader’s UI-settle checkpoint. Its diagnostic simulator screenshot also timed out. Mobile sources, Rust crates and workflow definitions were unchanged from the passing CV-006 candidate. The failed job was retried without changing the branch or waiving the gate.
 
-Pending the combined production release. Verify original file access and all four destinations, recorded and reconciled EUR balances, scoped Reports data and saved configurations, and the single case creation control with its plain-language next action. Record desktop and narrow layout results in both languages before closing release gates.
+**Public v209.** [Merged-source build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832560974) and [release receipt](receipts/workspace-billing-v209.json). Both production origins served all 244 expected assets. The signed-in synthetic case and a separate personal Studio draft were used.
+
+| Workflow | Observed on production |
+| --- | --- |
+| Uploads | In both locales, Studio offered draft, originating team case, firm library and reusable templates. A 70-byte TXT was uploaded to each file destination; all three downloads matched the SHA-256 in the receipt. The Studio draft was saved, opened from Personal cases on a fresh tab and still offered its attachment. The team inventory displayed its version, tag and secure download. The Russian firm library reopened version 1. The templates editor imported Cyrillic, Latin text and two merge fields unchanged, then saved version 1. |
+| Billing | The English journal recorded 30 minutes at EUR 100/hour, invoice #2 for EUR 50 and synthetic payment #3 for EUR 20. Russian reconciliation #4 linked that receipt to an external statement reference. Reload and case reselection preserved EUR 30 outstanding; the trust balance remained zero. No transfer, customer notification or external payment occurred. |
+| Case Overview | EN/RU showed one creation control; keyboard opening focused the title and closing returned focus to New case in the measured English run. At 390 CSS px, scroll width equaled content width in each locale. The independent-review warning remained visible with details closed. Opening details revealed the exact recorded reason; the action opened the report-evidence screen. |
+| Residuals | Russian document inventory and case checks still render some English system labels (CV-017); record quotations and user text were excluded from this finding. Accounting reports were not in scope. Independent production role access was not impersonated. |
+
 
 Billing attempt 2 timed out in a different phase (`incomplete-write`, after tapping the Economics view), waiting for Flutter's global `pumpAndSettle`. The uploads restart job timed out preparing Xcode and the Reports simulator job timed out after 15 minutes preparing its bundle. No check was waived. For follow-up, evaluate explicit readiness conditions for navigation instead of whole-screen idle, measure Xcode preparation separately, and keep all native calculation, persistence and relaunch assertions intact.
 
