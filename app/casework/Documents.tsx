@@ -4,7 +4,7 @@ import { WorkspaceIcon } from "../CaseVantIcon";
 import StatusBadge from "../StatusBadge";
 import { Feedback, useCasework } from "./Host";
 import { words, when } from "./presentation";
-import { describeTemplate, type Locale, type WorkRecord } from "./model";
+import { describeTemplate, tokens, tokenLabel, type Locale, type WorkRecord } from "./model";
 import lib from "../library/library.module.css";
 import css from "./casework.module.css";
 export default function Documents({
@@ -75,6 +75,11 @@ export default function Documents({
           </button>
         )}
       </div>
+      <details><summary>{t("Template merge fields", "Поля подстановки шаблонов")}</summary>
+        <dl>{(Object.keys(tokens) as (keyof typeof tokens)[]).map(key =>
+          <div key={key}><dt>{tokenLabel(key, locale)}</dt><dd><code>{"{{" + key + "}}"}</code></dd></div>
+        )}</dl>
+      </details>
       <div className={lib.tabs} aria-label={t("Document collections", "Коллекции документов")}>
         {(["active", "documents", "archived"] as const).map((v, i) => (
           <button key={v} aria-current={tab === v ? "page" : undefined} onClick={() => change(v)}>

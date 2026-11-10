@@ -9,6 +9,7 @@ The v203 audit identified six issues. Five have been verified on the published s
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
 | CV-006 · P2 | Waiting for verification | Case overview / plain language | With Technical details closed, Overview still shows “current dossier snapshot,” “attributable reviewer approval” and “org owner.” The case picker also exposes two controls for the same creation form. | Give the next action in ordinary language, e.g. “Generate the report” or “Ask a reviewer to approve it.” Put record-level explanations in details, keep the permissions and approval warnings visible, and give case creation one clearly named entry per layout. Check visible text and accessible names. |
+| CV-013 · P2 | Waiting for verification | AI Studio / document storage | Sources & evidence lacks an upload entry. | Choose the Studio draft, team case, firm library or templates explicitly. Reopen original files, verify authorization, versions and template import. [Candidate review](../testing/studio-document-destinations-cv013.md). |
 
 ## Verified
 
@@ -48,6 +49,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 10 November 2026 · CV-013 was reproduced in Studio. The candidate connects all three document libraries and adds draft attachments, case tags, version descriptions and template import. Isolated checks passed. Signed-in release acceptance remains pending.
 
 | Date / baseline | Change | Evidence / next step |
 | --- | --- | --- |

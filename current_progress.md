@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-013 · Studio document destinations · 10 November 2026
+
+Studio now offers an explicit choice of draft, team case, firm files or document templates in the candidate. Case uploads support version descriptions and searchable tags. Document templates can import editable DOCX or TXT text. Isolated upload and destination checks passed. Signed-in release verification is pending. [Review](docs/testing/studio-document-destinations-cv013.md) · [Backlog](docs/development/development_backlog.md).
+
 ## Published CV-005 · Case navigation · 10 November 2026
 
 [CaseVant v208](https://casevant.pro/matters) serves the merged CV-005 build. Both origins passed all 208 asset checks. In the signed-in synthetic case, Overview → Calendar → Client portal → Overview preserved the case ID and title in English and Russian on desktop and at 390 CSS px. Each language exposed eleven destinations. [Release verification](docs/testing/case-navigation-cv005.md).

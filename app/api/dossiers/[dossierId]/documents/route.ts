@@ -51,6 +51,7 @@ const ALLOWED_UPLOAD_FIELDS = new Set([
   "mediaType",
   "documentId",
   "sourceNote",
+  "tags",
   "idempotencyKey",
 ]);
 
@@ -313,9 +314,16 @@ function parseUploadForm(formData: FormData): UploadForm {
     throw new Error("Confirm that the upload is synthetic or de-identified.");
   }
   const documentIdValue = optionalFormString(formData, "documentId");
+  const tagText = optionalFormString(formData, "tags");
+  if (tagText && tagText.length > 780) throw new Error("Document tags are too long.");
+  const tags = tagText ? [...new Set(tagText.split(",").map(tag => tag.trim()).filter(Boolean))] : [];
+  if (tags.length > 12 || tags.some(tag => tag.length > 64) || (documentIdValue && tags.length)) {
+    throw new Error("Use up to 12 tags of 64 characters when creating a document.");
+  }
   const idempotencyValue = optionalFormString(formData, "idempotencyKey");
   return {
     file,
+    tags,
     title: boundedDossierText(stringField(formData, "title"), "document title", 2, 240),
     documentType: boundedDossierText(
       stringField(formData, "documentType"),
