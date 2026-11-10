@@ -2,11 +2,9 @@
 
 **Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).
 
-**Reports · awaiting release verification.** The non-accounting catalog, private saved configurations, CSV export and print are merged into main after Billing (18/18 green). The exact main build passed and the release artifact is staged; publishing is awaiting release credential authorization. After migrations 0036–0037, verify saved-report isolation, two staff roles, scoped totals and English/Russian navigation on the signed-in site. [Acceptance notes](../testing/practice-reports.md).
+**Reports shipped in v210.** All 18 non-accounting reports ran in both languages. Saved configuration reload, scoped CSV downloads, ledger totals, signed-out access and the mobile catalog passed. CV-014 remains open for Russian stage labels. The isolated database suite covered a second staff role. A second production identity is still needed for an independent live check of saved-report isolation. [Acceptance notes](../testing/practice-reports.md).
 
-**Last reviewed on 10 November 2026. Public version v209.** CV-001 through CV-006, CV-011 and CV-013 are verified for the scoped workflows. Reports awaits its own release. [Current delivery](../../current_progress.md) · [Original audit](../testing/ui-ux-functionality-2026-11-09.md).
-
-Reports release verification now includes a second staff role in the isolated migrated database and a lost-response save retry. The production EN/RU check follows publication.
+**Last reviewed on 10 November 2026. Public version v210.** CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
 
 ## Confirmed findings
 
@@ -17,7 +15,7 @@ All six original v203 findings have been verified on the published site. The ope
 | CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
 | CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
-| CV-014 · P2 | Open | Reports / localization | The Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
+| CV-014 · P2 | Open | Reports / localization | The signed-in v210 Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
 | CV-015 · P3 | Open | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
 
 ## Verified
