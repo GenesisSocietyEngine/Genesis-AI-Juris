@@ -11,3 +11,5 @@ The isolated browser verified the eighteen-entry catalog and grouped one synthet
 This implementation uses CaseVant's recorded fields and a single sort, group and sum. MyCase-specific attorney origination splits, multiple trust bank accounts, workbook export and column pinning are outside the candidate. Production needs the billing journal in migration 0036 and private configurations in 0037, followed by signed-in English/Russian and separate-role verification.
 
 The full integrated suite passed 24 migration, access and workflow scenarios. A contributor could record time only in an assigned case and could not issue its invoice or see an owner’s saved configuration. The report save and removal recheck membership inside the transaction. The browser fixture saved exactly one copy after a lost reply and retry.
+
+Release checkpoint: PR #282 merged after Billing with 18 passing checks at main `076ef3bf53133dc0ffe8ea056989fd964bf416cb`. [Web build 42854193206](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42854193206) passed; staged migrations 0036 and 0037 match source. Publication and live signed-in EN/RU verification are still pending.

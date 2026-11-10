@@ -2,11 +2,11 @@
 
 ## Combined release and bilingual audit · 10 November 2026
 
-**Public v209:** CV-006, Studio document destinations and EUR Billing are verified on the signed-in site in English and Russian. The three PRs merged with 18 green checks each; Billing merged before Reports. Three original downloads matched their source bytes, the saved Studio draft reopened, and an externally recorded EUR 20 receipt left EUR 30 on a EUR 50 invoice after reconciliation and reload. [Production receipt](docs/testing/receipts/workspace-billing-v209.json) · [Bilingual quality audit](docs/testing/bilingual-release-2026-11-10.md). Reports has its own release gate.
+**Public v209:** CV-006, Studio document destinations and EUR Billing are verified on the signed-in site in English and Russian. The three PRs merged with 18 green checks each; Billing merged before Reports. Three original downloads matched their source bytes, the saved Studio draft reopened, and an externally recorded EUR 20 receipt left EUR 30 on a EUR 50 invoice after reconciliation and reload. [Production receipt](docs/testing/receipts/workspace-billing-v209.json) · [Bilingual quality audit](docs/testing/bilingual-release-2026-11-10.md). Reports [#282](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/282) merged after Billing with 18/18 green. Its [exact main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42854193206) passed, and migrations 0036/0037 matched the staged artifact. Publishing awaits authorization to pass the scoped credential to the Sites release helper. Signed-in production Reports acceptance remains open.
 
 ## Practice reports · 10 November 2026
 
-The native gate twice reproduced a tax import dialog assertion while cancelling with the keyboard active. The candidate keeps a closing dialog at its last valid keyboard position and preserves platform metrics if widget inspection fails. Twelve focused Flutter tests passed; repeat the complete native relaunch workflow before release. [Native verification](docs/testing/framework-padding-investigation-2026-10-21.md).
+The native gate twice reproduced a tax import dialog assertion while cancelling with the keyboard active. The candidate keeps a closing dialog at its last valid keyboard position and preserves platform metrics if widget inspection fails. Twelve focused Flutter tests and both complete native relaunch workflows passed. [Native verification](docs/testing/framework-padding-investigation-2026-10-21.md).
 
 The integrated database acceptance test reconciled EUR 50 billed, EUR 20 collected and EUR 30 outstanding and checked owner, contributor and outside-organization access. In a browser fixture, retrying a save after a lost reply produced one saved report.
 
