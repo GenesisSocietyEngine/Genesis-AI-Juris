@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon } from "../CaseVantIcon";
+import RecentActivity from "../activity/RecentActivity";
 import StatusBadge from "../StatusBadge";
 import { workspaceDestination } from "../workspace-navigation";
 import { scheduleLabel } from "../matters/practice-scheduling";
@@ -10,8 +11,8 @@ import { homeDashboard } from "./home-dashboard";
 import { distinctLabels, readableDate, workState, workStateLabel } from "./work-presentation";
 import styles from "./work.module.css";
 
-export default function HomeDashboard({ cases, loaded, loadFailed, now, zone, locale, location, name, onView, firmItems=[], onAdd }: {
-  firmItems?: PracticeItem[]; onAdd?:(kind:"task"|"event")=>void; cases: FirmCase[]; loaded: boolean; loadFailed: boolean; now: number | null; zone: string; locale: "en" | "ru"; location: string; name: string; onView: (view: string, due?: "all" | "overdue" | "today") => void;
+export default function HomeDashboard({ cases, loaded, loadFailed, refreshing, now, zone, locale, location, name, onView, firmItems=[], onAdd }: {
+  refreshing?: boolean; firmItems?: PracticeItem[]; onAdd?:(kind:"task"|"event")=>void; cases: FirmCase[]; loaded: boolean; loadFailed: boolean; now: number | null; zone: string; locale: "en" | "ru"; location: string; name: string; onView: (view: string, due?: "all" | "overdue" | "today") => void;
 }) {
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   const [action, setAction] = useState<"task" | "event" | "document" | null>(null);
@@ -52,6 +53,7 @@ export default function HomeDashboard({ cases, loaded, loadFailed, now, zone, lo
         <section className={styles.dashboardPanel}><header><h3><WorkspaceIcon name="cases" />{t("Case overview", "Обзор дел")}</h3><button onClick={() => onView("cases")}>{t("All cases", "Все дела")}<WorkspaceIcon name="next" /></button></header><ul className={styles.dashboardList}>{model.cases.slice(0, 5).map(c => <li key={c.id}><a href={openCase(c.id, "overview")}><span className={styles.itemGlyph}><WorkspaceIcon name="cases" /></span><span><strong>{c.title}</strong><small>{c.open} {t("open", "открыто")} · {c.completed} {t("completed", "завершено")}</small></span><StatusBadge tone={c.needsAttention ? "today" : "neutral"}>{c.needsAttention ? t("Needs attention", "Требует внимания") : t("No alerts", "Без замечаний")}</StatusBadge></a></li>)}</ul>{!cases.length && <p className={styles.dashboardEmpty}>{t("Create your first case to bring tasks, dates and documents together.", "Создайте первое дело, чтобы объединить задачи, даты и документы.")}</p>}</section>
       </div><p className={styles.hint}>{t("Based on saved firm work and cases you can access.", "По сохранённой работе в доступных вам делах.")} {t("Timezone", "Часовой пояс")}: {zone}</p>
     </>}
+    {loaded && !refreshing && !loadFailed && <RecentActivity />}
     <dialog className={styles.quickDialog} ref={dialog} onCancel={close} onClose={() => setAction(null)} aria-labelledby="home-quick-action-title"><h2 id="home-quick-action-title">{action === "event" ? t("Add event", "Добавить событие") : action === "task" ? t("Add task", "Добавить задачу") : t("Case documents", "Документы дела")}</h2><p>{t("Choose the case for this work.", "Выберите дело для этой работы.")}</p><label>{t("Case", "Дело")}<select ref={select} value={caseId} onChange={e => setCaseId(e.target.value)}><option value="">{t("Choose a case", "Выберите дело")}</option>{cases.map(c => <option key={c.id} value={c.id}>{names.get(c.id)}</option>)}</select></label>{!cases.length && <p>{t("Create a case first.", "Сначала создайте дело.")}</p>}<div className={styles.actions}><button onClick={close}>{t("Cancel", "Отмена")}</button>{caseId && cases.some(c => c.id === caseId) && <a className={styles.primary} href={link(`/matters?collection=team&dossier=${encodeURIComponent(caseId)}&section=${action === "event" ? "calendar" : action === "task" ? "tasks" : "documents"}${action !== "document" ? `&workAction=${action}` : ""}`)}>{t("Continue", "Продолжить")}<WorkspaceIcon name="arrow" /></a>}</div></dialog>
   </section>;
 }
