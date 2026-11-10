@@ -30,7 +30,7 @@ before(async()=>{
   const migrate=async(entry:{tag:string})=>{for(const sql of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint"))await db.prepare(sql).run();};
   for(const entry of journal.entries.filter((v:{idx:number})=>v.idx<29))await migrate(entry);
   runtime.__practiceEnv={DB:db,DOSSIER_DOCUMENTS:await mf.getR2Bucket("DOSSIER_DOCUMENTS","practice-test") as unknown as R2Bucket};runtime.__practiceHeaders=()=>storage.getStore()!.headers;
-  const paths={portalTransitions:"app/api/dossiers/[dossierId]/transitions/route.ts",portalStaff:"app/api/portal/staff/route.ts",portalClient:"app/api/portal/client/route.ts",portalFile:"app/api/portal/file/route.ts",portalDocuments:"app/api/dossiers/[dossierId]/documents/route.ts",calendarDispatch:"app/api/calendar/dispatch/route.ts",calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
+  const paths={billing:"app/api/billing/route.ts",reports:"app/api/reports/route.ts",financial:"app/api/reports/financial/route.ts",portalTransitions:"app/api/dossiers/[dossierId]/transitions/route.ts",portalStaff:"app/api/portal/staff/route.ts",portalClient:"app/api/portal/client/route.ts",portalFile:"app/api/portal/file/route.ts",portalDocuments:"app/api/dossiers/[dossierId]/documents/route.ts",calendarDispatch:"app/api/calendar/dispatch/route.ts",calendar:"app/api/calendar/route.ts",feed:"app/api/calendar/feed/[token]/route.ts",casework:'app/api/casework/route.ts',intake:'app/api/library/intake/route.ts',contacts:"app/api/contacts/route.ts",firmWork:"app/api/work/firm/route.ts",firmDocuments:"app/api/library/firm/route.ts",participants:"app/api/dossiers/[dossierId]/participants/route.ts",firm:"app/api/work/route.ts",templates:"app/api/work/templates/route.ts",organizations:"app/api/organizations/route.ts",dossiers:"app/api/dossiers/route.ts",detail:"app/api/dossiers/[dossierId]/route.ts",practice:"app/api/dossiers/[dossierId]/practice/route.ts"};
   const result=await build({stdin:{contents:"import {getDb} from './db';import {dispatch} from './app/calendar/delivery';export const runCalendar=(...args)=>dispatch(getDb(),...args);\n"+Object.entries(paths).map(([name,path])=>`export * as ${name} from './${path}';`).join("\n"),resolveDir:process.cwd(),loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",plugins:[{name:"synthetic-runtime",setup(b){
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"runtime"}));
     b.onLoad({filter:/.*/,namespace:"runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__practiceEnv; export function waitUntil(){}":args.path==="next/headers"?"export async function headers(){return globalThis.__practiceHeaders()}":"export function redirect(){throw Error('Unexpected redirect')}"}));
@@ -79,6 +79,58 @@ before(async()=>{
   const afterSchema=(await db.prepare("SELECT name,sql,type FROM sqlite_master ORDER BY name").all<{name:string;sql:string;type:string}>()).results;
   assert.deepEqual(afterSchema.filter(v=>schema.some(old=>old.name===v.name)),schema,"old database objects must be unchanged");
 }, {timeout:120000});
+test("billing receipts reconcile with the financial report and remain scoped to the staff case", async () => {
+  const {defaults}=await import("../app/reports/config");
+  const orgResponse=await call("organizations","POST",{action:"create",name:"Synthetic billing and report acceptance"});
+  assert.equal(orgResponse.status,201);
+  const organization=((await orgResponse.json()) as {organization:{id:string}}).organization.id;
+  const reportCall=(route:string,method="GET",body?:unknown,email?:string,org=organization,headers?:Record<string,string>,query="",id?:string)=>call(route,method,body,email,org,headers,query,id);
+  const caseResponse=await reportCall("dossiers","POST",{title:"Synthetic accounts receivable",jurisdictions:["Test"],classification:"internal"});
+  assert.equal(caseResponse.status,201);
+  const caseId=((await caseResponse.json()) as {dossier:{dossier_id:string}}).dossier.dossier_id;
+
+  const post = async (kind:string,revision:number,fields:Record<string,unknown>) => {
+    const body={caseId,kind,revision,operationKey:"release-fixture-op-"+revision,description:"Synthetic acceptance",date:"2026-11-10",...fields};
+    const response=await reportCall("billing","POST",body);
+    assert.equal(response.status,200,await response.clone().text());
+    assert.deepEqual(await (await reportCall("billing","POST",body)).json(),await response.json());
+  };
+  await post("time",0,{quantity:30,rate:"100",billable:true});
+  await post("invoice",1,{entries:[1],due:"2026-11-30",recipient:"Synthetic recipient"});
+  await post("payment",2,{target:2,amount:"20",reference:"synthetic bank reference"});
+  await post("reconcile",3,{target:3,reference:"synthetic statement"});
+  const financial=await reportCall("financial","GET",undefined,undefined,organization,undefined,"?report=balances&to=2026-11-10");
+  assert.equal(financial.status,200,await financial.clone().text());
+  const {rows}=await financial.json() as {rows:{matter:string;billed:number;paid:number;balance:number}[]};
+  assert.ok(rows.some(r=>r.billed===50 && r.paid===20 && r.balance===30));
+  const outsider=await reportCall("billing","GET",undefined,"practice-outsider@example.test",foreignOrganization,undefined,"?case="+caseId);
+  assert.equal(outsider.status,403);
+  const privateReport={action:"save",id:"report_"+"8".repeat(32),name:"Synthetic balance report",config:defaults("balances")};
+  assert.equal((await reportCall("reports","POST",privateReport)).status,200);
+  const list=await (await reportCall("reports")).json() as {saved:{id:string}[]};
+  assert.ok(list.saved.some(r=>r.id===privateReport.id));
+  const foreignList=await (await reportCall("reports","GET",undefined,"practice-outsider@example.test",foreignOrganization)).json() as {saved:unknown[]};
+  assert.deepEqual(foreignList.saved,[]);
+  const colleague="report-contributor@example.test";
+  await db.prepare("INSERT INTO users(email,display_name) VALUES (?,?)").bind(colleague,"Synthetic report contributor").run();
+  const member=await db.prepare("SELECT id,actor_id FROM users WHERE email=?").bind(colleague).first<{id:number;actor_id:string}>();
+  await db.prepare("INSERT INTO organization_memberships(organization_id,user_id,actor_id,role,status,revision,created_at) VALUES(?,?,?,'member','active',1,?)").bind(organization,member!.id,member!.actor_id,new Date().toISOString()).run();
+  const peerList=await (await reportCall("reports","GET",undefined,colleague)).json() as {saved:unknown[]};
+  assert.deepEqual(peerList.saved,[],"another staff member cannot open an owner's saved configuration");
+  const emptyReport=await (await reportCall("financial","GET",undefined,colleague,organization,undefined,"?report=balances")).json() as {rows:unknown[]};
+  assert.deepEqual(emptyReport.rows,[],"firm membership alone does not expose case balances");
+  const otherCase=await reportCall("dossiers","POST",{title:"Billing role acceptance",jurisdictions:["Test"],classification:"internal"});
+  assert.equal(otherCase.status,201);
+  const id=((await otherCase.json()) as {dossier:{dossier_id:string}}).dossier.dossier_id;
+  const grant=await reportCall("participants","POST",{actorId:member!.actor_id,role:"contributor",expectedRevision:1},undefined,organization,undefined,"",id);
+  assert.equal(grant.status,201,await grant.clone().text());
+  const entry={caseId:id,kind:"time",revision:0,operationKey:"release-contributor-time",description:"Synthetic",date:"2026-11-10",quantity:60,rate:"25",billable:true};
+  assert.equal((await reportCall("billing","POST",entry,colleague)).status,200);
+  assert.equal((await reportCall("billing","POST",{...entry,kind:"invoice",revision:1,operationKey:"release-contributor-invoice",entries:[1],recipient:"Synthetic recipient",due:"2026-11-30"},colleague)).status,403);
+  const allowedReport=await (await reportCall("financial","GET",undefined,colleague,organization,undefined,"?report=balances")).json() as {rows:{unbilled:number}[]};
+  assert.deepEqual(allowedReport.rows.map(r=>r.unbilled),[25],"only the contributor's granted case is included");
+});
+
 after(async()=>{await mf?.dispose();},{timeout:15000});
 
 test("case register, private views and Word templates keep exact history, authorization and frozen downloads",async()=>caseworkScenarios(call,db,organization,caseId));
