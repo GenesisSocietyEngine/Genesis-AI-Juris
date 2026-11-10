@@ -5,6 +5,8 @@ import {
   dossierParticipants as people,
   dossierOrganizationBindings as bindings,
   organizationCasGuards,
+  dossierDocuments,
+  dossierDocumentCurrentVersions as currentFiles,
 } from "../../../db/schema";
 import { buildBillingEvent } from "../../billing/model";
 import { canonicalDossierJson } from "../../dossier-contract";
@@ -86,12 +88,36 @@ export async function GET(request: Request) {
   const caseId = new URL(request.url).searchParams.get("case") || "";
   if (caseId && !cases.some((item) => item.id === caseId)) return denied();
   const rows = caseId ? await allRows(c, caseId) : [];
+  const receipts = caseId
+    ? await c.db
+        .select({
+          id: dossierDocuments.id,
+          title: dossierDocuments.title,
+          version: currentFiles.documentVersionId,
+        })
+        .from(dossierDocuments)
+        .innerJoin(
+          currentFiles,
+          and(
+            eq(currentFiles.documentId, dossierDocuments.id),
+            eq(currentFiles.dossierId, dossierDocuments.dossierId),
+          ),
+        )
+        .where(
+          and(
+            eq(dossierDocuments.dossierId, caseId),
+            eq(dossierDocuments.isProvisional, false),
+          ),
+        )
+        .orderBy(asc(dossierDocuments.title))
+    : [];
   if (caseId && !(await access(c, caseId))) return denied();
   return firmReply(c, {
     scope,
     caseId,
     cases,
     rows,
+    receipts,
     canEnter: org.role !== "auditor",
     canManage: ["org_owner", "org_admin"].includes(org.role),
   });
@@ -156,26 +182,50 @@ export async function POST(request: Request) {
     );
   }
   const sequence = last + 1;
+  if (event.kind === "expense" && input.receiptVersion) {
+    if (typeof input.receiptVersion !== "string")
+      return dossierJson({ error: "Invalid receipt." }, 422);
+    const [receipt] = await c.db
+      .select({
+        id: dossierDocuments.id,
+        title: dossierDocuments.title,
+        version: currentFiles.documentVersionId,
+      })
+      .from(dossierDocuments)
+      .innerJoin(
+        currentFiles,
+        and(
+          eq(currentFiles.documentId, dossierDocuments.id),
+          eq(currentFiles.dossierId, dossierDocuments.dossierId),
+        ),
+      )
+      .where(
+        and(
+          eq(dossierDocuments.dossierId, caseId),
+          eq(dossierDocuments.isProvisional, false),
+          eq(currentFiles.documentVersionId, input.receiptVersion),
+        ),
+      )
+      .limit(1);
+    if (!receipt) return conflict();
+    event.receipt = receipt;
+  }
   try {
     await c.db.batch([
-      c.db
-        .insert(organizationCasGuards)
-        .values({
-          changed: sql`CASE WHEN EXISTS(SELECT 1 FROM dossier_participants p JOIN dossier_organization_bindings b ON b.dossier_id=p.dossier_id WHERE p.dossier_id=${caseId} AND b.organization_id=${org.id} AND p.user_id=${c.actor.userId} AND p.actor_id=${c.actor.actorId} AND p.status='active' AND p.role IN ('owner','contributor')) THEN 1 ELSE 0 END`,
-        }),
+      c.db.insert(organizationCasGuards).values({
+        changed: sql`CASE WHEN EXISTS(SELECT 1 FROM dossier_participants p JOIN dossier_organization_bindings b ON b.dossier_id=p.dossier_id WHERE p.dossier_id=${caseId} AND b.organization_id=${org.id} AND p.user_id=${c.actor.userId} AND p.actor_id=${c.actor.actorId} AND p.status='active' AND p.role IN ('owner','contributor')) THEN 1 ELSE 0 END`,
+      }),
       c.db.delete(organizationCasGuards),
-      c.db
-        .insert(events)
-        .values({
-          organizationId: org.id,
-          caseId,
-          sequence,
-          actorRef: c.actor.actorId,
-          operationKey,
-          requestDigest: digest,
-          event,
-          createdAt: canonicalDossierTimestamp(),
-        }),
+      c.db.insert(events).values({
+        organizationId: org.id,
+        caseId,
+        sequence,
+        actorRef: c.actor.actorId,
+        operationKey,
+        requestDigest: digest,
+        event,
+        createdAt: canonicalDossierTimestamp(),
+      }),
     ]);
   } catch {
     return (await replay()) ?? conflict();

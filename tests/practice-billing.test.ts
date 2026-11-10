@@ -69,23 +69,41 @@ test("EUR invoice, partial receipt, trust and reconciliation retain independent 
 });
 
 test("billing journal migration rejects duplicate sequences, operation keys and missing case references", async () => {
-  const {DatabaseSync} = await import("node:sqlite");
-  const {readFileSync}=await import("node:fs");
-  const db=new DatabaseSync(":memory:");
+  const { DatabaseSync } = await import("node:sqlite");
+  const { readFileSync } = await import("node:fs");
+  const db = new DatabaseSync(":memory:");
   try {
-    db.exec("PRAGMA foreign_keys=ON; CREATE TABLE organizations(id TEXT PRIMARY KEY); CREATE TABLE dossiers(id TEXT PRIMARY KEY); INSERT INTO organizations VALUES ('a'); INSERT INTO dossiers VALUES ('c'),('d');");
-    db.exec(readFileSync("drizzle/0036_practice_billing.sql","utf8"));
-    const add=db.prepare("INSERT INTO billing_events VALUES ('a',?,?,?,'staff','hash','{}','2026-11-10')");
-    add.run('c',1,'first');
-    assert.throws(()=>add.run('c',1,'concurrent'));
-    assert.throws(()=>add.run('d',1,'first'));
-    assert.throws(()=>add.run('missing',1,'other'));
-    add.run('d',1,'second');
-  } finally { db.close(); }
+    db.exec(
+      "PRAGMA foreign_keys=ON; CREATE TABLE organizations(id TEXT PRIMARY KEY); CREATE TABLE dossiers(id TEXT PRIMARY KEY); INSERT INTO organizations VALUES ('a'); INSERT INTO dossiers VALUES ('c'),('d');",
+    );
+    db.exec(readFileSync("drizzle/0036_practice_billing.sql", "utf8"));
+    const add = db.prepare(
+      "INSERT INTO billing_events VALUES ('a',?,?,?,'staff','hash','{}','2026-11-10')",
+    );
+    add.run("c", 1, "first");
+    assert.throws(() => add.run("c", 1, "concurrent"));
+    assert.throws(() => add.run("d", 1, "first"));
+    assert.throws(() => add.run("missing", 1, "other"));
+    add.run("d", 1, "second");
+  } finally {
+    db.close();
+  }
 });
 
-test("installments use calendar months and sum to the exact invoice balance",async()=>{
-  const {installments}=await import("../app/billing/model");
-  const schedule=installments({kind:"plan",currency:"EUR",date:"2026-01-01",description:"Test",cents:1000,installments:3,due:"2026-01-31"});
-  assert.deepEqual(schedule,[{due:"2026-01-31",cents:334},{due:"2026-02-28",cents:333},{due:"2026-03-31",cents:333}]);
+test("installments use calendar months and sum to the exact invoice balance", async () => {
+  const { installments } = await import("../app/billing/model");
+  const schedule = installments({
+    kind: "plan",
+    currency: "EUR",
+    date: "2026-01-01",
+    description: "Test",
+    cents: 1000,
+    installments: 3,
+    due: "2026-01-31",
+  });
+  assert.deepEqual(schedule, [
+    { due: "2026-01-31", cents: 334 },
+    { due: "2026-02-28", cents: 333 },
+    { due: "2026-03-31", cents: 333 },
+  ]);
 });

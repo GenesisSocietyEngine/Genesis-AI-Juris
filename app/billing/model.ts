@@ -26,6 +26,7 @@ export type BillingEvent = {
   installments?: number;
   reference?: string;
   recipient?: string;
+  receipt?: { id: string; title: string; version: string };
 };
 export type BillingRow = {
   sequence: number;

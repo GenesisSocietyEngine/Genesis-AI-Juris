@@ -19,6 +19,7 @@ type Data = {
   caseId: string;
   cases: { id: string; title: string }[];
   rows: BillingRow[];
+  receipts: { id: string; title: string; version: string }[];
   canEnter: boolean;
   canManage: boolean;
 };
@@ -158,7 +159,12 @@ export function BillingWorkspace({
               onReload={() => setRefresh((n) => n + 1)}
             />
           )}
-          <BillingRegister rows={data.rows} locale={locale} />
+          <BillingRegister
+            rows={data.rows}
+            locale={locale}
+            caseId={data.caseId}
+            scope={scope}
+          />
         </>
       )}
     </main>
@@ -356,6 +362,21 @@ function BillingForm({
                 {t("Billable", "Включать в счёт")}
               </label>
             </>
+          )}
+          {kind === "expense" && (
+            <label>
+              {t("Receipt from case documents", "Квитанция из документов дела")}
+              <select name="receiptVersion" defaultValue="">
+                <option value="">
+                  {t("No receipt selected", "Без квитанции")}
+                </option>
+                {data.receipts.map((file) => (
+                  <option key={file.version} value={file.version}>
+                    {file.title}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
           {kind === "invoice" && (
             <label>

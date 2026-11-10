@@ -6,9 +6,13 @@ import { names } from "./copy";
 export function BillingRegister({
   rows,
   locale,
+  caseId,
+  scope,
 }: {
   rows: BillingRow[];
   locale: "en" | "ru";
+  caseId: string;
+  scope: string;
 }) {
   const t = (en: string, ru: string) => (locale === "en" ? en : ru),
     lang = locale === "en" ? 0 : 1;
@@ -187,6 +191,17 @@ export function BillingRegister({
                 )}
                 {e.cents > 0 && <> · {money(e.cents, locale)}</>}
                 {e.reference && <> · {e.reference}</>}
+                {e.receipt && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a
+                      href={`/api/dossiers/${encodeURIComponent(caseId)}/documents/${encodeURIComponent(e.receipt.id)}/versions/${encodeURIComponent(e.receipt.version)}/download?organization=${encodeURIComponent(scope)}`}
+                    >
+                      {t("Receipt", "Квитанция")} · {e.receipt.title}
+                    </a>
+                  </>
+                )}
                 {state.voided.has(sequence) && (
                   <> · {t("Voided", "Отменено")}</>
                 )}
