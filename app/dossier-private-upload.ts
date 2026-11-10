@@ -209,7 +209,7 @@ function validateBrowserMediaType(value: unknown, declared: DossierMediaType) {
   }
 }
 
-function observeMediaType(filename: string, bytes: Uint8Array): DossierMediaType {
+export function observeMediaType(filename: string, bytes: Uint8Array): DossierMediaType {
   const extension = filename.includes(".") ? filename.slice(filename.lastIndexOf(".") + 1).toLowerCase() : "";
   switch (extension) {
     case "pdf":

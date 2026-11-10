@@ -437,6 +437,7 @@ test("real upload commits verified private bytes, revision receipt, version, and
     text: "Alpha evidence\r\nSecond line\r\n",
     idempotencyKey: "success-key-0001",
   });
+  fixture.form.tags = ["intake", "review"];
   const response = await executeUpload(harness, fixture);
   assert.equal(response.status, 201);
   const body = await response.json() as {
@@ -450,6 +451,9 @@ test("real upload commits verified private bytes, revision receipt, version, and
       download_url: string;
     };
   };
+  const tagged = await row<{ tags: string }>("SELECT tags FROM dossier_documents WHERE id = ?", body.document_id);
+  assert.ok(tagged);
+  assert.deepEqual(JSON.parse(tagged.tags), ["intake", "review"]);
   assert.equal(body.dossier_revision, 2);
   assert.equal(body.idempotent, false);
   assert.equal(body.version.extraction_status, "ready");

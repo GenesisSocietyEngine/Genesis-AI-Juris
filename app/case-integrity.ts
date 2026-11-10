@@ -1,3 +1,4 @@
+import { sourceFiles } from './studio-source-files';
 import type { MetricGuard, MetricKey, RuleComparison, StudioDraft, StudioEditAction, StudioEditEntry, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
 import { normalizeUntrustedCaseProtection } from "./case-protection";
 import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
@@ -89,6 +90,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
   };
   return {
     caseId: draft.caseId.trim(),
+    ...(draft.sourceFiles?.length ? { sourceFiles: draft.sourceFiles } : {}),
     ...(draft.exampleSource ? { exampleSource: draft.exampleSource } : {}),
     ...(draft.caseType ? { caseType: normalizeCaseTypeReference(draft.caseType) } : {}),
     parent: draft.parent,
@@ -163,7 +165,9 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
 
   const sourceRef = value.exampleSource;
   if (sourceRef !== undefined && (!isRecord(sourceRef) || sourceRef.format !== "casevant-example-source-v1" || typeof sourceRef.caseId !== "string" || sourceRef.caseId.length > 140 || !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(sourceRef.caseId) || typeof sourceRef.version !== "string" || !/^\d+\.\d+\.\d+$/.test(sourceRef.version) || typeof sourceRef.fingerprint !== "string" || !/^sha256-[a-f0-9]{64}$/.test(sourceRef.fingerprint))) throw new Error("Invalid example source reference");
+  const files = sourceFiles(value.sourceFiles);
   const normalized: StudioDraft = {
+    ...(files ? { sourceFiles: files } : {}),
     caseId,
     ...(isRecord(sourceRef) ? { exampleSource: {format:"casevant-example-source-v1" as const, caseId:sourceRef.caseId as string, version:sourceRef.version as string, fingerprint:sourceRef.fingerprint as string} } : {}),
     version,
