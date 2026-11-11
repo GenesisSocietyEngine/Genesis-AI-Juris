@@ -1,5 +1,9 @@
 # Current progress — CaseVant
 
+## CV-020 · Exact activity document links · 11 November 2026
+
+Candidate fixes the activity link's missing `document-` target prefix and prevents an unavailable exact document from selecting the first inventory file. The unavailable-target notice now follows EN/RU. Two bilingual link regressions, the inventory selection regression, 21 workspace render regressions and the SQLite activity regression passed; targeted lint passed. Production remains v211 pending green CI, merge and release. [Review](docs/testing/activity-document-links-cv020.md).
+
 ## CV-019 · Recent activities · 11 November 2026
 
 **Public v211.** PR #286 merged after all 18 checks passed, including both corrected web jobs. The exact-main build of `cb6f5a890e7dbd5eaaa8e0c193a2737fa872dc7d` passed and supplied the release. Both production origins verified all 250 current and retained assets. [Release receipt](docs/testing/receipts/recent-activities-v211.json).

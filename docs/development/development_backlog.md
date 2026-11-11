@@ -18,7 +18,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-020 · P2 | Open | Activity → case document | The correct synthetic document is selected, but the Russian case view also reports that the exact record is unavailable. | Remove the false failure notice after successful target resolution; retain a clear unavailable state for missing or unauthorized documents. Verify EN/RU, reload, version selection and denied access. |
+| CV-020 · P2 | Waiting for verification | Activity → case document | Candidate adds the missing target prefix; the previous correct-looking selection was a first-file fallback. Missing targets now leave the inspector unselected and the warning follows EN/RU. | Candidate regressions and lint passed. Await green CI, release, EN/RU exact links and reload; retain unavailable/denied access. [Review](../testing/activity-document-links-cv020.md). |
 | CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
 | CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
@@ -68,6 +68,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · CV-020 candidate corrects a raw-document-ID link where the workspace requires `document-<id>`. Added bilingual Home/history link checks and missing-target selection coverage. Existing workspace and authorization regressions passed. Status: Waiting for verification; production v211 unchanged until release. [Review](../testing/activity-document-links-cv020.md).
 
 - 11 November 2026 · CV-019 published in v211 after PR #286's 18 green checks and exact-main CI. Scoped bilingual production acceptance completed; CV-020 opened for the false document target notice. Second-identity and populated deletion live checks remain pending. [Audit](../testing/recent-activities-cv019.md) · [Receipt](../testing/receipts/recent-activities-v211.json). Next: address CV-020 and retain the existing prioritized rollout gates.
 

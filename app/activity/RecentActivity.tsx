@@ -245,7 +245,7 @@ function Feed({
               ? casePath +
                 "&section=" +
                 section +
-                (row.docId ? "&target=" + encodeURIComponent(row.docId) : "")
+                (row.docId ? "&target=" + encodeURIComponent("document-" + row.docId) : "")
               : row.category === "document"
                 ? "/library?view=firm"
                 : "/work?view=" +

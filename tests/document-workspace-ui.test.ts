@@ -53,6 +53,10 @@ test("document filters, exact targets and review actions retain the selected imm
     const selectB = elements(tree).find(element => element.type === "button" && element.props["aria-controls"] === "document-b")!;
     (selectB.props.onClick as () => void)(); tree = render(); assert.deepEqual(selected(tree), ["document-b"]);
     focus = "b"; tree = render(); assert.deepEqual(selected(tree), ["document-b"]);
+    focus = "missing"; tree = render(); assert.deepEqual(selected(tree), [], "A missing exact document must not silently select the first file");
+    const manual = elements(tree).find(element => element.type === "button" && element.props["aria-controls"] === "document-b")!;
+    (manual.props.onClick as () => void)(); tree = render(); assert.deepEqual(selected(tree), ["document-b"], "An explicit inventory choice remains available after a missing link");
+    focus = "b"; tree = render();
     change(tree, "input", "new-contract"); tree = render(); assert.deepEqual(selected(tree), ["document-a"]);
     const card = elements(tree).find(element => element.type === "article" && element.props.id === "document-a")!;
     const review = elements(card).find(element => element.type === "button" && element.props.children === "Accept as governed source")!;

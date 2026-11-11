@@ -233,11 +233,13 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         else focusActionTarget("matter-next-actions");
       } else if (state.targetActive && state.target && destination === state.target.destination) {
         const focused = focusActionTarget(state.target.id) || state.target.id === "package-link" && focusActionTarget("package-actions");
-        owner.setTargetNotice(state.target, focused ? "" : "This exact record or control is unavailable in the loaded register. Retry opening it or return to your actions; no other record was selected.");
+        owner.setTargetNotice(state.target, focused ? "" : createLocale === "ru"
+          ? "Эта запись или элемент управления недоступны в загруженном списке. Повторите открытие или вернитесь к действиям по делу; другая запись не выбрана."
+          : "This exact record or control is unavailable in the loaded register. Retry opening it or return to your actions; no other record was selected.");
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [owner, state.authority, state.targetLoading, state.panelOpen, state.targetIssue, state.target, state.targetActive, state.returnFocus, state.queue?.selectedKey, destination]);
+  }, [owner, state.authority, state.targetLoading, state.panelOpen, state.targetIssue, state.target, state.targetActive, state.returnFocus, state.queue?.selectedKey, destination, createLocale]);
   const filteredCatalogue = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     const recentDays = recentFilter === "all" ? null : Number(recentFilter);
@@ -697,7 +699,8 @@ export function DocumentsSection({ matter, documents, activity, onNavigate, issu
   const [selection, setSelection] = useState<{ caseId: string; origin?: string; id: string } | null>(null);
   const requestedId = selection?.caseId === matter.id && selection.origin === focusedDocumentId ? selection.id : focusedDocumentId;
   const documentMatches = documents.filter(item => (!tag || item.tags.includes(tag)) && (documentFilter === "all" || (documentFilter === "review" ? ["received", "under_review"].includes(item.status) : item.status === documentFilter)) && [item.title, item.type, ...item.tags, ...item.versions.map(version => version.originalFilename)].join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
-  const selectedDocument = documentMatches.find(item => item.id === requestedId) ?? documentMatches[0];
+  const requestedDocumentMissing = requestedId && !documents.some(item => item.id === requestedId);
+  const selectedDocument = documentMatches.find(item => item.id === requestedId) ?? (requestedDocumentMissing ? undefined : documentMatches[0]);
   function selectDocument(id: string) {
     setSelection({ caseId: matter.id, origin: focusedDocumentId, id });
   }
