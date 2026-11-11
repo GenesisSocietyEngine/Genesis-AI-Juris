@@ -47,6 +47,7 @@ These are **not confirmed defects**. “Waiting for verification” means there 
 
 | ID / priority | State · area | Evidence still needed |
 | --- | --- | --- |
+| CV-022 · P2 | Waiting for verification · published v213 design accents | PR #292 passed 18/18 checks; exact-main build passed and both origins verified 224 assets. EN/RU local desktop/mobile previews and live bilingual Billing/English Reports passed. Browser control failed during remaining production acceptance, including three reconnection attempts. Finish v213 live activity/filter/document-link checks, Russian Reports and mobile visual checks when browser control returns. Existing localization/access limitations remain separate. [Audit](../testing/design-accents-cv022.md). |
 | CV-007 · P1 | Waiting for verification · client portal | Rehearse first-time hosted sign-in using an approved independent test recipient and synthetic material. Confirm the invitation resumes to the intended case; the client reads its exact share, uploads, exchanges one reply, and loses access after revocation. Record both sides without publishing private links or identity details. Isolated cross-client and live staff checks already passed. |
 | CV-008 · P2 | Waiting for verification · calendar | Use controlled Outlook and Google accounts to subscribe to a read-only CaseVant feed; record initial import, time zone, update, retirement and observed refresh delay. Verify a recipient-specific reminder in a designated test mailbox, separately from provider acceptance. The existing scheduler check was no-send. CaseVant remains the source; inbound edits are out of scope. |
 | CV-009 · P1 before broader use | Decision needed · document storage | The portal is a synthetic/de-identified pilot. Before admitting identifiable client files, define and verify scanning/quarantine, retention and recovery for failed or interrupted uploads. Confirm rejected bytes cannot be served; distinguish format/checksum validation from malware scanning. Keep the pilot restriction visible until that decision is accepted. |
@@ -57,7 +58,6 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
-| CV-022 | UI/UX and visual consistency · Candidate | Audited live Home/activity/history, Reports and synthetic Billing; added activity link/category/filter accents, report grouping and Billing summary cards. Ten regressions, lint and actual-component EN/RU desktop/narrow previews pass; accent text contrast ≥5.8:1. Await CI, merge, release and signed-in acceptance. Existing localization/access limitations remain separate. [Audit](../testing/design-accents-cv022.md). |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
@@ -70,6 +70,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · CV-022 published v213 after 18/18 PR checks and successful exact-main build; both origins verified 224 assets. EN/RU local desktop/mobile audit passed; live bilingual Billing and English Reports passed. Browser control became unavailable, so remaining live checks are explicitly Waiting for verification. Progress and receipt updated together; next action is the bounded production check, not another implementation or release.
 
 - 11 November 2026 · CV-022 moved Planned → Candidate following the requested post-release design audit. Restrained accents and visual hierarchy implemented; local EN/RU preview, filtering, keyboard and responsive checks passed. Live application is still v212. Next: green CI, ordinary merge and release acceptance.
 

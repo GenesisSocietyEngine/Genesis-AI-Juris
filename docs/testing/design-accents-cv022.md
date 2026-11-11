@@ -28,4 +28,12 @@ React review: only two data attributes were added to existing mapped elements. S
 
 ## Release status
 
-Candidate only. Await all required CI, ordinary merge, exact-main verified build and native Sites release. Then recheck signed-in EN/RU activity, Reports and Billing on the deployed site, including narrow layout and exact document navigation. Production remains v212 until that evidence is recorded.
+Published v213 on 11 November 2026 at 03:30 UTC. PR #292 passed all 18 checks and merged as `b493b4de0d530493e559ecab67edccd7fdf97236`. Exact-main workflow 42951487738 passed. Native Sites deployment `appgdep_6af3e1327e1081919bd72b250b5c6555` succeeded with environment revision 42 unchanged. Both production origins verified 163 current plus 61 retained assets (224 total). [Receipt](receipts/design-accents-v213.json).
+
+The official helper's first packaging input was rejected by automatic review because the opening receipt still referenced v212. Verified checkout HEAD, artifact provenance and asset receipt all matched the new merge; packaging succeeded after providing that verified source metadata. No failed or unverified artifact was published.
+
+Additional isolated checks covered English narrow and Russian desktop activity, Reports and Billing. Each had no horizontal overflow, unnamed buttons or unlabeled fields. Temporary local server was stopped.
+
+Live signed-in v213: Russian and English Billing retained the synthetic balances (unbilled EUR 0, outstanding EUR 30, trust EUR 0) with new labeled cards. English Reports showed category accents and opened case-list configuration correctly; return to catalog/language-switch/mobile verification was then interrupted by browser-tool timeouts. Three attempts to recover the signed-in browser also timed out. No production transactions or documents were changed.
+
+Remaining: verify the newly styled live activity filters/history/document links in EN/RU, Russian Reports and production narrow visuals. The failed viewport call may have left a temporary browser override; reset it on reconnection before beginning desktop checks. Full EN/RU document-link acceptance for CV-020 was already completed on v212; v213's styling-only follow-up does not replace that evidence. CV-022 stays Waiting for verification, not fully production-verified. Existing CV-014/CV-015/CV-017/CV-018 and independent-identity limits remain open.
