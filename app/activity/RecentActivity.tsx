@@ -251,7 +251,7 @@ function Feed({
                 : "/work?view=" +
                   (row.category === "event" ? "calendar" : "tasks");
           return (
-            <li key={row.id}>
+            <li key={row.id} data-category={row.category}>
               <WorkspaceIcon
                 name={
                   row.category === "document"

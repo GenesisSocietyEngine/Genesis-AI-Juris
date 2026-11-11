@@ -3,6 +3,7 @@
   padding: clamp(1rem, 3vw, 1.6rem);
   max-width: 78rem;
   border: 1px solid #d4dce3;
+  border-top: 3px solid #0f6cbd;
   border-radius: 0.85rem;
   background: var(--surface, #fff);
   overflow-wrap: anywhere;
@@ -10,7 +11,14 @@
 .card h3,
 .card h1 {
   margin-block: 0.4rem 1rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
+.card[aria-label] h3 { font-size: 1.2rem; font-weight: 700; }
+.card h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.card a { color: #0f548c; text-decoration: underline; text-underline-offset: 3px; }
+.card a:hover { color: #173f68; text-decoration-thickness: 2px; }
+.card :is(a, button):focus-visible { outline: 3px solid #2958b8; outline-offset: 3px; }
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -23,7 +31,8 @@
   display: inline-flex;
   align-items: center;
 }
-.filters button {
+.card .filters button {
+  min-height: 44px;
   padding: 0.45rem 0.65rem;
   color: inherit;
   background: transparent;
@@ -32,10 +41,13 @@
   cursor: pointer;
   font: inherit;
 }
-.filters button[aria-pressed="true"] {
+.card .filters button[aria-pressed="true"] {
+  color: #0f548c;
+  background: #e8f2fc;
   border-bottom-color: currentColor;
   font-weight: 700;
 }
+.card .filters button:hover { background: #f0f5fb; }
 .rows {
   list-style: none;
   padding: 0;
@@ -50,10 +62,22 @@
 }
 .rows svg {
   flex: none;
+  box-sizing: content-box;
   width: 1.25rem;
   height: 1.25rem;
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  color: #0f548c;
+  background: #e8f2fc;
 }
+.rows [data-category="task"] svg { color: #116971; background: #e7f5f5; }
+.rows [data-category="event"] svg { color: #694795; background: #f1ecf8; }
+.rows :is([data-category="invoice"], [data-category="fund_request"], [data-category="expense"]) svg { color: #825611; background: #fff4dc; }
+.rows [data-category="deleted"] svg { color: #a43838; background: #fceeee; }
+.rows li > div { min-width: 0; }
+.rows li:hover { background: #f8fafc; }
 .rows small {
   display: block;
   margin-top: 0.25rem;
+  color: #586477;
 }
