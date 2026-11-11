@@ -1,10 +1,10 @@
 # Current progress — CaseVant
 
-## CV-022 · Design audit and color accents · 11 November 2026
+## Published v213 · CV-022 design audit and color accents · 11 November 2026
 
-Candidate: extend Home's existing restrained palette into Recent activities, Reports and Billing. Activity links are visibly underlined, category icons have distinct tinted backgrounds, selected filters retain an underline and pressed state, and headings regain hierarchy. Reports group cards and Billing totals use blue/teal/violet/amber accents with visible text labels. No data, authority, finance or navigation contracts changed.
+Published from PR #292, merged with 18/18 checks passed at `b493b4de0d530493e559ecab67edccd7fdf97236`. Exact-main build 42951487738 passed; native Sites v213 succeeded, and both origins verified 224 current/retained assets. Home's restrained palette now extends into Recent activities, Reports and Billing: underlined activity links, category accents, selected filters, stronger headings, report groups and labeled totals cards. No data, authority, finance or navigation contracts changed.
 
-Ten existing regressions and targeted lint passed. Actual-component synthetic previews were reviewed in EN/RU at desktop and narrow widths, including filtering, keyboard focus and report entry. Accent text contrast is at least 5.8:1. Production remains v212; CV-022 awaits CI, merge, release and signed-in acceptance. [Audit](docs/testing/design-accents-cv022.md).
+Ten existing regressions and targeted lint passed. Actual-component synthetic previews passed EN/RU desktop/narrow checks, including filtering, keyboard focus and report entry; accent text contrast is at least 5.8:1. Signed-in v213 Billing labels/balances passed EN/RU and English Reports categories/entry were verified. Browser control then timed out and three reconnection attempts failed. CV-022 remains Waiting for verification for the remaining v213 live activity/Russian Reports/mobile checks; local preview acceptance is complete. CV-020's full bilingual signed-in document acceptance on v212 remains recorded below. [Audit](docs/testing/design-accents-cv022.md) · [Receipt](docs/testing/receipts/design-accents-v213.json).
 
 ## Published v212 · CV-020 / CV-021 · 11 November 2026
 
