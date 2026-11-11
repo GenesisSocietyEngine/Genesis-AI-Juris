@@ -1,5 +1,11 @@
 # Current progress — CaseVant
 
+## CV-021 · React security release blocker · 11 November 2026
+
+CV-020 merged in PR #289 after 18/18 checks passed. One native run required a retry after its driver connection timed out; the unchanged retry passed. Exact-main build 42938033556 passed its tests and PDF checks but failed the newly reported GHSA-xqc2-xf4c-x3h3 audit for React Server Components 19.2.8. Nothing was published; production remains v211.
+
+The security candidate pins React, React DOM and React Server DOM Webpack to the supported 19.2.9 patch. The regenerated lockfile audit reports zero vulnerabilities. Awaiting CI and an exact-main artifact before releasing CV-020/CV-021 together. The requested UI/UX audit and color accents follow live document-link verification. [Release-blocker review](docs/testing/react-security-cv021.md).
+
 ## CV-020 · Exact activity document links · 11 November 2026
 
 Candidate fixes the activity link's missing `document-` target prefix and prevents an unavailable exact document from selecting the first inventory file. The unavailable-target notice now follows EN/RU. Two bilingual link regressions, the inventory selection regression, 21 workspace render regressions and the SQLite activity regression passed; targeted lint passed. Production remains v211 pending green CI, merge and release. [Review](docs/testing/activity-document-links-cv020.md).
