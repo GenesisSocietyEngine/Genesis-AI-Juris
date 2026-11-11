@@ -18,6 +18,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-021 · P0 release blocker | In progress | React Server Components | The post-merge dependency audit flags GHSA-xqc2-xf4c-x3h3 in 19.2.8. Publication stopped; public v211 is unchanged. | Candidate pins matching React packages to 19.2.9; lockfile audit is clean. Require green CI, exact-main build, release and signed-in smoke. [Review](../testing/react-security-cv021.md). |
 | CV-020 · P2 | Waiting for verification | Activity → case document | Candidate adds the missing target prefix; the previous correct-looking selection was a first-file fallback. Missing targets now leave the inspector unselected and the warning follows EN/RU. | Candidate regressions and lint passed. Await green CI, release, EN/RU exact links and reload; retain unavailable/denied access. [Review](../testing/activity-document-links-cv020.md). |
 | CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
@@ -68,6 +69,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · CV-020 merged as PR #289 with 18/18 green. Its exact-main tests passed but the dependency audit raised a newly published critical RSC advisory. Opened CV-021, stopped publication and prepared the matching 19.2.9 patches; lockfile audit reports zero vulnerabilities. The user-requested UI/UX audit and color accents remain next after release verification.
 
 - 11 November 2026 · CV-020 candidate corrects a raw-document-ID link where the workspace requires `document-<id>`. Added bilingual Home/history link checks and missing-target selection coverage. Existing workspace and authorization regressions passed. Status: Waiting for verification; production v211 unchanged until release. [Review](../testing/activity-document-links-cv020.md).
 
