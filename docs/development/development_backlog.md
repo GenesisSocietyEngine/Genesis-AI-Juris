@@ -4,13 +4,13 @@
 
 Published in v211 on 11 November 2026 after PR #286 passed all 18 checks. Both origins verified 250 assets from the exact-main build. Signed-in EN/RU filters, selected-category history, 30-to-33 pagination, mobile layout, invoice case context, organization isolation and signed-out guards passed. [Release receipt](../testing/receipts/recent-activities-v211.json).
 
-Core verified on production; remaining verification stays open for a second production identity, populated Deleted history and large-organization latency. The SQLite suite covers removed work, restricted billing and revoked participants. The document destination selected the correct file but displayed a contradictory unavailable notice, tracked separately as CV-020. [Acceptance notes](../testing/recent-activities-cv019.md).
+Core verified on production; remaining verification stays open for a second production identity, populated Deleted history and large-organization latency. The SQLite suite covers removed work, restricted billing and revoked participants. CV-020 corrected the document-target prefix and false warning in v212, with live EN/RU acceptance. [Acceptance notes](../testing/recent-activities-cv019.md).
 
 **Bilingual quality audit:** [Baseline, candidate measurements and release gates](../testing/bilingual-release-2026-11-10.md).
 
 **Reports shipped in v210.** All 18 non-accounting reports ran in both languages. Saved configuration reload, scoped CSV downloads, ledger totals, signed-out access and the mobile catalog passed. CV-014 remains open for Russian stage labels. The isolated database suite covered a second staff role. A second production identity is still needed for an independent live check of saved-report isolation. [Acceptance notes](../testing/practice-reports.md).
 
-**Last reviewed on 11 November 2026. Public version v211.** CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
+**Last reviewed on 11 November 2026. Public version v212.** CV-020 and CV-021 are verified; CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
 
 ## Confirmed findings
 
@@ -18,8 +18,6 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-021 · P0 release blocker | In progress | React Server Components | The post-merge dependency audit flags GHSA-xqc2-xf4c-x3h3 in 19.2.8. Publication stopped; public v211 is unchanged. | Candidate pins matching React packages to 19.2.9; lockfile audit is clean. Require green CI, exact-main build, release and signed-in smoke. [Review](../testing/react-security-cv021.md). |
-| CV-020 · P2 | Waiting for verification | Activity → case document | Candidate adds the missing target prefix; the previous correct-looking selection was a first-file fallback. Missing targets now leave the inspector unselected and the warning follows EN/RU. | Candidate regressions and lint passed. Await green CI, release, EN/RU exact links and reload; retain unavailable/denied access. [Review](../testing/activity-document-links-cv020.md). |
 | CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
 | CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
@@ -30,6 +28,8 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Outcome and evidence |
 | --- | --- | --- |
+| CV-021 · P0 | Verified · public v212 | Matching React 19.2.9 patches passed PR #290's 18 checks and exact-main dependency audits. Published source and all 274 assets verified; signed-in document workflows passed. [Review](../testing/react-security-cv021.md). |
+| CV-020 · P2 | Verified · public v212 | EN/RU Home/history links select and focus the exact file without a false notice. Reload, version history, localized missing targets with no fallback, denied organization and authorized return passed. [Receipt](../testing/receipts/document-links-v212.json). |
 | CV-013 · P2 | Verified · public v209 | Four explicit destinations in EN/RU, saved Studio draft reopened, case and firm files retained identical originals, UTF-8 bilingual template imported and saved as version 1. [Receipt](../testing/receipts/workspace-billing-v209.json). |
 | CV-011 | Verified · public v209 | EUR 50 billed, EUR 20 recorded and reconciled; EUR 30 persisted after reload. Separate-role boundaries verified in isolated tests. [Audit](../testing/bilingual-release-2026-11-10.md). |
 | CV-006 · P2 | Verified · public v209 | One creation entry in both languages; keyboard title focus, plain next actions, independent-review warning and record details passed, including at 390 px. |
@@ -57,6 +57,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
+| CV-022 | UI/UX and visual consistency · Planned | Audit the signed-in workspace on desktop and mobile in EN/RU, then add restrained, accessible color accents for navigation, hierarchy and activity/status recognition. Preserve visible labels and existing workflow behavior. Requested after CV-020 release verification. |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
@@ -69,6 +70,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · Public v212: CV-020 and CV-021 moved to Verified after both PRs passed 18/18 checks, exact-main build/audits succeeded, 274 assets matched on both origins and signed-in EN/RU document acceptance passed. Missing and denied targets remained guarded. Next: CV-022 UI/UX/design audit and color accents. [Receipt](../testing/receipts/document-links-v212.json).
 
 - 11 November 2026 · CV-020 merged as PR #289 with 18/18 green. Its exact-main tests passed but the dependency audit raised a newly published critical RSC advisory. Opened CV-021, stopped publication and prepared the matching 19.2.9 patches; lockfile audit reports zero vulnerabilities. The user-requested UI/UX audit and color accents remain next after release verification.
 
