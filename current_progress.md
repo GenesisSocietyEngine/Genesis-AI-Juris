@@ -1,14 +1,14 @@
 # Current progress — CaseVant
 
-## CV-021 · React security release blocker · 11 November 2026
+## Published v212 · CV-020 / CV-021 · 11 November 2026
 
-CV-020 merged in PR #289 after 18/18 checks passed. One native run required a retry after its driver connection timed out; the unchanged retry passed. Exact-main build 42938033556 passed its tests and PDF checks but failed the newly reported GHSA-xqc2-xf4c-x3h3 audit for React Server Components 19.2.8. Nothing was published; production remains v211.
+**Public v212** contains exact activity document links and the React 19.2.9 security patch. PRs #289 and #290 each merged with 18/18 checks passed. Exact-main build 42943780736 passed, including both dependency audits. Both production origins verified all 274 current and retained assets. [Release receipt](docs/testing/receipts/document-links-v212.json).
 
-The security candidate pins React, React DOM and React Server DOM Webpack to the supported 19.2.9 patch. The regenerated lockfile audit reports zero vulnerabilities. Awaiting CI and an exact-main artifact before releasing CV-020/CV-021 together. The requested UI/UX audit and color accents follow live document-link verification. [Release-blocker review](docs/testing/react-security-cv021.md).
+Signed-in EN/RU Home and history links select and focus the exact synthetic document without the false warning. Reload preserves the target; current and earlier versions remain visible in version history. Missing targets show localized notices and no selected document. Wrong-organization access is denied; the correct organization reopens the case. CV-020 and CV-021 are verified. Next: CV-022, the requested UI/UX/design audit and restrained color accents. [Document acceptance](docs/testing/activity-document-links-cv020.md) · [Security review](docs/testing/react-security-cv021.md).
 
 ## CV-020 · Exact activity document links · 11 November 2026
 
-Candidate fixes the activity link's missing `document-` target prefix and prevents an unavailable exact document from selecting the first inventory file. The unavailable-target notice now follows EN/RU. Two bilingual link regressions, the inventory selection regression, 21 workspace render regressions and the SQLite activity regression passed; targeted lint passed. Production remains v211 pending green CI, merge and release. [Review](docs/testing/activity-document-links-cv020.md).
+Published and verified in v212. The activity link now includes the required `document-` target prefix, and an unavailable exact document cannot silently select the first inventory file. The unavailable-target notice follows EN/RU. Two bilingual link regressions, the inventory selection regression, 21 workspace render regressions and the SQLite activity regression passed; targeted lint passed. [Review](docs/testing/activity-document-links-cv020.md).
 
 ## CV-019 · Recent activities · 11 November 2026
 
@@ -16,7 +16,7 @@ Candidate fixes the activity link's missing `document-` target prefix and preven
 
 Signed-in English/Russian filters, Home-to-history selection and pagination from 30 to 33 rows passed. At 390 CSS pixels, history fits both languages with 44-pixel minimum buttons. A second organization's feed contained none of the personal workspace's records; a case link with that organization was denied and reopened with the correct organization. Signed-out history is guarded in both languages. Temporary synthetic work was completed. [Audit and acceptance](docs/testing/recent-activities-cv019.md).
 
-**Remaining:** CV-020 tracks an incorrect unavailable-record notice after the document activity link successfully selects its file. Populated deletion and restricted-participant behavior passed isolated database tests; live Deleted was empty and a second production identity was not exercised. Large-organization latency remains unmeasured.
+**Remaining:** Populated deletion and restricted-participant behavior passed isolated database tests; live Deleted was empty and a second production identity was not exercised. Large-organization latency remains unmeasured. The document-link warning (CV-020) was corrected and verified in v212.
 
 ## Combined release and bilingual audit · 10 November 2026
 
