@@ -7,7 +7,25 @@
 .page h1 {
   font-size: clamp(2rem, 4vw, 3.2rem);
   margin: 0.5rem 0 1rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
+.page h2 { font-size: 1.15rem; font-weight: 650; margin: 0.5rem 0 1rem; }
+.page section[data-report-category] {
+  --category-accent: #0f548c;
+  --category-surface: #f3f8fd;
+  border: 1px solid #d4dce3;
+  border-inline-start: 4px solid var(--category-accent);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background: var(--category-surface);
+}
+.page section[data-report-category="financial"] { --category-accent: #116971; --category-surface: #f0f8f7; }
+.page section[data-report-category="productivity"] { --category-accent: #694795; --category-surface: #f7f4fb; }
+.page section[data-report-category="leads"] { --category-accent: #825611; --category-surface: #fffbf2; }
+.page section[data-report-category] h2 { color: var(--category-accent); }
+.page section[data-report-category] button { text-align: start; font-weight: 550; }
+.page :is(button, a, input, select, summary):focus-visible { outline: 3px solid #2958b8; outline-offset: 3px; }
 .page section {
   border-top: 1px solid #bdc9ce;
   margin: 1.5rem 0;
@@ -90,6 +108,8 @@
   background: #ebf0f0;
 }
 @media print {
+  .page section[data-report-category] { background: white; border: 1px solid #777; }
+  .page section[data-report-category] h2 { color: #202b3c; }
   .screen,
   .actions {
     display: none !important;

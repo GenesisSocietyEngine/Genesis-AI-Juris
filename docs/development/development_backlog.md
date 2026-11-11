@@ -57,7 +57,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
-| CV-022 | UI/UX and visual consistency · Planned | Audit the signed-in workspace on desktop and mobile in EN/RU, then add restrained, accessible color accents for navigation, hierarchy and activity/status recognition. Preserve visible labels and existing workflow behavior. Requested after CV-020 release verification. |
+| CV-022 | UI/UX and visual consistency · Candidate | Audited live Home/activity/history, Reports and synthetic Billing; added activity link/category/filter accents, report grouping and Billing summary cards. Ten regressions, lint and actual-component EN/RU desktop/narrow previews pass; accent text contrast ≥5.8:1. Await CI, merge, release and signed-in acceptance. Existing localization/access limitations remain separate. [Audit](../testing/design-accents-cv022.md). |
 | CV-010 | Document workflows | Prototype client-completed intake and a separately authorized signature step. Specify recipients, document versions and completion evidence before selecting a signing provider. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
@@ -70,6 +70,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 11 November 2026 · CV-022 moved Planned → Candidate following the requested post-release design audit. Restrained accents and visual hierarchy implemented; local EN/RU preview, filtering, keyboard and responsive checks passed. Live application is still v212. Next: green CI, ordinary merge and release acceptance.
 
 - 11 November 2026 · Public v212: CV-020 and CV-021 moved to Verified after both PRs passed 18/18 checks, exact-main build/audits succeeded, 274 assets matched on both origins and signed-in EN/RU document acceptance passed. Missing and denied targets remained guarded. Next: CV-022 UI/UX/design audit and color accents. [Receipt](../testing/receipts/document-links-v212.json).
 

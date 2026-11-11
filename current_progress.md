@@ -1,5 +1,11 @@
 # Current progress — CaseVant
 
+## CV-022 · Design audit and color accents · 11 November 2026
+
+Candidate: extend Home's existing restrained palette into Recent activities, Reports and Billing. Activity links are visibly underlined, category icons have distinct tinted backgrounds, selected filters retain an underline and pressed state, and headings regain hierarchy. Reports group cards and Billing totals use blue/teal/violet/amber accents with visible text labels. No data, authority, finance or navigation contracts changed.
+
+Ten existing regressions and targeted lint passed. Actual-component synthetic previews were reviewed in EN/RU at desktop and narrow widths, including filtering, keyboard focus and report entry. Accent text contrast is at least 5.8:1. Production remains v212; CV-022 awaits CI, merge, release and signed-in acceptance. [Audit](docs/testing/design-accents-cv022.md).
+
 ## Published v212 · CV-020 / CV-021 · 11 November 2026
 
 **Public v212** contains exact activity document links and the React 19.2.9 security patch. PRs #289 and #290 each merged with 18/18 checks passed. Exact-main build 42943780736 passed, including both dependency audits. Both production origins verified all 274 current and retained assets. [Release receipt](docs/testing/receipts/document-links-v212.json).

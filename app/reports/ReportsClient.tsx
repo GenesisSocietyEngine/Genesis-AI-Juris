@@ -265,7 +265,7 @@ export function ReportsWorkspace({
             )}
           </section>
           {Object.entries(categories).map(([id, labels]) => (
-            <section key={id}>
+            <section key={id} data-report-category={id}>
               <h2>{labels[lang]}</h2>
               <div className={styles.grid}>
                 {(Object.keys(reports) as Report[])
