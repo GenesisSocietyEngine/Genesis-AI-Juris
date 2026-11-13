@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `case_versions_parent_lineage_uidx` ON `case_versions` (`case_id`,`parent_case_id`,`parent_version`,`parent_fingerprint`);
