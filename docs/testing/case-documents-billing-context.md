@@ -28,3 +28,5 @@ The first deployment callback failed. Redeploying the same saved v214 succeeded 
 | Billing round trip | Authorized case preselected. Exact URL and pressed document restored. | Authorized case preselected. Exact URL and pressed document restored. |
 
 The CSV files were parsed after download as UTF-8 with BOM. Both contained the single synthetic prospect with the expected localized stage. The round trips preserved organization, language, case, section and document target. Original filenames and the authored English version note remained intact. The Russian selected section button still reads “Documents & evidence” (CV-025). Live checks inspected review controls without committing a review or ledger transaction.
+
+CV-025 candidate · The document/working-notes switch now follows the case locale, including its accessible group name. The case tab and document switch share the same document label. Selection still uses the workspace controller and document identity. Signed-in language-switch acceptance follows publication.
