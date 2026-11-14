@@ -193,7 +193,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     </div>
   </>;
   return <><header className="genesis-navigation">
-    <a className="genesis-brand" href={href("/work?view=home")} onClick={(event) => follow(event, "home")} aria-label="CaseVant — Home">
+    <a className="genesis-brand" href={href("/work?view=home")} onClick={(event) => follow(event, "home")} aria-label={en ? "CaseVant — Home" : "CaseVant — Главная"}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/casevant-mark.png" alt="" width="48" height="52"/>
       <span><b>CaseVant</b><small>by Falcon-Merlin Group</small></span>
