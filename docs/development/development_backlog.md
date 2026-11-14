@@ -22,7 +22,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-025 · P3 | Open | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
+| CV-025 · P3 | Implemented · awaiting production acceptance | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
 | CV-023 · P3 | Discovery | Daily task retrieval | MyCase exposes assignee, completion and case/lead scope together. | Compare equivalent CaseVant filters with populated cross-case and prospect tasks. Record missing combinations and persistence before adding controls. |
 | CV-024 · P3 | Discovery | Communications | MyCase offers one case-filtered message collection. CaseVant exposes conversations within each case. | Measure how staff find a conversation across cases. Verify recipient and access boundaries before designing a firm-wide list. |
 | CV-018 · P2 | Verified on v214 for the scoped bilingual journey | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
