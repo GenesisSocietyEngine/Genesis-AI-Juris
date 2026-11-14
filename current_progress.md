@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**14 November 2026 · CV-017 and CV-018.** Russian document controls and case checks now use the interface language. Billing carries the originating team case and exact section through authorization. Focused checks passed. Integration and signed-in acceptance of these follow-up changes are pending. [Acceptance notes](docs/testing/case-documents-billing-context.md).
+
 **14 November 2026.** Completed the [MyCase and CaseVant workspace audit](docs/testing/workspace-benchmark-2026-11-14.md). Signed-in Russian Reports ran and returned to the catalog. Recorded earlier bilingual v213 activity, document and mobile checks. Implemented CV-014 and CV-015. Production verification of those changes is pending. CV-023 and CV-024 track task filters and cross-case message discovery. CV-017 and CV-018 remain open.
 
 ## Published v213 · CV-022 design audit and color accents · 11 November 2026

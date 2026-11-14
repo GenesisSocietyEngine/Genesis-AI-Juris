@@ -1,3 +1,4 @@
+import { billingCaseReturn, workspaceDestination } from "../app/workspace-navigation";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -106,4 +107,22 @@ test("installments use calendar months and sum to the exact invoice balance", as
     { due: "2026-02-28", cents: 333 },
     { due: "2026-03-31", cents: 333 },
   ]);
+});
+
+test("Billing preserves an exact team case entry and keeps firm entry unselected", () => {
+  for (const lang of ["en", "ru"] as const) {
+    const path = "/matters?organization=org_a&dossier=case_a&collection=team&section=documents&target=document-b&lang=" + lang;
+    const params = new URL(workspaceDestination("/billing", path), "https://test.invalid").searchParams;
+    assert.equal(params.get("dossier"), "case_a");
+    assert.equal(params.get("return_to"), path);
+    assert.equal(billingCaseReturn(path, "case_a", "org_a", lang), path);
+    assert.equal(billingCaseReturn(path, undefined, "org_a", lang), null);
+    assert.equal(billingCaseReturn(path, "case_b", "org_a", lang), null);
+    assert.equal(billingCaseReturn(path, "case_a", "org_b", lang), null);
+    assert.equal(billingCaseReturn("//example.invalid/matters", "case_a", "org_a", lang), null);
+    for (const from of ["/work?organization=org_a", path.replace("team", "personal")]) {
+      assert.equal(new URL(workspaceDestination("/billing", from), "https://test.invalid").searchParams.has("dossier"), false);
+    }
+    assert.equal(new URL(workspaceDestination("/billing?organization=org_b", path), "https://test.invalid").searchParams.has("return_to"), false);
+  }
 });
