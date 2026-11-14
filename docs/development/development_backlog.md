@@ -1,6 +1,8 @@
 # CaseVant development backlog
 
-**14 November release gate.** PR #294 remains open at 17/18 after three failures in one native simulator job. Public v213 still displays the raw forecast stage. The new Reports/CSV and home-link production checks await release. CV-017 and CV-018 are implemented in PR #295, with scoped tests passed and production verification pending.
+**Public v214 · 14 November 2026.** CV-014, CV-015, CV-017 and CV-018 passed the signed-in bilingual acceptance below. CV-025 records a remaining section selector label. [Release evidence](../testing/case-documents-billing-context.md#public-v214).
+
+**Earlier 14 November release gate (superseded by v214).** PR #294 remains open at 17/18 after three failures in one native simulator job. Public v213 still displays the raw forecast stage. The new Reports/CSV and home-link production checks await release. CV-017 and CV-018 are implemented in PR #295, with scoped tests passed and production verification pending.
 
 ## CV-019 · Recent activities
 
@@ -20,13 +22,14 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-025 · P3 | Open | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
 | CV-023 · P3 | Discovery | Daily task retrieval | MyCase exposes assignee, completion and case/lead scope together. | Compare equivalent CaseVant filters with populated cross-case and prospect tasks. Record missing combinations and persistence before adding controls. |
 | CV-024 · P3 | Discovery | Communications | MyCase offers one case-filtered message collection. CaseVant exposes conversations within each case. | Measure how staff find a conversation across cases. Verify recipient and access boundaries before designing a firm-wide list. |
-| CV-018 · P2 | Implemented · awaiting integration and production verification | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
+| CV-018 · P2 | Verified on v214 for the scoped bilingual journey | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
-| CV-017 · P2 | Implemented · awaiting integration and production verification | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
-| CV-014 · P2 | Implemented · awaiting integration and live acceptance | Reports / localization | The signed-in v210 Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
-| CV-015 · P3 | Implemented · awaiting integration and live acceptance | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
+| CV-017 · P2 | Verified on v214 for the scoped bilingual journey | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
+| CV-014 · P2 | Verified on v214 for the scoped bilingual journey | Reports / localization | The signed-in v210 Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
+| CV-015 · P3 | Verified on v214 for the scoped bilingual journey | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
 
 ## Verified
 

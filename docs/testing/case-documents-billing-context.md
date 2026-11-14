@@ -13,3 +13,18 @@ Signed-in release acceptance remains pending for these two changes. Reopen a syn
 Public Sites v213 remains live. The signed-in English forecast on that version showed one row with the raw stage key. PR #294 passed 17 of 18 checks. The paired iOS restart run passed. The other restart run failed three times on the same head: the incomplete-write Studio menu wait, the write-phase driver deadline, and the preparation deadline during Xcode compilation. The web/PDF rerun passed. The green-only merge condition remains unsatisfied. No new release or production CSV/home-link acceptance is recorded. [Native run and attempts](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43595684870).
 
 [Follow-up PR #295](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/295) also awaits CI. Its native preparation timed out on attempt one and simulator launch timed out on attempt two.
+
+## Public v214
+
+Both PRs passed 18/18 checks before merging in the requested order. [PR #294](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/294) merged as `11f82670e9e20e3bb12b0630532b353dffcd9e36`. [PR #295](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/295) merged as `23c48362fb5d766edcbe83007ee5a4447aabd416`. The [exact-main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43616412473) passed. The restart gate uses an Apple Silicon runner, checks the launched PID and executable immediately before SIGTERM, and proves process absence before relaunch. All 58 harness tests passed locally. VM discovery, launch and Intel build timeouts required CI retries.
+
+The first deployment callback failed. Redeploying the same saved v214 succeeded as `appgdep_6af891ca2f2c819182d2be73592e2312`. The Sites helper produced source commit `7a487576951639324da6f4e991652c9bf7336f83`. Its difference from GitHub main comprises nine historical mobile golden/evidence files omitted from the hosting checkout. The application-input digest matched exact main, and 164 current plus 88 retained assets passed content verification on each production origin.
+
+| Signed-in workflow | English | Russian |
+| --- | --- | --- |
+| Lead forecast and downloaded CSV | Lead stage / Consultation | Этап обращения / Консультация |
+| Brand link and actual home destination | CaseVant — Home → Home | CaseVant — Главная → Главная |
+| Document inspector | Upload, accept, reject, secure download, expanded version history and current v2 | Localized upload, accept, reject, secure download, expanded version history and current v2 |
+| Billing round trip | Authorized case preselected. Exact URL and pressed document restored. | Authorized case preselected. Exact URL and pressed document restored. |
+
+The CSV files were parsed after download as UTF-8 with BOM. Both contained the single synthetic prospect with the expected localized stage. The round trips preserved organization, language, case, section and document target. Original filenames and the authored English version note remained intact. The Russian selected section button still reads “Documents & evidence” (CV-025). Live checks inspected review controls without committing a review or ledger transaction.
