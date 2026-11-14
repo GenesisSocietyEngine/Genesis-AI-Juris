@@ -436,7 +436,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                         with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError)) as caught:
                             prepare_and_run()
                         absent.assert_not_called()
-                        self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "terminate"] for cmd in commands))
+                        self.assertFalse(any(cmd[:1] == ["/bin/kill"] for cmd in commands))
                         launch_file = evidence / f"{phase_name}-launch.json"
                         if launch_file.exists():
                             self.assertFalse(json.loads(launch_file.read_text())["complete"])
@@ -465,6 +465,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                             self.assertFalse((evidence / "write-install-start.json").exists())
                     else:
                         prepare_and_run()
+                        self.assertEqual([cmd for cmd in commands if cmd[:1] == ["/bin/kill"]], [["/bin/kill", "-TERM", "123"]])
                         absent.assert_called_once_with(123)
                         self.assertTrue(json.loads((evidence / f"{phase_name}-launch.json").read_text())["complete"])
                         log = (evidence / "process.log").read_text()

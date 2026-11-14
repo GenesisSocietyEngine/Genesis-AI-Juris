@@ -13,6 +13,14 @@ import { NavigationController } from "../app/navigation-controller";
 import { SESSION_BOUNDARY_KEY, subscribeSessionBoundary } from "../app/session-boundary";
 
 const noop = () => {};
+test("workspace brand announces the home destination in the current language", () => {
+  for (const locale of ["en", "ru"] as const) {
+    for (const active of ["reports", "studio"]) {
+      const html = renderToStaticMarkup(createElement(GenesisNavigation, {locale, active, location: "/" + active, onLanguage: noop}));
+      assert.ok(html.includes('aria-label="CaseVant — ' + (locale === "en" ? "Home" : "Главная") + '"'));
+    }
+  }
+});
 test("Return to your case retains the saved Studio return hint without changing the governed dossier",()=>{
   const returnTo="/matters?organization=org_a&dossier=matter_a";
   const html=renderToStaticMarkup(createElement(GenesisNavigation,{locale:"en",active:"studio",location:"/studio?custom_case=51&organization=org_a&return_to="+encodeURIComponent(returnTo),returnTo,onLanguage:noop}));

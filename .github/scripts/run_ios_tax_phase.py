@@ -620,7 +620,10 @@ def run(args):
             log.write(f"phase={args.phase} driver_exit=0\n")
             log.write(f"phase={args.phase} event=terminate pid={identity.pid}\n")
             log.flush()
-            command(["xcrun", "simctl", "terminate", args.device, APP])
+            # The simulator app is a host process. Target the verified instance
+            # directly so a stalled CoreSimulator RPC cannot mask a passed phase.
+            process_matches(identity.pid, executable)
+            command(["/bin/kill", "-TERM", str(identity.pid)])
             stopped(identity.pid)
             log.write(f"phase={args.phase} event=process_absent pid={identity.pid}\n")
         reader.close()

@@ -110,3 +110,16 @@ test("limitations only use explicitly classified case records", () => {
     ["Filing"],
   );
 });
+
+test("lead stage labels follow the directory in results, saved filters, groups and exports", () => {
+  const rows = [{ stage: "consultation", name: "consultation" }];
+  const cfg = { ...defaults("pipeline"), filter: "stage" as const };
+  for (const [locale, text] of [["en", "Consultation"], ["ru", "Консультация"]] as const) {
+    const view = present(rows, { ...cfg, query: text }, locale);
+    assert.deepEqual(view.rows, [{ stage: text, name: "consultation" }]);
+    const grouped = present(rows, { ...cfg, group: "stage", query: "consultation" }, locale);
+    assert.equal(grouped.rows[0].stage, text);
+    assert.ok(csv(grouped.rows, grouped.columns, locale === "en" ? 0 : 1).includes(text));
+  }
+  assert.equal(rows[0].stage, "consultation");
+});

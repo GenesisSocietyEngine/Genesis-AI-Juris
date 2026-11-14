@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**14 November 2026.** Completed the [MyCase and CaseVant workspace audit](docs/testing/workspace-benchmark-2026-11-14.md). Signed-in Russian Reports ran and returned to the catalog. Recorded earlier bilingual v213 activity, document and mobile checks. Implemented CV-014 and CV-015. Production verification of those changes is pending. CV-023 and CV-024 track task filters and cross-case message discovery. CV-017 and CV-018 remain open.
+
 ## Published v213 · CV-022 design audit and color accents · 11 November 2026
 
 Published from PR #292, merged with 18/18 checks passed at `b493b4de0d530493e559ecab67edccd7fdf97236`. Exact-main build 42951487738 passed; native Sites v213 succeeded, and both origins verified 224 current/retained assets. Home's restrained palette now extends into Recent activities, Reports and Billing: underlined activity links, category accents, selected filters, stronger headings, report groups and labeled totals cards. No data, authority, finance or navigation contracts changed.
@@ -251,3 +253,5 @@ The firm CRM shipped in v196 and internal intake in v197. In v198, the register 
 ## Calendar and reminder audit follow-up, 7 November
 
 Implemented the three v192 audit findings on the major-version branch. Focused scheduling and work controller tests passed (15). Release verification is tracked in the module audit.
+
+14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.

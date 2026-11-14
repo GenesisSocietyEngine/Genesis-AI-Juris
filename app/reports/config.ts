@@ -1,3 +1,4 @@
+import { label, leadStages } from "../casework/model";
 import {
   fields,
   reports,
@@ -73,15 +74,19 @@ export const numeric: Field[] = [
   "count",
 ];
 export function present(rows: Row[], config: Config, locale: string) {
-  const matches = rows.filter(
-    (r) =>
-      !config.query ||
-      (config.filter ? [r[config.filter] ?? ""] : Object.values(r)).some((v) =>
-        String(v)
-          .toLocaleLowerCase(locale)
-          .includes(config.query.trim().toLocaleLowerCase(locale)),
-      ),
-  );
+  const query = config.query.trim().toLocaleLowerCase(locale);
+  const matches = rows.flatMap((row) => {
+    const stage = row.stage;
+    const localized = typeof stage === "string" && leadStages.some(key => key === stage)
+      ? { ...row, stage: label(stage, locale === "ru" ? "ru" : "en") }
+      : row;
+    if (!query) return [localized];
+    const values = config.filter ? [localized[config.filter]] : Object.values(localized);
+    // Saved filters can still contain the original directory stage key.
+    if (!config.filter || config.filter === "stage") values.push(stage ?? "");
+    return values.some(value => String(value ?? "").toLocaleLowerCase(locale).includes(query))
+      ? [localized] : [];
+  });
   const result = config.group
     ? summarize(
         matches,
