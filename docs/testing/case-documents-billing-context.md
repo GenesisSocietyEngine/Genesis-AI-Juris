@@ -30,3 +30,11 @@ The first deployment callback failed. Redeploying the same saved v214 succeeded 
 The CSV files were parsed after download as UTF-8 with BOM. Both contained the single synthetic prospect with the expected localized stage. The round trips preserved organization, language, case, section and document target. Original filenames and the authored English version note remained intact. The Russian selected section button still reads “Documents & evidence” (CV-025). Live checks inspected review controls without committing a review or ledger transaction.
 
 CV-025 candidate · The document/working-notes switch now follows the case locale, including its accessible group name. The case tab and document switch share the same document label. Selection still uses the workspace controller and document identity. Signed-in language-switch acceptance follows publication.
+
+## CV-025 verified on public v215
+
+[PR #296](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/296) and [PR #297](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/297) each passed 18/18 checks before merging in order. The iOS simulator launch timed out on one #297 job and passed on its unchanged retry. All 24 focused tests passed. The [exact-main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43634598587) passed for `37d33752738a49f253595e66d8ad8767ade48c8e`. Sites source `366cc970e2d65677f270bfe52e7217e2a3427875` has the same tree. Deployment `appgdep_6af8bebb3fc08191b23fd2c7148f9ac3` succeeded. Each production origin served all 219 expected assets (164 current, 55 retained).
+
+In the signed-in production workspace, a document activity opened “Synthetic release 209 original”, version 2. All 11 case tabs displayed the expected labels in English and Russian. The selected tab and pressed document button both read “Documents & evidence” in English and “Документы и доказательства” in Russian. The second button and group name changed from “Working notes” and “Documents and notes” to “Рабочие заметки” and “Документы и заметки”.
+
+Across English → Russian → English, the selected section, pressed file row and exact version download URL matched throughout. The route, including the case, section and document target, differed only in the language parameter. No case records were edited.

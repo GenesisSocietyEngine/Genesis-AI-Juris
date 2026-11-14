@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**Public v215 · 14 November 2026.** CV-025 verified. PRs #296 and #297 merged green. All 11 case section labels, both document mode controls and the accessible group name passed signed-in EN/RU checks. Switching EN → RU → EN preserved the selected case section, document and exact version. [Production evidence](docs/testing/case-documents-billing-context.md#cv-025-verified-on-public-v215).
+
 **Public v214 · 14 November 2026.** PR #294 merged before #295, each at 18/18. The combined exact-main build passed. Both origins verified 252/252 assets. Signed-in English and Russian checks passed for forecast stages, downloaded CSVs, the brand home link, document controls and Billing return to the exact selected document. CV-025 remains open for the Russian case section selector. [Release evidence](docs/testing/case-documents-billing-context.md#public-v214).
 
 **Earlier 14 November release gate (superseded by v214).** PR #294 remains open at 17/18 after three failures in one native simulator job. Public v213 still displays the raw forecast stage. The new Reports/CSV and home-link production checks await release. CV-017 and CV-018 are implemented in PR #295, with scoped tests passed and production verification pending.
