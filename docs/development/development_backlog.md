@@ -105,3 +105,5 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 | 2026-11-09 · public v203 | Opened CV-001–006, recorded three verification/rollout gates and carried forward three roadmap items. No production change in this audit. | [Audit](../testing/ui-ux-functionality-2026-11-09.md) · [v203 release record](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/269). Next: CV-001, then the portal departure review and mobile case handoff. |
 
 14 November 2026 · CV-014/CV-015 implemented. CV-023/CV-024 added for discovery. CV-017/CV-018 remain open. [Audit](../testing/workspace-benchmark-2026-11-14.md).
+
+14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.
