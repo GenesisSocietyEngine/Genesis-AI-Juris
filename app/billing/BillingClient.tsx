@@ -12,6 +12,7 @@ import {
 } from "./model";
 import { BillingRegister } from "./BillingRegister";
 import { names } from "./copy";
+import { billingCaseReturn } from "../workspace-navigation";
 import styles from "./billing.module.css";
 
 type Data = {
@@ -23,6 +24,15 @@ type Data = {
   canEnter: boolean;
   canManage: boolean;
 };
+function selectBillingCaseInUrl(caseId: string) {
+  const page = new URL(window.location.href);
+  if (caseId) page.searchParams.set("dossier", caseId);
+  else page.searchParams.delete("dossier");
+  page.searchParams.delete("return_to");
+  window.history.replaceState(window.history.state, "", page);
+  window.dispatchEvent(new Event("genesis-interface-change"));
+}
+
 export default function BillingClient() {
   const session = useNavigationSession(),
     [locale] = useInterfaceLocale(), location = useWorkspaceLocation();
@@ -33,11 +43,13 @@ export default function BillingClient() {
     !session.selected
   )
     return null;
+  const params = new URL(location, "https://workspace.invalid").searchParams;
   return (
     <BillingWorkspace
       key={session.actorId + ":" + session.selected.selection}
       scope={session.selected.selection}
-      initialCase={new URL(location, "https://workspace.invalid").searchParams.get("dossier") ?? ""}
+      initialCase={params.get("dossier") ?? ""}
+      returnPath={params.get("return_to") ?? ""}
       locale={locale}
     />
   );
@@ -46,10 +58,12 @@ export function BillingWorkspace({
   scope,
   locale,
   initialCase = "",
+  returnPath = "",
 }: {
   scope: string;
   locale: "en" | "ru";
   initialCase?: string;
+  returnPath?: string;
 }) {
   const t = (en: string, ru: string) => (locale === "en" ? en : ru);
   const [caseId, setCase] = useState(initialCase),
@@ -73,6 +87,7 @@ export function BillingWorkspace({
         const value = (await res.json()) as Data;
         if (caseId && (res.status === 403 || res.status === 404) && !abort.signal.aborted) {
           setLoaded(null);
+          selectBillingCaseInUrl("");
           setCase("");
           return;
         }
@@ -102,6 +117,7 @@ export function BillingWorkspace({
     void read();
     return () => abort.abort();
   }, [caseId, scope, refresh, locale]);
+  const returnTo = billingCaseReturn(returnPath, data?.caseId, scope, locale);
   const state = billingState(data?.rows ?? []);
   return (
     <main className={styles.page}>
@@ -113,6 +129,7 @@ export function BillingWorkspace({
             "Расчёты по делу и сверка · EUR",
           )}
         </p>
+        {returnTo && <a href={returnTo}>{t("Return to your case", "Вернуться к делу")}</a>}
       </header>
       {issue && (
         <p role="alert">
@@ -127,6 +144,7 @@ export function BillingWorkspace({
         <select
           value={caseId}
           onChange={(e) => {
+            selectBillingCaseInUrl(e.target.value);
             setCase(e.target.value);
             setIssue("");
           }}

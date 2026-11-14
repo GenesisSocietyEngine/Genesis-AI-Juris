@@ -791,8 +791,22 @@ export function casePriorityLabel(value: string, locale: "en" | "ru") {
   return locale === "ru" && Object.hasOwn(labels, value) ? labels[value] : sentenceLabel(value);
 }
 
+const caseRecordLabels: Record<string, string> = {
+  document_completeness: "Комплектность документов", information_requests: "Запросы сведений",
+  ai_proposals: "Предложения ИИ", contradictions: "Противоречия", critical_deadlines: "Критические сроки",
+  source_provenance: "Происхождение источников", decision_graph: "Граф решений", simulation_tests: "Проверка сценариев",
+  report_freshness: "Актуальность отчёта", reviewer_approval: "Утверждение проверяющим",
+  received: "Получен", under_review: "На проверке", accepted_source: "Принят как источник", rejected: "Отклонён",
+  unsupported_type: "Неподдерживаемый тип", image_only: "Только изображение", active_content: "Активное содержимое",
+  malformed: "Повреждённый файл", size_limit: "Превышен размер", internal_error: "Внутренняя ошибка",
+  superseded: "Заменён", queued: "В очереди", processing: "Идёт обработка", ready: "Текст извлечён", not_extractable: "Текст не извлекается", failed: "Ошибка",
+};
+export function caseRecordLabel(value: string, locale: "en" | "ru") {
+  return locale === "ru" && Object.hasOwn(caseRecordLabels, value) ? caseRecordLabels[value] : sentenceLabel(value);
+}
+
 export function caseClassificationLabel(value: string, locale: "en" | "ru") {
-  const labels: Record<string, string> = { internal: "Для внутреннего использования", confidential: "Конфиденциально", strictly_confidential: "Строго конфиденциально" };
+  const labels: Record<string, string> = { public: "Общедоступно", internal: "Для внутреннего использования", confidential: "Конфиденциально", strictly_confidential: "Строго конфиденциально" };
   return locale === "ru" && Object.hasOwn(labels, value) ? labels[value] : sentenceLabel(value);
 }
 

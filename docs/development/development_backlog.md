@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**14 November release gate.** PR #294 remains open at 17/18 after three failures in one native simulator job. Public v213 still displays the raw forecast stage. The new Reports/CSV and home-link production checks await release. CV-017 and CV-018 are implemented in PR #295, with scoped tests passed and production verification pending.
+
 ## CV-019 · Recent activities
 
 Published in v211 on 11 November 2026 after PR #286 passed all 18 checks. Both origins verified 250 assets from the exact-main build. Signed-in EN/RU filters, selected-category history, 30-to-33 pagination, mobile layout, invoice case context, organization isolation and signed-out guards passed. [Release receipt](../testing/receipts/recent-activities-v211.json).
@@ -20,9 +22,9 @@ All six original v203 findings have been verified on the published site. The ope
 | --- | --- | --- | --- | --- |
 | CV-023 · P3 | Discovery | Daily task retrieval | MyCase exposes assignee, completion and case/lead scope together. | Compare equivalent CaseVant filters with populated cross-case and prospect tasks. Record missing combinations and persistence before adding controls. |
 | CV-024 · P3 | Discovery | Communications | MyCase offers one case-filtered message collection. CaseVant exposes conversations within each case. | Measure how staff find a conversation across cases. Verify recipient and access boundaries before designing a firm-wide list. |
-| CV-018 · P2 | Open | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
+| CV-018 · P2 | Implemented · awaiting integration and production verification | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
 | CV-016 · P1 native acceptance | Verified on corrected commit | Mobile tax editor / keyboard dismissal | The closing import dialog now retains its last valid keyboard position. | A focused regression failed before the change and passed afterward; both [push](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832404408) and [PR](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/42832418574) passed the complete restart workflow with assertions intact. |
-| CV-017 · P2 | Open | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
+| CV-017 · P2 | Implemented · awaiting integration and production verification | Russian case workspace | The document inventory still renders English labels such as “Securely download current version” and the case checks include “Reviewer approval”. | Localize document version, review and download controls and case-check labels. Keep original filenames, authored text and exact record quotations intact. |
 | CV-014 · P2 | Implemented · awaiting integration and live acceptance | Reports / localization | The signed-in v210 Russian forecast displays the system stage as `consultation`. | Match directory labels in rows, grouping, filtering and CSV; preserve user-entered names and descriptions. |
 | CV-015 · P3 | Implemented · awaiting integration and live acceptance | Navigation / accessibility | In Russian, the logo link announces “CaseVant — Home”. | Verify a localized accessible name in English and Russian across workspace pages. |
 
@@ -106,4 +108,5 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 14 November 2026 · CV-014/CV-015 implemented. CV-023/CV-024 added for discovery. CV-017/CV-018 remain open. [Audit](../testing/workspace-benchmark-2026-11-14.md).
 
+14 November 2026 · CV-017 and CV-018 implemented in a separate follow-up to PR #294. [Scope and acceptance evidence](../testing/case-documents-billing-context.md).
 14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.

@@ -42,6 +42,14 @@ export function workspaceDestination(path: string, current: string) {
     const value = source.searchParams.get(key) ?? context.searchParams.get(key);
     if (value && !target.searchParams.has(key)) target.searchParams.set(key, value);
   }
+  if (target.pathname === "/billing" && source.pathname === "/matters" && source.searchParams.get("collection") !== "personal") {
+    const dossier = source.searchParams.get("dossier");
+    if (dossier && (!target.searchParams.has("dossier") || target.searchParams.get("dossier") === dossier)
+      && target.searchParams.get("organization") === source.searchParams.get("organization")) {
+      target.searchParams.set("dossier", dossier);
+      target.searchParams.set("return_to", source.pathname + source.search + source.hash);
+    }
+  }
   if (!changesOrganization && !target.searchParams.has("dossier") && ["/matters", "/canopy"].includes(target.pathname) && ["/matters", "/canopy"].includes(context.pathname) && context.searchParams.has("dossier")) {
     target.searchParams.set("dossier", context.searchParams.get("dossier")!);
   }
@@ -66,6 +74,18 @@ export function workspaceDestination(path: string, current: string) {
     }
   }
   return target.pathname + target.search + target.hash;
+}
+
+/** Billing may offer the origin only after the selected ledger has authorized its case. */
+export function billingCaseReturn(returnPath: string, authorizedCase: string | undefined, scope: string, locale: "en" | "ru") {
+  if (!authorizedCase) return null;
+  const origin = new URL(safeWorkspaceReturn(returnPath, "/"), ORIGIN);
+  if (origin.pathname !== "/matters" || origin.searchParams.get("collection") === "personal"
+    || origin.searchParams.get("dossier") !== authorizedCase
+    || (origin.searchParams.has("organization") && origin.searchParams.get("organization") !== scope)) return null;
+  origin.searchParams.set("organization", scope);
+  origin.searchParams.set("lang", locale);
+  return origin.pathname + origin.search + origin.hash;
 }
 
 /** A save may create the first durable ID after a link was clicked. Rebind only

@@ -40,7 +40,7 @@ test("document filters, exact targets and review actions retain the selected imm
   let cursor = 0, focus: string | undefined, caseId = "case_a";
   const reviewed: string[] = [];
   runtime.__documentState = initial => { const index = cursor++; if (!(index in slots)) slots[index] = initial; return [slots[index], (next: unknown) => { slots[index] = next; }]; };
-  const render = () => { cursor = 0; return DocumentsSection({ matter: { id: caseId, permissions: { canWrite: false, canReview: true } }, documents, activity: [], view: "user", mutationKey: null, focusedDocumentId: focus, onNavigate() {}, onUpload() {}, onReview(document: { id: string }) { reviewed.push(document.id); } }); };
+  const render = (locale = "en") => { cursor = 0; return DocumentsSection({ locale, matter: { id: caseId, permissions: { canWrite: false, canReview: true } }, documents, activity: [], view: "user", mutationKey: null, focusedDocumentId: focus, onNavigate() {}, onUpload() {}, onReview(document: { id: string }) { reviewed.push(document.id); } }); };
   const selected = (tree: unknown) => elements(tree).filter(element => element.type === "article" && element.props.hidden === false).map(element => element.props.id);
   const change = (tree: unknown, type: string, value: string) => (elements(tree).find(element => element.type === type)!.props.onChange as (event: unknown) => void)({ target: { value } });
   try {
@@ -63,6 +63,9 @@ test("document filters, exact targets and review actions retain the selected imm
     (review.props.onClick as () => void)(); assert.deepEqual(reviewed, ["a"]);
     caseId = "case_b"; focus = undefined; tree = render(); assert.deepEqual(selected(tree), ["document-a"]);
     assert.equal(elements(tree).find(element => element.type === "input")!.props.value, "");
+    const russian = elements(render("ru"));
+    assert.ok(russian.some(el => el.props.children === "Принять как проверенный источник"));
+    assert.ok(russian.some(el => el.props.children === "new-contract.docx"));
     assert.equal(JSON.stringify(documents), before);
   } finally { delete runtime.__documentState; }
 });
