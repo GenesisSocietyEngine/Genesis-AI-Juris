@@ -21,3 +21,5 @@ English and Russian Home filters selected the intended category, including empty
 CV-014 renders recognized lead-stage keys with the directory's bilingual labels before report filtering, grouping, sorting and CSV export. Existing saved queries using the raw stage key still match. Authored strings and unknown stages survive. CV-015 localizes the shared brand link. Verify the two candidates after integration using a signed-in Russian forecast, CSV and the accessible name on Reports and Studio.
 
 All 20 focused navigation and Reports checks passed, including bilingual rendering on both Reports and Studio.
+
+14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.

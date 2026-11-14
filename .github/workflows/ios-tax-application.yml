@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   editor-process-restart:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     timeout-minutes: 75
     defaults:
       run:

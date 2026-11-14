@@ -257,3 +257,5 @@ The firm CRM shipped in v196 and internal intake in v197. In v198, the register 
 ## Calendar and reminder audit follow-up, 7 November
 
 Implemented the three v192 audit findings on the major-version branch. Focused scheduling and work controller tests passed (15). Release verification is tracked in the module audit.
+
+14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.
