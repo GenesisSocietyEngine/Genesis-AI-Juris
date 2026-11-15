@@ -136,6 +136,10 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     queueMicrotask(() => {
       if (!mounted) return;
       const url = new URL(location.href);
+      if (team && url.searchParams.get("dossier")===caseId && url.searchParams.has("conversation")) {
+        setWanted(url.searchParams.get("conversation")!);
+        setTab("messages");
+      }
       if (!team) {
         setWanted(url.searchParams.get("access") || "");
         let value = new URLSearchParams(url.hash.slice(1)).get("invite");
@@ -170,7 +174,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       mounted = false;
       alive.current = false;
     };
-  }, [team, signedIn]);
+  }, [caseId, team, signedIn]);
   const refresh = useCallback(
     async (grant: string, before?: number) => {
       const tag = ++request.current;
@@ -313,6 +317,11 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     } else if (view?.grants.some(grant => grant.id === departure.to)) select(departure.to);
   }
   function select(next: string) {
+    if (team) {
+      const url=new URL(location.href);
+      url.searchParams.delete("conversation");
+      history.replaceState(history.state,"",url);
+    }
     hide();
     setAccess("loading");
     setTab("shared");
