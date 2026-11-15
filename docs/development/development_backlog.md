@@ -1,6 +1,6 @@
 # CaseVant development backlog
 
-**15 November · CV-007 in progress on v218.** PR #303 merged after all 18 checks passed. Verified the hosted portal entry and empty-case guidance in EN/RU. Staff shared one synthetic document version and sent the approved independent recipient a private invitation. The independent recipient accepted, downloaded the exact share, uploaded a synthetic text file in Russian and posted a message visible in both languages. The isolated portal exchange and revocation regression passed. The live staff reply and revocation are pending. [Evidence](../testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026).
+**15 November · CV-007 verified on public v218.** PR #303 merged after all 18 checks passed. Verified the hosted portal entry and empty-case guidance in EN/RU. Staff shared one synthetic document version and sent the approved independent recipient a private invitation. The independent recipient accepted, downloaded the exact share, uploaded a synthetic text file in Russian and posted a message visible in both languages. The isolated portal exchange and revocation regression passed. Chrome displayed the staff reply in both languages. After revocation, the independent recipient saw denial in Russian and English. The owner retained the conversation. [Evidence](../testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026).
 
 **Public v218 · 15 November 2026.** CV-026 passed signed-in production acceptance. One denied invitation switched English → Russian → English using only the language button. The thread stayed hidden. The workspace switch displayed its destination in both languages. PRs #301 and #302 each merged after 18 checks passed. [Release evidence](../testing/cv024-conversation-retrieval.md#cv-026-on-public-v218).
 
@@ -47,6 +47,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Outcome and evidence |
 | --- | --- | --- |
+| CV-007 · P1 | Verified · public v218 | Independent recipient accepted the invitation, downloaded version 2, uploaded the synthetic fixture and exchanged messages with the case owner. After revocation, the recipient saw denial in EN/RU and the owner retained both messages. [Hosted acceptance](../testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026). |
 | CV-021 · P0 | Verified · public v212 | Matching React 19.2.9 patches passed PR #290's 18 checks and exact-main dependency audits. Published source and all 274 assets verified; signed-in document workflows passed. [Review](../testing/react-security-cv021.md). |
 | CV-020 · P2 | Verified · public v212 | EN/RU Home/history links select and focus the exact file without a false notice. Reload, version history, localized missing targets with no fallback, denied organization and authorized return passed. [Receipt](../testing/receipts/document-links-v212.json). |
 | CV-013 · P2 | Verified · public v209 | Four explicit destinations in EN/RU, saved Studio draft reopened, case and firm files retained identical originals, UTF-8 bilingual template imported and saved as version 1. [Receipt](../testing/receipts/workspace-billing-v209.json). |
@@ -67,7 +68,6 @@ These are **not confirmed defects**. “Waiting for verification” means there 
 | ID / priority | State · area | Evidence still needed |
 | --- | --- | --- |
 | CV-022 · P2 | Verified in scoped signed-in checks | Bilingual production activity/history/document links and mobile layout passed. Russian case-list run and return verified 14 November. [Walkthrough](../testing/workspace-benchmark-2026-11-14.md). |
-| CV-007 · P1 | In progress · independent recipient accepted | Rehearse first-time hosted sign-in using an approved independent test recipient and synthetic material. Confirm the invitation resumes to the intended case; the client reads its exact share, uploads, exchanges one reply, and loses access after revocation. Record both sides without publishing private links or identity details. Isolated cross-client and live staff checks already passed. |
 | CV-008 · P2 | Waiting for verification · calendar | Use controlled Outlook and Google accounts to subscribe to a read-only CaseVant feed; record initial import, time zone, update, retirement and observed refresh delay. Verify a recipient-specific reminder in a designated test mailbox, separately from provider acceptance. The existing scheduler check was no-send. CaseVant remains the source; inbound edits are out of scope. |
 | CV-009 · P1 before broader use | Decision needed · document storage | The portal is a synthetic/de-identified pilot. Before admitting identifiable client files, define and verify scanning/quarantine, retention and recovery for failed or interrupted uploads. Confirm rejected bytes cannot be served; distinguish format/checksum validation from malware scanning. Keep the pilot restriction visible until that decision is accepted. |
 
@@ -90,7 +90,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 ## Iteration history
 
-- 15 November 2026 · CV-007 advanced to hosted sign-in. Bilingual portal entry and synthetic document sharing verified. The independent recipient accepted, downloaded version 2, uploaded a file and posted a message. The staff reply and revocation remain open.
+- 15 November 2026 · CV-007 closed on public v218. Bilingual portal entry and synthetic document sharing verified. The independent recipient accepted, downloaded version 2, uploaded a file and posted a message. Chrome showed the owner’s reply in both languages. Revocation removed the client’s case content and preserved the staff history.
 
 - 11 November 2026 · CV-022 published v213 after 18/18 PR checks and successful exact-main build; both origins verified 224 assets. EN/RU local desktop/mobile audit passed; live bilingual Billing and English Reports passed. Browser control became unavailable, so remaining live checks are explicitly Waiting for verification. Progress and receipt updated together; next action is the bounded production check, not another implementation or release.
 
