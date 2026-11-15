@@ -1,6 +1,6 @@
 # Current progress — CaseVant
 
-**15 November · CV-026 candidate.** The portal renders a stored denial in the selected language. The workspace language button shows the destination language. Signed-in release acceptance is pending.
+**Public v218 · 15 November 2026.** CV-026 passed signed-in production acceptance. One denied invitation switched English → Russian → English using only the language button. The thread stayed hidden. The workspace switch displayed its destination in both languages. PRs #301 and #302 each merged after 18 checks passed. [Release evidence](docs/testing/cv024-conversation-retrieval.md#cv-026-on-public-v218).
 
 **Public v217 · 15 November 2026.** PR #300 merged after all 18 checks passed. On the signed-in site, three synthetic conversations across two cases passed the English and Russian filter, exact-recipient and language-switch checks. The wrong recipient was denied in both languages. CI verified restricted staff access. CV-026 tracks a stale translated denial notice. [Production evidence](docs/testing/cv024-conversation-retrieval.md#public-v217).
 
