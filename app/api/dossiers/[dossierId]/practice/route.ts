@@ -67,6 +67,7 @@ export async function POST(request: Request, route: Route) {
       next = change.plan;
       schedule = change.schedule;
     } else {
+      if (payload.item && typeof payload.item === "object" && "leadId" in payload.item) throw Error("Case tasks belong to the selected case.");
       next = changePracticePlan(plan,payload,()=>newDossierOpaqueId("work"),configured);
       if (payload.action === "apply_workflow") {
         const template = configured ?? PRACTICE_WORKFLOWS.find(t => t.id === payload.templateId)!;

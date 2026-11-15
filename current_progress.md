@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**15 November 2026 · CV-023 candidate.** PR #298 merged at `9521650` after 18/18 checks. The task queue now combines case or lead, assignee, completion and case/lead status. The English and Russian candidate checks passed for an open lead task and a completed case task, including language switching, reload and reset. Public verification follows release. [Comparison and test evidence](docs/testing/cv023-task-filters.md).
+
 **Public v215 · 14 November 2026.** CV-025 verified. PRs #296 and #297 merged green. All 11 case section labels, both document mode controls and the accessible group name passed signed-in EN/RU checks. Switching EN → RU → EN preserved the selected case section, document and exact version. [Production evidence](docs/testing/case-documents-billing-context.md#cv-025-verified-on-public-v215).
 
 **Public v214 · 14 November 2026.** PR #294 merged before #295, each at 18/18. The combined exact-main build passed. Both origins verified 252/252 assets. Signed-in English and Russian checks passed for forecast stages, downloaded CSVs, the brand home link, document controls and Billing return to the exact selected document. CV-025 remains open for the Russian case section selector. [Release evidence](docs/testing/case-documents-billing-context.md#public-v214).

@@ -3,11 +3,12 @@ import { readWithTimeout } from "../read-with-timeout";
 import { EMPTY_PLAN, parsePracticePlan, type PracticeItem, type PracticePlan } from "../matters/practice-plan";
 import { EMPTY_LIBRARY, readWorkflowLibrary, type WorkflowLibrary, type WorkflowTemplate } from "./workflow-templates";
 
-export type FirmCase = { id: string; title: string; canWrite?: boolean; workflowMilestones?: {workflow:string;dates:import("./workflow-milestones").MilestoneDate[]}[]; plan: PracticePlan; participants: { id: string; actorId: string | null; name: string; active: boolean }[] };
+export type FirmCase = { id: string; title: string; status?:string; canWrite?: boolean; workflowMilestones?: {workflow:string;dates:import("./workflow-milestones").MilestoneDate[]}[]; plan: PracticePlan; participants: { id: string; actorId: string | null; name: string; active: boolean }[] };
 export type WorkDraft = { caseId: string; id?: string; expectedRevision: number; item: Omit<PracticeItem,"id"|"workflow"|"workflowTitle"|"series">; recurrence?: import("../matters/practice-scheduling").Recurrence | null };
 type Draft = { id?: string; expectedRevision: number; template: Pick<WorkflowTemplate, "title" | "archived" | "steps"> };
-type State = { firmPlan: PracticePlan; firmMembers: {id:string;name:string}[]; canWriteFirm: boolean; workDraft: WorkDraft|null; workPending: Record<string,unknown>|null; cases: FirmCase[]; library: WorkflowLibrary; loading: boolean; loaded: boolean; canManage: boolean; issue: string; draft: Draft | null; pending: Record<string, unknown> | null; saving: boolean; locked: boolean; notice: string };
-const empty = (): State => ({ firmPlan: EMPTY_PLAN, firmMembers: [], canWriteFirm:false, workDraft:null, workPending:null, cases: [], library: EMPTY_LIBRARY, loading: false, loaded: false, canManage: false, issue: "", draft: null, pending: null, saving: false, locked: false, notice: "" });
+type Lead = {id:string;name:string;selectable:number;closed:number};
+type State = { leads:Lead[]; firmPlan: PracticePlan; firmMembers: {id:string;name:string}[]; canWriteFirm: boolean; workDraft: WorkDraft|null; workPending: Record<string,unknown>|null; cases: FirmCase[]; library: WorkflowLibrary; loading: boolean; loaded: boolean; canManage: boolean; issue: string; draft: Draft | null; pending: Record<string, unknown> | null; saving: boolean; locked: boolean; notice: string };
+const empty = (): State => ({ leads:[], firmPlan: EMPTY_PLAN, firmMembers: [], canWriteFirm:false, workDraft:null, workPending:null, cases: [], library: EMPTY_LIBRARY, loading: false, loaded: false, canManage: false, issue: "", draft: null, pending: null, saving: false, locked: false, notice: "" });
 
 /** Memory-only firm view. Publish a complete scan, never partial firm totals. */
 export class WorkController {
@@ -57,6 +58,8 @@ export class WorkController {
       });
       const [templateData,firmData] = await Promise.all([request("/api/work/templates"),request("/api/work/firm")]);
       if(firmData.scope!==context.selection||!Array.isArray(firmData.members)||firmData.members.some(m=>!m||typeof m.id!=="string"||typeof m.name!=="string"))throw Error("Invalid firm work scope.");
+      const leads = firmData.leads ?? [];
+      if (!Array.isArray(leads) || leads.some(l => !l || typeof l.id !== "string" || typeof l.name !== "string" || ![0,1].includes(l.selectable) || ![0,1].includes(l.closed))) throw Error("Invalid lead list.");
       const firmPlan=parsePracticePlan(firmData.plan);
       const library = readWorkflowLibrary(templateData.library, templateData.milestoneVersions);
       const cases: FirmCase[] = [], ids = new Set<string>(), cursors = new Set<string>();
@@ -73,16 +76,16 @@ export class WorkController {
         if (cursor && (cursors.has(cursor) || cursors.size >= 199)) throw Error("This view is too large or changed during loading. No partial totals are shown.");
         if (cursor) cursors.add(cursor);
       } while (cursor);
-      if (this.current(epoch, context.scope)) this.publish({ firmPlan,firmMembers:firmData.members as {id:string;name:string}[],canWriteFirm:firmData.canWrite===true,cases, library, canManage: templateData.canManage === true, loaded: true, loading: false });
+      if (this.current(epoch, context.scope)) this.publish({ leads,firmPlan,firmMembers:firmData.members as {id:string;name:string}[],canWriteFirm:firmData.canWrite===true,cases, library, canManage: templateData.canManage === true, loaded: true, loading: false });
     } catch (error) {
-      if (this.current(epoch, context.scope)) this.publish({ firmPlan: EMPTY_PLAN, firmMembers: [], canWriteFirm:false, cases: [], loaded: false, loading: false, issue: error instanceof Error ? error.message : "Work unavailable." });
+      if (this.current(epoch, context.scope)) this.publish({ leads:[], firmPlan: EMPTY_PLAN, firmMembers: [], canWriteFirm:false, cases: [], loaded: false, loading: false, issue: error instanceof Error ? error.message : "Work unavailable." });
     }
   }
-  editWork(kind:"task"|"event",caseId="",item?:PracticeItem) {
+  editWork(kind:"task"|"event",caseId="",item?:PracticeItem,leadId?:string) {
     if(!this.context()||!this.state.loaded||this.state.locked||this.state.saving||this.state.workPending||this.state.workDraft||this.state.draft||this.state.pending)return;
     const matter=this.state.cases.find(c=>c.id===caseId);
     if(caseId ? !matter?.canWrite : !this.state.canWriteFirm)return;
-    const fields=item?{...(item.limitation?{limitation:true}:{}),kind:item.kind,title:item.title,description:item.description,dueDate:item.dueDate,assignee:item.assignee,priority:item.priority,status:item.status,checklist:item.checklist,...(item.timing!==undefined?{timing:item.timing}:{}),...(item.reminder!==undefined?{reminder:item.reminder}:{})}:{kind,title:"",description:"",dueDate:null,assignee:null,priority:"normal" as const,status:"open" as const,checklist:[]};
+    const fields=item?{...(item.leadId ? {leadId:item.leadId} : {}),...(item.limitation?{limitation:true}:{}),kind:item.kind,title:item.title,description:item.description,dueDate:item.dueDate,assignee:item.assignee,priority:item.priority,status:item.status,checklist:item.checklist,...(item.timing!==undefined?{timing:item.timing}:{}),...(item.reminder!==undefined?{reminder:item.reminder}:{})}:{...(leadId && !caseId && kind==="task" ? {leadId} : {}),kind,title:"",description:"",dueDate:null,assignee:null,priority:"normal" as const,status:"open" as const,checklist:[]};
     this.publish({workDraft:{caseId,...(item?{id:item.id}:{}),expectedRevision:caseId?matter!.plan.revision:this.state.firmPlan.revision,item:fields},issue:""});
   }
   updateWork(draft:WorkDraft) {if(this.state.workDraft&&!this.state.workPending&&!this.state.saving&&!this.state.locked)this.publish({workDraft:draft});}
