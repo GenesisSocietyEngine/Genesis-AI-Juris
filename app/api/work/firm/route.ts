@@ -1,5 +1,5 @@
-import { and, desc, eq, sql } from "drizzle-orm";
-import { organizationWorkRevisions as revisions, organizationMemberships, organizationCasGuards, users } from "../../../../db/schema";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { organizationWorkRevisions as revisions, organizationMemberships, organizationCasGuards, firmContacts, users } from "../../../../db/schema";
 import { canonicalDossierJson } from "../../../dossier-contract";
 import { boundedDossierText, canonicalDossierTimestamp, dossierJson, dossierSha256, isResponse, newDossierOpaqueId, revalidateDossierIdentity, resolveDossierServerContext } from "../../../dossier-server";
 import { assertOrganizationCurrent, organizationSelectionToken } from "../../../organization-store";
@@ -19,7 +19,17 @@ export async function GET(request: Request) {
   const org=context.organization!;
   const [row]=await context.db.select().from(revisions).where(eq(revisions.organizationId,org.id)).orderBy(desc(revisions.revision)).limit(1);
   const members=await context.db.select({id:organizationMemberships.actorId,name:users.displayName}).from(organizationMemberships).innerJoin(users,eq(users.id,organizationMemberships.userId)).where(and(eq(organizationMemberships.organizationId,org.id),eq(organizationMemberships.status,"active")));
-  return finish(context,{scope:organizationSelectionToken(org),plan:row?parsePracticePlan(JSON.parse(row.plan)):EMPTY_PLAN,members,canWrite:org.role!=="auditor"});
+  const plan = row ? parsePracticePlan(JSON.parse(row.plan)) : EMPTY_PLAN;
+  const referenced = plan.items.flatMap(item => item.leadId ? [item.leadId] : []);
+  const activeProspect = and(eq(firmContacts.status, "active"), sql`json_extract(${firmContacts.profile}, '$.relationship') = 'prospect'`);
+  const leads = await context.db.select({
+    id: firmContacts.id, name: sql<string>`json_extract(${firmContacts.profile}, '$.name')`,
+    closed: sql<number>`case when ${activeProspect} and coalesce(json_extract(${firmContacts.profile}, '$.leadStage'),'') != 'not_pursuing' then 0 else 1 end`,
+    selectable: sql<number>`case when ${activeProspect} then 1 else 0 end`,
+  }).from(firmContacts).where(and(eq(firmContacts.organizationId, org.id),
+    or(activeProspect, referenced.length ? sql`${firmContacts.id} IN (SELECT value FROM json_each(${JSON.stringify(referenced)}))` : undefined)))
+    .orderBy(asc(firmContacts.nameKey), asc(firmContacts.id));
+  return finish(context,{scope:organizationSelectionToken(org),plan,leads,members,canWrite:org.role!=="auditor"});
 }
 export async function POST(request: Request) {
   if(!isSameOriginMutation(request))return dossierJson({error:"Cross-site change rejected."},403);
@@ -45,9 +55,12 @@ export async function POST(request: Request) {
   try { next=changePracticePlan(plan,command!,()=>newDossierOpaqueId("firm_work")); }
   catch(error){return dossierJson({error:error instanceof Error?error.message:"Invalid work."},400);}
   const assigned=(command!.item as Record<string,unknown>|undefined)?.assignee;
+  const leadId = (command!.item as Record<string,unknown>|undefined)?.leadId;
+  const checkLead = typeof leadId === "string" && command!.action !== "update";
   const row={organizationId:org.id,revision:next.revision,actorRef:context.actor.actorId,operationKey:key,requestDigest:digest,plan:canonicalDossierJson(next),occurredAt:canonicalDossierTimestamp()};
   try { await context.db.batch([
     context.db.insert(organizationCasGuards).values({changed:assigned?sql`CASE WHEN EXISTS (SELECT 1 FROM organization_memberships WHERE organization_id=${org.id} AND actor_id=${assigned} AND status='active') THEN 1 ELSE 0 END`:1}),
+    context.db.insert(organizationCasGuards).values({changed:checkLead ? sql`CASE WHEN EXISTS (SELECT 1 FROM firm_contacts WHERE organization_id=${org.id} AND id=${leadId} AND status='active' AND json_extract(profile,'$.relationship')='prospect') THEN 1 ELSE 0 END` : 1}),
     context.db.insert(revisions).values(row),context.db.delete(organizationCasGuards),
   ]); } catch {const saved=await original();if(saved)return reply(saved);return dossierJson({error:"Work or membership changed. Refresh and compare."},409);}
   return reply(row);

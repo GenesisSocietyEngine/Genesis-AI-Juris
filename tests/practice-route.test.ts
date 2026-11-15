@@ -533,3 +533,29 @@ test("Studio case identity returns only the authorized title and cannot read a f
     assert.ok([403,404].includes(denied.status));assert.doesNotMatch(await denied.text(),new RegExp(current!));
   }
 });
+
+test("lead tasks retain their organization-scoped owner through create, retry, reload and completion",async()=>{
+  const profile={kind:"person",name:"Task scope lead",relationship:"prospect"};
+  const contact=await call("contacts","POST",{action:"create",id:"",revision:0,reviewed:[],profile,operationKey:"cv023-contact"});
+  assert.equal(contact.status,200);
+  const leadId=((await contact.json()) as {ids:string[]}).ids[0];
+  type View={leads:{id:string;selectable:number}[];plan:{revision:number;items:{id:string;leadId?:string;status:string}[]}};
+  const view=async()=>await (await call("firmWork")).json() as View;
+  const before=await view();
+  assert.ok(before.leads.some(lead=>lead.id===leadId && lead.selectable===1));
+  const item={kind:"task",title:"Call lead",description:"",dueDate:null,priority:"normal",status:"open",assignee:null,checklist:[],leadId};
+  const command={action:"create",expectedRevision:before.plan.revision,item,operationKey:"cv023-task"};
+  assert.equal((await call("firmWork","POST",{...command,item:{...item,leadId:"contact_"+"0".repeat(32)}})).status,409);
+  const created=await call("firmWork","POST",command);
+  assert.equal(created.status,200,await created.clone().text());
+  assert.deepEqual(await created.json(),await (await call("firmWork","POST",command)).json());
+  const after=await view(), task=after.plan.items.find(i=>i.leadId===leadId)!;
+  assert.ok(task);
+  assert.equal((await call("firmWork","POST",{...command,operationKey:"cv023-stale"})).status,409);
+  const foreign=await (await call("firmWork","GET",undefined,"practice-outsider@example.test",foreignOrganization)).json() as View;
+  assert.ok(!foreign.leads.some(l=>l.id===leadId));
+  assert.ok(!foreign.plan.items.some(i=>i.id===task.id));
+  const {leadId:omitted,...oldEditor}=item;
+  assert.equal((await call("firmWork","POST",{action:"update",id:task.id,item:{...oldEditor,status:"completed"},expectedRevision:after.plan.revision,operationKey:"cv023-complete"})).status,200);
+  assert.ok((await view()).plan.items.some(i=>i.id===task.id && i.leadId===omitted && i.status==="completed"));
+});

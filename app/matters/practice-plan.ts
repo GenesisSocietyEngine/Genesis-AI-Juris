@@ -7,6 +7,7 @@ export type PracticeItem = {
   dueDate: string | null; assignee: string | null; priority: "low" | "normal" | "high";
   status: "open" | "completed"; checklist: { title: string; done: boolean }[];
   workflow: string | null; workflowTitle?: string;
+  leadId?: string;
   limitation?: boolean;
   timing?: EventTiming | null; reminder?: WorkReminder | null; series?: SeriesOccurrence;
 };
@@ -61,8 +62,9 @@ export function workflowPreview(templateId: string, dates: unknown, configured?:
 export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | "workflow" | "workflowTitle" | "series"> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter a task or event.");
   const item = value as Record<string, unknown>;
-  if (Object.keys(item).some(key => !["kind", "title", "description", "dueDate", "assignee", "priority", "status", "checklist", "timing", "reminder", "limitation"].includes(key))) throw new Error("Unsupported work-item field.");
+  if (Object.keys(item).some(key => !["kind", "title", "description", "dueDate", "assignee", "priority", "status", "checklist", "timing", "reminder", "limitation", "leadId"].includes(key))) throw new Error("Unsupported work-item field.");
   if (item.kind !== "task" && item.kind !== "event") throw new Error("Choose task or event.");
+  if (item.leadId !== undefined && (item.kind !== "task" || typeof item.leadId !== "string" || !/^contact_[a-f0-9]{32}$/.test(item.leadId))) throw Error("Choose a valid lead for this task.");
   if (typeof item.title !== "string" || !item.title.trim() || item.title.length > 240) throw new Error("Enter a title of up to 240 characters.");
   if (typeof item.description !== "string" || item.description.length > 4000) throw new Error("Use up to 4,000 description characters.");
   if (item.dueDate !== null && !validPracticeDate(item.dueDate)) throw new Error("Choose a valid date.");
@@ -74,7 +76,7 @@ export function validatePracticeItem(value: unknown): Omit<PracticeItem, "id" | 
   const timing = item.timing == null ? item.timing : readTiming(item.timing);
   const reminder = item.reminder == null ? item.reminder : readReminder(item.reminder);
   if (timing && (item.kind!=="event" || item.dueDate!==timing.start.local.slice(0,10))) throw Error("Timed events need a matching start date; tasks cannot carry event times.");
-  return { ...(item.limitation ? {limitation:true} : {}), ...(item.timing!==undefined ? {timing:timing as EventTiming|null} : {}), ...(item.reminder!==undefined ? {reminder:reminder as WorkReminder|null} : {}), kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
+  return { ...(typeof item.leadId === "string" ? {leadId:item.leadId} : {}), ...(item.limitation ? {limitation:true} : {}), ...(item.timing!==undefined ? {timing:timing as EventTiming|null} : {}), ...(item.reminder!==undefined ? {reminder:reminder as WorkReminder|null} : {}), kind: item.kind, title: item.title.trim(), description: item.description, dueDate: item.dueDate as string | null, assignee: item.assignee as string | null, priority: item.priority as PracticeItem["priority"], status: item.status as PracticeItem["status"], checklist: item.checklist.map(row => ({title: row.title.trim(), done: row.done})) };
 }
 export function changePracticePlan(plan: PracticePlan, command: Record<string, unknown>, newId: () => string, configured?: WorkflowTemplate, now = Date.now()): PracticePlan {
   const items = [...plan.items];
@@ -110,6 +112,11 @@ export function changePracticePlan(plan: PracticePlan, command: Record<string, u
     const index = items.findIndex(item => item.id === command.id);
     if (index < 0) throw new Error("This item is not in the current case plan.");
     const validated=validatePracticeItem(command.item);
+    if (validated.leadId !== undefined && validated.leadId !== items[index].leadId) throw Error("The task owner cannot change.");
+    if (items[index].leadId) {
+      if (validated.kind !== "task") throw Error("Lead work must remain a task.");
+      validated.leadId = items[index].leadId;
+    }
     if(items[index].series && validated.kind!=="task") throw Error("A recurring task occurrence must remain a task.");
     const input=command.item as Record<string,unknown>;
     for(const field of ["timing","reminder"] as const)if(items[index][field] && !(field in input))throw Error("This item has scheduling details. Use the current editor to preserve or explicitly remove them.");
