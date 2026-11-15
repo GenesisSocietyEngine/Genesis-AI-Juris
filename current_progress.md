@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**15 November · CV-007 in progress on v218.** PR #303 merged after all 18 checks passed. Verified the hosted portal entry and empty-case guidance in EN/RU. Staff shared one synthetic document version and sent the approved independent recipient a private invitation. The independent recipient accepted, downloaded the exact share, uploaded a synthetic text file in Russian and posted a message visible in both languages. The isolated portal exchange and revocation regression passed. The live staff reply and revocation are pending. [Evidence](docs/testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026).
+
 **Public v218 · 15 November 2026.** CV-026 passed signed-in production acceptance. One denied invitation switched English → Russian → English using only the language button. The thread stayed hidden. The workspace switch displayed its destination in both languages. PRs #301 and #302 each merged after 18 checks passed. [Release evidence](docs/testing/cv024-conversation-retrieval.md#cv-026-on-public-v218).
 
 **Public v217 · 15 November 2026.** PR #300 merged after all 18 checks passed. On the signed-in site, three synthetic conversations across two cases passed the English and Russian filter, exact-recipient and language-switch checks. The wrong recipient was denied in both languages. CI verified restricted staff access. CV-026 tracks a stale translated denial notice. [Production evidence](docs/testing/cv024-conversation-retrieval.md#public-v217).
