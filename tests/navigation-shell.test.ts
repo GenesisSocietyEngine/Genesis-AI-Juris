@@ -13,6 +13,14 @@ import { NavigationController } from "../app/navigation-controller";
 import { SESSION_BOUNDARY_KEY, subscribeSessionBoundary } from "../app/session-boundary";
 
 const noop = () => {};
+test("workspace language switch names and displays the destination language", () => {
+  for (const locale of ["en", "ru"] as const) {
+    const html = renderToStaticMarkup(createElement(GenesisNavigation, {locale, active: "reports", location: "/reports", onLanguage: noop}));
+    const label = locale === "en" ? "Switch to Russian (RU)" : "Переключить на английский (EN)";
+    const destination = locale === "en" ? "RU" : "EN";
+    assert.ok(html.includes(`aria-label="${label}">${destination}</button>`));
+  }
+});
 test("workspace brand announces the home destination in the current language", () => {
   for (const locale of ["en", "ru"] as const) {
     for (const active of ["reports", "studio"]) {
