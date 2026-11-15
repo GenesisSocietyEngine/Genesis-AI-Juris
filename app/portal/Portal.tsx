@@ -51,7 +51,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     [ack, setAck] = useState(false),
     [choice, setChoice] = useState("");
   const [notice, setNotice] = useState(""),
-    [issue, setIssue] = useState(""),
+    [issue, setIssue] = useState<[string, string] | null>(null),
     [confirm, setConfirm] = useState(""),
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<Job | null>(null),
@@ -128,7 +128,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     setView(null);
     reset();
     setNotice("");
-    setIssue("");
+    setIssue(null);
   }, [reset]);
   useEffect(() => {
     alive.current = true;
@@ -200,7 +200,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
             u.searchParams.set("access", invitationId);
             history.replaceState(history.state, "", u);
             setInvite("");
-            setIssue("");
+            setIssue(null);
             setPending((p) => (p?.body.action === "accept" && p.body.id === invitationId ? null : p));
             if (data.selected !== invitationId) {
               setView(null);
@@ -339,7 +339,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     work.current = true;
     setBusy(true);
     setPending(job);
-    setIssue("");
+    setIssue(null);
     setNotice("");
     setConfirm("");
     try {
@@ -383,26 +383,26 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
         }
         setIssue(
           body.action === "accept"
-            ? t(
+            ? [
                 "This invitation is unavailable for this account. Check your sign-in or ask the team for a new link.",
                 "Приглашение недоступно для этой учётной записи. Проверьте адрес или запросите новую ссылку.",
-              )
+              ]
             : res.status === 415
-              ? t(
+              ? [
                   "File type or contents not supported. Choose PDF, TXT, PNG or JPEG.",
                   "Выберите PDF, TXT, PNG или JPEG с подходящим содержимым.",
-                )
+                ]
               : res.status === 413
-                ? t(
+                ? [
                     "Choose a nonempty file no larger than 5 MB.",
                     "Выберите непустой файл размером до 5 МБ.",
-                  )
+                  ]
                 : res.status === 409
-                  ? t(
+                  ? [
                       "Could not save this change. Refresh and check for an existing invitation, share or upload.",
                       "Не удалось сохранить. Обновите портал и проверьте приглашения, публикации и файлы.",
-                    )
-                  : t("Check the fields and try again.", "Проверьте поля и повторите."),
+                    ]
+                  : ["Check the fields and try again.", "Проверьте поля и повторите."],
         );
         return;
       }
@@ -449,10 +449,10 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     } catch {
       if (alive.current && mark === epoch.current)
         setIssue(
-          t(
+          [
             "Save not confirmed. Retry the same action to check its receipt.",
             "Сохранение не подтверждено. Повторите ту же операцию.",
-          ),
+          ],
         );
     } finally {
       work.current = false;
@@ -604,7 +604,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
           )}
           {issue && (
             <p role="alert" className={s.error}>
-              {issue}{" "}
+              {t(...issue)}{" "}
               {pending && !busy && (
                 <button onClick={() => void run(pending)}>
                   {t("Retry same action", "Повторить операцию")}
@@ -928,15 +928,15 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                                 setAck(false);
                                 if (f && (!f.size || f.size > fileLimit)) {
                                   setIssue(
-                                    t(
+                                    [
                                       "Choose a nonempty file no larger than 5 MB.",
                                       "Выберите непустой файл размером до 5 МБ.",
-                                    ),
+                                    ],
                                   );
                                   e.target.value = "";
                                   setFile(null);
                                 } else {
-                                  setIssue("");
+                                  setIssue(null);
                                   setFile(f || null);
                                 }
                               }}

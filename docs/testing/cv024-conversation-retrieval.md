@@ -34,3 +34,7 @@ The populated route regression passed with two cases, multiple invitations and a
 | Staff access | The production identity owned both cases. CI verified an unassigned organization member saw no rows, a contributor saw only their assigned case, and a subsequent auditor downgrade blocked both list and thread access. |
 
 The three invitations use reserved synthetic addresses. The QA messages were posted inside their respective case portals. The prior revoked C1 invitation was left untouched. The empty-case result was exercised in the bilingual candidate preview.
+
+## CV-026 candidate
+
+The portal previously stored the denial as an already translated string. It now stores both translations and renders the active one on each locale change. The workspace switch displays the destination code and includes that destination in its accessible name. The client portal already displays the destination language in full. A rendered-navigation regression passed for both languages. Release acceptance will switch the same denied invitation twice and inspect the alert and thread visibility after each click.
