@@ -9,6 +9,7 @@ export const WORK_VIEWS = [
   { id: "home", en: "Home", ru: "Главная", icon: "home" },
   { id: "tasks", en: "Tasks", ru: "Задачи", icon: "tasks" },
   { id: "calendar", en: "Calendar", ru: "Календарь", icon: "calendar" },
+  { id: "messages", en: "Messages", ru: "Сообщения", icon: "people" },
   { id: "reminders", en: "Reminders", ru: "Напоминания", icon: "reminder" },
   { id: "templates", en: "Workflow templates", ru: "Шаблоны процессов", icon: "template" },
   { id: "people", en: "Contacts", ru: "Контакты", icon: "people" },

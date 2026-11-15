@@ -27,6 +27,7 @@ import CaseworkHost from "../casework/Host";
 import Register from "../casework/Register";
 import { useTaskFilters } from "./use-task-filters";
 import TaskScopeFilter, {matchesTaskScope} from "./TaskScopeFilter";
+import StaffMessages from "./StaffMessages";
 import FirmCases from "./FirmCases";
 import { agendaRange, moveAgenda, inAgenda, matchesDue, type AgendaPeriod, type DueScope } from "./work-date-views";
 
@@ -39,7 +40,7 @@ function WorkBody({ controller: supplied, contacts }: { controller?: WorkControl
   const [locale] = useInterfaceLocale(), location = useWorkspaceLocation();
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   const selectedView = new URL(location, "https://workspace.invalid").searchParams.get("view");
-  const mode = selectedView === "progress" || selectedView === "home" || selectedView === "cases" || selectedView === "workflows" || selectedView === "people" || selectedView === "calendar" || selectedView === "templates" || selectedView === "reminders" ? selectedView : selectedView === "tasks" ? "tasks" : "home";
+  const mode = selectedView === "messages" || selectedView === "progress" || selectedView === "home" || selectedView === "cases" || selectedView === "workflows" || selectedView === "people" || selectedView === "calendar" || selectedView === "templates" || selectedView === "reminders" ? selectedView : selectedView === "tasks" ? "tasks" : "home";
   const [otherQuery, setOtherQuery] = useState(""), [otherStatus, setOtherStatus] = useState("open"), [caseId, setCaseId] = useState(""), [otherPerson, setOtherPerson] = useState("");
   const taskFilters = useTaskFilters(session.selected?.selection ?? "", session.actorId ?? "");
   const {scope:taskScope,lifecycle:caseStatus} = taskFilters.values;
@@ -67,7 +68,8 @@ function WorkBody({ controller: supplied, contacts }: { controller?: WorkControl
   if (mode === "people") return <ContactsWorkspace supplied={contacts} work={controller} workState={state} />;
   if (session.phase !== "ready" || session.endingSession || session.busy) return null;
   if(mode==="progress") return <Register key={session.selected?.selection} locale={locale} location={location}/>;
-  const changeMode = (view: string) => { if(view!==mode&&navigation.riskFor(calendarFormGuard)!=="clear"){navigation.requestDeparture("link",workspaceDestination("/work?view="+encodeURIComponent(view),location));return;} const url = new URL(window.location.href); url.searchParams.set("view", view); window.history.replaceState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-interface-change")); };
+  const changeMode = (view: string) => { if(view!==mode&&(navigation.riskFor(calendarFormGuard)!=="clear" || (view==="messages" && (state.workDraft || state.draft || state.workPending || state.pending)))){navigation.requestDeparture("link",workspaceDestination("/work?view="+encodeURIComponent(view),location));return;} const url = new URL(window.location.href); url.searchParams.set("view", view); window.history.replaceState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-interface-change")); };
+  if(mode==="messages" && session.selected) return <StaffMessages key={session.selected.selection} selection={session.selected.selection} auditor={session.selected.role==="auditor"} cases={state.cases} locale={locale} location={location} onView={changeMode}/>;
   const period=calendarLayout==="agenda"?agendaPeriod:calendarLayout;
   const today=(now===null?agendaDate:localAt(now,displayZone).slice(0,10)), range=agendaRange(agendaDate,period);
   const resetFilters=()=>{

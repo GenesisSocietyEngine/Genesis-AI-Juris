@@ -1,6 +1,6 @@
 # Current progress — CaseVant
 
-**15 November · CV-024 discovery completed.** A signed-in comparison measured two selections to filter the MyCase inbox and three actions to inspect another CaseVant case from the current portal. The populated portal regression passed recipient isolation and revocation. The backlog now specifies a staff conversation list and its access checks. [Evidence](docs/testing/cv024-conversation-retrieval.md).
+**15 November · CV-024 candidate implemented.** A signed-in comparison measured two selections to filter the MyCase inbox and three actions to inspect another CaseVant case from the current portal. The populated portal regression passed recipient isolation and revocation. The new staff Messages view filters conversations by case and opens the selected recipient. The bilingual candidate preview and populated access regression passed. [Evidence](docs/testing/cv024-conversation-retrieval.md).
 
 **15 November 2026 · CV-023 candidate.** PR #298 merged at `9521650` after 18/18 checks. The task queue now combines case or lead, assignee, completion and case/lead status. The English and Russian candidate checks passed for an open lead task and a completed case task, including language switching, reload and reset. Public verification follows release. [Comparison and test evidence](docs/testing/cv023-task-filters.md).
 

@@ -332,6 +332,21 @@ export async function portalScenarios(
     404,
     "firm membership alone cannot see any portal",
   );
+  const list = async (actor:string, caseFilter="") => {
+    const r=await good(await call("messages","GET",undefined,actor,org,{},caseFilter?"?case="+caseFilter:""));
+    return (await r.json() as {threads:{id:string;caseId:string;recipient:string}[]}).threads;
+  };
+  assert.deepEqual(await list(outsider),[]);
+  const second = await good(await call("dossiers","POST",{title:"Synthetic second portal",jurisdictions:["Test"],classification:"internal"}),201);
+  const secondId=(await second.json() as {dossier:{dossier_id:string}}).dossier.dossier_id;
+  const secondGrant=uid();
+  const secondStaff=(body:Record<string,unknown>)=>call("portalStaff","POST",body,owner,org,{},"?case="+secondId);
+  await good(await secondStaff({action:"invite",id:secondGrant,email:alice,label:"Synthetic other invitation"}));
+  await good(await secondStaff({action:"message",id:uid(),grant:secondGrant,text:"Other case conversation"}));
+  assert.deepEqual((await list(owner,secondId)).map(r=>r.id),[secondGrant]);
+  const ownerRows=await list(owner);
+  assert.ok(ownerRows.some(r=>r.id===a.id) && ownerRows.some(r=>r.id===anew.id) && ownerRows.some(r=>r.id===secondGrant));
+  assert.ok(ownerRows.every(r=>Object.keys(r).sort().join(",")==="caseId,caseTitle,id,recipient,stamp"));
   const revision = await db
     .prepare("SELECT revision FROM dossiers WHERE id=?")
     .bind(caseId)
@@ -352,6 +367,9 @@ export async function portalScenarios(
   const cv = (await (
     await good(await staff(undefined, "&grant=" + anew.id, outsider))
   ).json()) as PortalView;
+  assert.ok((await list(outsider)).some(r=>r.id===anew.id));
+  assert.ok((await list(outsider)).every(r=>r.caseId===caseId));
+  assert.deepEqual(await list(outsider,secondId),[]);
   assert.equal(cv.canInvite, false);
   assert.equal((await staff({ action: "revoke", id: anew.id }, "", outsider)).status, 404);
   await good(
@@ -379,6 +397,9 @@ export async function portalScenarios(
       ),
     );
   };
+  await db.prepare("UPDATE organization_memberships SET role='auditor',revision=revision+1 WHERE organization_id=? AND actor_id=?").bind(org,u!.actor_id).run();
+  assert.equal((await call("messages","GET",undefined,outsider,org)).status,403);
+  assert.equal((await staff(undefined,"&grant="+anew.id,outsider)).status,404);
   await transition("declined");
   assert.deepEqual((await view(alice)).grants, []);
   await transition("active");
