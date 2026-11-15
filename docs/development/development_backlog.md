@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**Public v215 · 14 November 2026.** CV-025 verified. PRs #296 and #297 merged green. All 11 case section labels, both document mode controls and the accessible group name passed signed-in EN/RU checks. Switching EN → RU → EN preserved the selected case section, document and exact version. [Production evidence](../testing/case-documents-billing-context.md#cv-025-verified-on-public-v215).
+
 **Public v214 · 14 November 2026.** CV-014, CV-015, CV-017 and CV-018 passed the signed-in bilingual acceptance below. CV-025 records a remaining section selector label. [Release evidence](../testing/case-documents-billing-context.md#public-v214).
 
 **Earlier 14 November release gate (superseded by v214).** PR #294 remains open at 17/18 after three failures in one native simulator job. Public v213 still displays the raw forecast stage. The new Reports/CSV and home-link production checks await release. CV-017 and CV-018 are implemented in PR #295, with scoped tests passed and production verification pending.
@@ -22,7 +24,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-025 · P3 | Implemented · awaiting production acceptance | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
+| CV-025 · P3 | Verified · public v215 | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
 | CV-023 · P3 | Discovery | Daily task retrieval | MyCase exposes assignee, completion and case/lead scope together. | Compare equivalent CaseVant filters with populated cross-case and prospect tasks. Record missing combinations and persistence before adding controls. |
 | CV-024 · P3 | Discovery | Communications | MyCase offers one case-filtered message collection. CaseVant exposes conversations within each case. | Measure how staff find a conversation across cases. Verify recipient and access boundaries before designing a firm-wide list. |
 | CV-018 · P2 | Verified on v214 for the scoped bilingual journey | Case → Billing navigation | Following Billing from an open case lands on “Choose a case”, without a return-to-case link. Calendar preserves that context. | Preselect the authorized originating case and offer a return to the exact case section. Direct firm-level Billing visits should still open the case picker. Verify EN/RU, case switching and denied access. |
