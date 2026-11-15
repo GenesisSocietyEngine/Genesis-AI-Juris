@@ -1,8 +1,10 @@
 # Current progress — CaseVant
 
+**Public v216 · 15 November 2026.** PR #299 merged after 18/18 checks. The signed-in case and lead task filters passed in English and Russian, including reload, language switching and reset. Each origin verified 221/221 assets. CV-024 is implemented in [PR #300](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/300) and awaits its own release. [CV-023 release evidence](docs/testing/cv023-task-filters.md#public-v216--15-november-2026).
+
 **15 November · CV-024 candidate implemented.** A signed-in comparison measured two selections to filter the MyCase inbox and three actions to inspect another CaseVant case from the current portal. The populated portal regression passed recipient isolation and revocation. The new staff Messages view filters conversations by case and opens the selected recipient. The bilingual candidate preview and populated access regression passed. [Evidence](docs/testing/cv024-conversation-retrieval.md).
 
-**15 November 2026 · CV-023 candidate.** PR #298 merged at `9521650` after 18/18 checks. The task queue now combines case or lead, assignee, completion and case/lead status. The English and Russian candidate checks passed for an open lead task and a completed case task, including language switching, reload and reset. Public verification follows release. [Comparison and test evidence](docs/testing/cv023-task-filters.md).
+**Earlier candidate checks · CV-023.** PR #298 merged at `9521650` after 18/18 checks. The task queue now combines case or lead, assignee, completion and case/lead status. The English and Russian candidate checks passed for an open lead task and a completed case task, including language switching, reload and reset. The v216 acceptance above supersedes these candidate checks. [Comparison and test evidence](docs/testing/cv023-task-filters.md).
 
 **Public v215 · 14 November 2026.** CV-025 verified. PRs #296 and #297 merged green. All 11 case section labels, both document mode controls and the accessible group name passed signed-in EN/RU checks. Switching EN → RU → EN preserved the selected case section, document and exact version. [Production evidence](docs/testing/case-documents-billing-context.md#cv-025-verified-on-public-v215).
 

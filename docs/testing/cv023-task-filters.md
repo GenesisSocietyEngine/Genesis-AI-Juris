@@ -24,4 +24,16 @@ Closed covers closed, archived, declined and cancelled cases, and leads marked n
 
 The task-scope, practice-route, practice-plan and firm-work-controller suites passed 36 checks. They cover receipt replay, stale revision conflicts, organization isolation, invalid lead IDs and preserving lead ownership when an older editor completes a task.
 
-Production acceptance remains open. Repeat both populated combinations in the released signed-in workspace and check reload, locale switching and reset.
+## Public v216 · 15 November 2026
+
+[PR #299](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/299) merged with 18/18 checks. The [merge build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43667719265) passed both web and PDF jobs for `3c53a5ddc5fbff0a16242f0ed8c21ad71cba6164`. Sites published v216 from hosting commit `ddd5a261d7067419a0c7ea8b73b4d4f60b946bc8`, with the same Git tree. Deployment `appgdep_6af91aee44f48191b80d15dee860a504` succeeded. Both casevant.pro and the native Sites origin matched 221/221 assets (164 current and 57 retained).
+
+| Signed-in production check | Observed result |
+| --- | --- |
+| Lead, open lifecycle, Me, Open | The synthetic prospect originally had zero tasks across all statuses. Created one labeled release-check task. Exactly one row matched. |
+| Reload in English, then switch to Russian | The same lead, assignee, lifecycle, status and row survived both actions. |
+| Complete the release-check task in Russian | It disappeared from Open and reappeared under Completed for the same recipient and prospect. It remains completed. |
+| Case, open lifecycle, Completed | Me returned zero. Everyone returned the existing unassigned completed task. Reloading in Russian and switching back to English preserved that row and the selections. Closed lifecycle returned zero for this open case. |
+| Reset separately in English and Russian | Both restored all tasks, all work, everyone and open status. The original single open task was visible across the two accessible cases. |
+
+The signed-in workspace had an open case with a **completed task**. The positive **closed case** combination was checked in the populated candidate fixture. The production check used the existing case lifecycle.
