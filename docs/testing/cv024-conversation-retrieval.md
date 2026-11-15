@@ -38,3 +38,14 @@ The three invitations use reserved synthetic addresses. The QA messages were pos
 ## CV-026 candidate
 
 The portal previously stored the denial as an already translated string. It now stores both translations and renders the active one on each locale change. The workspace switch displays the destination code and includes that destination in its accessible name. The client portal already displays the destination language in full. A rendered-navigation regression passed for both languages. Release acceptance will switch the same denied invitation twice and inspect the alert and thread visibility after each click.
+
+## CV-026 on public v218
+
+[PR #301](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/301) and [PR #302](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/302) merged in order after all 18 checks on each passed. One iOS process-restart job passed on retry after a simulator launch timed out. The [merged-main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43710704143) passed for `1a5293cd591b79419236cc9cbefeb7e9005ae9ba`. Sites published v218 from the same source tree at `1d47f8af6cf5124e32e235a06475652b797a51f9` in deployment `appgdep_6af99e703f208191bf7c9a737c8a1c6a`. Each public origin matched all 225 expected assets (164 current and 61 retained).
+
+| Check | Observed result |
+| --- | --- |
+| Candidate portal with a counted acceptance request | One rejected request produced the English alert. Switching to Russian and back to English changed the alert each time. The acceptance request count stayed at one. |
+| Signed-in client portal on casevant.pro | Opened the existing synthetic A invitation as a different signed-in account and clicked Accept once. The English denial appeared. Clicking Русский immediately produced the Russian denial. Clicking English immediately restored the English denial. Neither transition required a retry, refresh or second acceptance. |
+| Recipient isolation | The portal showed the empty case list in all three states. The synthetic recipient address, message body, history and reply control remained hidden. |
+| Signed-in workspace Messages | The English workspace displayed RU with the accessible name “Switch to Russian (RU)”. In Russian it displayed EN with “Переключить на английский (EN)”. Both switches changed the page heading and returned to the same conversation list. |
