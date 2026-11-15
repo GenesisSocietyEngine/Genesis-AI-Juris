@@ -1,6 +1,8 @@
 # Current progress — CaseVant
 
-**Public v216 · 15 November 2026.** PR #299 merged after 18/18 checks. The signed-in case and lead task filters passed in English and Russian, including reload, language switching and reset. Each origin verified 221/221 assets. CV-024 is implemented in [PR #300](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/300) and awaits its own release. [CV-023 release evidence](docs/testing/cv023-task-filters.md#public-v216--15-november-2026).
+**Public v217 · 15 November 2026.** PR #300 merged after all 18 checks passed. On the signed-in site, three synthetic conversations across two cases passed the English and Russian filter, exact-recipient and language-switch checks. The wrong recipient was denied in both languages. CI verified restricted staff access. CV-026 tracks a stale translated denial notice. [Production evidence](docs/testing/cv024-conversation-retrieval.md#public-v217).
+
+**Public v216 · 15 November 2026.** PR #299 merged after 18/18 checks. The signed-in case and lead task filters passed in English and Russian, including reload, language switching and reset. Each origin verified 221/221 assets. [CV-023 release evidence](docs/testing/cv023-task-filters.md#public-v216--15-november-2026).
 
 **15 November · CV-024 candidate implemented.** A signed-in comparison measured two selections to filter the MyCase inbox and three actions to inspect another CaseVant case from the current portal. The populated portal regression passed recipient isolation and revocation. The new staff Messages view filters conversations by case and opens the selected recipient. The bilingual candidate preview and populated access regression passed. [Evidence](docs/testing/cv024-conversation-retrieval.md).
 

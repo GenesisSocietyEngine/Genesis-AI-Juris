@@ -20,3 +20,17 @@ Release acceptance requires two populated cases, two recipients on one case, and
 Staff can open Messages from the workspace views, filter all accessible threads by case, and follow a row into the existing portal. Each row contains the case, recipient and last message time. Only the portal returns message bodies. A read-only endpoint pages 50 conversations at a time and checks case and organization access before returning results.
 
 The populated route regression passed with two cases, multiple invitations and a contributor assigned to only one case. Filtering to the other case returned an empty list. Downgrading that contributor to auditor after listing blocked the list and the direct thread request. The synthetic browser preview showed two English rows, one Russian row after applying the case filter and switching language, and the localized empty state for a third case. The filtered link contained the expected case, invitation and locale. Following the second recipient’s link in a synthetic portal with two invitations selected that exact thread and its message in Russian, and switching back to English kept the same message. Production verification follows a separate CV-024 release.
+
+## Public v217
+
+[PR #300](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/300) merged after 18 successful checks. The [merged-main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43704545931) passed for `e9ea0a1f7a66c97f76a48fda9a9d2d08fd77b02d`. Sites published the same source tree at `d5a4ea9025e59e59fa3c9146ca0707aeddc38a71` in deployment `appgdep_6af98d1b9b008191b4914e96cd7acffb`. Both casevant.pro and the native Sites origin matched all 164 current and 57 retained assets.
+
+| Signed-in check | Observed result |
+| --- | --- |
+| All accessible cases | Three new synthetic threads appeared in descending last-message order. The release-audit case had recipients A and A2. The C1 smoke case had recipient B. Each had a distinct QA message. |
+| Filter each case in English and switch to Russian | The audit case showed only A and A2. The C1 case showed only B. Both filters retained the selected case and matching recipients after switching language. Timestamps changed to the Russian format. |
+| Open A, A2 and B from the list | Each row opened its case, selected its own recipient and displayed its matching message under Messages. A opened correctly even though A2 was the newer recipient on that case. Switching Russian to English on A and B and English to Russian on A2 retained the corresponding thread. |
+| Open A’s client invitation under a different signed-in account | Acceptance was denied in Russian and again in English. The portal exposed no test message or recipient address. Switching to English left the existing Russian denial in place until retry. CV-026 tracks that text. |
+| Staff access | The production identity owned both cases. CI verified an unassigned organization member saw no rows, a contributor saw only their assigned case, and a subsequent auditor downgrade blocked both list and thread access. |
+
+The three invitations use reserved synthetic addresses. The QA messages were posted inside their respective case portals. The prior revoked C1 invitation was left untouched. The empty-case result was exercised in the bilingual candidate preview.
