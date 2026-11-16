@@ -40,3 +40,7 @@ The isolated portal route regression passed on the v218 application source with 
 The owner opened the recipient’s exact thread from workspace Messages, read the client’s upload acknowledgement and posted one bilingual reply. After refresh, Chrome showed both messages with the correct author labels in English and Russian. The owner confirmed revocation for that recipient. The staff portal marked access revoked and retained both messages.
 
 After refreshing the open recipient portal, Chrome displayed “У вас нет доступа к этому порталу.” Switching to English displayed “You no longer have access to this portal.” Reloading the same portal in English confirmed the denial. The case title, portal tabs, message history and reply control were absent in both languages. CV-007 is verified on public v218. CV-027 remains open for success-notice localization.
+
+## CV-027 candidate, 16 November 2026
+
+The portal retains both translations for success notices and chooses one when the notice renders. In the browser fixture, one invitation acceptance produced the English, Russian, then English confirmation with the POST count fixed at one. Posting one message raised the count to two. Both language switches preserved the message and the count. Production acceptance follows the release.

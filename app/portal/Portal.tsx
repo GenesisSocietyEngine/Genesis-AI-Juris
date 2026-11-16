@@ -30,6 +30,18 @@ const label: Record<string, [string, string]> = {
   replaced: ["Replaced", "Заменено"],
   changed: ["Needs review", "Нужна проверка"],
 };
+const actionNotices: Record<string, [string, string]> = {
+  invite: [
+    "Invitation ready. Send the private link to this client.",
+    "Приглашение готово. Передайте личную ссылку клиенту.",
+  ],
+  accept: ["Invitation accepted.", "Приглашение принято."],
+  message: ["Message posted to this conversation.", "Сообщение опубликовано."],
+  share: ["Shared with this client.", "Открыт доступ этому клиенту."],
+  withdraw: ["Sharing stopped.", "Доступ к записи закрыт."],
+  revoke: ["Client access revoked.", "Доступ клиента отозван."],
+  upload: ["File received by the case team.", "Файл получен командой дела."],
+};
 export default function Portal({ caseId, selection, caseName = "", signedIn = true, account }: Props) {
   const [locale, setLocale] = useInterfaceLocale(),
     ru = locale === "ru",
@@ -50,7 +62,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     [file, setFile] = useState<File | null>(null),
     [ack, setAck] = useState(false),
     [choice, setChoice] = useState("");
-  const [notice, setNotice] = useState(""),
+  const [notice, setNotice] = useState<[string, string] | null>(null),
     [issue, setIssue] = useState<[string, string] | null>(null),
     [confirm, setConfirm] = useState(""),
     [busy, setBusy] = useState(false),
@@ -127,7 +139,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     ++request.current;
     setView(null);
     reset();
-    setNotice("");
+    setNotice(null);
     setIssue(null);
   }, [reset]);
   useEffect(() => {
@@ -340,7 +352,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     setBusy(true);
     setPending(job);
     setIssue(null);
-    setNotice("");
+    setNotice(null);
     setConfirm("");
     try {
       const res = await fetch(
@@ -432,19 +444,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       }
       if (body.action === "share") setChoice("");
       if (body.action === "revoke") setLink("");
-      const notes: Record<string, string> = {
-        invite: t(
-          "Invitation ready. Send the private link to this client.",
-          "Приглашение готово. Передайте личную ссылку клиенту.",
-        ),
-        accept: t("Invitation accepted.", "Приглашение принято."),
-        message: t("Message posted to this conversation.", "Сообщение опубликовано."),
-        share: t("Shared with this client.", "Открыт доступ этому клиенту."),
-        withdraw: t("Sharing stopped.", "Доступ к записи закрыт."),
-        revoke: t("Client access revoked.", "Доступ клиента отозван."),
-        upload: t("File received by the case team.", "Файл получен командой дела."),
-      };
-      setNotice(notes[body.action] || "");
+      setNotice(actionNotices[body.action] ?? null);
       await refresh(next);
     } catch {
       if (alive.current && mark === epoch.current)
@@ -614,7 +614,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
           )}
           {notice && (
             <p role="status" className={s.note}>
-              {notice}
+              {t(...notice)}
             </p>
           )}
           {access === "loading" && !view && (
@@ -769,9 +769,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                           onClick={async () => {
                             try {
                               await navigator.clipboard.writeText(link);
-                              setNotice(t("Invitation link copied.", "Ссылка скопирована."));
+                              setNotice(["Invitation link copied.", "Ссылка скопирована."]);
                             } catch {
-                              setNotice(t("Select the link and copy it.", "Выделите и скопируйте ссылку."));
+                              setNotice(["Select the link and copy it.", "Выделите и скопируйте ссылку."]);
                             }
                           }}
                         >
