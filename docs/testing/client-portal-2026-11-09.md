@@ -44,3 +44,14 @@ After refreshing the open recipient portal, Chrome displayed “У вас нет
 ## CV-027 candidate, 16 November 2026
 
 The portal retains both translations for success notices and chooses one when the notice renders. In the browser fixture, one invitation acceptance produced the English, Russian, then English confirmation with the POST count fixed at one. Posting one message raised the count to two. Both language switches preserved the message and the count. Production acceptance follows the release.
+
+## CV-027 on public v219
+
+[PR #305](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/305) merged after all 18 checks passed. The dependency audit required upgrading Next.js from 16.4.2 to 16.4.6. The patched lockfile passed with zero reported vulnerabilities. The [merged-main build](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/43972662840) passed for `d8d0131647eb3c37c45bee23dc3cc3fb9a017f33`. Sites published the identical Git tree at `d48b72a677985e06e9b138b1beba63087d8b246b` in deployment `appgdep_6afb89ef5f908191bddca7c62e7c053c`. Each production origin matched 220 assets, including 56 retained from v218.
+
+| Signed-in action on casevant.pro | Observed result |
+| --- | --- |
+| Post one message in English in an existing synthetic recipient thread | “Message posted to this conversation.” switched to “Сообщение опубликовано.” and back immediately. The refreshed history contained one copy of the new message. Further switches preserved that message, case and recipient. |
+| Copy the existing synthetic invitation link once in Russian, then hide the link | “Ссылка скопирована.” switched to “Invitation link copied.” and back immediately. The copy action was performed once and the link stayed hidden. |
+
+Invitation acceptance was exercised in the counted client fixture above. The production checks used the signed-in case owner and an existing synthetic invitation.
