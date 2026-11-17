@@ -1,4 +1,4 @@
-import { billingCaseReturn, workspaceDestination } from "../app/workspace-navigation";
+import { workspaceCaseReturn, workspaceDestination } from "../app/workspace-navigation";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -115,14 +115,30 @@ test("Billing preserves an exact team case entry and keeps firm entry unselected
     const params = new URL(workspaceDestination("/billing", path), "https://test.invalid").searchParams;
     assert.equal(params.get("dossier"), "case_a");
     assert.equal(params.get("return_to"), path);
-    assert.equal(billingCaseReturn(path, "case_a", "org_a", lang), path);
-    assert.equal(billingCaseReturn(path, undefined, "org_a", lang), null);
-    assert.equal(billingCaseReturn(path, "case_b", "org_a", lang), null);
-    assert.equal(billingCaseReturn(path, "case_a", "org_b", lang), null);
-    assert.equal(billingCaseReturn("//example.invalid/matters", "case_a", "org_a", lang), null);
+    assert.equal(workspaceCaseReturn(path, "case_a", "org_a", lang), path);
+    assert.equal(workspaceCaseReturn(path, undefined, "org_a", lang), null);
+    assert.equal(workspaceCaseReturn(path, "case_b", "org_a", lang), null);
+    assert.equal(workspaceCaseReturn(path, "case_a", "org_b", lang), null);
+    assert.equal(workspaceCaseReturn("//example.invalid/matters", "case_a", "org_a", lang), null);
     for (const from of ["/work?organization=org_a", path.replace("team", "personal")]) {
       assert.equal(new URL(workspaceDestination("/billing", from), "https://test.invalid").searchParams.has("dossier"), false);
     }
     assert.equal(new URL(workspaceDestination("/billing?organization=org_b", path), "https://test.invalid").searchParams.has("return_to"), false);
+  }
+});
+
+test("Reports restores the exact team case section in the current language", () => {
+  for (const lang of ["en", "ru"] as const) {
+    const origin = "/matters?collection=team&organization=org_a&dossier=case_a&section=portal&conversation=client_a&lang=en#panel-portal";
+    const params = new URL(workspaceDestination("/reports", origin), "https://test.invalid").searchParams;
+    assert.equal(params.get("dossier"), "case_a");
+    assert.equal(params.get("return_to"), origin);
+    assert.equal(workspaceCaseReturn(origin, "case_a", "org_a", lang), origin.replace("lang=en", "lang=" + lang));
+    for (const source of ["/work?organization=org_a", origin.replace("team","personal")]) {
+      assert.equal(new URL(workspaceDestination("/reports", source), "https://test.invalid").searchParams.has("return_to"), false);
+    }
+    assert.equal(workspaceCaseReturn(origin, undefined, "org_a", lang), null);
+    assert.equal(workspaceCaseReturn(origin, "case_a", "org_b", lang), null);
+    assert.equal(workspaceCaseReturn(origin, "case_b", "org_a", lang), null);
   }
 });

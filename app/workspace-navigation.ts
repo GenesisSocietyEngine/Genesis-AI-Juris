@@ -42,7 +42,7 @@ export function workspaceDestination(path: string, current: string) {
     const value = source.searchParams.get(key) ?? context.searchParams.get(key);
     if (value && !target.searchParams.has(key)) target.searchParams.set(key, value);
   }
-  if (target.pathname === "/billing" && source.pathname === "/matters" && source.searchParams.get("collection") !== "personal") {
+  if (["/billing", "/reports"].includes(target.pathname) && source.pathname === "/matters" && source.searchParams.get("collection") !== "personal") {
     const dossier = source.searchParams.get("dossier");
     if (dossier && (!target.searchParams.has("dossier") || target.searchParams.get("dossier") === dossier)
       && target.searchParams.get("organization") === source.searchParams.get("organization")) {
@@ -76,8 +76,8 @@ export function workspaceDestination(path: string, current: string) {
   return target.pathname + target.search + target.hash;
 }
 
-/** Billing may offer the origin only after the selected ledger has authorized its case. */
-export function billingCaseReturn(returnPath: string, authorizedCase: string | undefined, scope: string, locale: "en" | "ru") {
+/** Restore the originating case location after the destination verifies access. */
+export function workspaceCaseReturn(returnPath: string, authorizedCase: string | undefined, scope: string, locale: "en" | "ru") {
   if (!authorizedCase) return null;
   const origin = new URL(safeWorkspaceReturn(returnPath, "/"), ORIGIN);
   if (origin.pathname !== "/matters" || origin.searchParams.get("collection") === "personal"
