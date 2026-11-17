@@ -24,7 +24,7 @@ export type Shared = {
 };
 export type Upload = { id: string; name: string; size: number; stamp: string };
 export type Message = { seq: number; author: "client" | "team"; text: string; stamp: string };
-export type Thread = { shared: Shared[]; uploads: Upload[]; messages: Message[]; older: number | null };
+export type Thread = { intakes?: IntakeReview[]; shared: Shared[]; uploads: Upload[]; messages: Message[]; older: number | null };
 export type PortalView = {
   grants: GrantSummary[];
   selected: string | null;
@@ -35,3 +35,16 @@ export type PortalView = {
 };
 export const validId = (v: unknown): v is string =>
   typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
+
+export type IntakeReview = {
+  id: string;
+  title: string;
+  revision: number;
+  questions: { label: string; required: boolean }[];
+  submitted: string[] | null;
+  answers: string[];
+  request: string | null;
+  receiptNumber: string | null;
+  received: string | null;
+  current: number;
+};

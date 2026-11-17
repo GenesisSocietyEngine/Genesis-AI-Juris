@@ -21,6 +21,7 @@ import {
   type Who,
 } from "./authority";
 import { validId } from "./contracts";
+import { intakeAction } from "./intake";
 import { choicesSql, shareState } from "./store";
 const clean = (s: unknown, max: number) =>
   typeof s === "string" &&
@@ -95,7 +96,7 @@ async function accept(w: Client, b: Record<string, unknown>, id: string) {
 export async function command(w: Who, req: Request) {
   const origin = checkMutation(req);
   if (origin) return origin;
-  const b = await readJsonObject(req, 24576);
+  const b = await readJsonObject(req, 196608);
   if (!b || !validId(b.id)) return invalid();
   const id = b.id,
     act = b.action;
@@ -107,6 +108,7 @@ export async function command(w: Who, req: Request) {
   if (!validId(grant)) return invalid();
   const allowed = permitted(w, grant, true, true);
   if (!(await w.db.get(sql`SELECT 1 WHERE ${allowed}`))) return missing();
+  if (act === "requestIntake" || act === "ackIntake") return intakeAction(w, grant, id, b);
   const actor = staff(w) ? w.actor : w.email,
     author = staff(w) ? "team" : "client";
   let kind = "",

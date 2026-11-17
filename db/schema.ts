@@ -1945,3 +1945,25 @@ export const portalUploadDisposals = sqliteTable("portal_upload_disposals", {
   claimedAt: text("claimed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   completedAt: text("completed_at"),
 });
+
+export const portalIntakeRequests = sqliteTable("portal_intake_requests", {
+  id: text("id").primaryKey(),
+  grantId: text("grant_id").notNull().references(() => portalGrants.id),
+  organizationId: text("organization_id").notNull(),
+  intakeId: text("intake_id").notNull(),
+  revision: integer("revision").notNull(),
+  issuer: text("issuer").notNull(),
+  stamp: text("stamp").notNull(),
+}, t => [
+  uniqueIndex("portal_intake_assignment").on(t.grantId, t.intakeId, t.revision),
+  foreignKey({columns: [t.organizationId,t.intakeId,t.revision],
+    foreignColumns: [intakeRevisions.organizationId,intakeRevisions.id,intakeRevisions.revision]}),
+]);
+
+export const portalIntakeReceipts = sqliteTable("portal_intake_receipts", {
+  requestId: text("request_id").primaryKey().references(() => portalIntakeRequests.id),
+  number: text("number").notNull(),
+  recipient: text("recipient").notNull(),
+  answers: text("answers").notNull(),
+  stamp: text("stamp").notNull(),
+}, t => [uniqueIndex("portal_intake_receipt_number").on(t.number)]);

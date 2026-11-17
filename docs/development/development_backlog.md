@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**17 November 2026 · CV-010 server receipts.** Staff can issue an exact case intake revision to one active recipient. The client can correct and submit answers once and recover the same receipt on retry. Local EN/RU and D1 checks passed. Release and signed-in production acceptance remain open. [Verification](../testing/cv010-server-intake-receipts.md).
+
 **17 November 2026 · CV-010 prototype.** [PR #311](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/311) merged after all 18 checks passed. Client intake and a separately authorized, version-specific test signature passed a bilingual browser walkthrough and workflow tests. The reviewable prototype uses synthetic in-memory records. CV-028 and CV-029 await an active test client. [Review and evidence](../testing/cv010-client-intake-prototype.md).
 
 **Public v220 · 17 November 2026.** PRs #309 and #310 are live. CV-030 download labels and CV-031 Reports return passed signed-in EN/RU checks. CV-028 notices and CV-029 upload recovery await an active test client. Both origins verified 253/253 assets. [Release evidence](../testing/portal-ux-audit-2026-11-17.md#public-v220--17-november-2026).
@@ -98,7 +100,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
-| CV-010 | In progress · document workflows | [Bilingual intake and signature prototype](../testing/cv010-client-intake-prototype.md) verified locally with synthetic actors. Next, integrate server-authorized requests and persistent version-bound receipts before connecting a signing provider. |
+| CV-010 | In progress · document workflows | [Version-bound requests and durable client receipts](../testing/cv010-server-intake-receipts.md) verified locally. Publish the migration and application, then verify with an active client in EN/RU. Provider selection and independently verified signing evidence remain open. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
 
@@ -110,6 +112,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 17 November 2026 · CV-010 progressed from the merged #312 prototype to durable intake receipts with independent staff and client authorization. Production acceptance awaits release and an active client.
 
 - 17 November 2026 · Rechecked the release and prototype regressions, opened CV-032 and published the updated implementation order. CV-028 and CV-029 await an active client.
 - 17 November 2026 · CV-010 prototype passed its local EN/RU walkthrough. CV-028 and CV-029 remain pending. CV-009 awaits EU infrastructure and CV-008 awaits external calendar and mailbox verification.

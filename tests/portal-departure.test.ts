@@ -4,7 +4,7 @@ import { departureChangeLabel } from "../app/departure-presentation";
 import { NavigationController } from "../app/navigation-controller";
 import { editPortalField, portalDraftReview, type PortalField } from "../app/portal/departure";
 
-const clean = { email: false, label: false, reply: false, upload: false };
+const clean = { intake: false, email: false, label: false, reply: false, upload: false };
 
 test("a collapsed invitation remains one unsent item; Review returns to the last still-changed field", () => {
   let recent: PortalField[] = [];
@@ -37,8 +37,15 @@ test("portal review has no save capability, including a selected file; pending o
 });
 
 test("English and Russian describe invitations, replies and files as unsent, without exposing their contents", () => {
-  const changes = portalDraftReview({ email: true, label: true, reply: true, upload: true }, []).changes;
+  const changes = portalDraftReview({ intake: false, email: true, label: true, reply: true, upload: true }, []).changes;
   for (const [locale, words] of [["en", [/invitation.*not been created or sent/, /reply.*not been sent/, /file.*not been uploaded/]], ["ru", [/Приглашение.*не создано/, /Ответ.*не отправлен/, /файл.*не загружен/]]] as const) {
     changes.forEach((change, idx) => assert.match(departureChangeLabel(change, locale), words[idx]));
   }
+});
+
+test("an edited intake keeps client answers out of departure state and offers review in either language", () => {
+  const review = portalDraftReview({ ...clean, intake: true }, ["intake"]);
+  assert.deepEqual(review, { field: "intake", changes: ["portal_intake"] });
+  assert.equal(departureChangeLabel("portal_intake", "en"), "Your intake answers have not been submitted.");
+  assert.equal(departureChangeLabel("portal_intake", "ru"), "Ответы на анкету ещё не отправлены.");
 });

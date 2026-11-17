@@ -6,6 +6,7 @@ import { useNavigationController } from "../NavigationSession";
 import { useInterfaceLocale } from "../use-interface-locale";
 import { portalFormGuard, fileLimit, type PortalView } from "./contracts";
 import { editPortalField, portalDraftReview, type PortalField } from "./departure";
+import { IntakeReviews } from "./IntakeReviews";
 import PortalDepartureDialog from "./PortalDepartureDialog";
 import s from "./portal.module.css";
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
 };
 type Tab = "shared" | "uploads" | "messages";
 type Notice = { text: [string, string]; view?: Tab };
-const noticeView: Partial<Record<string, Tab>> = { message: "messages", upload: "uploads", share: "shared", withdraw: "shared" };
+const noticeView: Partial<Record<string, Tab>> = { requestIntake: "shared", ackIntake: "shared", message: "messages", upload: "uploads", share: "shared", withdraw: "shared" };
 type Draft = { action: string; id: string; grant?: string; [key: string]: unknown };
 type Job = { body: Draft; file?: File };
 type Visit = { scope: string; epoch: number };
@@ -33,6 +34,8 @@ const label: Record<string, [string, string]> = {
   changed: ["Needs review", "Нужна проверка"],
 };
 const actionNotices: Record<string, [string, string]> = {
+  requestIntake: ["Review requested.", "Запрос на проверку отправлен."],
+  ackIntake: ["Intake answers received.", "Ответы на анкету получены."],
   invite: [
     "Invitation ready. Send the private link to this client.",
     "Приглашение готово. Передайте личную ссылку клиенту.",
@@ -64,6 +67,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     [file, setFile] = useState<File | null>(null),
     [ack, setAck] = useState(false),
     [choice, setChoice] = useState("");
+  const [intakeDrafts, setIntakeDrafts] = useState<Record<string,string[]>>({});
+  const intakeDirty = Object.keys(intakeDrafts).length > 0;
   const [notice, setNotice] = useState<Notice | null>(null),
     [issue, setIssue] = useState<[string, string] | null>(null),
     [confirm, setConfirm] = useState(""),
@@ -95,8 +100,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
   const emailDirty = !!email, labelDirty = recent.includes("label") && name !== caseName;
   const replyDirty = !!message.trim(), uploadDirty = !!file;
   const draftReview = useMemo(() => portalDraftReview(
-    { email: team && emailDirty, label: team && labelDirty, reply: replyDirty, upload: uploadDirty }, recent,
-  ), [team, emailDirty, labelDirty, replyDirty, uploadDirty, recent]);
+    { intake: intakeDirty, email: team && emailDirty, label: team && labelDirty, reply: replyDirty, upload: uploadDirty }, recent,
+  ), [team, intakeDirty, emailDirty, labelDirty, replyDirty, uploadDirty, recent]);
   const risk = pending || busy ? "pending" : draftReview.changes.length ? "dirty" : "clear";
   function edited(field: PortalField) {
     leaving.current = false;
@@ -108,7 +113,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     if (field === "email" || field === "label") setComposeInvite(true);
     else {
       if (field === "reply") setComposeInvite(false);
-      setTab(field === "reply" ? "messages" : "uploads");
+      setTab(field === "intake" ? "shared" : field === "reply" ? "messages" : "uploads");
     }
     requestFocus({ field, scope, epoch: epoch.current });
   }
@@ -118,11 +123,18 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     if (!focusRequest || appliedFocus.current === focusRequest) return;
     appliedFocus.current = focusRequest;
     if (focusRequest.scope !== scope || focusRequest.epoch !== epoch.current || !view || locked || risk !== "dirty") return;
+    if (focusRequest.field === "intake") {
+      const field = panel.current?.querySelector<HTMLTextAreaElement>(`textarea[data-intake-request="${Object.keys(intakeDrafts)[0]}"]`);
+      const details = field?.closest("details");
+      if (details && field) { details.open = true; field.focus(); }
+      return;
+    }
     const node = { email: emailInput, label: labelInput, reply: replyInput, upload: fileInput }[focusRequest.field].current;
     if (node && !node.disabled) node.focus();
     else panel.current?.focus();
-  }, [focusRequest, scope, view, locked, risk]);
+  }, [focusRequest, scope, view, locked, risk, intakeDrafts]);
   const reset = useCallback(() => {
+    setIntakeDrafts({});
     setRecent([]); requestFocus(null); setDeparture(null);
     setLink("");
     setMessage("");
@@ -224,6 +236,11 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
             }
           }
         }
+        setIntakeDrafts(old => {
+          const keep = Object.entries(old).filter(([key]) =>
+            data.thread?.intakes?.some(i => i.request === key && i.current && !i.received));
+          return keep.length === Object.keys(old).length ? old : Object.fromEntries(keep);
+        });
         setView((old) =>
           before && old?.selected === data.selected && old?.thread && data.thread
             ? {
@@ -418,6 +435,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                     "Choose a nonempty file no larger than 5 MB.",
                     "Выберите непустой файл размером до 5 МБ.",
                   ]
+                : res.status === 409 && ["ackIntake", "requestIntake"].includes(body.action)
+                  ? ["This intake changed. Refresh and review the current version.", "Анкета изменилась. Обновите страницу и проверьте текущую версию."]
                 : res.status === 409
                   ? [
                       "Could not save this change. Refresh and check for an existing invitation, share or upload.",
@@ -907,6 +926,17 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                       </ul>
                     </section>
                   )}
+                  {thread && tab === "shared" && <IntakeReviews key={id} items={thread.intakes ?? []} team={team}
+                    active={selected.status === "active" && write} disabled={disabled} recipient={selected.email}
+                    ru={ru} act={act} drafts={intakeDrafts} edit={(key, answers) => {
+                      edited("intake");
+                      setIntakeDrafts(old => {
+                        const next = {...old};
+                        if (answers) next[key] = answers;
+                        else delete next[key];
+                        return next;
+                      });
+                    }} />}
                   {thread && (tab === "uploads" || !!file) && (
                     <section className={s.card} hidden={tab !== "uploads"}>
                       <h3>{t("Client uploads", "Файлы клиента")}</h3>
