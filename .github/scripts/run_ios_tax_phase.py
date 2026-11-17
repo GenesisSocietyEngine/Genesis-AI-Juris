@@ -588,7 +588,16 @@ def run(args):
         require(reader.process.poll() is None, "Owned system-log reader exited before launch")
         existing_runner(executable)
         started = utc_now()
-        launched = command(["xcrun", "simctl", "launch", args.device, APP, *FLAGS], check=False)
+        # Cold launches on hosted simulators can outlast the generic query
+        # timeout. The phase supervisor still enforces its overall deadline.
+        try:
+            launched = command(["xcrun", "simctl", "launch", args.device, APP, *FLAGS],
+                               timeout=120, check=False)
+        except subprocess.TimeoutExpired as error:
+            # A partial PID line cannot establish ownership of a live Runner.
+            (evidence / f"{args.phase}-launch.stdout.log").write_bytes((error.output or b"")[:1024 * 1024])
+            (evidence / f"{args.phase}-launch.stderr.log").write_bytes((error.stderr or b"")[:1024 * 1024])
+            raise
         (evidence / f"{args.phase}-launch.stdout.log").write_bytes(launched.stdout)
         (evidence / f"{args.phase}-launch.stderr.log").write_bytes(launched.stderr)
         pid = launch_pid(launched)

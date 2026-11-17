@@ -40,12 +40,15 @@ Core verified on production; remaining verification stays open for a second prod
 
 **Last reviewed on 11 November 2026. Public version v212.** CV-020 and CV-021 are verified; CV-001 through CV-006, CV-011 and CV-013 retain their scoped production verification. [Current delivery](../../current_progress.md).
 
+[Current implementation order and dependencies](BACKLOG_AND_DEVELOPMENT_PRIORITIES.md)
+
 ## Confirmed findings
 
 All six original v203 findings have been verified on the published site. The open findings below came from the subsequent audit.
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-032 · P2 | Verified on candidate · awaiting merge | iOS CI | Three PRs encountered a 30-second timeout starting the simulator app. | Verify bounded launch, retained failure diagnostics and the complete macOS restart job. [Audit](../testing/cv032-check-audit.md). |
 | CV-028 · P3 | Released v220 · waiting for active test client | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
 | CV-029 · P2 | Released v220 · waiting for active test client | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
 | CV-030 · P3 | Verified · public v220 | Download accessibility | Portal download controls shared a generic accessible name and Russian upload sizes used KB. | Verify filenames, shared versions and Russian units in a populated portal. |
@@ -108,6 +111,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 ## Iteration history
 
+- 17 November 2026 · Rechecked the release and prototype regressions, opened CV-032 and published the updated implementation order. CV-028 and CV-029 await an active client.
 - 17 November 2026 · CV-010 prototype passed its local EN/RU walkthrough. CV-028 and CV-029 remain pending. CV-009 awaits EU infrastructure and CV-008 awaits external calendar and mailbox verification.
 
 - 17 November 2026 · Published v220. Signed-in EN/RU verification closed CV-030 and CV-031. CV-028 and CV-029 await an active test client.
