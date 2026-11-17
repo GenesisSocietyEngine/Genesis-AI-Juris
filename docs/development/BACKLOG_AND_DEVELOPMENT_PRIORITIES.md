@@ -12,7 +12,7 @@ Public baseline: v220. The delivery ledger is [development_backlog.md](developme
 
 | Order | Item and state | Next deliverable | Acceptance |
 | --- | --- | --- | --- |
-| 1 | CV-032 · P2 · iOS CI reliability · implementation started | Give the simulator launch its own bounded wait and retain partial stdout/stderr if it times out. | A timed-out launch fails before Flutter drive, with no accepted PID. The real macOS restart workflow completes on the candidate. Track recurrence across subsequent PRs. |
+| 1 | CV-032 · P2 · iOS CI reliability · hosted restart check passed on candidate | Give the simulator launch its own bounded wait and retain partial stdout/stderr if it times out. | A timed-out launch fails before Flutter drive, with no accepted PID. The real macOS restart workflow completes on the candidate. Track recurrence across subsequent PRs. |
 | 2 | CV-010 · Client intake and signatures · prototype in #312 | Implement staff issuance and client intake submission for an exact case, recipient grant and immutable document version. Persist server-issued receipts before adding provider-backed signing. | Authorized retry yields one receipt; a changed version, revoked grant or second recipient cannot complete the request. Review EN/RU staff and client journeys with synthetic records. |
 | 3 | CV-012 · Case-scoped AI review and reporting · planned | Trace a proposal to accessible case sources and require a human decision to apply it. Specify the affected report's population and treatment of missing data. | An unauthorized or stale source cannot be applied; report fixtures distinguish missing data from a measured zero. |
 

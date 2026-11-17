@@ -46,7 +46,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-032 · P2 | In progress · hosted acceptance | iOS CI | Three PRs encountered a 30-second timeout starting the simulator app. | Verify bounded launch, retained failure diagnostics and the complete macOS restart job. [Audit](../testing/cv032-check-audit.md). |
+| CV-032 · P2 | Verified on candidate · awaiting merge | iOS CI | Three PRs encountered a 30-second timeout starting the simulator app. | Verify bounded launch, retained failure diagnostics and the complete macOS restart job. [Audit](../testing/cv032-check-audit.md). |
 | CV-028 · P3 | Released v220 · waiting for active test client | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
 | CV-029 · P2 | Released v220 · waiting for active test client | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
 | CV-030 · P3 | Verified · public v220 | Download accessibility | Portal download controls shared a generic accessible name and Russian upload sizes used KB. | Verify filenames, shared versions and Russian units in a populated portal. |

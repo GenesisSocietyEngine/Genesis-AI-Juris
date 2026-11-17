@@ -10,4 +10,4 @@ Local recheck on 17 November:
 - All ten focused portal departure, scanner transport, Billing and Reports regressions passed.
 - The two disposable D1/R2 route scenarios passed for portal upload/revocation and authorized case identity. These do not exercise an active production client.
 - Both exact-head CV-010 prototype tests passed.
-- Local tests use mocked native commands. Actual Simulator launch and restart acceptance runs on the macOS CI worker. One passing hosted run cannot establish that intermittent failures have been eliminated.
+- Local tests use mocked native commands. The [hosted macOS restart workflow](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44109410198/job/134130590839) passed on candidate `bd139c2`, exercising actual Simulator launch, termination and relaunch. One passing hosted run cannot establish that intermittent failures have been eliminated.
