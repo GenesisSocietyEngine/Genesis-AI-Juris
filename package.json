@@ -19,7 +19,7 @@
     "release:verify": "bash scripts/verify-release.sh",
     "build": "node scripts/build-portable.mjs",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
-    "test": "npm run build && node --experimental-sqlite --import tsx --test tests/rendered-html.test.mjs tests/*.test.ts",
+    "test": "npm run build && node --experimental-sqlite --import tsx --test tests/rendered-html.test.mjs tests/*.test.ts examples/client-intake/workflow.test.mjs",
     "reports:verify": "node --import tsx scripts/verify-report-pdfs.ts",
     "reports:verify-decision": "node --import tsx scripts/verify-decision-report-pdfs.ts",
     "reports:verify-tax": "node --import tsx scripts/verify-tax-report-pdfs.ts",
