@@ -82,6 +82,60 @@ export async function portalScenarios(
   assert.equal((await call("detail", "GET", undefined, alice, org, {}, "", caseId)).status, 403);
   assert.equal(await count("organization_memberships"), memberCount);
   assert.equal(await count("dossier_participants"), participantCount);
+  const templateId = "intake_" + uid().replaceAll("-", "");
+  const intake = "intake_" + uid().replaceAll("-", "");
+  const save = (cmd: Record<string, unknown>) => call("intake", "POST", { ...cmd, operationKey: uid() }, owner, org);
+  await good(await save({ action:"design", id:templateId, revision:0, title:"Synthetic intake · Анкета",
+    questions:[{label:"Purpose · Цель",required:true}] }));
+  const answer = { action:"answer", id:intake, caseId, templateId, templateRevision:1,
+    status:"complete", answers:["Synthetic answer · Ответ"], deidentified:true };
+  await good(await save({...answer,revision:0}));
+  const assign = {action:"requestIntake",id:uid(),grant:a.id,target:intake,revision:1};
+  const acknowledge = {action:"ackIntake",id:uid(),grant:a.id,target:intake,revision:1,request:assign.id,answers:["Client correction · Исправление"],confirmed:true};
+  assert.deepEqual((await view(alice,a.id)).thread!.intakes,[]);
+  assert.equal((await client(alice,acknowledge)).status,409);
+  assert.equal((await client(alice,assign)).status,400);
+  const otherCaseResponse = await good(await call("dossiers","POST",{
+    title:"Synthetic second intake case",jurisdictions:["Test"],classification:"internal",
+  }),201);
+  const otherCase = (await otherCaseResponse.json() as {dossier:{dossier_id:string}}).dossier.dossier_id;
+  const otherIntake = "intake_" + uid().replaceAll("-", "");
+  await good(await save({...answer,id:otherIntake,caseId:otherCase,revision:0}));
+  assert.equal((await staff({...assign,id:uid(),target:otherIntake})).status,409);
+  await good(await staff(assign));
+  await good(await staff({...assign,id:uid()}));
+  assert.equal((await view(alice,a.id)).thread!.intakes![0].answers[0],answer.answers[0]);
+  assert.deepEqual((await view(bob,b.id)).thread!.intakes,[]);
+  assert.equal((await client(bob,acknowledge)).status,404);
+  assert.equal((await client(bob,{...acknowledge,grant:b.id})).status,409);
+  assert.equal((await client(alice,{...acknowledge,confirmed:false})).status,400);
+  assert.equal((await client(alice,{...acknowledge,answers:[" "]})).status,400);
+  const [submission, duplicate] = await Promise.all([client(alice,acknowledge), client(alice,{...acknowledge,id:uid()})]);
+  const first = await (await good(submission)).json() as {
+    receipt: {request:string; revision:number; number:string; received:string; caseId:string; grant:string; intakeId:string};
+  };
+  assert.deepEqual(await (await good(duplicate)).json(),first);
+  assert.deepEqual(await (await good(await client(alice,{...acknowledge,id:uid()}))).json(),first);
+  assert.equal((await client(alice,{...acknowledge,answers:["Different"]})).status,409);
+  assert.deepEqual((await teamView(a.id)).thread!.intakes![0].submitted,acknowledge.answers);
+  assert.equal(first.receipt.request,assign.id);
+  assert.equal(first.receipt.revision,1);
+  assert.equal(first.receipt.caseId,caseId);
+  assert.equal(first.receipt.grant,a.id);
+  assert.equal(first.receipt.intakeId,intake);
+  assert.ok(first.receipt.received);
+  assert.match(first.receipt.number,/^[a-f0-9-]{36}$/);
+  assert.notEqual(first.receipt.number,assign.id);
+  await assert.rejects(db.prepare("DELETE FROM portal_intake_receipts WHERE request_id=?").bind(assign.id).run(),/immutable_intake_evidence/);
+  await good(await save({action:"reopen",id:intake,revision:1}));
+  assert.equal((await client(alice,acknowledge)).status,409);
+  assert.deepEqual((await view(alice,a.id)).thread!.intakes,[]);
+  await good(await save({...answer,revision:2,answers:["Revised · Изменено"]}));
+  assert.equal((await staff({...assign,id:uid()})).status,409);
+  const nextRequest = {...assign,revision:3,id:uid()};
+  await good(await staff(nextRequest));
+  assert.equal((await client(alice,{...acknowledge,revision:3})).status,409);
+  assert.equal((await view(alice,a.id)).thread!.intakes![0].received,null);
   const docs = async (bytes: string, doc?: string) => {
     const revision = await db
       .prepare("SELECT revision FROM dossiers WHERE id=?")
@@ -329,9 +383,13 @@ export async function portalScenarios(
   assert.equal((await dl(a.id, fid, "upload", alice)).status, 404);
   assert.equal((await teamView(a.id)).thread!.messages.length, 2);
   assert.equal((await teamView(a.id)).thread!.uploads.length, 2);
+  assert.equal((await client(alice,{...acknowledge,request:nextRequest.id,revision:3})).status,404);
+  const retained = (await teamView(a.id)).thread!.intakes!.find(item => item.revision === 1);
+  assert.equal(retained?.received,first.receipt.received);
   const anew = await make(alice);
   await good(await client(alice, anew));
   assert.deepEqual((await view(alice, anew.id)).thread, {
+    intakes: [],
     shared: [],
     uploads: [],
     messages: [],

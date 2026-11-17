@@ -9,6 +9,7 @@ export function departureChangeLabel(change: DepartureChange, locale: "en" | "ru
     studio_prompt: ["The AI prompt is still in this tab. Saving the case does not save this prompt.", "AI-промпт остаётся в этой вкладке. Сохранение кейса не сохраняет этот промпт."],
     studio_items: ["Working items have not been added to the case. Add them before saving.", "Рабочие элементы ещё не добавлены в кейс. Добавьте их перед сохранением."],
     portal_invitation: ["Your client invitation has not been created or sent.", "Приглашение клиента ещё не создано и не отправлено."],
+    portal_intake: ["Your intake answers have not been submitted.", "Ответы на анкету ещё не отправлены."],
     portal_reply: ["Your portal reply has not been sent.", "Ответ в портале ещё не отправлен."],
     portal_upload: ["Your selected file has not been uploaded.", "Выбранный файл ещё не загружен."],
     workspace: ["Changes in this workspace have not been saved.", "Изменения в рабочей области не сохранены."],

@@ -1,10 +1,10 @@
 /** Classify unfinished forms without putting addresses, filenames or message text in navigation state. */
 const forms = {
-  email: "portal_invitation", label: "portal_invitation", reply: "portal_reply", upload: "portal_upload",
+  email: "portal_invitation", label: "portal_invitation", intake: "portal_intake", reply: "portal_reply", upload: "portal_upload",
 } as const;
 export type PortalField = keyof typeof forms;
 export type PortalChange = typeof forms[PortalField];
-const fields: readonly PortalField[] = ["email", "label", "reply", "upload"];
+const fields: readonly PortalField[] = ["email", "label", "reply", "upload", "intake"];
 
 export function editPortalField(history: readonly PortalField[], field: PortalField): PortalField[] {
   return [field, ...history.filter(item => item !== field)];

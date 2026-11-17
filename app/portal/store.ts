@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { intakeReviews } from "./intake";
 import { source } from "../calendar/store";
 import { confirm, gate, json, missing, now, permitted, staff, type Who, type Staff } from "./authority";
 import type { Choice, GrantSummary, Message, Shared, Thread, Upload } from "./contracts";
@@ -32,7 +33,8 @@ export async function portalView(w: Who, req: Request) {
       : [];
   let thread: Thread | null = null;
   if (id) {
-    const [shared, uploads, rows] = await Promise.all([
+    const [intakes, shared, uploads, rows] = await Promise.all([
+      intakeReviews(w, id),
       w.db.all<Shared>(
         sql`SELECT * FROM (SELECT e.id,e.kind,e.title,e.detail,e.stamp,${shareState} AS state FROM portal_entries e JOIN portal_grants g ON g.id=e.grant_id WHERE g.id=${id} AND ${gate(w)} AND e.kind IN ('document','event') ORDER BY e.seq DESC) ${staff(w) ? sql.empty() : sql`WHERE state='shared'`}`,
       ),
@@ -45,6 +47,7 @@ export async function portalView(w: Who, req: Request) {
     ]);
     const messages = rows.slice(0, 50).reverse();
     thread = {
+      intakes,
       shared: shared.map((r) => ({ ...r, detail: visibleDetail(r.kind, r.detail) })),
       uploads,
       messages,

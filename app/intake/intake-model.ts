@@ -103,7 +103,7 @@ export function parseIntake(input: unknown): IntakeCommand {
       templateId: o.templateId,
       templateRevision: version(o.templateRevision, 1),
       status: o.status,
-      answers: o.answers.map((a) => bounded(a, ANSWER_LIMIT, true)),
+      answers: parseIntakeAnswers(o.answers),
       deidentified: true,
     };
   }
@@ -114,6 +114,11 @@ export function parseIntake(input: unknown): IntakeCommand {
   }
   throw Error("invalid");
 }
+export function parseIntakeAnswers(value: unknown): string[] {
+  if (!Array.isArray(value) || !value.length || value.length > MAX_QUESTIONS) throw Error("invalid");
+  return value.map(answer => bounded(answer, ANSWER_LIMIT, true));
+}
+
 export function answersFit(questions: Question[], answers: string[], complete: boolean) {
   return (
     answers.length === questions.length &&

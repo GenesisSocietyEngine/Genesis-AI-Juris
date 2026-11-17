@@ -57,7 +57,7 @@
 .portal :is(button, a):hover {
   background: #e8f2fa;
 }
-.portal :is(button, a, input, textarea, select):focus-visible {
+.portal :is(button, a, input, textarea, select, summary):focus-visible {
   outline: 3px solid #2279ae;
   outline-offset: 2px;
 }
@@ -156,6 +156,23 @@
   display: grid;
   gap: 12px;
   min-width: 0;
+}
+.intakeReview {
+  border-top: 1px solid var(--line);
+}
+.intakeReview summary {
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--blue);
+  font-weight: 600;
+  cursor: pointer;
+}
+.intakeReview[open] > :not(summary) {
+  margin-block-end: 10px;
+}
+.intakeReview dd {
+  margin-inline-start: 0;
+  white-space: pre-wrap;
 }
 .card form {
   align-items: end;
