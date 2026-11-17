@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**Public v220 · 17 November 2026.** PRs #309 and #310 are live. CV-030 download labels and CV-031 Reports return passed signed-in EN/RU checks. CV-028 notices and CV-029 upload recovery await an active test client. Both origins verified 253/253 assets. [Release evidence](../testing/portal-ux-audit-2026-11-17.md#public-v220--17-november-2026).
+
 **17 November 2026 · CV-031 implemented.** The Reports catalog and report detail now offer a verified return to the originating team case section and conversation in the current language. The isolated EN/RU browser check passed. Signed-in production acceptance is pending. [Verification](../testing/portal-ux-audit-2026-11-17.md#cv-031--reports-return-to-the-originating-case).
 
 **17 November 2026 · Functional and UX audit.** On v219, the signed-in case portal showed a message receipt under unrelated views, and Reports lost the return path to the case. CV-028–030 implement scoped feedback, upload rejection recovery and named download links with isolated EN/RU verification. CV-031 tracks the Reports return path. PR #308 merged with 18 passing checks. [Audit evidence](../testing/portal-ux-audit-2026-11-17.md).
@@ -42,10 +44,10 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
-| CV-028 · P3 | Waiting for production verification | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
-| CV-029 · P2 | Waiting for production verification | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
-| CV-030 · P3 | Waiting for production verification | Download accessibility | Portal download controls shared a generic accessible name and Russian upload sizes used KB. | Verify filenames, shared versions and Russian units in a populated portal. |
-| CV-031 · P2 | Waiting for production verification | Reports navigation | Opening workspace Reports from a case drops the originating section and conversation. | Offer a validated return to the exact authorized case context in EN/RU and preserve direct firm-level entry. |
+| CV-028 · P3 | Released v220 · waiting for active test client | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
+| CV-029 · P2 | Released v220 · waiting for active test client | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
+| CV-030 · P3 | Verified · public v220 | Download accessibility | Portal download controls shared a generic accessible name and Russian upload sizes used KB. | Verify filenames, shared versions and Russian units in a populated portal. |
+| CV-031 · P2 | Verified · public v220 | Reports navigation | Opening workspace Reports from a case drops the originating section and conversation. | Offer a validated return to the exact authorized case context in EN/RU and preserve direct firm-level entry. |
 | CV-025 · P3 | Verified · public v215 | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
 | CV-023 · P3 | Verified · public v216 | Daily task retrieval | Staff can combine case, lead, assignee, completion and lifecycle. | The [signed-in EN/RU checks](../testing/cv023-task-filters.md#public-v216--15-november-2026) passed for case and lead tasks, reload, both language switches and reset. |
 | CV-024 · P3 | Verified · public v217 | Communications | Staff can filter conversations by case and open the exact recipient’s message history. | [Signed-in EN/RU acceptance](../testing/cv024-conversation-retrieval.md#public-v217) covered two populated cases, three recipients, language switching and wrong-recipient denial. CI covered restricted staff and subsequent loss of access. |
@@ -103,6 +105,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 17 November 2026 · Published v220. Signed-in EN/RU verification closed CV-030 and CV-031. CV-028 and CV-029 await an active test client.
 
 - 17 November 2026 · CV-031 implemented and verified in an isolated bilingual Reports session, including denied origin access. Recheck the signed-in return after publication.
 
