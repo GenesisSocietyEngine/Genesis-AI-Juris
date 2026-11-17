@@ -14,4 +14,8 @@ The local D1 portal scenario covers unauthorized and missing requests, two activ
 
 Chrome also exercised the complete Portal component against the real staff and client API handlers backed by local D1. Each language had its own issued version. The client corrected an answer, switched languages in both directions, submitted once, switched the receipt language, and reloaded. The same receipt number and corrected answer remained visible. The server observed exactly two requests and two submissions across both journeys. This walkthrough found that issuing a request collapsed its expanded intake. Using a stable revision key keeps that review open.
 
+The [hosted Linux web and PDF workflow](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44119529524) passed for implementation commit `a86547f`. It reported 2,092 passing tests, zero failures and three skips. The local production build, type check, two migration checks and 32 selected workflow and route tests passed.
+
+The separate full Windows run initially reported seven failing checks. Three Git-history and schema checks passed on rerun with the checkout explicitly trusted by Git. The other four concerned build provenance, vendored dependency identity and the Open Graph font transforms in a checkout with linked dependencies. The hosted workflow exercised these checks on a clean installation.
+
 The production baseline is v220. Applying migration 0039 and publishing the application are production release steps. A signed-in production walkthrough needs an active test client. Provider-backed signatures remain a separate CV-010 deliverable.

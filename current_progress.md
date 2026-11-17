@@ -1,6 +1,6 @@
 # Current progress — CaseVant
 
-**17 November 2026 · CV-010 server receipts.** Staff can issue an exact case intake revision to one active recipient. The client can correct and submit answers once and recover the same receipt on retry. Local EN/RU and D1 checks passed. Release and signed-in production acceptance remain open. [Verification](docs/testing/cv010-server-intake-receipts.md).
+**17 November 2026 · CV-010 server receipts.** PRs [#312](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/312) and [#313](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/313) each merged after 18 successful checks. Staff can issue an exact case intake revision to one active recipient. The client can correct and submit answers once and recover the same receipt on retry. Local EN/RU and D1 checks passed. Release and signed-in production acceptance remain open. [Verification](docs/testing/cv010-server-intake-receipts.md).
 
 **17 November 2026 · CV-010 prototype.** [PR #311](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/311) merged after all 18 checks passed. Client intake and a separately authorized, version-specific test signature passed a bilingual browser walkthrough and workflow tests. The reviewable prototype uses synthetic in-memory records. CV-028 and CV-029 await an active test client. [Review and evidence](docs/testing/cv010-client-intake-prototype.md).
 
