@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**17 November 2026 · Functional and UX audit.** On v219, the signed-in case portal showed a message receipt under unrelated views, and Reports lost the return path to the case. CV-028–030 implement scoped feedback, upload rejection recovery and named download links with isolated EN/RU verification. CV-031 tracks the Reports return path. PR #308 merged with 18 passing checks. [Audit evidence](../testing/portal-ux-audit-2026-11-17.md).
+
 **17 November 2026 · CV-009 retention and legal holds.** PR #307 merged after 18 green checks. [PR #308](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/308) corrects migration 0038 for the Sites SQL splitter and implements a private scanner connection, hold-aware intake cleanup and verified transfer. Isolated EN/RU upload and D1/R2 checks passed. EU hosting, deployed scanner and backup/restore verification remain open. [Acceptance and deployment details](../testing/cv009-portal-upload-rollout.md#retention-implementation-and-eu-connection--17-november-2026).
 
 **17 November 2026 · CV-009 in progress.** PR #306 merged after all 18 checks passed. The EU rollout candidate adds a private ClamAV integration. Isolated recovery and bilingual Chrome checks passed. Live EU scanner verification, residency evidence and hold-aware expiry remain open. [Retention proposal and verification](../testing/cv009-portal-upload-rollout.md).
@@ -38,6 +40,10 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-028 · P3 | Waiting for production verification | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
+| CV-029 · P2 | Waiting for production verification | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
+| CV-030 · P3 | Waiting for production verification | Download accessibility | Portal download controls shared a generic accessible name and Russian upload sizes used KB. | Verify filenames, shared versions and Russian units in a populated portal. |
+| CV-031 · P2 | Open | Reports navigation | Opening workspace Reports from a case drops the originating section and conversation. | Offer a validated return to the exact authorized case context in EN/RU and preserve direct firm-level entry. |
 | CV-025 · P3 | Verified · public v215 | Russian case navigation | The selected case-section button reads “Documents & evidence” while the panel heading and controls are Russian. | Localize section selector labels and verify pressed state and target identity across EN/RU switches. |
 | CV-023 · P3 | Verified · public v216 | Daily task retrieval | Staff can combine case, lead, assignee, completion and lifecycle. | The [signed-in EN/RU checks](../testing/cv023-task-filters.md#public-v216--15-november-2026) passed for case and lead tasks, reload, both language switches and reset. |
 | CV-024 · P3 | Verified · public v217 | Communications | Staff can filter conversations by case and open the exact recipient’s message history. | [Signed-in EN/RU acceptance](../testing/cv024-conversation-retrieval.md#public-v217) covered two populated cases, three recipients, language switching and wrong-recipient denial. CI covered restricted staff and subsequent loss of access. |
@@ -95,6 +101,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 17 November 2026 · Recorded CV-028–031. Implemented and locally exercised CV-028–030. CV-031 is the next navigation implementation.
 
 - 17 November 2026 · #307 merged. CV-009 primary expiry and overlapping holds passed isolated D1/R2 checks. EU provisioning and restore remain outstanding.
 
