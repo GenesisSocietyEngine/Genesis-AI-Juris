@@ -15,7 +15,7 @@ import {
 } from "./authority";
 import { fileLimit, validId } from "./contracts";
 import { shareState } from "./store";
-import { scanPortalBytes, type ScanService } from "./scan";
+import { configuredScanner, scanPortalBytes } from "./scan";
 
 const bucket = () => (env as unknown as { DOSSIER_DOCUMENTS: R2Bucket }).DOSSIER_DOCUMENTS;
 const hex = (b: ArrayBuffer) =>
@@ -123,7 +123,7 @@ export async function receive(w: Client, req: Request) {
       )
     );
   if (row.state !== "received") {
-    const scanner = (env as unknown as { EU_PORTAL_CLAMAV?: ScanService }).EU_PORTAL_CLAMAV;
+    const scanner = configuredScanner(env as Parameters<typeof configuredScanner>[0]);
     if (scanner) {
       const verdict = await scanPortalBytes(scanner, bytes, digest);
       if (verdict === "infected") return json({ error: "The file failed the security scan." }, 422);

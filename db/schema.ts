@@ -1922,3 +1922,26 @@ export const savedPracticeReports = sqliteTable("saved_practice_reports", {
   name:text("name").notNull(),
   config:text("config").notNull(),
 }, t=>[index("saved_reports_owner").on(t.organizationId,t.actorRef)]);
+
+export const portalUploadHolds = sqliteTable("portal_upload_holds", {
+  id: text("id").primaryKey(),
+  uploadId: text("upload_id").notNull(),
+  basis: text("basis").notNull(),
+  owner: text("owner").notNull(),
+  reviewOn: text("review_on").notNull(),
+  placedAt: text("placed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  releasedAt: text("released_at"),
+}, table => [index("portal_holds_by_upload").on(table.uploadId, table.releasedAt)]);
+
+export const portalUploadTransfers = sqliteTable("portal_upload_transfers", {
+  uploadId: text("upload_id").primaryKey(),
+  versionId: text("version_id").notNull().references(() => dossierDocumentVersions.id),
+  verifiedAt: text("verified_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const portalUploadDisposals = sqliteTable("portal_upload_disposals", {
+  uploadId: text("upload_id").primaryKey(),
+  grantId: text("grant_id").notNull(),
+  claimedAt: text("claimed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: text("completed_at"),
+});

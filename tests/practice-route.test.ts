@@ -1,4 +1,5 @@
 import {portalScenarios} from "./portal-scenarios";
+import retention, {runRetention} from "../worker/portal-retention";
 import {calendarScenarios} from "./calendar-delivery-scenarios";
 import {workflows as caseworkScenarios,prospect as prospectScenario} from "./casework-scenarios";
 import assert from "node:assert/strict";
@@ -529,7 +530,11 @@ test("client portal isolates each invitation, shared version, appointment, messa
       return Response.json(verdict === "wrong-digest" ? {digest: "other", verdict: "clean"} : {digest, verdict});
     }
   }});
- });
+ }, async body => (await retention.fetch(new Request("https://operator.test/upload", {
+    method:"POST", headers:{"content-type":"application/json",authorization:"Bearer synthetic"}, body:JSON.stringify(body)
+  }), {DB:db,DOSSIER_DOCUMENTS:runtime.__practiceEnv.DOSSIER_DOCUMENTS!,PORTAL_RETENTION_TOKEN:"synthetic"})).status,
+  runtime.__practiceEnv.DOSSIER_DOCUMENTS!,
+  () => runRetention({DB:db,DOSSIER_DOCUMENTS:runtime.__practiceEnv.DOSSIER_DOCUMENTS!}));
 });
 
 test("Studio case identity returns only the authorized title and cannot read a foreign case", async () => {
