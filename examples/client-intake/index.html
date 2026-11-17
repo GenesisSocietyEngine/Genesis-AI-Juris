@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CaseVant · CV-010</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f5f8;color:#192f40;font:1rem/1.5 system-ui,sans-serif}main{max-width:48rem;margin:auto;padding:1.25rem}header,section{background:white;border:1px solid #cdd8df;border-radius:.5rem;padding:1rem;margin-bottom:1rem}header{border-top:4px solid #267770}h1,h2{line-height:1.25;margin:.4rem 0 .8rem}h2{font-size:1.15rem}button,select,textarea{font:inherit}button,select{min-height:44px;padding:.4rem .8rem}button{color:#124f72;background:#f5fafd;border:1px solid #829dae;border-radius:.3rem;cursor:pointer;margin:.25rem .4rem .25rem 0}button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #005ea8;outline-offset:2px}label{display:block;margin:.6rem 0}textarea{width:100%;min-height:5rem}p{margin:.5rem 0}li{margin:.5rem 0;overflow-wrap:anywhere}#status{color:#195b55}#status:empty{display:none}[hidden]{display:none}
+</style>
+<main><header><button id="language"></button><h1 id="title"></h1><p id="pilot"></p><label><span id="roleLabel"></span> <select id="role"><option value="client-qa"></option><option value="staff-qa"></option><option value="other-qa"></option></select></label></header>
+<p role="status" id="status"></p>
+<section id="record"><h2 id="document"></h2><p id="identity"></p><p id="content"></p></section>
+<section id="intake"><h2 id="intakeTitle"></h2><label for="answer" id="question"></label><textarea id="answer" maxlength="500"></textarea><p id="submitted"></p><button id="submit"></button></section>
+<section id="signature"><h2 id="signatureTitle"></h2><p id="step"></p><label id="consent"><input type="checkbox" id="confirm"> <span id="confirmLabel"></span></label><button id="sign"></button><button id="authorize"></button></section>
+<section id="controls"><h2 id="controlsTitle"></h2><button id="revise"></button><button id="revoke"></button></section>
+<section id="evidence"><h2 id="evidenceTitle"></h2><ol id="history"></ol></section><p id="denied"></p></main>
+<script type="module" src="screen.mjs"></script>
+</html>

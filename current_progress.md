@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**17 November 2026 · CV-010 prototype.** [PR #311](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/311) merged after all 18 checks passed. Client intake and a separately authorized, version-specific test signature passed a bilingual browser walkthrough and workflow tests. The reviewable prototype uses synthetic in-memory records. CV-028 and CV-029 await an active test client. [Review and evidence](docs/testing/cv010-client-intake-prototype.md).
+
 **Public v220 · 17 November 2026.** PRs #309 and #310 are live. CV-030 download labels and CV-031 Reports return passed signed-in EN/RU checks. CV-028 notices and CV-029 upload recovery await an active test client. Both origins verified 253/253 assets. [Release evidence](docs/testing/portal-ux-audit-2026-11-17.md#public-v220--17-november-2026).
 
 **17 November 2026 · Check audit and CV-032.** Three recent CI runs timed out during simulator launch. A bounded launch fix and timeout diagnostics passed nine lifecycle tests and the [hosted macOS editor restart check](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44109410198/job/134130590839) on candidate `bd139c2`. The [new backlog and priorities](docs/development/BACKLOG_AND_DEVELOPMENT_PRIORITIES.md) retain CV-010 as the next product feature. [Audit evidence](docs/testing/cv032-check-audit.md).
