@@ -16,6 +16,8 @@ type Props = {
   account?: string;
 };
 type Tab = "shared" | "uploads" | "messages";
+type Notice = { text: [string, string]; view?: Tab };
+const noticeView: Partial<Record<string, Tab>> = { message: "messages", upload: "uploads", share: "shared", withdraw: "shared" };
 type Draft = { action: string; id: string; grant?: string; [key: string]: unknown };
 type Job = { body: Draft; file?: File };
 type Visit = { scope: string; epoch: number };
@@ -62,7 +64,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
     [file, setFile] = useState<File | null>(null),
     [ack, setAck] = useState(false),
     [choice, setChoice] = useState("");
-  const [notice, setNotice] = useState<[string, string] | null>(null),
+  const [notice, setNotice] = useState<Notice | null>(null),
     [issue, setIssue] = useState<[string, string] | null>(null),
     [confirm, setConfirm] = useState(""),
     [busy, setBusy] = useState(false),
@@ -376,6 +378,11 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       if (!res.ok) {
         if (res.status >= 500) throw Error();
         setPending(null);
+        if (bytes && [413, 415, 422].includes(res.status)) {
+          setFile(null);
+          setAck(false);
+          if (fileInput.current) fileInput.current.value = "";
+        }
         if (body.action === "accept" && res.status === 404) {
           const current = await fetch(api + "&grant=" + encodeURIComponent(body.id), {
             cache: "no-store",
@@ -400,7 +407,7 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                 "Приглашение недоступно для этой учётной записи. Проверьте адрес или запросите новую ссылку.",
               ]
             : body.action === "upload" && res.status === 422
-              ? ["The security scan blocked this file.", "Антивирусная проверка заблокировала файл."]
+              ? ["The security scan blocked this file. Choose another file.", "Антивирусная проверка заблокировала файл. Выберите другой файл."]
             : res.status === 415
               ? [
                   "File type or contents not supported. Choose PDF, TXT, PNG or JPEG.",
@@ -446,7 +453,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
       }
       if (body.action === "share") setChoice("");
       if (body.action === "revoke") setLink("");
-      setNotice(actionNotices[body.action] ?? null);
+      const text = actionNotices[body.action];
+      setNotice(text ? { text, view: noticeView[body.action] } : null);
       await refresh(next);
     } catch {
       if (alive.current && mark === epoch.current)
@@ -614,9 +622,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
               )}
             </p>
           )}
-          {notice && (
+          {notice && (!notice.view || notice.view === tab) && (
             <p role="status" className={s.note}>
-              {t(...notice)}
+              {t(...notice.text)}
             </p>
           )}
           {access === "loading" && !view && (
@@ -771,9 +779,9 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                           onClick={async () => {
                             try {
                               await navigator.clipboard.writeText(link);
-                              setNotice(["Invitation link copied.", "Ссылка скопирована."]);
+                              setNotice({ text: ["Invitation link copied.", "Ссылка скопирована."] });
                             } catch {
-                              setNotice(["Select the link and copy it.", "Выделите и скопируйте ссылку."]);
+                              setNotice({ text: ["Select the link and copy it.", "Выделите и скопируйте ссылку."] });
                             }
                           }}
                         >
@@ -880,7 +888,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                             {badge(a.state)}
                             <div className={s.actions}>
                               {a.kind === "document" && a.state === "shared" && (
-                                <a href={fileHref(a.id, "document")} download>
+                                <a href={fileHref(a.id, "document")} download
+                                  aria-label={t("Download", "Скачать") + " " + a.title + " · " + detail(a.kind, a.detail)}>
                                   {t("Download", "Скачать")}
                                 </a>
                               )}
@@ -982,11 +991,11 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                             <div>
                               <strong>{f.name}</strong>
                               <small>
-                                {Math.ceil(f.size / 1024)} KB · {dateTime(f.stamp)}
+                                {Math.ceil(f.size / 1024)} {t("KB", "КБ")} · {dateTime(f.stamp)}
                               </small>
                             </div>
                             <StatusBadge tone="completed">{t("Received", "Получен")}</StatusBadge>
-                            <a download href={fileHref(f.id, "upload")}>
+                            <a download href={fileHref(f.id, "upload")} aria-label={t("Download", "Скачать") + " " + f.name}>
                               {t("Download", "Скачать")}
                             </a>
                           </li>
