@@ -12,7 +12,7 @@ import {
 } from "./model";
 import { BillingRegister } from "./BillingRegister";
 import { names } from "./copy";
-import { billingCaseReturn } from "../workspace-navigation";
+import { workspaceCaseReturn } from "../workspace-navigation";
 import styles from "./billing.module.css";
 
 type Data = {
@@ -117,7 +117,7 @@ export function BillingWorkspace({
     void read();
     return () => abort.abort();
   }, [caseId, scope, refresh, locale]);
-  const returnTo = billingCaseReturn(returnPath, data?.caseId, scope, locale);
+  const returnTo = workspaceCaseReturn(returnPath, data?.caseId, scope, locale);
   const state = billingState(data?.rows ?? []);
   return (
     <main className={styles.page}>

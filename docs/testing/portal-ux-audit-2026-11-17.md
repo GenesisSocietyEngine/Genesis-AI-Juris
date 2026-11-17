@@ -15,3 +15,9 @@ Following the workspace Reports link from the same case opened the signed-in rep
 | CV-030 · Document retrieval | Accessible download names identify the file. Shared document names include the version. The browser exposed the Russian name for version 2 and the original upload filename. Russian upload size uses КБ. Existing download targets are preserved. |
 
 The candidate browser used the real component with simulated responses. Production acceptance of CV-028–030 remains pending. CV-009 still requires EU infrastructure evidence and CV-008 still requires external calendar acceptance.
+
+## CV-031 · Reports return to the originating case
+
+Reports now carries the exact originating team case URL when opened from a case. The catalog and individual report screens show a return link after the existing case identity endpoint confirms access in the selected organization. The link uses the current interface language and preserves the section, recipient or document target, and anchor. Direct firm-level entry and personal drafts have no team case return.
+
+In the isolated browser, the catalog and Case list report both linked to the original portal section and conversation. Switching to Russian translated the link and preserved the target. A simulated 403 hid the link while the catalog stayed available. Navigation tests cover direct entry, personal drafts, missing authorization, and case or organization mismatch. Signed-in verification on a published build is pending.

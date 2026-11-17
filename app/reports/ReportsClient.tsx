@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigationSession } from "../NavigationSession";
-import { useInterfaceLocale } from "../use-interface-locale";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useNavigationController, useNavigationSession } from "../NavigationSession";
+import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
+import { useAuthorizedCaseName } from "../use-authorized-case-name";
+import { workspaceCaseReturn } from "../workspace-navigation";
 import {
   categories,
   fields,
@@ -22,8 +24,15 @@ import {
 import { readReport } from "./read-report";
 import styles from "./reports.module.css";
 
+function ReportsCaseReturn({ id, scope, href, locale }: { id: string; scope: string; href: string; locale: "en" | "ru" }) {
+  const name = useAuthorizedCaseName(id, scope);
+  return name ? <a className={styles.screen} href={href}>{locale === "en" ? "Return to your case" : "Вернуться к делу"}</a> : null;
+}
+
 export default function ReportsClient() {
   const session = useNavigationSession(),
+    navigation = useNavigationController(),
+    location = useWorkspaceLocation(),
     [locale] = useInterfaceLocale();
   if (
     session.phase !== "ready" ||
@@ -32,10 +41,17 @@ export default function ReportsClient() {
     !session.selected
   )
     return null;
+  const params = new URL(location, "https://workspace.invalid").searchParams;
+  const scope = session.selected.selection;
+  const id = params.get("dossier") ?? "";
+  const href = (!params.has("organization") || params.get("organization") === scope) && /^[a-zA-Z0-9_-]{1,128}$/.test(id)
+    ? workspaceCaseReturn(params.get("return_to") ?? "", id, scope, locale) : null;
   return (
     <ReportsWorkspace
       key={session.actorId + ":" + session.selected.selection}
       scope={session.selected.selection}
+      caseReturn={href && <ReportsCaseReturn key={JSON.stringify([scope, id, session.actorId, navigation.authorityVersion])}
+        id={id} scope={scope} href={href} locale={locale} />}
       locale={locale}
     />
   );
@@ -43,8 +59,10 @@ export default function ReportsClient() {
 export function ReportsWorkspace({
   scope,
   locale,
+  caseReturn,
 }: {
   scope: string;
+  caseReturn?: ReactNode;
   locale: "en" | "ru";
 }) {
   const lang = locale === "en" ? 0 : 1,
@@ -220,6 +238,7 @@ export function ReportsWorkspace({
       <h1>
         {config ? reports[config.report].title[lang] : t("Reports", "Отчёты")}
       </h1>
+      {caseReturn}
       {notice && <p role="status">{notice}</p>}
       {issue && <p role="alert">{issue}</p>}
       {!config ? (

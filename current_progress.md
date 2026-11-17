@@ -1,5 +1,7 @@
 # Current progress — CaseVant
 
+**17 November 2026 · CV-031 implemented.** The Reports catalog and report detail now offer a verified return to the originating team case section and conversation in the current language. The isolated EN/RU browser check passed. Signed-in production acceptance is pending. [Verification](docs/testing/portal-ux-audit-2026-11-17.md#cv-031--reports-return-to-the-originating-case).
+
 **17 November 2026 · Functional and UX audit.** On v219, the signed-in case portal showed a message receipt under unrelated views, and Reports lost the return path to the case. CV-028–030 implement scoped feedback, upload rejection recovery and named download links with isolated EN/RU verification. CV-031 tracks the Reports return path. PR #308 merged with 18 passing checks. [Audit evidence](docs/testing/portal-ux-audit-2026-11-17.md).
 
 **17 November 2026 · CV-009 retention and legal holds.** PR #307 merged after 18 green checks. [PR #308](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/308) corrects migration 0038 for the Sites SQL splitter and implements a private scanner connection, hold-aware intake cleanup and verified transfer. Isolated EN/RU upload and D1/R2 checks passed. EU hosting, deployed scanner and backup/restore verification remain open. [Acceptance and deployment details](docs/testing/cv009-portal-upload-rollout.md#retention-implementation-and-eu-connection--17-november-2026).
