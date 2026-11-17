@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**17 November 2026 · CV-009 in progress.** PR #306 merged after all 18 checks passed. The EU rollout candidate adds a private ClamAV integration. Isolated recovery and bilingual Chrome checks passed. Live EU scanner verification, residency evidence and hold-aware expiry remain open. [Retention proposal and verification](../testing/cv009-portal-upload-rollout.md).
+
 **Public v219 · 16 November 2026.** CV-027 passed signed-in production verification. One synthetic message produced a confirmation that switched English → Russian → English. One link copy produced a confirmation that switched Russian → English → Russian. Both checks retained the same case and recipient. [Release evidence](../testing/client-portal-2026-11-09.md#cv-027-on-public-v219).
 
 **15 November · CV-007 verified on public v218.** PR #303 merged after all 18 checks passed. Verified the hosted portal entry and empty-case guidance in EN/RU. Staff shared one synthetic document version and sent the approved independent recipient a private invitation. The independent recipient accepted, downloaded the exact share, uploaded a synthetic text file in Russian and posted a message visible in both languages. The isolated portal exchange and revocation regression passed. Chrome displayed the staff reply in both languages. After revocation, the independent recipient saw denial in Russian and English. The owner retained the conversation. [Evidence](../testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026).
@@ -71,7 +73,7 @@ These are **not confirmed defects**. “Waiting for verification” means there 
 | --- | --- | --- |
 | CV-022 · P2 | Verified in scoped signed-in checks | Bilingual production activity/history/document links and mobile layout passed. Russian case-list run and return verified 14 November. [Walkthrough](../testing/workspace-benchmark-2026-11-14.md). |
 | CV-008 · P2 | Waiting for verification · calendar | Use controlled Outlook and Google accounts to subscribe to a read-only CaseVant feed; record initial import, time zone, update, retirement and observed refresh delay. Verify a recipient-specific reminder in a designated test mailbox, separately from provider acceptance. The existing scheduler check was no-send. CaseVant remains the source; inbound edits are out of scope. |
-| CV-009 · P1 before broader use | Decision needed · document storage | The portal is a synthetic/de-identified pilot. Before admitting identifiable client files, define and verify scanning/quarantine, retention and recovery for failed or interrupted uploads. Confirm rejected bytes cannot be served; distinguish format/checksum validation from malware scanning. Keep the pilot restriction visible until that decision is accepted. |
+| CV-009 · P1 before broader use | In progress · EU upload rollout | Self-hosted EU ClamAV selected. Verify EU placement and deployed verdicts, then implement and rehearse expiry, legal holds and restore before admitting identifiable files. [Candidate and evidence](../testing/cv009-portal-upload-rollout.md). |
 
 ## Planned product work
 
@@ -91,6 +93,8 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 4. Update [current_progress.md](../../current_progress.md) in the same iteration and link back here. Keep account names, private file URLs, share tokens and client content out of both documents.
 
 ## Iteration history
+
+- 17 November 2026 · CV-009 moved to In progress. The owner selected EU-hosted ClamAV. The pilot restriction continues while EU operations and retention enforcement are outstanding.
 
 - 16 November 2026 · CV-027 closed after the v219 bilingual success-notice checks. PR #305 merged with all 18 checks green.
 

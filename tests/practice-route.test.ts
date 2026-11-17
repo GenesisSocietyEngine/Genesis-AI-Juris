@@ -517,6 +517,18 @@ test("client portal isolates each invitation, shared version, appointment, messa
   const old=runtime.__practiceEnv.DOSSIER_DOCUMENTS!;let armed=true;
   runtime.__practiceEnv.DOSSIER_DOCUMENTS=new Proxy(old,{get(target,property){const value=Reflect.get(target,property,target);if(property===method)return async(...args:unknown[])=>{const result=await value.apply(target,args);if(armed){armed=false;await after();}return result;};return typeof value==="function"?value.bind(target):value;}});
   return ()=>{runtime.__practiceEnv.DOSSIER_DOCUMENTS=old;};
+ }, verdict => {
+  if (verdict === null) {
+    Reflect.deleteProperty(runtime.__practiceEnv, "EU_PORTAL_CLAMAV");
+    return;
+  }
+  Object.assign(runtime.__practiceEnv, { EU_PORTAL_CLAMAV: {
+    async fetch(_url: string, options: {body: Uint8Array}) {
+      if (verdict === "unavailable") throw Error("Scanner unavailable");
+      const digest = "sha256-" + createHash("sha256").update(options.body).digest("hex");
+      return Response.json(verdict === "wrong-digest" ? {digest: "other", verdict: "clean"} : {digest, verdict});
+    }
+  }});
  });
 });
 

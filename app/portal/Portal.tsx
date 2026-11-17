@@ -399,6 +399,8 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                 "This invitation is unavailable for this account. Check your sign-in or ask the team for a new link.",
                 "Приглашение недоступно для этой учётной записи. Проверьте адрес или запросите новую ссылку.",
               ]
+            : body.action === "upload" && res.status === 422
+              ? ["The security scan blocked this file.", "Антивирусная проверка заблокировала файл."]
             : res.status === 415
               ? [
                   "File type or contents not supported. Choose PDF, TXT, PNG or JPEG.",
@@ -912,6 +914,10 @@ export default function Portal({ caseId, selection, caseName = "", signedIn = tr
                             if (file && ack) act("upload", {}, file);
                           }}
                         >
+                          <p>{t(
+                            "CaseVant checks file type and integrity. Use synthetic or de-identified files throughout the pilot.",
+                            "CaseVant проверяет тип и целостность файла. В пилотной версии загружайте только синтетические или обезличенные файлы.",
+                          )}</p>
                           <label>
                             {t(
                               "Choose a file · PDF, TXT, PNG or JPEG · up to 5 MB",
