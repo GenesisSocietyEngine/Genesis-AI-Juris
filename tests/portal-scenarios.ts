@@ -17,6 +17,9 @@ export async function portalScenarios(
   foreign: string,
   replaceBucket: (op: "put" | "get", after: () => Promise<void>) => () => void,
   setScanner: (verdict: string | null) => void,
+  retain: (body: Record<string,string>) => Promise<number>,
+  objects: R2Bucket,
+  sweep: () => Promise<{removed:number}>,
 ) {
   const uid = () => crypto.randomUUID(),
     owner = "practice-owner@example.test",
@@ -283,6 +286,36 @@ export async function portalScenarios(
     undo();
   }
   const revoke = () => staff({ action: "revoke", id: a.id });
+  const copy = uid(), holdId = uid();
+  await good(await put(a.id, alice, copy, "Synthetic updated letter."), 201);
+  const manage = (action:string, fields:Record<string,string>={}) => retain({action,uploadId:copy,...fields});
+  assert.equal(await manage("expire"),409);
+  assert.equal(await manage("transfer",{version:v1.revision}),409);
+  assert.equal(await manage("transfer",{version:v2.revision}),204);
+  assert.equal(await manage("expire"),409);
+  await db.prepare("UPDATE portal_upload_transfers SET verified_at=datetime('now','-31 days') WHERE upload_id=?").bind(copy).run();
+  assert.equal(await manage("hold",{holdId,owner:"QA",basis:"Synthetic claim",reviewOn:"2027-01-01"}),204);
+  const secondHold = uid();
+  assert.equal(await manage("hold",{holdId:secondHold,owner:"QA",basis:"Second claim",reviewOn:"2027-02-01"}),204);
+  assert.equal(await manage("expire"),409);
+  assert.equal(await (await good(await dl(a.id,copy,"upload",alice))).text(),"Synthetic updated letter.");
+  assert.equal(await manage("release",{holdId}),204);
+  assert.equal(await manage("expire"),409);
+  assert.equal(await manage("release",{holdId:secondHold}),204);
+  assert.equal(await manage("expire"),204);
+  assert.equal(await manage("expire"),204);
+  assert.equal((await dl(a.id,copy,"upload",alice)).status,404);
+  assert.equal(await objects.head("client-portal/v1/"+a.id+"/"+copy),null);
+  const governed = await db.prepare("SELECT binary_object_reference FROM dossier_document_versions WHERE id=?").bind(v2.revision).first<string>("binary_object_reference");
+  assert.equal(await (await objects.get(governed!))!.text(),"Synthetic updated letter.");
+  assert.equal((await put(a.id,alice,copy,"Synthetic updated letter.")).status,409);
+  const abandoned = uid();
+  await db.prepare(`INSERT INTO portal_uploads(id,grant_id,name,media,size,digest,state,stamp)
+    SELECT ?,grant_id,name,media,size,digest,'pending',datetime('now','-25 hours') FROM portal_uploads WHERE id=?`).bind(abandoned,fid).run();
+  const abandonedKey = "client-portal/v1/"+a.id+"/"+abandoned;
+  await objects.put(abandonedKey,"Synthetic interrupted upload");
+  assert.equal((await sweep()).removed,1);
+  assert.equal(await objects.head(abandonedKey),null);
   const during = replaceBucket("put", async () => {
     await good(await revoke());
   });
