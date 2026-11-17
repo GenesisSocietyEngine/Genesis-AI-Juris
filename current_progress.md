@@ -1,6 +1,6 @@
 # Current progress — CaseVant
 
-**16 November · CV-027 candidate.** Portal success notices are translated when displayed. Bilingual signed-in production verification follows release.
+**Public v219 · 16 November 2026.** CV-027 passed signed-in production verification. One synthetic message produced a confirmation that switched English → Russian → English. One link copy produced a confirmation that switched Russian → English → Russian. Both checks retained the same case and recipient. [Release evidence](docs/testing/client-portal-2026-11-09.md#cv-027-on-public-v219).
 
 **15 November · CV-007 verified on public v218.** PR #303 merged after all 18 checks passed. Verified the hosted portal entry and empty-case guidance in EN/RU. Staff shared one synthetic document version and sent the approved independent recipient a private invitation. The independent recipient accepted, downloaded the exact share, uploaded a synthetic text file in Russian and posted a message visible in both languages. The isolated portal exchange and revocation regression passed. Chrome displayed the staff reply in both languages. After revocation, the independent recipient saw denial in Russian and English. The owner retained the conversation. [Evidence](docs/testing/client-portal-2026-11-09.md#cv-007--hosted-onboarding-rehearsal-15-november-2026).
 
