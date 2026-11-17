@@ -1,6 +1,6 @@
 # CaseVant development backlog
 
-**17 November 2026 · CV-009 retention and legal holds.** PR #307 merged after 18 green checks. The follow-up implements a private scanner connection, hold-aware intake cleanup and verified transfer. Isolated EN/RU upload and D1/R2 checks passed. EU hosting, deployed scanner and backup/restore verification remain open. [Acceptance and deployment details](../testing/cv009-portal-upload-rollout.md#retention-implementation-and-eu-connection--17-november-2026).
+**17 November 2026 · CV-009 retention and legal holds.** PR #307 merged after 18 green checks. [PR #308](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/308) corrects migration 0038 for the Sites SQL splitter and implements a private scanner connection, hold-aware intake cleanup and verified transfer. Isolated EN/RU upload and D1/R2 checks passed. EU hosting, deployed scanner and backup/restore verification remain open. [Acceptance and deployment details](../testing/cv009-portal-upload-rollout.md#retention-implementation-and-eu-connection--17-november-2026).
 
 **17 November 2026 · CV-009 in progress.** PR #306 merged after all 18 checks passed. The EU rollout candidate adds a private ClamAV integration. Isolated recovery and bilingual Chrome checks passed. Live EU scanner verification, residency evidence and hold-aware expiry remain open. [Retention proposal and verification](../testing/cv009-portal-upload-rollout.md).
 
