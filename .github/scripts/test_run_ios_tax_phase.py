@@ -382,7 +382,10 @@ class PhaseLifecycleTests(unittest.TestCase):
                     output = str(installed).encode()
                 elif command[:3] == ["xcrun", "simctl", "launch"]:
                     self.assertNotIn("--console-pty", command)
+                    self.assertEqual(options["timeout"], 120)
                     output = (phase.APP + ": 123\n").encode()
+                    if driver_mode == "launch-timeout":
+                        raise subprocess.TimeoutExpired(command, 120, output=output, stderr=b"waiting for launch")
                     if driver_mode == "failed-launch":
                         return subprocess.CompletedProcess(command, 2, output, b"launch failed explicitly")
                 else:
@@ -433,22 +436,27 @@ class PhaseLifecycleTests(unittest.TestCase):
                         phase.run(args)
 
                     if driver_mode != "success" or preexisting:
-                        with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError)) as caught:
+                        with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError,
+                                                subprocess.TimeoutExpired)) as caught:
                             prepare_and_run()
                         absent.assert_not_called()
                         self.assertFalse(any(cmd[:1] == ["/bin/kill"] for cmd in commands))
                         launch_file = evidence / f"{phase_name}-launch.json"
                         if launch_file.exists():
                             self.assertFalse(json.loads(launch_file.read_text())["complete"])
-                        if not preexisting and driver_mode not in ("failed-launch", "failed-install", "failed-build"):
+                        if not preexisting and driver_mode not in ("failed-launch", "launch-timeout", "failed-install", "failed-build"):
                             live_probe.assert_called_once_with(args, evidence, 123, installed / "Runner")
                             reader.close.assert_called()
                             self.assertLess(lifecycle.index("live_probe"), lifecycle.index("reader_closed"))
                         if driver_mode == "failed-probe":
                             self.assertIsInstance(caught.exception, subprocess.CalledProcessError)
-                        if driver_mode == "failed-launch":
+                        if driver_mode in ("failed-launch", "launch-timeout"):
                             live_probe.assert_not_called()
-                            self.assertEqual((evidence / "write-launch.stderr.log").read_bytes(), b"launch failed explicitly")
+                            if driver_mode == "launch-timeout":
+                                self.assertIsInstance(caught.exception, subprocess.TimeoutExpired)
+                                self.assertFalse(launch_file.exists())
+                            expected = b"waiting for launch" if driver_mode == "launch-timeout" else b"launch failed explicitly"
+                            self.assertEqual((evidence / "write-launch.stderr.log").read_bytes(), expected)
                             self.assertEqual((evidence / "write-launch.stdout.log").read_bytes(), (phase.APP + ": 123\n").encode())
                             self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
                         if driver_mode == "failed-install":
@@ -517,6 +525,9 @@ class PhaseLifecycleTests(unittest.TestCase):
 
     def test_failed_launch_retains_both_streams_and_never_drives(self):
         self.exercise("failed-launch")
+
+    def test_launch_timeout_keeps_partial_output_without_accepting_pid_or_driving(self):
+        self.exercise("launch-timeout")
 
     def test_failed_install_cannot_launch_or_drive(self):
         self.exercise("failed-install")
