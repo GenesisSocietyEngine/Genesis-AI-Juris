@@ -16,6 +16,7 @@ export async function portalScenarios(
   org: string,
   foreign: string,
   replaceBucket: (op: "put" | "get", after: () => Promise<void>) => () => void,
+  setScanner: (verdict: string | null) => void,
 ) {
   const uid = () => crypto.randomUUID(),
     owner = "practice-owner@example.test",
@@ -223,15 +224,45 @@ export async function portalScenarios(
     );
   const fid = uid(),
     bytes = "Synthetic client upload";
+  const scanned = uid();
+  try {
+    for (const [verdict, status] of [["infected", 422], ["wrong-digest", 503], ["unavailable", 503]] as const) {
+      setScanner(verdict);
+      assert.equal((await put(a.id, alice, scanned, bytes)).status, status);
+      assert.equal((await dl(a.id, scanned, "upload", alice)).status, 404);
+      assert.equal((await dl(a.id, scanned, "upload", owner, "staff")).status, 404);
+    }
+    setScanner("clean");
+    await good(await put(a.id, alice, scanned, bytes), 201);
+  } finally {
+    setScanner(null);
+  }
   assert.equal(
     (await put(a.id, alice, uid(), bytes, "note.txt", "text/plain", { "x-portal-pilot": "" })).status,
     400,
   );
+  // Simulate losing the R2 acknowledgement after the object has been written.
+  const restoreBucket = replaceBucket("put", async () => {
+    throw new Error("Synthetic storage interruption");
+  });
+  try {
+    assert.equal((await put(a.id, alice, fid, bytes)).status, 503);
+  } finally {
+    restoreBucket();
+  }
+  assert.deepEqual((await view(alice, a.id)).thread!.uploads.map(u => u.id), [scanned]);
+  assert.deepEqual((await teamView(a.id)).thread!.uploads.map(u => u.id), [scanned]);
+  assert.equal((await dl(a.id, fid, "upload", alice)).status, 404);
+  assert.equal((await dl(a.id, fid, "upload", owner, "staff")).status, 404);
+  assert.equal((await put(a.id, alice, fid, "Different retry contents")).status, 409);
   await good(await put(a.id, alice, fid, bytes), 201);
   await good(await put(a.id, alice, fid, bytes), 201);
   assert.equal((await put(a.id, alice, fid, "Other contents")).status, 409);
   assert.equal((await put(a.id, bob, uid(), bytes)).status, 404);
-  assert.equal((await put(a.id, alice, uid(), bytes, "bad.pdf", "application/pdf")).status, 415);
+  const rejected = uid();
+  assert.equal((await put(a.id, alice, rejected, bytes, "bad.pdf", "application/pdf")).status, 415);
+  assert.equal((await dl(a.id, rejected, "upload", alice)).status, 404);
+  assert.equal((await dl(a.id, rejected, "upload", owner, "staff")).status, 404);
   assert.equal((await put(a.id, alice, uid(), bytes, "../bad.txt")).status, 415);
   assert.equal((await put(a.id, alice, uid(), "<html>not plain text</html>")).status, 415);
   assert.equal((await put(a.id, alice, uid(), "x".repeat(5 * 1024 * 1024 + 1))).status, 413);
@@ -242,7 +273,7 @@ export async function portalScenarios(
   );
   assert.equal(await (await good(await dl(a.id, fid, "upload", owner, "staff"))).text(), bytes);
   assert.equal((await dl(a.id, fid, "upload", bob)).status, 404);
-  assert.equal((await teamView(a.id)).thread!.uploads.length, 1);
+  assert.equal((await teamView(a.id)).thread!.uploads.length, 2);
   const undo = replaceBucket("get", async () => {
     await good(await staff({ action: "withdraw", id: uid(), grant: a.id, target: sharedDoc.id }));
   });
@@ -264,7 +295,7 @@ export async function portalScenarios(
   assert.equal((await client(alice, { ...post, id: uid() })).status, 404);
   assert.equal((await dl(a.id, fid, "upload", alice)).status, 404);
   assert.equal((await teamView(a.id)).thread!.messages.length, 2);
-  assert.equal((await teamView(a.id)).thread!.uploads.length, 1);
+  assert.equal((await teamView(a.id)).thread!.uploads.length, 2);
   const anew = await make(alice);
   await good(await client(alice, anew));
   assert.deepEqual((await view(alice, anew.id)).thread, {
