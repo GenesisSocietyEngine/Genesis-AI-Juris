@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**17 November 2026 · CV-012 report completeness.** The next unblocked product slice makes the matching population and missing numeric values visible in Reports. Grouped CSV exports include contributing and missing record counts. EN/RU browser and regression checks passed. Existing AI proposal tests confirm explicit attributed review, exact-source binding, stale-source handling and denial. CV-010 live receipt checks remain pending an active test client. PR #315 remains unmerged because both full dependency audits report GHSA-fc5q-39xc-vjpf. CV-033 tracks that merge blocker.
+
 **17 November 2026 · Public v221 · CV-010 receipts.** PR #314 merged after all 18 checks passed, including the successful rerun of a Chrome startup failure. Sites published merged source `02550a471fe23348c9bb46d6c95164e2a5c82137` with migration 0039. Both origins returned the exact runtime and verified all 229 assets. Signed-in staff portal rendering passed in EN/RU. Three invited grants and two revoked grants were found across the two synthetic cases. The signed-in independent client had no available cases. Live receipt submission, exact-version retry and reload remain pending an active test client. The isolated bilingual browser and D1 retry checks passed again.
 
 **17 November 2026 · CV-010 server receipts.** PRs [#312](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/312) and [#313](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/313) each merged after 18 successful checks. Staff can issue an exact case intake revision to one active recipient. The client can correct and submit answers once and recover the same receipt on retry. Local EN/RU and D1 checks passed. Release and signed-in production acceptance remain open. [Verification](../testing/cv010-server-intake-receipts.md).
@@ -52,6 +54,7 @@ All six original v203 findings have been verified on the published site. The ope
 
 | ID / priority | Status | Area | What the user experiences | Acceptance for closure |
 | --- | --- | --- | --- | --- |
+| CV-033 · P1 | Open · merge blocker | Dependency audit | Picomatch through 4.0.7 has a newly reported repeated-extglob ReDoS advisory. | Adopt and test an upstream patch or a reviewed compatible repair, then pass both dependency audits before merging #315. |
 | CV-032 · P2 | Merged · monitor recurrence | iOS CI | Three PRs encountered a 30-second timeout starting the simulator app. | Both macOS restart jobs passed on the merged candidate. Monitor subsequent launches for recurrence. [Audit](../testing/cv032-check-audit.md). |
 | CV-028 · P3 | Released v220 · waiting for active test client | Portal feedback | A message confirmation persisted in Client uploads and Shared items on v219. | Verify one EN/RU post and its confirmation only in Messages. |
 | CV-029 · P2 | Released v220 · waiting for active test client | Upload recovery | A definitive rejection left the rejected file selected and submission enabled. | Confirm rejected selection and consent clear, while an uncertain result retains the same-action retry. |
@@ -104,7 +107,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 | --- | --- | --- |
 | CV-010 | In progress · document workflows | [Version-bound requests and durable client receipts](../testing/cv010-server-intake-receipts.md) released in v221 with migration 0039. Signed-in staff rendering passed in EN/RU. Verify live receipt submission, exact-version retry and reload when an active client is available. Provider selection and independently verified signing evidence remain open. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
-| CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
+| CV-012 | In progress · report completeness candidate | [EN/RU report population and missing-value counts](../testing/cv012-report-completeness.md) passed isolated verification. Existing source-bound AI review tests passed. Candidate release and the broader signed-in AI review journey remain open. |
 
 ## Update this file every iteration
 

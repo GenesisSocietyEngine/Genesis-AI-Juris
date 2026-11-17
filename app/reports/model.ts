@@ -35,6 +35,8 @@ export const fields = {
   type: ["Type", "Тип"],
   days: ["Days unbilled", "Дней без счёта"],
   count: ["Count", "Количество"],
+  recorded: ["Records with a value", "Записей со значением"],
+  missing: ["Records without a value", "Записей без значения"],
   recipient: ["Recipient", "Получатель"],
   description: ["Description", "Описание"],
 } as const;
