@@ -93,7 +93,7 @@ export async function createDossierAIProposalCandidates(input: {
   if (
     !validAPIKey(input.apiKey)
     || !validModel(input.model)
-    || !/^sha256-[a-f0-9]{64}$/u.test(input.safetyIdentifier)
+    || !validSafetyIdentifier(input.safetyIdentifier)
     || input.sources.length < 1
   ) {
     throw new DossierProposalAIError("provider_unavailable", "PROVIDER_CONFIGURATION_UNAVAILABLE");
@@ -334,6 +334,16 @@ function evidenceRelation(value: unknown): value is NonNullable<DossierProposalA
 
 function validAPIKey(value: string) {
   return typeof value === "string" && value.trim().length >= 20 && value.length <= 300;
+}
+
+function validSafetyIdentifier(value: string) {
+  // local-auth returns an unpadded Base64URL HMAC-SHA-256 pseudonym. Keep the
+  // original identifier so provider attribution matches rate limits and audits.
+  // Hex SHA-256 identifiers remain supported for existing non-route callers.
+  return typeof value === "string" && (
+    /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/u.test(value)
+    || /^sha256-[a-f0-9]{64}$/u.test(value)
+  );
 }
 
 function validModel(value: string) {

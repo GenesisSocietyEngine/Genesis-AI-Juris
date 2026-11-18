@@ -10,6 +10,33 @@ import {
 const safetyIdentifier = `sha256-${"a".repeat(64)}`;
 const model = "gpt-test-proposals";
 
+test("the authentication HMAC pseudonym reaches the provider unchanged; malformed identifiers fail before transmission", async () => {
+  const key = await crypto.subtle.importKey("raw", new Uint8Array(32).fill(7), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode("genesis-juris-auth-v1:email:synthetic@example.invalid"));
+  const authPseudonym = Buffer.from(digest).toString("base64url");
+  let calls = 0;
+  const input: Omit<Parameters<typeof createDossierAIProposalCandidates>[0], "safetyIdentifier"> = {
+    apiKey: "sk-test-key-that-is-long-enough", model,
+    sources: [{ document_version_id: "document_version_0001", extraction_version: "genesis-dossier-strict-utf8-v1", context_start: 0, context_end: 4, text: "None" }],
+    graphTargets: [],
+    fetchImplementation: (async (_url: unknown, init?: RequestInit) => {
+      calls += 1;
+      const body = JSON.parse(String(init?.body));
+      assert.equal(body.safety_identifier, authPseudonym);
+      assert.ok(!String(init?.body).includes("synthetic@example.invalid"));
+      return Response.json(providerResponse([]));
+    }) as typeof fetch,
+  };
+  const result = await createDossierAIProposalCandidates({ ...input, safetyIdentifier: authPseudonym });
+  assert.deepEqual(result.candidates, []);
+  assert.equal(calls, 1);
+  for (const invalid of ["synthetic@example.invalid", "", authPseudonym + "=", authPseudonym.slice(1), "a".repeat(43), "sha256-not-a-digest"]) {
+    await assert.rejects(() => createDossierAIProposalCandidates({ ...input, safetyIdentifier: invalid }),
+      (error: unknown) => error instanceof DossierProposalAIError && error.detailCode === "PROVIDER_CONFIGURATION_UNAVAILABLE");
+  }
+  assert.equal(calls, 1);
+});
+
 function factCandidate(overrides: Record<string, unknown> = {}) {
   return {
     proposal_type: "fact",

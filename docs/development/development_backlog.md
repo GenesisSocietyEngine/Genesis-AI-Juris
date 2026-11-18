@@ -184,3 +184,10 @@ audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
 #316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
 CV-010 live receipt checks remain pending an active test client.
 Evidence: docs/testing/cv033-picomatch-security.md.
+# 18 November 2026 — CV-034 / CV-035 audit additions
+
+- **CV-034 · P1 · AI generation rejects authentication pseudonyms — implemented, not released.** The live CV-012 synthetic job failed locally with provider_configuration_unavailable. Accept the canonical Base64URL HMAC identifier while preserving attribution and rejecting malformed inputs. Twenty focused tests pass. Next: green CI, merge/release, explicit bounded retry and live EN/RU review checks.
+- **CV-035 · P2 · Evidence review localization — open.** Russian navigation and heading surround English generation/disclosure, manual evidence, proposal queue and failure messages. Translate interface copy and live notices while preserving exact source text, selected versions, drafts, review attribution and language-switch state. Verify EN→RU→EN without repeating mutations, plus narrow layout.
+
+CV-012 remains open beyond its production-verified reporting slice. CV-010, CV-028 and CV-029 still await an active test client. #317 is merged; CV-032's 120-second simulator timeout recurred and its rerun was still running when inspected. [Audit, evidence and limitations](../testing/cv034-ai-auth-identifier.md).
+

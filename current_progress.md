@@ -312,3 +312,7 @@ audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
 #316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
 CV-010 live receipt checks remain pending an active test client.
 Evidence: docs/testing/cv033-picomatch-security.md.
+# 18 November 2026 — CV-012 live AI audit / CV-034
+
+PR #317 is merged as `1464c729`; its iOS rerun was still running at inspection. Authorized synthetic generation on v222 failed before provider transmission because the adapter rejected the authentication HMAC identifier format. CV-034 repairs that boundary; 20 scoped tests pass. Merge, release and live generation/review acceptance remain pending. CV-035 records English-only Evidence review controls and notices in Russian. CV-010 live receipts remain pending an active client. [Evidence and next actions](docs/testing/cv034-ai-auth-identifier.md).
+
