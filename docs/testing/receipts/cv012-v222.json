@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-18",
+  "version": 222,
+  "source": "a724003199daab5795d11ce03f3ab3254a0e9c6c",
+  "sitesSource": "c21222eea1467b7ddd3cbb009cd3ce1cda795b3b",
+  "deployment": "appgdep_6afd74070b54819188a6f9f4b3f091c2",
+  "environmentRevision": 42,
+  "assetsPerOrigin": 222,
+  "currentAssets": 166,
+  "retainedAssets": 56,
+  "reportAcceptance": "signed-in EN/RU counts, filtering, missing/zero distinction, four actual CSV downloads",
+  "cv010LiveReceiptAcceptance": "pending-active-test-client",
+  "broaderCV012AIReviewAcceptance": "pending"
+}

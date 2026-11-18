@@ -1,0 +1,24 @@
+{
+  "en": {
+    "groupedRows": 2,
+    "sourceRecords": 3,
+    "recorded": 2,
+    "missing": 1,
+    "sumEUR": 125,
+    "csvFiles": {
+      "grouped-en.csv": "681f0f334f9a8c46719e3d4424ad74ae2f92c5e599efc0758f9d1d7ec69d0400",
+      "rows-en.csv": "9fbb5ab017d602c49e8134e265e6da0b82145b331a551bcf649dab11102aa312"
+    }
+  },
+  "ru": {
+    "groupedRows": 2,
+    "sourceRecords": 3,
+    "recorded": 2,
+    "missing": 1,
+    "sumEUR": 125,
+    "csvFiles": {
+      "grouped-ru.csv": "7b6123881ef4e9e89318b9e1f54a50e5da9f7f2ce4fd86c1cd915ddb92254050",
+      "rows-ru.csv": "37f2328dbc358e87d8b382566ebe3e2952d6024b0af77c91ad105c6602cd7fde"
+    }
+  }
+}

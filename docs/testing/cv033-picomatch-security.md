@@ -16,3 +16,16 @@ Sandbox tsx failed OS user lookup; direct Node passed.
 Pinned npm 10.9.8 resolves the isolated dependency lock with zero vulnerabilities.
 Full CI and production acceptance remain pending. CV-010 still needs an active
 test client.
+
+## Resolution - public v222
+
+The clean npm 10.9.8 install loaded @casevant/picomatch4 at the root and
+@casevant/picomatch2 through micromatch. Both full and production audits found
+zero vulnerabilities; focused ESLint and TypeScript passed. All 18 exact-head
+checks on #315 passed before its ordered merge, followed by all 18 on #316.
+Exact-main web/PDF validation also passed before v222 publication.
+Both live origins verified the exact merged runtime and all 222 assets.
+
+CV-033 is resolved. Keep the documented complex repeated-extglob restriction
+visible in vendor notes and review a future upstream fix before replacing these
+maintenance forks. CV-010 live acceptance remains pending an active test client.
