@@ -1,7 +1,7 @@
 import { practiceHarness } from "./practice-owner";
 
 /** Local synthetic transport; no provider, production writes or recipient data. */
-export async function evidenceHarness() {
+export async function evidenceHarness(count?: number) {
   const h = practiceHarness(), read = h.owner.options.transport;
   const statement = 'The source identifies itself as “Synthetic version two / Вторая версия.”';
   const note = 'Synthetic QA review / Проверка: preserve this original note verbatim, including its wording and punctuation.';
@@ -20,6 +20,22 @@ export async function evidenceHarness() {
     if (route.endsWith("/activity")) return Response.json({ events: [{ audit_event_id: "qa-event", event_type: "proposal_reviewed", summary_code: "AI_PROPOSAL_ACCEPTED", actor_role: "owner", occurred_at: "2026-11-18T14:18:45Z" }] });
     return read(path, init);
   };
+  if (count !== undefined) {
+    const original = h.owner.options.transport;
+    h.owner.options.transport = async (path, init) => {
+      const response = await original(path, init);
+      if (init?.method === "POST") return response;
+      const body = await response.json() as Record<string, unknown>;
+      for (const [key, id] of [["source_anchors", "source_anchor_id"], ["assertions", "assertion_id"], ["proposals", "proposal_id"]]) {
+        const rows = body[key] as Record<string, unknown>[] | undefined;
+        if (rows?.length) {
+          const item = key === "proposals" ? rows.find(row => row.review_state === "pending")! : rows[0];
+          body[key] = Array.from({ length: count }, (_, index) => ({ ...item, [id]: index ? `${item[id]}-${index}` : item[id] }));
+        }
+      }
+      return Response.json(body, { status: response.status });
+    };
+  }
   await h.start(); h.owner.navigate("evidence");
   return { ...h, statement, note, raw, writeCount: () => writes };
 }

@@ -169,7 +169,7 @@ export function evidenceLabel(code: string, locale: "en" | "ru"): string {
 }
 
 export function evidenceCount(kind: "records" | "pending" | "citations", count: number, locale: "en" | "ru"): string {
-  if (locale === "en") return count + " " + ({ records: "records", pending: "pending", citations: "exact citations" }[kind]);
+  if (locale === "en") return count + " " + ({ records: count === 1 ? "record" : "records", pending: "pending", citations: count === 1 ? "exact citation" : "exact citations" }[kind]);
   const plural = new Intl.PluralRules("ru").select(count);
   const words = kind === "records" ? ["запись", "записи", "записей"] : kind === "pending" ? ["ожидает проверки", "ожидают проверки", "ожидают проверки"] : ["точная ссылка", "точные ссылки", "точных ссылок"];
   return count + " " + words[plural === "one" ? 0 : plural === "few" ? 1 : 2];
