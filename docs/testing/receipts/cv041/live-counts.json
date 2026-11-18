@@ -1,0 +1,146 @@
+[
+  {
+    "tag": "zero",
+    "anchors": 0,
+    "assertions": 0,
+    "labels": [
+      "Утверждения специалиста0 записей",
+      "Предложения ИИ на проверку0 ожидают проверки",
+      "Реестр точных ссылок на источники0 точных ссылок"
+    ],
+    "locale": "ru",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_82c473a6c84b4b75ad79b6c6217f5a6a&lang=ru&section=evidence"
+  },
+  {
+    "tag": "zero",
+    "anchors": 0,
+    "assertions": 0,
+    "labels": [
+      "Professional assertions0 records",
+      "AI proposal queue0 pending",
+      "Source anchor register0 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_82c473a6c84b4b75ad79b6c6217f5a6a&lang=en&section=evidence"
+  },
+  {
+    "tag": "one",
+    "anchors": 1,
+    "assertions": 1,
+    "labels": [
+      "Professional assertions1 record",
+      "AI proposal queue0 pending",
+      "Source anchor register1 exact citation"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "one",
+    "anchors": 1,
+    "assertions": 1,
+    "labels": [
+      "Утверждения специалиста1 запись",
+      "Предложения ИИ на проверку0 ожидают проверки",
+      "Реестр точных ссылок на источники1 точная ссылка"
+    ],
+    "locale": "ru",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=ru&section=evidence"
+  },
+  {
+    "tag": "after-anchor-1",
+    "anchors": 2,
+    "assertions": 1,
+    "labels": [
+      "Professional assertions1 record",
+      "AI proposal queue0 pending",
+      "Source anchor register2 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "after-anchor-2",
+    "anchors": 3,
+    "assertions": 1,
+    "labels": [
+      "Professional assertions1 record",
+      "AI proposal queue0 pending",
+      "Source anchor register3 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "assertion-1-refresh-in-progress",
+    "anchors": 3,
+    "assertions": 1,
+    "labels": [
+      "Professional assertions1 record",
+      "AI proposal queue0 pending",
+      "Source anchor register3 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "two-records",
+    "anchors": 3,
+    "assertions": 2,
+    "labels": [
+      "Professional assertions2 records",
+      "AI proposal queue0 pending",
+      "Source anchor register3 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "multiple",
+    "anchors": 3,
+    "assertions": 3,
+    "labels": [
+      "Professional assertions3 records",
+      "AI proposal queue0 pending",
+      "Source anchor register3 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  },
+  {
+    "tag": "multiple",
+    "anchors": 3,
+    "assertions": 3,
+    "labels": [
+      "Утверждения специалиста3 записи",
+      "Предложения ИИ на проверку0 ожидают проверки",
+      "Реестр точных ссылок на источники3 точные ссылки"
+    ],
+    "locale": "ru",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=ru&section=evidence"
+  },
+  {
+    "tag": "multiple-after-reload",
+    "anchors": 3,
+    "assertions": 3,
+    "labels": [
+      "Утверждения специалиста3 записи",
+      "Предложения ИИ на проверку0 ожидают проверки",
+      "Реестр точных ссылок на источники3 точные ссылки"
+    ],
+    "locale": "ru",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=ru&section=evidence"
+  },
+  {
+    "tag": "multiple-after-reload",
+    "anchors": 3,
+    "assertions": 3,
+    "labels": [
+      "Professional assertions3 records",
+      "AI proposal queue0 pending",
+      "Source anchor register3 exact citations"
+    ],
+    "locale": "en",
+    "url": "https://casevant.pro/matters?organization=org_personal_actor_90d09985d0335c20fadf63f458ba4682.1.1.actor_90d09985d0335c20fadf63f458ba4682&dossier=dossier_50b1103237a84e88805373da25113f42&lang=en&section=evidence"
+  }
+]

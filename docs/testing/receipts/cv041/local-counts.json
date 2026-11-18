@@ -1,0 +1,56 @@
+[
+  {
+    "count": 0,
+    "lang": "en",
+    "labels": [
+      "Professional assertions0 records",
+      "AI proposal queue0 pending",
+      "Source anchor register0 exact citations"
+    ]
+  },
+  {
+    "count": 0,
+    "lang": "ru",
+    "labels": [
+      "Утверждения специалиста0 записей",
+      "Предложения ИИ на проверку0 ожидают проверки",
+      "Реестр точных ссылок на источники0 точных ссылок"
+    ]
+  },
+  {
+    "count": 1,
+    "lang": "en",
+    "labels": [
+      "Professional assertions1 record",
+      "AI proposal queue1 pending",
+      "Source anchor register1 exact citation"
+    ]
+  },
+  {
+    "count": 1,
+    "lang": "ru",
+    "labels": [
+      "Утверждения специалиста1 запись",
+      "Предложения ИИ на проверку1 ожидает проверки",
+      "Реестр точных ссылок на источники1 точная ссылка"
+    ]
+  },
+  {
+    "count": 2,
+    "lang": "en",
+    "labels": [
+      "Professional assertions2 records",
+      "AI proposal queue2 pending",
+      "Source anchor register2 exact citations"
+    ]
+  },
+  {
+    "count": 2,
+    "lang": "ru",
+    "labels": [
+      "Утверждения специалиста2 записи",
+      "Предложения ИИ на проверку2 ожидают проверки",
+      "Реестр точных ссылок на источники2 точные ссылки"
+    ]
+  }
+]
