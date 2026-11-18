@@ -94,6 +94,14 @@ export function present(rows: Row[], config: Config, locale: string) {
         config.calculate ? [config.calculate] : [],
       )
     : [...matches];
+  if (config.group && config.calculate) {
+    for (const group of result) {
+      const members = matches.filter(row => (row[config.group as Field] ?? "") === group[config.group as Field]);
+      group.recorded = members.filter(row => typeof row[config.calculate as Field] === "number" &&
+        Number.isFinite(row[config.calculate as Field])).length;
+      group.missing = members.length - group.recorded;
+    }
+  }
   const sort = config.group || config.sort;
   result.sort((a, b) => {
     const x = a[sort],
@@ -111,16 +119,20 @@ export function present(rows: Row[], config: Config, locale: string) {
         ...new Set<Field>([
           config.group,
           "count",
-          ...(config.calculate ? [config.calculate] : []),
+          ...(config.calculate ? [config.calculate, "recorded", "missing"] as Field[] : []),
         ]),
       ]
     : config.columns;
   const values = config.calculate
     ? matches
         .map((r) => r[config.calculate as Field])
-        .filter((n): n is number => typeof n === "number")
+        .filter((n): n is number => typeof n === "number" && Number.isFinite(n))
     : [];
   return {
+    sourceCount: rows.length,
+    matchedCount: matches.length,
+    recorded: values.length,
+    missing: config.calculate ? matches.length - values.length : 0,
     rows: result,
     columns,
     total: values.length

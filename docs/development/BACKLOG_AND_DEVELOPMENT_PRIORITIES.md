@@ -14,9 +14,9 @@ Public baseline: v221. The delivery ledger is [development_backlog.md](developme
 | --- | --- | --- | --- |
 | 1 | CV-032 · P2 · iOS CI reliability · merged in #313 | Monitor subsequent simulator launches. The bounded wait and retained timeout diagnostics are on main. | A timed-out launch fails before Flutter drive, with no accepted PID. The real macOS restart workflow completes on the candidate. Track recurrence across subsequent PRs. |
 | 2 | CV-010 · Client intake and signatures · server receipts released in v221 | Exercise receipt submission, exact-version retries and reload in both languages with an active synthetic client. Provider signing follows separately. [Receipt evidence](../testing/cv010-server-intake-receipts.md) | Authorized retry yields one receipt; a changed version, revoked grant or second recipient cannot complete the request. Review EN/RU staff and client journeys with synthetic records. |
-| 3 | CV-012 · Case-scoped AI review and reporting · planned | Trace a proposal to accessible case sources and require a human decision to apply it. Specify the affected report's population and treatment of missing data. | An unauthorized or stale source cannot be applied; report fixtures distinguish missing data from a measured zero. |
+| 3 | CV-012 · Case-scoped AI review and reporting · report completeness candidate | Trace a proposal to accessible case sources and require a human decision to apply it. Specify the affected report's population and treatment of missing data. | An unauthorized or stale source cannot be applied; report fixtures distinguish missing data from a measured zero. |
 
-CV-032 comes first because the same failure delayed three merges, including a documentation-only change. CV-010 remains the first product implementation.
+CV-033 now blocks merging #315. The official advisory reports no patched Picomatch version. CV-010 live acceptance awaits an active test client. CV-012 is the current unblocked product slice. Its report population and missing-value counts passed EN/RU checks. [Evidence](../testing/cv012-report-completeness.md).
 
 ## Work that can resume when its dependency is available
 

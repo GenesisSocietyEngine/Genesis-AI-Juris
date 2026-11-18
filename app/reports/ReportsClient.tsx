@@ -464,8 +464,19 @@ export function ReportsWorkspace({
           {result && output && (
             <section aria-live="polite">
               <h2>
-                {t("Results", "Результаты")} · {result.rows.length}
+                {t("Results", "Результаты")} · {t("Records", "Записей")} {result.matchedCount}
               </h2>
+              <p>{t("Records matching the filter", "Записей по фильтру")} · {result.matchedCount} / {result.sourceCount}.
+                {" "}{t("Includes only records available to your account in this workspace.", "Включены только записи, доступные вашей учётной записи в этом рабочем пространстве.")}</p>
+              {output.config.report === "pipeline" && <p>{t(
+                "Active prospects except those marked Not pursuing. Date limits do not apply. Missing estimates are excluded from the sum.",
+                "Активные потенциальные клиенты, кроме отмеченных «Без продолжения». Ограничения по датам не применяются. Записи без оценки исключаются из суммы."
+              )}</p>}
+              {output.config.calculate && <p>
+                {fields[output.config.calculate][lang]} · {t("Records with a value", "Записей со значением")} {result.recorded} ·
+                {" "}{t("Records without a value", "Записей без значения")} {result.missing}.
+                {result.total === null && " " + t("No recorded values.", "Нет записанных значений.")}
+              </p>}
               {result.total !== null && output.config.calculate && (
                 <p>
                   {fields[output.config.calculate][lang]} ·{" "}

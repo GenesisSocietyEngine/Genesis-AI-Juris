@@ -123,3 +123,34 @@ test("lead stage labels follow the directory in results, saved filters, groups a
   }
   assert.equal(rows[0].stage, "consultation");
 });
+
+test("CV-012 filtered pipeline sums disclose missing estimates and keep recorded zero in EN/RU CSV", () => {
+  const rows = [
+    {stage:"consultation",name:"Unknown"},
+    {stage:"consultation",name:"Zero",forecast:0},
+    {stage:"consultation",name:"Estimate",forecast:125},
+    {stage:"not_pursuing",name:"Excluded",forecast:999},
+  ];
+  const config = {...defaults("pipeline"), filter:"stage" as const, query:"consultation",
+    group:"stage" as const, calculate:"forecast" as const};
+  for (const [locale,lang] of [["en",0],["ru",1]] as const) {
+    const result=present(rows,config,locale);
+    assert.equal(result.sourceCount,4);
+    assert.equal(result.matchedCount,3);
+    assert.equal(result.recorded,2);
+    assert.equal(result.missing,1);
+    assert.equal(result.total,125);
+    assert.equal(result.rows[0].recorded,2);
+    assert.equal(result.rows[0].missing,1);
+    const exported=csv(result.rows,result.columns,lang);
+    assert.match(exported,lang ? /Записей без значения/ : /Records without a value/);
+    assert.match(exported,/"125","2","1"/);
+    const absent=present([rows[0]],config,locale);
+    assert.equal(absent.total,null);
+    assert.equal(absent.rows[0].forecast,undefined);
+    assert.match(csv(absent.rows,absent.columns,lang),/"","0","1"/);
+    const zero=present([rows[1]],config,locale);
+    assert.equal(zero.total,0);
+    assert.equal(zero.missing,0);
+  }
+});
