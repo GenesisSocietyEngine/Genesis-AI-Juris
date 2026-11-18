@@ -12,6 +12,7 @@ import {
   type DossierProposalGenerationDependencies,
 } from "../app/dossier-proposal-generation";
 import { sha256Bytes } from "../app/dossier-private-upload";
+import { assertionStatement } from "../app/dossier-proposal-value";
 import type { DossierAuditEventInput } from "../app/dossier-server";
 
 const migrations = [
@@ -410,6 +411,17 @@ test("real D1/private-R2 positive commit reuses one span and committed replay su
   assert.equal(first.analyzedSources.length, 1);
   assert.equal(counters.providers, 1);
   assert.equal(counters.permissions, 1);
+
+  // Exercise the acceptance parser against actual generated/persisted values,
+  // rather than hand-written legacy fixtures that omit schema_version.
+  const generatedValues = await d1.prepare("SELECT proposed_value FROM dossier_ai_proposals WHERE dossier_id = ? ORDER BY id")
+    .bind(harness.dossierId).all<{ proposed_value: string }>();
+  assert.equal(generatedValues.results.length, 2);
+  for (const row of generatedValues.results) {
+    const value = JSON.parse(row.proposed_value);
+    assert.equal(value.schema_version, 1);
+    assert.equal(assertionStatement(value), value.statement);
+  }
 
   const stored = await d1.prepare(`
     SELECT

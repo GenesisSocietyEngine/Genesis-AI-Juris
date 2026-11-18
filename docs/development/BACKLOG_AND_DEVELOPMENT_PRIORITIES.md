@@ -1,8 +1,8 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
-Public baseline: v224. The delivery ledger is [development_backlog.md](development_backlog.md). This file sets the order for the next implementation and acceptance work.
+Public baseline: v225. The delivery ledger is [development_backlog.md](development_backlog.md). This file sets the order for the next implementation and acceptance work.
 
-**Latest order:** publish CV-038's review payload fix with CV-037's prerequisite controls; finish review of the existing generated synthetic proposal; then address CV-035 localization. CV-034/036 generation is production-verified on v224. Do not regenerate the source to bypass the review defect. [Current evidence](../testing/cv038-proposal-review.md).
+**Latest order:** release CV-039 generated-value acceptance, finish the existing synthetic proposal review and EN/RU reload checks, then address CV-035 localization. CV-037/038 are public in v225. Do not regenerate or edit away the schema envelope to bypass the defect. [Evidence](../testing/cv039-generated-proposal-review.md).
 
 **Current order:** ship CV-036's tested, documented model-alias handling; retry the authorized CV-012 version-2 job; address CV-035's Evidence review localization. CV-034 is production-verified at the authentication boundary, but live proposal/review acceptance remains blocked by CV-036. CV-010/028/029 still need an active client. [Release and follow-up](../testing/cv034-ai-auth-identifier.md#public-v223-and-cv-036-follow-up).
 
