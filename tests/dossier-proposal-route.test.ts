@@ -154,6 +154,7 @@ test("cross-dossier identifiers and unsupported authoritative mappings fail clos
   assert.match(route, /if \(!stored\) return dossierNotFound\(\)/u);
   assert.match(route, /anchors\.length !== anchorIds\.length\) return dossierNotFound\(\)/u);
   assert.match(route, /authoritative_mapping_unsupported/u);
-  assert.match(route, /exactly one statement field/u);
+  assert.match(route, /import \{ assertionStatement \} from "\.\.\/\.\.\/\.\.\/\.\.\/dossier-proposal-value"/u);
+  assert.match(route, /assertionStatement\(decision\.proposed_value\)/u);
   assert.match(route, /proposal_conflict/u);
 });

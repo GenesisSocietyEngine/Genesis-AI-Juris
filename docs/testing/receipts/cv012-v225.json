@@ -1,0 +1,69 @@
+{
+  "date": "2026-11-18",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b195b02162b08191a85858890079bceb",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 225,
+    "source": {
+      "commit_sha": "1f828ee9ec2a89e3c318ab1e301091ca67ef1b56"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000e0d881f4b93581cf251c643a",
+      "content_hash": "sha256:180f08df025c7b7f5f0e5e3380bfea7897f653d94b16569751b6a0de5234098a",
+      "size_bytes": 59484160,
+      "file_count": 727
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6afda7ef1504819182f99e6f16fbb6cc",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_b195b02162b08191a85858890079bceb",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-18T13:28:38.539743+00:00"
+  },
+  "canonicalCommit": "8c7d5649ee74e41c9810ed36cbd62f5e51bc5173",
+  "ciRun": 44310653796,
+  "ci": {
+    "attempt": 2,
+    "passed": 2102,
+    "failed": 0,
+    "inheritedSkips": 3,
+    "htmlChecks": 2,
+    "audits": "zero vulnerabilities",
+    "initialFailure": "Chrome DevToolsActivePort missing during packaged-browser startup"
+  },
+  "applicationInputsSha256": "abb619ed25a243251ee12c67efd4324a9de582649d858e143bdb2fc54c418384",
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "initialVerified": 220,
+      "finalVerified": 221,
+      "assets": 221
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "initialVerified": 220,
+      "finalVerified": 221,
+      "assets": 221
+    }
+  ],
+  "live": {
+    "proposalId": "proposal_28e6ff23bf004da6922ee778f8bc2187",
+    "sourceAnchorId": "source_anchor_cbb6101229894248b1ef5b08d1493a64",
+    "sourceVersion": 2,
+    "anchorReview": "accepted",
+    "proposalReview": "pending",
+    "blocker": "CV-039: generated schema_version envelope rejected by assertion acceptance"
+  }
+}

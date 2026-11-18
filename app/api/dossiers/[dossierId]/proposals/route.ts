@@ -1,4 +1,5 @@
 import { hasRetiredCitation } from "../../../../dossier-evidence-server";
+import { assertionStatement } from "../../../../dossier-proposal-value";
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAIProposalAnchors,
@@ -980,20 +981,6 @@ function toContractProposal(
 
 function assertionTypeFor(proposalType: string) {
   return ASSERTION_PROPOSAL_TYPES[proposalType as keyof typeof ASSERTION_PROPOSAL_TYPES] ?? null;
-}
-
-function assertionStatement(value: JsonValue) {
-  if (typeof value === "string") {
-    return boundedDossierText(value, "accepted assertion statement", 1, 20_000);
-  }
-  if (value === null || Array.isArray(value) || typeof value !== "object") {
-    throw new Error("Accepted assertion proposals require a statement.");
-  }
-  const keys = Object.keys(value);
-  if (keys.length !== 1 || keys[0] !== "statement") {
-    throw new Error("Accepted assertion proposals require exactly one statement field.");
-  }
-  return boundedDossierText(value.statement, "accepted assertion statement", 1, 20_000);
 }
 
 function parseAcceptedEvidenceLink(value: JsonValue, acceptedAnchorIds: string[]): AcceptedEvidenceLink {
