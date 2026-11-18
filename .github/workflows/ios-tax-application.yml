@@ -77,8 +77,10 @@ jobs:
         run: |
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_tax_application.sh" \
             "${{ steps.simulator.outputs.id }}" "$IOS_TAX_EVIDENCE_DIR"
-      - name: Capture bounded simulator diagnostics after application failure
-        if: ${{ failure() && steps.simulator.outputs.id != '' }}
+      - name: Capture bounded simulator diagnostic baseline
+        # Successful runs provide the same OS metadata for comparison with
+        # intermittent failures. Diagnostics never establish app acceptance.
+        if: ${{ !cancelled() && steps.simulator.outputs.id != '' }}
         timeout-minutes: 3
         env:
           IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}

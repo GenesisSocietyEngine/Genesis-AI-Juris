@@ -131,6 +131,37 @@ class RunnerEvidenceTests(unittest.TestCase):
         self.assertFalse(result["acceptance"])
         self.assertEqual(result["runner_target"]["pid"], 18448)
 
+    def test_vm_metadata_survives_disputed_path_and_unavailable_container(self):
+        # Model the retained failure: ps reports the installed path, while an
+        # announcement may carry another mapped-image path. Preserve, never trust.
+        event = {"eventType": "logEvent", "processID": 18448,
+                 "processImagePath": "/old/Runner.app/Runner",
+                 "senderImagePath": "/old/Runner.app/Frameworks/Flutter.framework/Flutter",
+                 "eventMessage": "The Dart VM service is listening on http://127.0.0.1:1234/test=/"}
+        calls, result = self.collect({
+            "vm-announcements": (json.dumps([event]), "completed", 0),
+            "application-container": ("", "timeout", -15),
+        })
+        names = [name for name, _, _ in calls]
+        query = next(command for name, command, _ in calls if name == "vm-announcements")
+        self.assertLess(names.index("vm-announcements"), names.index("application-log"))
+        self.assertEqual(query[3], self.device)
+        self.assertEqual(query[query.index("--style") + 1], "json")
+        self.assertIn('process == "Runner"', query[-1])
+        self.assertIn("The Dart VM service is listening on ", query[-1])
+        self.assertNotIn("ImagePath", query[-1])
+        self.assertEqual(result["commands"]["vm-announcements"]["status"], "completed")
+        self.assertEqual(result["runner_target"]["status"], "unverified")
+        self.assertFalse(result["acceptance"])
+        self.assertFalse(any(command[0] == "sample" for _, command, _ in calls))
+
+    def test_vm_metadata_timeout_does_not_skip_other_diagnostics(self):
+        calls, result = self.collect({"vm-announcements": ("partial", "timeout", -15)})
+        self.assertEqual(result["commands"]["vm-announcements"]["status"], "timeout")
+        self.assertIn("application-log", [name for name, _, _ in calls])
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+
     def test_reused_pid_blocks_stacks_and_sockets_but_keeps_other_diagnostics(self):
         calls, result = self.collect({name + "-identity": ("18448 /another/app/Runner\n", "completed", 0)
                                      for name in ("runner-stacks", "runner-listeners")})

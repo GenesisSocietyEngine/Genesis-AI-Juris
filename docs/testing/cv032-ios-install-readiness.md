@@ -1,5 +1,15 @@
 # CV-032 — recurring iOS CI investigation
 
+## Remaining timeout and discovery investigation
+
+Follow-up base: `c412e87357a8db12a0b6a000337cf5d37ff57520`, the merge of #328 after all 18 checks passed. The task-owned checkout was clean at `d922efb` before fetching and branching from canonical main. No application release or production data change is involved.
+
+Reinspection of 44387595209 attempt 1 confirms that launch exceeded 120 seconds and subsequent app-history, container and installed-application RPCs timed out. Other Simulator commands completed. This establishes partial service unresponsiveness, not a specific root cause or evidence that relaunch is safe. Reinspection of 44390945518 attempt 1 confirms three empty exact-PID/path queries despite the later compact VM announcement and owned socket. A sampled image path differs from the installed path, but compact log output lacks the event's process/sender paths; symbolication alone cannot prove a discovery-path mismatch. No speculative path relaxation, reinstall change or deadline increase is justified.
+
+Confirmed diagnostic defect: the broad compact history discards OS metadata needed to distinguish missing persistence from path disagreement. The repair queries only Runner VM announcements in JSON, without filtering on the disputed path, ahead of broad history. Output remains bounded by the existing collector limits (20 seconds per command, 120 seconds total, 4 MiB per capture). These files are diagnostic-only and never consumed by acceptance. The workflow also captures the same baseline on successful runs for comparison; its three-minute diagnostic step and 75-minute job budgets remain unchanged. A failed application step still fails the workflow.
+
+Local acceptance: 15 collector tests and 64 lifecycle tests pass. Coverage includes a synthetic differing-image-path announcement with an unavailable container, query timeout, continued collection within the shared deadline and no process sampling without verified identity. Existing discovery tests continue to reject foreign PID/path, stale records and malformed announcements. Hosted baseline capture and full workflow verification remain pending. The timeout and VM-discovery root causes remain open; this iteration repairs evidence collection, not a demonstrated application defect.
+
 ## 18 November 2026 — evidence and bounded repair
 
 The isolated task starts at `4aeeb1a` (#326's v228 documentation candidate). #326 initially had 14 passing checks and four iOS checks running. Its editor-restart run subsequently repeated the 120-second launch timeout; failure artifacts were preserved before requesting the failed-job retry. Integration of #326 remains pending green checks at this checkpoint. Public CaseVant remains v228; this is CI tooling work, not an application release.
