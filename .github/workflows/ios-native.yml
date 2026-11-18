@@ -138,16 +138,25 @@ jobs:
       - name: Boot an available iPhone Simulator
         id: simulator
         timeout-minutes: 10
+        env:
+          # Keep boot receipts separate: lifecycle preparation requires a fresh path.
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot
         run: |
+          set -euo pipefail
+          mkdir -p "$IOS_NATIVE_EVIDENCE_DIR"
+          xcrun simctl list --json > "$IOS_NATIVE_EVIDENCE_DIR/boot-inventory.json"
           simulator_id="$(
             xcrun simctl list devices available \
               | grep -m 1 'iPhone' \
               | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'
           )"
           test -n "$simulator_id"
-          xcrun simctl boot "$simulator_id"
-          xcrun simctl bootstatus "$simulator_id" -b
           echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$simulator_id" > "$IOS_NATIVE_EVIDENCE_DIR/boot-simulator.log"
+          {
+            xcrun simctl boot "$simulator_id"
+            xcrun simctl bootstatus "$simulator_id" -b
+          } 2>&1 | tee "$IOS_NATIVE_EVIDENCE_DIR/boot.log"
 
       - name: Prepare the exact native lifecycle test bundle
         env:
@@ -189,6 +198,7 @@ jobs:
           name: ios-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.log
+            ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.xcresult
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/test-plan.sha256

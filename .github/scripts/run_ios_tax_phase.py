@@ -458,8 +458,8 @@ def process_matches(pid, executable, timeout=30):
     return result.stdout
 
 
-def existing_runner(executable):
-    result = command(["ps", "-axo", "pid=,comm="])
+def existing_runner(executable, timeout=30):
+    result = command(["ps", "-axo", "pid=,comm="], timeout=timeout)
     for line in result.stdout.decode("utf-8", errors="strict").splitlines():
         columns = line.strip().split(maxsplit=1)
         if len(columns) == 2 and columns[1] == str(executable):
@@ -547,6 +547,57 @@ def validate_preparation(evidence, source, nonce, device, built):
     return hashlib.sha256((evidence / "prepare.json").read_bytes()).hexdigest()
 
 
+def install_busy_rejection(result):
+    """Only the observed explicit, pre-launch SpringBoard install rejection."""
+    if result.returncode == 0 or result.stdout.strip():
+        return False
+    reason = (f'The request was denied by service delegate (SBMainWorkspace) for reason: Busy '
+              f'("Application "{APP}" is installing or uninstalling, and cannot be launched").')
+    primary = ('An error was encountered processing the command '
+               '(domain=FBSOpenApplicationServiceErrorDomain, code=1):\n'
+               f'Simulator device failed to launch {APP}.\n{reason}')
+    underlying = ('\nUnderlying error (domain=FBSOpenApplicationServiceErrorDomain, code=1):\n'
+                  f'The request to open "{APP}" failed.\n{reason}')
+    try:
+        message = '\n'.join(line.strip() for line in result.stderr.decode('utf-8', errors='strict').strip().splitlines())
+    except UnicodeError:
+        return False
+    return message in (primary, primary + underlying)
+
+
+def launch_after_install(args, executable):
+    """Bound retries of a proven no-process rejection within the original 120s."""
+    argv = ["xcrun", "simctl", "launch", args.device, APP, *FLAGS]
+    deadline = time.monotonic() + 120
+    timeout = 120
+    for attempt in range(1, 4):
+        try:
+            result = command(argv, timeout=timeout, check=False)
+        except subprocess.TimeoutExpired as error:
+            (args.evidence / f"{args.phase}-launch-attempt-{attempt}.stdout.log").write_bytes((error.output or b"")[:1024 * 1024])
+            (args.evidence / f"{args.phase}-launch-attempt-{attempt}.stderr.log").write_bytes((error.stderr or b"")[:1024 * 1024])
+            raise  # No retry: a timeout does not prove that Runner never started.
+        (args.evidence / f"{args.phase}-launch-attempt-{attempt}.stdout.log").write_bytes(result.stdout[:1024 * 1024])
+        (args.evidence / f"{args.phase}-launch-attempt-{attempt}.stderr.log").write_bytes(result.stderr[:1024 * 1024])
+        if not install_busy_rejection(result) or attempt == 3:
+            return result
+        remaining = deadline - time.monotonic()
+        if remaining <= 2:
+            return result
+        existing_runner(executable, timeout=min(30, remaining))
+        if deadline - time.monotonic() <= 2:
+            return result
+        time.sleep(2)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return result
+        existing_runner(executable, timeout=min(30, remaining))
+        timeout = deadline - time.monotonic()
+        if timeout <= 0:
+            return result
+    raise AssertionError("Unreachable launch attempt")
+
+
 def run(args):
     evidence = args.evidence.resolve()
     require(evidence.is_dir(), "Evidence directory missing")
@@ -591,8 +642,7 @@ def run(args):
         # Cold launches on hosted simulators can outlast the generic query
         # timeout. The phase supervisor still enforces its overall deadline.
         try:
-            launched = command(["xcrun", "simctl", "launch", args.device, APP, *FLAGS],
-                               timeout=120, check=False)
+            launched = launch_after_install(args, executable)
         except subprocess.TimeoutExpired as error:
             # A partial PID line cannot establish ownership of a live Runner.
             (evidence / f"{args.phase}-launch.stdout.log").write_bytes((error.output or b"")[:1024 * 1024])

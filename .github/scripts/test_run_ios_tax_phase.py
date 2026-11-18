@@ -24,6 +24,7 @@ phase = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(phase)
 URI = "http://127.0.0.1:43210/a_b-C=+/".replace("+", "")
 EXE = "/isolated/Runner.app/Runner"
+BUSY = (pathlib.Path(__file__).parent / "fixtures/ios_install_busy.stderr.txt").read_bytes()
 
 
 def log_event(**changes):
@@ -382,8 +383,10 @@ class PhaseLifecycleTests(unittest.TestCase):
                     output = str(installed).encode()
                 elif command[:3] == ["xcrun", "simctl", "launch"]:
                     self.assertNotIn("--console-pty", command)
-                    self.assertEqual(options["timeout"], 120)
+                    self.assertTrue(0 < options["timeout"] <= 120)
                     output = (phase.APP + ": 123\n").encode()
+                    if driver_mode == "busy-then-success" and sum(cmd[:3] == ["xcrun", "simctl", "launch"] for cmd in commands) == 1:
+                        return subprocess.CompletedProcess(command, 1, b"", BUSY)
                     if driver_mode == "launch-timeout":
                         raise subprocess.TimeoutExpired(command, 120, output=output, stderr=b"waiting for launch")
                     if driver_mode == "failed-launch":
@@ -435,7 +438,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                             driver_commands.clear()
                         phase.run(args)
 
-                    if driver_mode != "success" or preexisting:
+                    if driver_mode not in ("success", "busy-then-success") or preexisting:
                         with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError,
                                                 subprocess.TimeoutExpired)) as caught:
                             prepare_and_run()
@@ -506,6 +509,10 @@ class PhaseLifecycleTests(unittest.TestCase):
 
     def test_success_binds_receipt_and_actual_termination_order(self):
         self.exercise()
+
+    def test_explicit_install_busy_recovers_before_one_verified_drive(self):
+        with patch.object(phase.time, "sleep"):
+            self.exercise("busy-then-success")
 
     def test_later_phases_keep_the_built_bundle_without_another_build(self):
         for phase_name in phase.PHASES[1:]:
@@ -1077,6 +1084,62 @@ class InstallEvidenceTests(unittest.TestCase):
                     phase.write_json(final_path, terminal)
                 with self.assertRaises((AssertionError, FileNotFoundError)):
                     verifier["verify_install"](root, args.phase, args.source, args.nonce, args.device, built)
+
+
+class InstallBusyLaunchTests(unittest.TestCase):
+    def result(self, code=1, stdout=b"", stderr=BUSY):
+        return subprocess.CompletedProcess([], code, stdout, stderr)
+
+    def test_only_the_observed_explicit_rejection_is_retryable(self):
+        self.assertTrue(phase.install_busy_rejection(self.result()))
+        for result in (self.result(code=0), self.result(stdout=b"app: 123\n"),
+                       self.result(stderr=BUSY.replace(b"Busy", b"Denied")),
+                       self.result(stderr=BUSY.replace(phase.APP.encode(), b"other.app")),
+                       self.result(stderr=BUSY + b"\nAnother error"), self.result(stderr=b"\xff")):
+            self.assertFalse(phase.install_busy_rejection(result))
+
+    def test_retries_are_bounded_and_keep_each_denial(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = SimpleNamespace(phase="write", device="device", evidence=pathlib.Path(temp))
+            with patch.object(phase, "command", return_value=self.result()) as command, \
+                 patch.object(phase, "existing_runner") as absent, \
+                 patch.object(phase.time, "sleep") as sleep:
+                result = phase.launch_after_install(args, EXE)
+            self.assertEqual(command.call_count, 3)
+            self.assertEqual(sleep.call_count, 2)
+            self.assertEqual(absent.call_count, 4)
+            self.assertTrue(phase.install_busy_rejection(result))
+            for n in (1, 2, 3):
+                self.assertEqual((args.evidence / f"write-launch-attempt-{n}.stderr.log").read_bytes(), BUSY)
+            self.assertFalse((args.evidence / "write-launch.json").exists())
+
+    def test_timeout_and_live_process_never_trigger_a_retry(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = SimpleNamespace(phase="read", device="device", evidence=pathlib.Path(temp))
+            with patch.object(phase, "command", side_effect=subprocess.TimeoutExpired([], 120, output=b"app: 123")) as command:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    phase.launch_after_install(args, EXE)
+                self.assertEqual(command.call_count, 1)
+            with patch.object(phase, "command", return_value=self.result()) as command, \
+                 patch.object(phase, "existing_runner", side_effect=RuntimeError("Unexpected existing Runner")):
+                with self.assertRaisesRegex(RuntimeError, "existing Runner"):
+                    phase.launch_after_install(args, EXE)
+                self.assertEqual(command.call_count, 1)
+
+    def test_retries_share_the_original_deadline(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = SimpleNamespace(phase="write", device="device", evidence=pathlib.Path(temp))
+            with patch.object(phase, "command", side_effect=[self.result(), self.result(code=0, stdout=b"app: 123")]) as command, \
+                 patch.object(phase, "existing_runner"), patch.object(phase.time, "sleep"), \
+                 patch.object(phase.time, "monotonic", side_effect=[0, 100, 100, 102, 102]):
+                phase.launch_after_install(args, EXE)
+            self.assertEqual([call.kwargs["timeout"] for call in command.call_args_list], [120, 18])
+            with patch.object(phase, "command", return_value=self.result()) as command, \
+                 patch.object(phase, "existing_runner"), patch.object(phase.time, "sleep") as sleep, \
+                 patch.object(phase.time, "monotonic", side_effect=[0, 119]):
+                phase.launch_after_install(args, EXE)
+            self.assertEqual(command.call_count, 1)
+            sleep.assert_not_called()
 
 
 if __name__ == "__main__":

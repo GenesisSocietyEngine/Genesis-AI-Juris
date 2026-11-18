@@ -1,5 +1,7 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
+**Current CV-032 slice:** confirmed install-Busy launch race repaired locally with strict bounded retry and retained attempts. Hosted workflow verification and #326's green merge remain pending. Boot-stall/timeout causes are distinct open monitoring items; no deadlines or acceptance checks are weakened. [Investigation](../testing/cv032-ios-install-readiness.md).
+
 **CV-041 complete on public v228.** #324 and #325 merged green. Signed-in EN/RU counts passed at zero, one and three records/citations, with reload and language switching. The authorized synthetic additions remain pending review; pending-proposal 0/1/multiple coverage is local. [Release evidence](../testing/cv041-evidence-counts.md#public-v228--release-and-signed-in-acceptance).
 
 The delivery ledger is [development_backlog.md](development_backlog.md). This file gives the current order; historical release details remain in that ledger and the linked acceptance records.
