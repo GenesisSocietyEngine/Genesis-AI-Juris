@@ -111,7 +111,10 @@ test_calls() { grep -c '^test-without-building|' "$sandbox/calls.log" || true; }
 passed() { printf 'PASS %s\n' "$1"; }
 
 new_case
+mkdir "$evidence-boot"
+printf 'synthetic boot evidence\n' > "$evidence-boot/boot.log"
 prepare; execute
+grep -Fxq 'synthetic boot evidence' "$evidence-boot/boot.log"
 test "$(test_calls)" -eq 1
 grep -Fq "test-without-building|$evidence/DerivedData/Build/Products/Runner.xctestrun|" "$sandbox/calls.log"
 test -f "$evidence/lifecycle-attempt-1.log"

@@ -139,7 +139,8 @@ jobs:
         id: simulator
         timeout-minutes: 10
         env:
-          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
+          # Keep boot receipts separate: lifecycle preparation requires a fresh path.
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot
         run: |
           set -euo pipefail
           mkdir -p "$IOS_NATIVE_EVIDENCE_DIR"
@@ -197,7 +198,7 @@ jobs:
           name: ios-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.log
-            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/boot-inventory.json
+            ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.xcresult
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/test-plan.sha256
