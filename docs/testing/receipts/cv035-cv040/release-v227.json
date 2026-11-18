@@ -1,0 +1,96 @@
+{
+  "saved": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_e6798afe347c8191b753640d34447b22",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 227,
+    "source": {
+      "commit_sha": "def9484f988ae7e71ba4acf6e9e83347993d9cbe"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000ebcc81f48d7dcf3dc0232aaf",
+      "content_hash": "sha256:873827ad91548614c0049e2c03996e7d026cb5c7c20e517ac33d58709b216772",
+      "size_bytes": 59617280,
+      "file_count": 728
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6afdd02765788191b42f22cb6c20966e",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_e6798afe347c8191b753640d34447b22",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-18T16:20:57.551552+00:00"
+  },
+  "canonical": {
+    "main": "4c626ed7b587965addb99e3b55354a3d411a99ad",
+    "run": 44343090286,
+    "previous": "1c33529a23f26017fc9d6efcd35157c03c9c3b2a"
+  },
+  "digests": {
+    "applicationInputsSha256": "bd4df3c57cdee17142d97f501e159b320903eab2e9a411ab8c19cd0167a0a441",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe"
+  },
+  "logs": {
+    "windowMinutes": 5,
+    "events": [
+      {
+        "timestamp": 1795018933735,
+        "route": "/api/work",
+        "outcome": "canceled",
+        "level": "info",
+        "requestId": "ccb1bbcaec48197a46592b0be759f7e8"
+      },
+      {
+        "timestamp": 1795018929060,
+        "route": "/api/activity",
+        "outcome": "canceled",
+        "level": "info",
+        "requestId": "db6f663291fb08c3dcc8d6acd3dfd0b2"
+      },
+      {
+        "timestamp": 1795018922586,
+        "route": "/api/activity",
+        "outcome": "canceled",
+        "level": "info",
+        "requestId": "5b647baaab1f47db9ff519078e0afee7"
+      },
+      {
+        "timestamp": 1795018909708,
+        "route": "/api/work",
+        "outcome": "canceled",
+        "level": "info",
+        "requestId": "a2afa09cb5ba26c18324f728960313a9"
+      }
+    ]
+  },
+  "browser": {
+    "locales": [
+      "en",
+      "ru"
+    ],
+    "originalContentPreserved": true,
+    "sourceFocus": true,
+    "auditEntries": 9,
+    "reloadBothLocales": true,
+    "mobile": {
+      "viewport": 390,
+      "documentScrollWidth": 375
+    },
+    "productionMutations": 0,
+    "clientAcceptancePending": [
+      "CV-010",
+      "CV-028",
+      "CV-029"
+    ]
+  }
+}
