@@ -11,11 +11,21 @@ In both runs, write had matching stream/history paths and used both discovery so
 
 Repair: install only for write. Later phases require complete first/previous launch receipts bound to the exact source, run nonce, simulator, app, full-bundle hash and stable executable path. Each phase still checks process absence, hashes the installed bundle and launches a new PID; exact OS-log sender/path, freshness, authenticated VM identity and termination guards remain unchanged. The final verifier requires the real initial install-command proof, rejects later install-command receipts and verifies the shared container. No fabricated per-phase installation success or alternate URI source is introduced. The six application phases and original deadlines remain intact.
 
-Local verification: 67 lifecycle tests and 15 diagnostic tests pass. Tests cover all five relaunch phases without another build/install, missing or foreign prior receipts, incomplete phases, changed container/hash/policy/process identity, missing/failed first-install proof and unexpected later install evidence. Hosted acceptance must additionally show all six phases on one container and matching structured history paths. First-launch timeouts and boot stalls remain separate unconfirmed causes.
+Local verification: 67 lifecycle tests and 15 diagnostic tests pass. Tests cover all five relaunch phases without another build/install, missing or foreign prior receipts, incomplete phases, changed container/hash/policy/process identity, missing/failed first-install proof and unexpected later install evidence. Hosted acceptance below additionally proves all six phases on one container and matching structured history paths in two runs. First-launch timeouts and boot stalls remain separate unconfirmed causes.
 
 Upstream comparison: [Flutter #193142](https://github.com/flutter/flutter/pull/193142) addresses starting the log reader before app launch. This harness already starts its reader before launch and performs bounded history queries; that upstream change alone does not explain or repair the confirmed persisted-path disagreement.
 
+### Hosted stable-install verification
+
+[PR #330](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/330), source `16c9535af5c1bcd64012dad6e862b4496c03a3ae`: [editor run 44417994079](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44417994079) passed on attempt 1. The downloaded artifact contains exactly one install-command terminal receipt (`write-install.json`), one executable path across all six complete launch receipts, and six distinct PIDs (11168, 13161, 14388, 16469, 17638, 20148). All six discovery receipts include both stream and backfill. Every later structured history event matches the accepted event's PID/monotonic timestamp/message and the verified process/sender paths. This removes the five later-phase path mismatches observed independently in both #329 baselines.
+
+The committed six-process verifier was rerun locally against the downloaded artifact and passed, including complete/incomplete pairs, fresh native reopen, legacy preservation and all retained identity/bundle/process evidence. All 18 #330 checks subsequently passed, including both native workflows, and the PR merged as `bdb40fcc5db3f3dde41b308512b077e01f4bd278`. No first-launch timeout or boot-stall root-cause fix is claimed. Public CaseVant remains v228; the changes affect CI tooling only and require no Sites publication.
+
+The independent [push editor run 44417972995](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44417972995) also passed on attempt 1. Its six PIDs (20563, 24074, 26234, 29484, 31726, 35477) share one executable path and only the write install-command receipt. All six phases again include both stream/backfill discovery and matching structured-history event/process/sender paths. The local committed verifier passed this downloaded artifact too. Across both repaired runs, 12/12 phases have matching history paths; across both pre-repair baselines, all 10 later phases disagreed. This verifies the targeted repair, not elimination of every intermittent iOS failure.
+
 ## Remaining timeout and discovery investigation
+
+Earlier diagnostic checkpoint; superseded by the confirmed repair and hosted results above.
 
 Follow-up base: `c412e87357a8db12a0b6a000337cf5d37ff57520`, the merge of #328 after all 18 checks passed. The task-owned checkout was clean at `d922efb` before fetching and branching from canonical main. No application release or production data change is involved.
 

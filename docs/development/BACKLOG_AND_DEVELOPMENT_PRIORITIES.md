@@ -1,10 +1,6 @@
 # CaseVant backlog and development priorities · 19 November 2026
 
-**Current CV-032 repair:** #329 merged green and two hosted baselines confirmed persisted-history paths disagree after repeated installs. Keep one verified installation for the six real process restarts; retain full bundle/container/identity checks. Local 67 lifecycle / 15 diagnostic tests pass; hosted proof of stable history paths is pending. First-launch timeout and boot-stall causes remain open. [Evidence](../testing/cv032-ios-install-readiness.md#19-november--confirmed-persisted-history-path-discrepancy).
-
-**CV-032 current follow-up:** #328 merged green. Remaining timeout/discovery causes are unconfirmed. Repair the confirmed loss of OS metadata in compact diagnostics, retain structured VM announcements and compare successful hosted baselines before changing launch or identity behavior. Local 15 diagnostic / 64 lifecycle tests pass; hosted validation pending. [Investigation](../testing/cv032-ios-install-readiness.md#remaining-timeout-and-discovery-investigation).
-
-**CV-032 bounded repair merged and hosted-verified:** #326 and #327 merged in order after 18 passing checks each. Both native and editor workflows passed; exact-source editor receipts and retained boot evidence were inspected. Separate boot-stall, launch-timeout and VM-log discovery causes remain open monitoring items. No deadlines or identity checks were weakened. Public remains v228. [Investigation](../testing/cv032-ios-install-readiness.md).
+**CV-032 discovery-path repair merged and hosted-verified:** #328, #329 and #330 merged in order after 18 passing checks each. Main `bdb40fcc` preserves one verified installation across six real process restarts. Two repaired editor runs passed on attempt 1, with 12/12 matching live/history paths and both downloaded proofs independently verified. Local 67 lifecycle / 15 diagnostic tests pass. First-launch timeout and boot-stall causes remain open; public remains v228. [Evidence](../testing/cv032-ios-install-readiness.md#hosted-stable-install-verification).
 
 **CV-041 complete on public v228.** #324 and #325 merged green. Signed-in EN/RU counts passed at zero, one and three records/citations, with reload and language switching. The authorized synthetic additions remain pending review; pending-proposal 0/1/multiple coverage is local. [Release evidence](../testing/cv041-evidence-counts.md#public-v228--release-and-signed-in-acceptance).
 
@@ -20,7 +16,7 @@ CV-012's authorized synthetic source-to-proposal, human review and apply journey
 
 | Order | Item | Deliverable and acceptance |
 | --- | --- | --- |
-| 1 | CV-032 · P2 · Verify stable-install repair | Two hosted baselines confirm persisted-history path disagreement after reinstall. Verify six fresh processes on one fully checked installation and matching history paths, then integrate green. Keep first-launch timeouts and boot stalls separate. [Latest evidence](../testing/cv032-ios-install-readiness.md#19-november--confirmed-persisted-history-path-discrepancy). |
+| 1 | CV-032 · P2 · Monitor remaining first-launch/boot failures | Discovery-path repair is merged and hosted-verified. On recurrence, preserve scoped Simulator RPC/boot diagnostics and establish the cause before changing deadlines or restart behavior. Do not mark the distinct timeout/boot issues resolved by a passing retry. [Latest evidence](../testing/cv032-ios-install-readiness.md#hosted-stable-install-verification). |
 
 ## Work awaiting a dependency
 
