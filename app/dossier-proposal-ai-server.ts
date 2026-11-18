@@ -170,7 +170,10 @@ async function parseProviderResponse(
   if (!isRecord(payload) || payload.status !== "completed") {
     throw new DossierProposalAIError("invalid_response", "PROVIDER_RESPONSE_INCOMPLETE");
   }
-  if (typeof payload.model !== "string" || payload.model !== requestedModel) {
+  // OpenAI documents this alias explicitly. Do not accept arbitrary model
+  // families, dated snapshots, or prefix matches as equivalent.
+  const resolvedModel = requestedModel === "gpt-5.6" ? "gpt-5.6-sol" : requestedModel;
+  if (typeof payload.model !== "string" || (payload.model !== requestedModel && payload.model !== resolvedModel)) {
     throw new DossierProposalAIError("invalid_response", "PROVIDER_MODEL_MISMATCH");
   }
   const output = Array.isArray(payload.output) ? payload.output : [];

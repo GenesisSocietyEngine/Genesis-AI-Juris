@@ -67,6 +67,30 @@ function providerResponse(candidates: unknown[], returnedModel = model) {
   };
 }
 
+test("the documented GPT-5.6 Sol alias is accepted and retained in the receipt without permitting model substitution", async () => {
+  const input: Parameters<typeof createDossierAIProposalCandidates>[0] = {
+    apiKey: "sk-test-key-that-is-long-enough", model: "gpt-5.6", safetyIdentifier,
+    sources: [{ document_version_id: "document_version_0001", extraction_version: "genesis-dossier-strict-utf8-v1", context_start: 0, context_end: 4, text: "None" }],
+    graphTargets: [],
+  };
+  const generate = (returned: string, requested = "gpt-5.6") => createDossierAIProposalCandidates({
+    ...input, model: requested,
+    fetchImplementation: (async (_url: unknown, init?: RequestInit) => {
+      assert.equal(JSON.parse(String(init?.body)).model, requested);
+      return Response.json(providerResponse([], returned));
+    }) as typeof fetch,
+  });
+  const alias = await generate("gpt-5.6-sol");
+  const exact = await generate("gpt-5.6");
+  assert.deepEqual(alias.candidates, []);
+  assert.notEqual(alias.providerReceiptDigest, exact.providerReceiptDigest, "receipt must retain the provider's actual model");
+  await generate("gpt-5.6-sol", "gpt-5.6-sol");
+  for (const other of ["gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6-sol-2099-01-01", "gpt-6-sol", "gpt-5.6-sol-untrusted"]) {
+    await assert.rejects(() => generate(other), (error: unknown) => error instanceof DossierProposalAIError && error.detailCode === "PROVIDER_MODEL_MISMATCH");
+  }
+  await assert.rejects(() => generate("gpt-5.6-sol", "gpt-test-proposals"), (error: unknown) => error instanceof DossierProposalAIError && error.detailCode === "PROVIDER_MODEL_MISMATCH");
+});
+
 test("Responses boundary is private, strict, bounded, injection-aware, and retains a receipt", async () => {
   let capturedUrl = "";
   const captured: Record<string, unknown>[] = [];

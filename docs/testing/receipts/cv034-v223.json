@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-18",
+  "backlog": "CV-034",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_aaa57cf3bba481919ca7a90c1b92132a",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 223,
+    "source": {
+      "commit_sha": "48659868a39ac8c0d7eac99774fb54502574aaaf"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_00000000baf081f487bfa2095af550db",
+      "content_hash": "sha256:9a908ddec0f10abb8aceef1f3311056089071678c093459138a48f4b92e8a809",
+      "size_bytes": 59484160,
+      "file_count": 727
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6afd90949ee8819188a9b6cf9d5a75bd",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_aaa57cf3bba481919ca7a90c1b92132a",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-18T11:50:09.774828+00:00"
+  },
+  "canonicalCommit": "268dced9f505924f3c1698923d7b610658d1141f",
+  "ciRun": 44296588924,
+  "ci": {
+    "passed": 2099,
+    "failed": 0,
+    "inheritedSkips": 3,
+    "htmlChecks": 2,
+    "audits": "zero vulnerabilities"
+  },
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "verifiedAssets": 221
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verifiedAssets": 221
+    }
+  ],
+  "applicationInputsSha256": "d43d6f99607eeabc1dfebc2110f05dd3f7654e070d089dd61178e386a333865b",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "liveSyntheticRetry": {
+    "job": "proposal_job_182d842fe13e4228ac32b62ad1cd6b69",
+    "attempt": 2,
+    "result": "invalid_response",
+    "detail": "provider_model_mismatch",
+    "completedAt": "2026-11-18T11:51:03.305Z",
+    "reviewDecisions": 0
+  },
+  "remaining": [
+    "CV-036 model alias response guard",
+    "CV-035 Evidence review localization",
+    "CV-012 successful proposal/review acceptance",
+    "CV-010 active client gate"
+  ]
+}
