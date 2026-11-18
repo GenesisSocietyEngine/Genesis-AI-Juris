@@ -118,6 +118,14 @@ def collect(device, evidence):
         return result["status"] == "completed" and result["exit_code"] == 0
 
     run("host-processes", ["ps", "-axo", "pid=,ppid=,stat=,etime=,comm="])
+    # Exact-path discovery can return nothing even when a later compact log has
+    # a VM announcement. Retain OS path/sender metadata without filtering on the
+    # disputed path, before broad history consumes the shared diagnostic budget.
+    # This is diagnostic-only: never feed these records into VM authorization.
+    run("vm-announcements", ["xcrun", "simctl", "spawn", device, "log", "show",
+                             "--last", "15m", "--style", "json", "--predicate",
+                             'eventType == logEvent AND process == "Runner" AND '
+                             'eventMessage CONTAINS "The Dart VM service is listening on "'])
     # Broad SpringBoard history previously consumed the command budget before
     # the log reached this app's launch. Give Runner/app-specific history priority.
     run("application-log", ["xcrun", "simctl", "spawn", device, "log", "show",

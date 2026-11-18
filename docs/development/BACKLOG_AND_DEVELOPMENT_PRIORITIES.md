@@ -1,5 +1,7 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
+**CV-032 current follow-up:** #328 merged green. Remaining timeout/discovery causes are unconfirmed. Repair the confirmed loss of OS metadata in compact diagnostics, retain structured VM announcements and compare successful hosted baselines before changing launch or identity behavior. Local 15 diagnostic / 64 lifecycle tests pass; hosted validation pending. [Investigation](../testing/cv032-ios-install-readiness.md#remaining-timeout-and-discovery-investigation).
+
 **CV-032 bounded repair merged and hosted-verified:** #326 and #327 merged in order after 18 passing checks each. Both native and editor workflows passed; exact-source editor receipts and retained boot evidence were inspected. Separate boot-stall, launch-timeout and VM-log discovery causes remain open monitoring items. No deadlines or identity checks were weakened. Public remains v228. [Investigation](../testing/cv032-ios-install-readiness.md).
 
 **CV-041 complete on public v228.** #324 and #325 merged green. Signed-in EN/RU counts passed at zero, one and three records/citations, with reload and language switching. The authorized synthetic additions remain pending review; pending-proposal 0/1/multiple coverage is local. [Release evidence](../testing/cv041-evidence-counts.md#public-v228--release-and-signed-in-acceptance).
