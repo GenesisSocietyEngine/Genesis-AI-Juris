@@ -73,3 +73,43 @@ test("Russian counts and error recovery retain the original server evidence", ()
   assert.equal(ru.detail, "Unknown provider response\n\nExact diagnostic");
   assert.equal(evidenceIssue(issue, "en"), issue);
 });
+
+test("Evidence counts use English singular and Russian plural forms without changing values", () => {
+  const rows = [
+    [0, "0 records", "0 exact citations", "0 записей", "0 точных ссылок", "0 ожидают проверки"],
+    [1, "1 record", "1 exact citation", "1 запись", "1 точная ссылка", "1 ожидает проверки"],
+    [2, "2 records", "2 exact citations", "2 записи", "2 точные ссылки", "2 ожидают проверки"],
+    [5, "5 records", "5 exact citations", "5 записей", "5 точных ссылок", "5 ожидают проверки"],
+    [11, "11 records", "11 exact citations", "11 записей", "11 точных ссылок", "11 ожидают проверки"],
+    [21, "21 records", "21 exact citations", "21 запись", "21 точная ссылка", "21 ожидает проверки"],
+    [22, "22 records", "22 exact citations", "22 записи", "22 точные ссылки", "22 ожидают проверки"],
+  ] as const;
+  for (const [count, enRecords, enCitations, ruRecords, ruCitations, ruPending] of rows) {
+    assert.equal(evidenceCount("records", count, "en"), enRecords);
+    assert.equal(evidenceCount("citations", count, "en"), enCitations);
+    assert.equal(evidenceCount("pending", count, "en"), `${count} pending`);
+    assert.equal(evidenceCount("records", count, "ru"), ruRecords);
+    assert.equal(evidenceCount("citations", count, "ru"), ruCitations);
+    assert.equal(evidenceCount("pending", count, "ru"), ruPending);
+  }
+});
+
+test("integrated Evidence summaries reflect zero, one and multiple returned records in both locales", async () => {
+  const state = globalThis as unknown as { __evidenceLocale?: string };
+  for (const count of [0, 1, 2]) {
+    const h = await evidenceHarness(count);
+    try {
+      for (const locale of ["en", "ru", "en"] as const) {
+        state.__evidenceLocale = locale;
+        const html = renderToStaticMarkup(createElement(AuthorizedMattersClient, { actorId: "synthetic-owner", organizationId: "synthetic-org", controller: h.owner }));
+        for (const [id, kind] of [["accepted-evidence-title", "records"], ["proposal-review-title", "pending"], ["source-register-title", "citations"]] as const) {
+          assert.ok(html.includes(`id="${id}"`));
+          assert.ok(html.includes(`<span>${evidenceCount(kind, count, locale)}</span>`));
+        }
+        assert.equal((html.match(/id="assertion-qa-assertion/g) ?? []).length, count);
+        assert.equal((html.match(/id="source-qa-anchor/g) ?? []).length, count);
+      }
+      assert.equal(h.writeCount(), 0);
+    } finally { delete state.__evidenceLocale; h.owner.dispose(); }
+  }
+});

@@ -1,5 +1,7 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
+**CV-041 delivery in progress:** the English singular-count fix and EN/RU zero/one/multiple acceptance are implemented and locally verified. #324 merged green. Integrate and release CV-041 before resuming the follow-up order below. [Evidence](../testing/cv041-evidence-counts.md).
+
 The delivery ledger is [development_backlog.md](development_backlog.md). This file gives the current order; historical release details remain in that ledger and the linked acceptance records.
 
 ## Current delivery
