@@ -297,3 +297,14 @@ Implemented the three v192 audit findings on the major-version branch. Focused s
 14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.
 
 CV-025 candidate · The document/working-notes switch now follows the case locale, including its accessible group name. The case tab and document switch share the same document label. Selection still uses the workspace controller and document identity. Signed-in language-switch acceptance follows publication.
+
+
+## 18 November 2026 - CV-033 security repair
+
+Local maintenance patches for both Picomatch major lines reject ambiguous
+single-branch repeated extglobs using the existing literal fallback. Five focused
+security/compatibility tests pass. Pinned npm resolves the isolated lock with zero
+audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
+#316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
+CV-010 live receipt checks remain pending an active test client.
+Evidence: docs/testing/cv033-picomatch-security.md.

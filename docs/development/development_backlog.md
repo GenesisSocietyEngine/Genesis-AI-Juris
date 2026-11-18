@@ -169,3 +169,13 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 14 November 2026 · CV-017 and CV-018 implemented in a separate follow-up to PR #294. [Scope and acceptance evidence](../testing/case-documents-billing-context.md).
 14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.
+
+## 18 November 2026 - CV-033 security repair
+
+Local maintenance patches for both Picomatch major lines reject ambiguous
+single-branch repeated extglobs using the existing literal fallback. Five focused
+security/compatibility tests pass. Pinned npm resolves the isolated lock with zero
+audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
+#316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
+CV-010 live receipt checks remain pending an active test client.
+Evidence: docs/testing/cv033-picomatch-security.md.
