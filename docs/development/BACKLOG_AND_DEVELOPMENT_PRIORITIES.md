@@ -1,6 +1,6 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
-**Current CV-032 slice:** confirmed install-Busy launch race repaired locally with strict bounded retry and retained attempts. Hosted workflow verification and #326's green merge remain pending. Boot-stall/timeout causes are distinct open monitoring items; no deadlines or acceptance checks are weakened. [Investigation](../testing/cv032-ios-install-readiness.md).
+**CV-032 bounded repair merged and hosted-verified:** #326 and #327 merged in order after 18 passing checks each. Both native and editor workflows passed; exact-source editor receipts and retained boot evidence were inspected. Separate boot-stall, launch-timeout and VM-log discovery causes remain open monitoring items. No deadlines or identity checks were weakened. Public remains v228. [Investigation](../testing/cv032-ios-install-readiness.md).
 
 **CV-041 complete on public v228.** #324 and #325 merged green. Signed-in EN/RU counts passed at zero, one and three records/citations, with reload and language switching. The authorized synthetic additions remain pending review; pending-proposal 0/1/multiple coverage is local. [Release evidence](../testing/cv041-evidence-counts.md#public-v228--release-and-signed-in-acceptance).
 
@@ -16,7 +16,7 @@ CV-012's authorized synthetic source-to-proposal, human review and apply journey
 
 | Order | Item | Deliverable and acceptance |
 | --- | --- | --- |
-| 1 | CV-032 · P2 · CI reliability follow-up | Investigate recurring Simulator boot/launch failures with retained diagnostics. #322 and #323 eventually passed all checks; do not weaken gates or conflate infrastructure symptoms with product regressions. [Latest recurrence](../testing/cv035-russian-review-layout.md#integration-and-live-gate). |
+| 1 | CV-032 · P2 · Monitor remaining CI failures | The install-Busy race repair is merged. On recurrence, distinguish boot stalls, ambiguous launch timeouts and VM-log discovery discrepancies; preserve structured OS PID/path/sender evidence before changing guards. A passing retry does not establish the underlying cause. [Latest evidence](../testing/cv032-ios-install-readiness.md#hosted-verification-follow-up). |
 
 ## Work awaiting a dependency
 
