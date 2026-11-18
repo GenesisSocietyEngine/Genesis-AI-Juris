@@ -1,0 +1,34 @@
+{
+  "en": {
+    "groupedRows": 2,
+    "sourceRecords": 3,
+    "recorded": 2,
+    "missing": 1,
+    "sumEUR": 125,
+    "csvFiles": {
+      "grouped-en.csv": "681f0f334f9a8c46719e3d4424ad74ae2f92c5e599efc0758f9d1d7ec69d0400",
+      "rows-en.csv": "9fbb5ab017d602c49e8134e265e6da0b82145b331a551bcf649dab11102aa312"
+    },
+    "hashPolicy": "csvFiles hashes the original browser downloads (CRLF); normalizedEvidenceFiles hashes the Git LF copies.",
+    "normalizedEvidenceFiles": {
+      "grouped-en.csv": "97c551609dc20d176c684be2f826de55803d241c37803595ba1b9de4d2923b1c",
+      "rows-en.csv": "9fe4daa7c8521bdb3205bc609dc720f9b0f4a7d0d0d39f02d32f32a49b4ce021"
+    }
+  },
+  "ru": {
+    "groupedRows": 2,
+    "sourceRecords": 3,
+    "recorded": 2,
+    "missing": 1,
+    "sumEUR": 125,
+    "csvFiles": {
+      "grouped-ru.csv": "7b6123881ef4e9e89318b9e1f54a50e5da9f7f2ce4fd86c1cd915ddb92254050",
+      "rows-ru.csv": "37f2328dbc358e87d8b382566ebe3e2952d6024b0af77c91ad105c6602cd7fde"
+    },
+    "hashPolicy": "csvFiles hashes the original browser downloads (CRLF); normalizedEvidenceFiles hashes the Git LF copies.",
+    "normalizedEvidenceFiles": {
+      "grouped-ru.csv": "0abb5f93b09da39ba38f038c206191d75d54156b9e5f1f0efc5a6f7d135c7b56",
+      "rows-ru.csv": "4a6cfdbee409fb3052f01f6b9751f1d045a0cc39249306ae3d4b8300e3b98069"
+    }
+  }
+}
