@@ -58,7 +58,9 @@
     "typescript": "5.9.3",
     "vinext": "1.0.0-beta.8",
     "vite": "8.2.4",
-    "wrangler": "4.133.0"
+    "wrangler": "4.133.0",
+    "picomatch2": "file:vendor/picomatch2",
+    "picomatch": "file:vendor/picomatch4"
   },
   "overrides": {
     "@esbuild-kit/core-utils": {
@@ -76,7 +78,11 @@
     },
     "braces": "$braces",
     "sharp": "0.35.5",
-    "zod": "4.6.6"
+    "zod": "4.6.6",
+    "picomatch": "$picomatch",
+    "micromatch": {
+      "picomatch": "file:../../vendor/picomatch2"
+    }
   },
   "type": "module",
   "displayName": "GENESIS: JURIS Web"

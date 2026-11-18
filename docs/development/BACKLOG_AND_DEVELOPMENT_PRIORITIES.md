@@ -1,6 +1,6 @@
 # CaseVant backlog and development priorities · 17 November 2026
 
-Public baseline: v220. The delivery ledger is [development_backlog.md](development_backlog.md). This file sets the order for the next implementation and acceptance work.
+Public baseline: v221. The delivery ledger is [development_backlog.md](development_backlog.md). This file sets the order for the next implementation and acceptance work.
 
 ## What the check audit found
 
@@ -13,7 +13,7 @@ Public baseline: v220. The delivery ledger is [development_backlog.md](developme
 | Order | Item and state | Next deliverable | Acceptance |
 | --- | --- | --- | --- |
 | 1 | CV-032 · P2 · iOS CI reliability · merged in #313 | Monitor subsequent simulator launches. The bounded wait and retained timeout diagnostics are on main. | A timed-out launch fails before Flutter drive, with no accepted PID. The real macOS restart workflow completes on the candidate. Track recurrence across subsequent PRs. |
-| 2 | CV-010 · Client intake and signatures · server receipts implemented and verified locally | Release the version-bound intake requests and receipts, then exercise both languages with an active synthetic client. Provider signing follows separately. [Receipt evidence](../testing/cv010-server-intake-receipts.md) | Authorized retry yields one receipt; a changed version, revoked grant or second recipient cannot complete the request. Review EN/RU staff and client journeys with synthetic records. |
+| 2 | CV-010 · Client intake and signatures · server receipts released in v221 | Exercise receipt submission, exact-version retries and reload in both languages with an active synthetic client. Provider signing follows separately. [Receipt evidence](../testing/cv010-server-intake-receipts.md) | Authorized retry yields one receipt; a changed version, revoked grant or second recipient cannot complete the request. Review EN/RU staff and client journeys with synthetic records. |
 | 3 | CV-012 · Case-scoped AI review and reporting · planned | Trace a proposal to accessible case sources and require a human decision to apply it. Specify the affected report's population and treatment of missing data. | An unauthorized or stale source cannot be applied; report fixtures distinguish missing data from a measured zero. |
 
 CV-032 comes first because the same failure delayed three merges, including a documentation-only change. CV-010 remains the first product implementation.
@@ -29,3 +29,13 @@ CV-032 comes first because the same failure delayed three merges, including a do
 | Follow-up | CV-011 · Billing acceptance | A second authorized test staff identity. Verify production role boundaries for the already-shipped EUR register. |
 
 CV-028 and CV-029 remain pending. The November 17 release walkthrough found three invited grants and two revoked grants across the two synthetic cases.
+
+## 18 November 2026 - CV-033 security repair
+
+Local maintenance patches for both Picomatch major lines reject ambiguous
+single-branch repeated extglobs using the existing literal fallback. Five focused
+security/compatibility tests pass. Pinned npm resolves the isolated lock with zero
+audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
+#316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
+CV-010 live receipt checks remain pending an active test client.
+Evidence: docs/testing/cv033-picomatch-security.md.

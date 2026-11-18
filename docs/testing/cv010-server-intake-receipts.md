@@ -19,3 +19,13 @@ The [hosted Linux web and PDF workflow](https://github.com/GenesisSocietyEngine/
 The separate full Windows run initially reported seven failing checks. Three Git-history and schema checks passed on rerun with the checkout explicitly trusted by Git. The other four concerned build provenance, vendored dependency identity and the Open Graph font transforms in a checkout with linked dependencies. The hosted workflow exercised these checks on a clean installation.
 
 The production baseline is v220. Applying migration 0039 and publishing the application are production release steps. A signed-in production walkthrough needs an active test client. Provider-backed signatures remain a separate CV-010 deliverable.
+
+## Public v221 · 17 November 2026
+
+PR #314 merged as `02550a471fe23348c9bb46d6c95164e2a5c82137` after 18 successful checks. The initial Chrome packaging startup failure passed on rerun. The [exact-main web and PDF run](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44131516717) supplied the release artifact. The official Sites workflow synchronized the same application inputs, packaged migration 0039 and published v221 successfully at environment revision 42. Both origins reported the exact source and verified 229/229 assets, including 63 retained v220 assets.
+
+The published staff portal loaded its intake query successfully after migration in EN/RU. The two synthetic cases still have three invited and two revoked grants. The independent client signed in as maxim.hayan@erpvalue.eu sees no shared cases in either language. Active-client submission, exact-version retry and reload remain pending. CV-028 and CV-029 remain pending too.
+
+The actual portal component with local D1 and synthetic identities again passed the EN/RU submission and reload walkthrough. The route scenario again passed concurrent matching retries, conflicting-answer rejection, stale-version rejection, second-recipient denial and revocation checks. Production grant states and private case content were only read during this release verification.
+
+[Release receipt](receipts/cv010-v221.json).

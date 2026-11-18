@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-17",
+  "version": 221,
+  "source": "02550a471fe23348c9bb46d6c95164e2a5c82137",
+  "sitesSource": "42fdcbb95dc41b4693e13d87403120db221bf389",
+  "deployment": "appgdep_6afc8aa1287481918ddfadbd5c6407ef",
+  "migration": "0039_portal_intake_receipts",
+  "migrationSha256": "1f66372bc4ea46e28417f57ca9bfc4964b8f69bbac56cf28812a64d4ec87bb7e",
+  "environmentRevision": 42,
+  "assetsPerOrigin": 229,
+  "currentAssets": 166,
+  "retainedAssets": 63,
+  "activeClients": 0,
+  "liveReceiptAcceptance": "pending-active-client"
+}

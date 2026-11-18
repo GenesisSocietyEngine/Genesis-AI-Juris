@@ -1,5 +1,7 @@
 # CaseVant development backlog
 
+**17 November 2026 · Public v221 · CV-010 receipts.** PR #314 merged after all 18 checks passed, including the successful rerun of a Chrome startup failure. Sites published merged source `02550a471fe23348c9bb46d6c95164e2a5c82137` with migration 0039. Both origins returned the exact runtime and verified all 229 assets. Signed-in staff portal rendering passed in EN/RU. Three invited grants and two revoked grants were found across the two synthetic cases. The signed-in independent client had no available cases. Live receipt submission, exact-version retry and reload remain pending an active test client. The isolated bilingual browser and D1 retry checks passed again.
+
 **17 November 2026 · CV-010 server receipts.** PRs [#312](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/312) and [#313](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/313) each merged after 18 successful checks. Staff can issue an exact case intake revision to one active recipient. The client can correct and submit answers once and recover the same receipt on retry. Local EN/RU and D1 checks passed. Release and signed-in production acceptance remain open. [Verification](../testing/cv010-server-intake-receipts.md).
 
 **17 November 2026 · CV-010 prototype.** [PR #311](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/311) merged after all 18 checks passed. Client intake and a separately authorized, version-specific test signature passed a bilingual browser walkthrough and workflow tests. The reviewable prototype uses synthetic in-memory records. CV-028 and CV-029 await an active test client. [Review and evidence](../testing/cv010-client-intake-prototype.md).
@@ -100,7 +102,7 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 | ID | Area | First reviewable outcome |
 | --- | --- | --- |
-| CV-010 | In progress · document workflows | [Version-bound requests and durable client receipts](../testing/cv010-server-intake-receipts.md) verified locally. Publish the migration and application, then verify with an active client in EN/RU. Provider selection and independently verified signing evidence remain open. |
+| CV-010 | In progress · document workflows | [Version-bound requests and durable client receipts](../testing/cv010-server-intake-receipts.md) released in v221 with migration 0039. Signed-in staff rendering passed in EN/RU. Verify live receipt submission, exact-version retry and reload when an active client is available. Provider selection and independently verified signing evidence remain open. |
 | CV-011 | Practice finance · Core verified in v209 | EUR time, expenses, invoice lines, receipts, trust entries, payment plans and reconciliation passed isolated checks. Published migration 0036 and signed-in persistence verified. Independent production staff role not exercised. [Candidate and remaining scope](../testing/practice-billing-cv011.md). |
 | CV-012 | AI and reporting | Review a case-scoped proposal against cited sources; require explicit human application. Define what an operational report counts and how incomplete data is shown. |
 
@@ -167,3 +169,13 @@ These carry forward the [competitive roadmap](MYCASE_COMPETITIVE_CYCLES.md#featu
 
 14 November 2026 · CV-017 and CV-018 implemented in a separate follow-up to PR #294. [Scope and acceptance evidence](../testing/case-documents-billing-context.md).
 14 November 2026 · CV-014/CV-015 release gate. Intel simulator attempts timed out during preparation, driver attachment and editor interaction. The restart workflow now runs on an Apple Silicon macOS 15 host. The independent native smoke workflow continues on Intel. All six restart phases and their deadlines remain in force. CI acceptance pending.
+
+## 18 November 2026 - CV-033 security repair
+
+Local maintenance patches for both Picomatch major lines reject ambiguous
+single-branch repeated extglobs using the existing literal fallback. Five focused
+security/compatibility tests pass. Pinned npm resolves the isolated lock with zero
+audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
+#316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
+CV-010 live receipt checks remain pending an active test client.
+Evidence: docs/testing/cv033-picomatch-security.md.
