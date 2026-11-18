@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Portable controls; actual authenticated system-log proof requires macOS CI."""
 import datetime
+import hashlib
 import importlib.util
 import io
 import json
@@ -366,6 +367,13 @@ class PhaseLifecycleTests(unittest.TestCase):
             args = SimpleNamespace(phase=phase_name, device=device, evidence=evidence, source="a" * 40, nonce="12-1")
             if phase_name != "write":
                 (evidence / "write-input-bundle.json").write_bytes(phase.manifest(bundle))
+                for prior in dict.fromkeys(("write", phase.PHASES[phase.PHASES.index(phase_name) - 1])):
+                    phase.write_json(evidence / f"{prior}-launch.json", {
+                        "phase": prior, "source_sha": args.source, "run_nonce": args.nonce,
+                        "simulator": device, "app_id": phase.APP, "executable": str(installed / "Runner"),
+                        "installation_policy": "single-verified-install-v1", "complete": True,
+                        "pid": 122, "vm_pid": 122,
+                        "bundle_manifest_sha256": hashlib.sha256(phase.manifest(bundle)).hexdigest()})
             reader = Mock()
             reader.process.poll.return_value = None
             reader.process.pid = 456
@@ -493,6 +501,8 @@ class PhaseLifecycleTests(unittest.TestCase):
                             self.assertEqual(builds, [])
                         drives = [command for command in driver_commands if command[:2] == ["flutter", "drive"]]
                         self.assertEqual(len(drives), 1)
+                        installs = [cmd for cmd in commands if cmd[:3] == ["xcrun", "simctl", "install"]]
+                        self.assertEqual(len(installs), 1 if phase_name == "write" else 0)
                         for command in driver_commands:
                             self.assertIn("--target=" + phase.TARGET, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source, command)
@@ -514,7 +524,7 @@ class PhaseLifecycleTests(unittest.TestCase):
         with patch.object(phase.time, "sleep"):
             self.exercise("busy-then-success")
 
-    def test_later_phases_keep_the_built_bundle_without_another_build(self):
+    def test_later_phases_keep_the_verified_installation_without_build_or_install(self):
         for phase_name in phase.PHASES[1:]:
             with self.subTest(phase=phase_name):
                 self.exercise(phase_name=phase_name)
@@ -1054,6 +1064,74 @@ class InstallEvidenceTests(unittest.TestCase):
             root = pathlib.Path(temp)
             args, built = self.fixture(root)
             verifier["verify_install"](root, args.phase, args.source, args.nonce, args.device, built)
+
+    def relaunch_fixture(self, root, phase_name="read"):
+        args, built = self.fixture(root)
+        args.phase = phase_name
+        for name in dict.fromkeys(("write", phase.PHASES[phase.PHASES.index(phase_name) - 1], phase_name)):
+            phase.write_json(root / f"{name}-launch.json", {
+                "phase": name, "source_sha": args.source, "run_nonce": args.nonce,
+                "simulator": args.device, "app_id": phase.APP, "executable": EXE,
+                "installation_policy": "single-verified-install-v1", "complete": True,
+                "pid": 123, "vm_pid": 123, "bundle_manifest_sha256": hashlib.sha256(built).hexdigest()})
+        return args, built
+
+    def test_completed_installation_can_be_reused_without_install_receipts(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            args, built = self.relaunch_fixture(root)
+            phase.validate_relaunch(args, EXE, built)
+            verifier["verify_install"](root, "read", args.source, args.nonce, args.device, built)
+            self.assertFalse((root / "read-install.json").exists())
+
+    def test_relaunch_refuses_changed_container_or_incomplete_foreign_prior_phase(self):
+        changes = {"source_sha": "b" * 40, "run_nonce": "other", "simulator": "other",
+                   "app_id": "other.app", "executable": "/different/Runner.app/Runner",
+                   "phase": "read", "bundle_manifest_sha256": "0" * 64,
+                   "installation_policy": "reinstall", "complete": False, "pid": True, "vm_pid": 999}
+        for prior in ("write", "incomplete-write"):
+            for key, value in changes.items():
+                with self.subTest(prior=prior, key=key), tempfile.TemporaryDirectory() as temp:
+                    root = pathlib.Path(temp)
+                    args, built = self.relaunch_fixture(root, "incomplete-read")
+                    path = root / f"{prior}-launch.json"
+                    launch = json.loads(path.read_text())
+                    launch[key] = value
+                    phase.write_json(path, launch)
+                    with self.assertRaises(RuntimeError):
+                        phase.validate_relaunch(args, EXE, built)
+        with tempfile.TemporaryDirectory() as temp:
+            args, built = self.relaunch_fixture(pathlib.Path(temp))
+            with self.assertRaisesRegex(RuntimeError, "identity changed"):
+                phase.validate_relaunch(args, "/relocated/Runner.app/Runner", built)
+            (args.evidence / "write-launch.json").unlink()
+            with self.assertRaises(FileNotFoundError):
+                phase.validate_relaunch(args, EXE, built)
+
+    def test_reuse_verifier_requires_actual_first_install_and_stable_path(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))
+        for mode in ("missing-install", "failed-install", "new-install", "path", "source", "nonce", "policy"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
+                root = pathlib.Path(temp)
+                args, built = self.relaunch_fixture(root)
+                if mode == "missing-install":
+                    (root / "write-install.json").unlink()
+                elif mode == "failed-install":
+                    path = root / "write-install.json"
+                    receipt = json.loads(path.read_text())
+                    receipt["exit_code"] = 7
+                    phase.write_json(path, receipt)
+                elif mode == "new-install":
+                    (root / "read-install-start.json").write_text("{}")
+                else:
+                    path = root / "read-launch.json"
+                    launch = json.loads(path.read_text())
+                    key = {"path": "executable", "source": "source_sha", "nonce": "run_nonce", "policy": "installation_policy"}[mode]
+                    launch[key] = "changed"
+                    phase.write_json(path, launch)
+                with self.assertRaises((AssertionError, FileNotFoundError)):
+                    verifier["verify_install"](root, "read", args.source, args.nonce, args.device, built)
 
     def test_source_owned_verifier_rejects_incomplete_or_tampered_install_proof(self):
         verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))

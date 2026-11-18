@@ -598,6 +598,24 @@ def launch_after_install(args, executable):
     raise AssertionError("Unreachable launch attempt")
 
 
+def validate_relaunch(args, executable, built):
+    """Keep the verified installation stable across real process restarts."""
+    require(args.phase in PHASES[1:], "Invalid relaunch phase")
+    previous = PHASES[PHASES.index(args.phase) - 1]
+    for name in dict.fromkeys(("write", previous)):
+        launch = json.loads((args.evidence / f"{name}-launch.json").read_text())
+        expected = {"phase": name, "source_sha": args.source, "run_nonce": args.nonce,
+                    "simulator": args.device, "app_id": APP, "executable": str(executable),
+                    "installation_policy": "single-verified-install-v1",
+                    "bundle_manifest_sha256": hashlib.sha256(built).hexdigest()}
+        require(all(launch.get(key) == value for key, value in expected.items()),
+                "Relaunch installation identity changed")
+        require(launch.get("complete") is True, "Previous application phase incomplete")
+        require(type(launch.get("pid")) is int and launch["pid"] > 1
+                and type(launch.get("vm_pid")) is int and launch["vm_pid"] == launch["pid"],
+                "Previous application process identity invalid")
+
+
 def run(args):
     evidence = args.evidence.resolve()
     require(evidence.is_dir(), "Evidence directory missing")
@@ -611,18 +629,23 @@ def run(args):
     (evidence / f"{args.phase}-input-bundle.json").write_bytes(built)
     baseline = evidence / "write-input-bundle.json"
     require(baseline.read_bytes() == built, "Application bundle changed between phases")
-    # An existing app is rejected before reinstalling; installation must not mask
-    # an unexpected live process or use a different isolated application's files.
+    # Installation/relaunch must not mask an unexpected live process.
     inventory = command(["ps", "-axo", "pid=,comm="]).stdout.decode("utf-8", errors="strict")
     require(not any(f"/Devices/{args.device}/" in line and line.rstrip().endswith("/Runner.app/Runner")
                     for line in inventory.splitlines()), "Unexpected pre-existing isolated Runner")
-    install_bundle(args, bundle, built)
+    # Reinstalling identical binaries changes container paths while persisted
+    # OS log history can retain the first path. Install once; every later phase
+    # revalidates the completed journey, exact container and entire bundle.
+    if args.phase == "write":
+        install_bundle(args, bundle, built)
     container = command(["xcrun", "simctl", "get_app_container", args.device, APP, "app"]).stdout.decode().strip()
     expected_parent = pathlib.Path.home() / "Library/Developer/CoreSimulator/Devices" / args.device / "data/Containers/Bundle/Application"
     installed = pathlib.Path(container)
     require(installed.name == "Runner.app" and installed.parent.parent == expected_parent,
             "Installed container is outside selected Simulator")
     executable = installed / "Runner"
+    if args.phase != "write":
+        validate_relaunch(args, executable, built)
     predicate = flutter_log_predicate(executable)
     reader = LogReader(["xcrun", "simctl", "spawn", args.device, "log", "stream", "--style", "json",
                         "--predicate", predicate], evidence / f"{args.phase}-system.log")
@@ -659,6 +682,7 @@ def run(args):
         reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl")
         process_matches(identity.pid, executable)
         launch = {"schema": "tax-ios-system-log-launch-v2", "phase": args.phase, "source_sha": args.source,
+                  "installation_policy": "single-verified-install-v1",
                   "log_capture_policy": "flutter-framework-v1", "log_capture_predicate": predicate,
                   "run_nonce": args.nonce, "simulator": args.device, "app_id": APP,
                   "log_reader_pid": reader.process.pid, "pid": identity.pid, "executable": str(executable),
