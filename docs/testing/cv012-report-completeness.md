@@ -62,7 +62,7 @@ prospect · zero estimate” (EUR 0) and “CV-012 synthetic prospect · EUR 125
 
 [English screenshot](receipts/cv012-v222/reports-en.jpg) ·
 [Russian screenshot](receipts/cv012-v222/reports-ru.jpg) ·
-[CSV verification and hashes](receipts/cv012-v222/csv-verification.json).
+[CSV verification and hashes](receipts/cv012-v222/csv-verification.json). The receipt records both original browser-download hashes and hashes of the repository copies normalized to LF by Git.
 
 CV-012 remains in progress for broader signed-in AI proposal/review/apply
 acceptance. CV-010 live receipt submission, exact-version retries and reload
