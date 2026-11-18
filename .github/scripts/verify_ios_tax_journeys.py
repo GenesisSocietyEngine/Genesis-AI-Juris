@@ -11,6 +11,22 @@ import sys
 
 
 def verify_install(root, phase, source, nonce, simulator, bundle):
+    if phase != "write":
+        assert phase in ("read", "incomplete-write", "incomplete-read", "legacy-write", "legacy-read")
+        # Later phases prove reuse, never fabricate another successful install.
+        assert not list(root.glob(f"{phase}-install.*"))
+        assert not (root / f"{phase}-install-start.json").exists()
+        verify_install(root, "write", source, nonce, simulator, bundle)
+        first = json.loads((root / "write-launch.json").read_text())
+        current = json.loads((root / f"{phase}-launch.json").read_text())
+        for launch, name in ((first, "write"), (current, phase)):
+            assert launch["phase"] == name and launch["complete"] is True
+            assert launch["source_sha"] == source and launch["run_nonce"] == nonce
+            assert launch["simulator"] == simulator
+            assert launch["installation_policy"] == "single-verified-install-v1"
+            assert launch["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()
+        assert current["executable"] == first["executable"]
+        return
     start = json.loads((root / f"{phase}-install-start.json").read_text())
     terminal = json.loads((root / f"{phase}-install.json").read_text())
     assert start["schema"] == terminal["schema"] == "tax-ios-install-command-v1"
@@ -170,6 +186,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         launch = json.loads((root / f"{phase}-launch.json").read_text())
         assert launch["schema"] in ("tax-ios-system-log-launch-v1", "tax-ios-system-log-launch-v2") and launch["complete"] is True
         assert launch["phase"] == phase and launch["source_sha"] == source and launch["run_nonce"] == nonce
+        assert launch["installation_policy"] == "single-verified-install-v1"
         assert launch["pid"] == launch["vm_pid"] == receipt["pid"]
         assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
         assert launch["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()

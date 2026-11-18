@@ -1,4 +1,6 @@
-# CaseVant backlog and development priorities · 18 November 2026
+# CaseVant backlog and development priorities · 19 November 2026
+
+**Current CV-032 repair:** #329 merged green and two hosted baselines confirmed persisted-history paths disagree after repeated installs. Keep one verified installation for the six real process restarts; retain full bundle/container/identity checks. Local 67 lifecycle / 15 diagnostic tests pass; hosted proof of stable history paths is pending. First-launch timeout and boot-stall causes remain open. [Evidence](../testing/cv032-ios-install-readiness.md#19-november--confirmed-persisted-history-path-discrepancy).
 
 **CV-032 current follow-up:** #328 merged green. Remaining timeout/discovery causes are unconfirmed. Repair the confirmed loss of OS metadata in compact diagnostics, retain structured VM announcements and compare successful hosted baselines before changing launch or identity behavior. Local 15 diagnostic / 64 lifecycle tests pass; hosted validation pending. [Investigation](../testing/cv032-ios-install-readiness.md#remaining-timeout-and-discovery-investigation).
 
@@ -18,7 +20,7 @@ CV-012's authorized synthetic source-to-proposal, human review and apply journey
 
 | Order | Item | Deliverable and acceptance |
 | --- | --- | --- |
-| 1 | CV-032 · P2 · Monitor remaining CI failures | The install-Busy race repair is merged. On recurrence, distinguish boot stalls, ambiguous launch timeouts and VM-log discovery discrepancies; preserve structured OS PID/path/sender evidence before changing guards. A passing retry does not establish the underlying cause. [Latest evidence](../testing/cv032-ios-install-readiness.md#hosted-verification-follow-up). |
+| 1 | CV-032 · P2 · Verify stable-install repair | Two hosted baselines confirm persisted-history path disagreement after reinstall. Verify six fresh processes on one fully checked installation and matching history paths, then integrate green. Keep first-launch timeouts and boot stalls separate. [Latest evidence](../testing/cv032-ios-install-readiness.md#19-november--confirmed-persisted-history-path-discrepancy). |
 
 ## Work awaiting a dependency
 

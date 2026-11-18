@@ -1,5 +1,20 @@
 # CV-032 — recurring iOS CI investigation
 
+## 19 November — confirmed persisted-history path discrepancy
+
+#329 merged as `d7a82d9e0d3d75263b6067ac03b309889f6cc870` after all 18 checks passed. Both editor runs passed on attempt 1 and retained the new structured diagnostic baseline:
+
+- [44412401100](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44412401100), source `fe936fbba0811df3518c336bb1cef79eded10924`, retained six VM announcements in 8,238 bytes; query completed in 3.82 seconds. Raw diagnostic SHA-256: `e1fa7a8c99fd426aefb3df14b0324977cf3ecb4ed10c79ca6a11c3af30772540`.
+- [44412429230](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44412429230), same source, independently reproduced the same pattern.
+
+In both runs, write had matching stream/history paths and used both discovery sources. Every later phase used stream only. Comparing each retained discovery event to the later structured history gives the same PID, monotonic timestamp and message, but different process/sender paths for all five later phases. The first run also confirms matching process/sender binary UUIDs. The persisted history uses the first installation's container path, while the verified live stream uses each newly installed container. This confirms that reinstalling the identical binary destabilizes exact-path history recovery. It explains a path by which loss of the live announcement leaves empty exact-path history queries; it does not retrospectively prove the missing metadata of every earlier failure.
+
+Repair: install only for write. Later phases require complete first/previous launch receipts bound to the exact source, run nonce, simulator, app, full-bundle hash and stable executable path. Each phase still checks process absence, hashes the installed bundle and launches a new PID; exact OS-log sender/path, freshness, authenticated VM identity and termination guards remain unchanged. The final verifier requires the real initial install-command proof, rejects later install-command receipts and verifies the shared container. No fabricated per-phase installation success or alternate URI source is introduced. The six application phases and original deadlines remain intact.
+
+Local verification: 67 lifecycle tests and 15 diagnostic tests pass. Tests cover all five relaunch phases without another build/install, missing or foreign prior receipts, incomplete phases, changed container/hash/policy/process identity, missing/failed first-install proof and unexpected later install evidence. Hosted acceptance must additionally show all six phases on one container and matching structured history paths. First-launch timeouts and boot stalls remain separate unconfirmed causes.
+
+Upstream comparison: [Flutter #193142](https://github.com/flutter/flutter/pull/193142) addresses starting the log reader before app launch. This harness already starts its reader before launch and performs bounded history queries; that upstream change alone does not explain or repair the confirmed persisted-path disagreement.
+
 ## Remaining timeout and discovery investigation
 
 Follow-up base: `c412e87357a8db12a0b6a000337cf5d37ff57520`, the merge of #328 after all 18 checks passed. The task-owned checkout was clean at `d922efb` before fetching and branching from canonical main. No application release or production data change is involved.
