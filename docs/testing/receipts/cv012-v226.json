@@ -1,0 +1,88 @@
+{
+  "date": "2026-11-18",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_24bdca84525c8191a46ccace449266df",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 226,
+    "source": {
+      "commit_sha": "2242974054e968321f9c778a61f2c07e74acb626"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000002c7c81f4ae502731a61760a5",
+      "content_hash": "sha256:da0dc2f39b7e9f39802c72ec07fc0345d17fd33c696b8829aca59de232249848",
+      "size_bytes": 59484160,
+      "file_count": 727
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6afdb377ef108191840a5e94e117d9b8",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_24bdca84525c8191a46ccace449266df",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-18T14:17:54.710223+00:00"
+  },
+  "canonicalCommit": "1c33529a23f26017fc9d6efcd35157c03c9c3b2a",
+  "ciRun": 44320671861,
+  "ci": {
+    "attempt": 1,
+    "passed": 2104,
+    "failed": 0,
+    "inheritedSkips": 3,
+    "htmlChecks": 2,
+    "audits": "zero vulnerabilities"
+  },
+  "applicationInputsSha256": "8fe6c182ae95e908283f5262685fb038c2f65c4273c7314439b9266ddb0c5e2b",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "initialVerified": 220,
+      "finalVerified": 221,
+      "assets": 221
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": 221,
+      "assets": 221
+    }
+  ],
+  "live": {
+    "jobId": "proposal_job_182d842fe13e4228ac32b62ad1cd6b69",
+    "attempt": 3,
+    "sourceVersion": 2,
+    "sourceAnchorId": "source_anchor_cbb6101229894248b1ef5b08d1493a64",
+    "anchorReview": "accepted",
+    "proposalId": "proposal_28e6ff23bf004da6922ee778f8bc2187",
+    "proposalReview": "accepted",
+    "reviewedAt": "2026-11-18T14:18:45.226Z",
+    "reviewingActorRef": "actor_90d09985d0335c20fadf63f458ba4682",
+    "reviewNote": "CV-012 QA — synthetic fixture / синтетический пример. Verified version 2 and exact quotation; fixture self-label only, no legal conclusion.",
+    "acceptedObjectType": "professional_assertion",
+    "acceptedObjectId": "assertion_70f91703a9e74c7880cbc873d514b62a",
+    "assertionStatus": "accepted",
+    "pendingProposals": 0,
+    "enRuSwitching": "same proposal/source/note retained in both directions",
+    "reloads": [
+      "en",
+      "ru"
+    ],
+    "audit": "UI shows proposal accepted after source accepted; storage confirms actor and timestamp"
+  },
+  "remaining": [
+    "CV-035 Evidence/audit localization",
+    "CV-040 review readability",
+    "narrow layout acceptance",
+    "CV-010/028/029 active test client"
+  ]
+}
