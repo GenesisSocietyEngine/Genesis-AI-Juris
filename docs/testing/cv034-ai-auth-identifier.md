@@ -1,5 +1,15 @@
 # CV-034 — AI generation authentication identifier
 
+## Public v223 and CV-036 follow-up
+
+PR #318 merged at 11:38:50 UTC after all 18 checks passed, including both iOS restart workflows. Exact-main run 44296588924 passed 2,099 tests with zero failures and three inherited skips, two HTML checks and zero vulnerabilities in both audits. Sites published v223 at 11:50:09 UTC from canonical `268dced9f505924f3c1698923d7b610658d1141f`; both origins returned that identity and verified 221/221 assets. Runtime environment revision remains 42. [Release receipt](receipts/cv034-v223.json).
+
+The signed-in owner explicitly retried the same version-2 source job. Attempt 2 reached the provider and failed at the next guard with `invalid_response / provider_model_mismatch` at 11:51:03 UTC (request `5ce99eb15d46acf39b0c0f0c7a48bc69`). This confirms the CV-034 identifier repair, but **does not complete CV-012**. No proposals or review decisions were created.
+
+**CV-036 · P1:** the adapter compared the returned model literally with the requested `gpt-5.6`. [OpenAI's current model documentation](https://developers.openai.com/api/docs/models/gpt-5.6-sol) explicitly maps that alias to `gpt-5.6-sol`. The narrow follow-up permits only this documented pair in addition to exact matches. It does not accept arbitrary prefixes, dated variants or other model tiers, and the existing receipt digest retains the provider's returned model. No runtime credential, model selection or request configuration changed, so the failed job keeps its exact retry binding. Twenty-one focused tests pass; merge/release/live retry of this follow-up remain pending.
+
+CV-035's untranslated Russian controls/notices remain open. CV-032's #317 retry failed again at the 120-second launch boundary, although both #318 restart jobs subsequently passed; continue monitoring rather than calling the native reliability issue resolved.
+
 ## 18 November 2026: signed-in v222 audit and repair
 
 Scope: continue CV-012 with the owner's authorized synthetic source, version 2 of `Synthetic release 209 original`, in the synthetic release-audit case. The user authorized bounded provider submission and suitable labelled QA review decisions. No real client material or new portal grants were used.
