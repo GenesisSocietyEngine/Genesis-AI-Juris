@@ -29,6 +29,8 @@ test("integrated review localizes both directions without altering exact history
     assert.match(ru, /Подготовить предложения ИИ по источникам/);
     assert.match(ru, /Решение по предложению ИИ записано/);
     assert.match(ru, /Утвердить с источниками/);
+    assert.match(en, /aria-label="Inspect AI proposal source Synthetic long source \/ Синтетический источник, version 2, document anchor"/);
+    assert.match(ru, /aria-label="Проверить источник предложения ИИ Synthetic long source \/ Синтетический источник, версия 2, ссылка на документ"/);
     assert.doesNotMatch(ru, />Accept with sources<|>Professional assertions<|>Review note<|>Inspectable sources</);
     for (const html of [en, ru]) {
       assert.ok(html.includes(h.note));

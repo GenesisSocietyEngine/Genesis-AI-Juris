@@ -322,7 +322,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.doesNotMatch(client, /name="redactionProfileId"/);
   assert.match(controller, /credentials: "same-origin"/);
   assert.match(controller, /cache: "no-store"/);
-  assert.match(client, /aria-label=\{"Inspect AI proposal source/);
+  assert.match(client, /aria-label=\{t\("Inspect AI proposal source "\) \+ sourceCitationLabel\(anchor, anchor\.id, locale\)\}/);
   assert.match(uploadForm, /name="documentId"/);
   assert.match(client, /action: "update_status", status: "received"/);
   assert.match(client, /action: "review", sourceAnchorId: anchor\.id, decision/);

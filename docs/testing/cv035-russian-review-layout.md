@@ -15,7 +15,7 @@ The signed-in owner audit reconfirmed English generation/disclosure, manual evid
 ### Local evidence
 
 - TypeScript check and focused ESLint passed.
-- Integrated existing workspace and new localization tests: 26 passed before the added count/error regression. Final focused result is recorded below before integration.
+- Integrated workspace, dossier UI and new localization tests: **39 passed, zero failures**. Full CI initially found a legacy source-text assertion that expected the English accessible label to be a literal. It now checks the localized call; integrated rendering separately verifies the exact EN/RU accessible citation names and targets. No product assertion was weakened.
 - Real integrated parent with synthetic transport: RU→EN→RU retained an unsaved review note and edited JSON. Saved and stale notices switched immediately in both directions. No fixture POST was sent. Original JSON expanded/collapsed, statement, quotation, accepted history and provenance remained inspectable.
 - Desktop 1280 px: expanded picker stacks review cards (667 px card, 629 px note); collapsed picker permits readable side-by-side cards. Phone 390 × 844: EN and RU stack cards with no document overflow (375 px document width, 301 px card). This is local component/browser evidence, not production acceptance.
 - Screenshots: [expanded RU](receipts/cv035-cv040/local-expanded-ru.png), [mobile RU](receipts/cv035-cv040/local-mobile-ru.png).
