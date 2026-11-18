@@ -43,3 +43,11 @@ Evidence: docs/testing/cv033-picomatch-security.md.
 ## 18 November 2026 - release acceptance
 
 CV-033 is resolved. CV-012 reporting is verified on public v222; broader AI journey acceptance remains open. CV-010, CV-028 and CV-029 remain pending an active test client. No new client grants were created. Two synthetic prospects were explicitly authorized and created for the missing/zero/positive estimate checks.
+# 18 November 2026 — priority update after signed-in AI audit
+
+1. **CV-034 (P1):** ship the tested authentication-pseudonym repair, then retry the authorized synthetic CV-012 source job and verify exact-source human review.
+2. **CV-035 (P2):** localize the Evidence review controls, disclosures and live notices; preserve selections, drafts and attribution across EN/RU switching.
+3. **CV-012:** complete remaining source-to-review/apply acceptance; reporting remains verified on v222.
+
+CV-032 simulator timeout recurred on #317; monitor the failed-job rerun. CV-010, CV-028 and CV-029 remain blocked on an active client. [Current audit](../testing/cv034-ai-auth-identifier.md).
+
