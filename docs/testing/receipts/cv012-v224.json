@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-18",
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_3b642e124960819197a56230aae27ccb",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 224,
+    "source": {
+      "commit_sha": "1ba76a4259b0337987efb6b422d41bed7c31b539"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_0000000025f4821092c375b4c0bf8c56",
+      "content_hash": "sha256:9d19dee46b863fee214ab00971ef75be4e6866e182729d10265f813930d51eee",
+      "size_bytes": 59484160,
+      "file_count": 727
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6afd9ac9a9a4819192152b02cb6b7513",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_3b642e124960819197a56230aae27ccb",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-18T12:33:20.143594+00:00"
+  },
+  "canonicalCommit": "d900ff07ccf31ad88c598125799ed58b56510bfc",
+  "ciRun": 44303122312,
+  "ci": {
+    "passed": 2100,
+    "failed": 0,
+    "inheritedSkips": 3,
+    "htmlChecks": 2,
+    "audits": "zero vulnerabilities"
+  },
+  "applicationInputsSha256": "87fa2f2a810d1fd7a76036f8bcd531f84d28eeb044c8653ae8572e3192898ccd",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "origins": [
+    {
+      "url": "https://casevant.pro",
+      "firstVerified": 214,
+      "finalVerified": 221,
+      "assets": 221
+    },
+    {
+      "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+      "verified": 221,
+      "assets": 221
+    }
+  ],
+  "live": {
+    "jobId": "proposal_job_182d842fe13e4228ac32b62ad1cd6b69",
+    "attempt": 3,
+    "status": "ready",
+    "providerReceiptDigest": "sha256-2bcd0970d947437ea33ad761b848a4549132501b27358e656f1d7d5c5ee98249",
+    "sourceVersion": 2,
+    "analyzedCharacters": 80,
+    "proposalId": "proposal_28e6ff23bf004da6922ee778f8bc2187",
+    "sourceAnchorId": "source_anchor_cbb6101229894248b1ef5b08d1493a64",
+    "anchorReview": "accepted",
+    "proposalReview": "pending",
+    "blocker": "CV-038: ordinary acceptance includes editedValue:null"
+  },
+  "remaining": [
+    "CV-035 Evidence review localization",
+    "CV-037 review prerequisite controls",
+    "CV-038 review payload",
+    "CV-010 active client gate"
+  ]
+}

@@ -19,7 +19,7 @@ const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bund
   build.onResolve({filter:/^react$/}, args => args.namespace === "effect-react" ? {path:"react",external:true} : {path:"react",namespace:"effect-react"});
   build.onLoad({filter:/.*/,namespace:"effect-react"}, () => ({contents:'export * from "react"; import { useRef as realUseRef } from "react"; export function useEffect(callback, dependencies) { globalThis.__b1Effects?.push({callback, dependencies}); } export function useLayoutEffect(callback, dependencies) { globalThis.__b1LayoutEffects?.push({callback, dependencies}); } export function useRef(value) { const ref=realUseRef(value); if (value===null && globalThis.__b1DraftRoot) ref.current=globalThis.__b1DraftRoot; return ref; }'}));
   build.onResolve({filter:/^react\/jsx-runtime$/}, args => args.namespace === "capture-jsx" ? {path:"react/jsx-runtime",external:true} : {path:"jsx",namespace:"capture-jsx"});
-  build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); if (props?.href?.startsWith("#source-")) globalThis.__b1Citations?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
+  build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); if (props?.onGenerate && props?.onReview) globalThis.__b1EvidenceReviews?.push(props.onReview); if (props?.href?.startsWith("#source-")) globalThis.__b1Citations?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
 }}] });
 mkdirSync(".artifacts/b1-render", { recursive: true }); const file = resolve(".artifacts/b1-render/component.mjs"); writeFileSync(file, built.outputFiles[0].text);
 const { AuthorizedMattersClient: Parent, SectionNavigation } = await import(pathToFileURL(file).href);
@@ -75,6 +75,68 @@ test("source review parent distinguishes exact audit version and focuses citatio
 });
 
 type CapturedEffect = { callback: () => unknown; dependencies?: unknown[] };
+
+test("integrated proposal review omits editedValue for accept/reject and preserves explicit edits", async () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const h = harness(), read = h.owner.options.transport;
+  const writes: Record<string, unknown>[] = [];
+  h.owner.options.transport = async (path, init) => {
+    if (init?.method === "POST" && path.includes("/proposals")) {
+      writes.push(JSON.parse(String(init.body)));
+      // Stop at the transport boundary; route persistence has separate D1 tests.
+      return Response.json({ error: "Synthetic transport stop" }, { status: 422 });
+    }
+    return read(path, init);
+  };
+  try {
+    h.owner.enter("case_a"); await h.owner.load(); h.owner.navigate("evidence");
+    for (const action of ["accept", "reject", "edit_and_accept"] as const) {
+      const callbacks: Array<(proposal: {id:string}, action:string, edited:string|null, note:string)=>void> = [];
+      globals.__b1EvidenceReviews = callbacks;
+      h.render();
+      assert.equal(callbacks.length, 1);
+      const edit = action === "edit_and_accept" ? '{"schema_version":1,"statement":"Reviewed synthetic quotation"}' : null;
+      callbacks[0]({ id: "proposal_test" }, action, edit, "Synthetic QA review");
+      for (let tries = 0; h.owner.busy && tries < 100; tries++) await new Promise(resolve => setTimeout(resolve, 1));
+      assert.equal(h.owner.busy, false);
+      const payload = writes.at(-1)!;
+      assert.equal(payload.action, action);
+      assert.equal(payload.proposalId, "proposal_test");
+      assert.equal(payload.expectedRevision, 7);
+      assert.equal(payload.reviewNote, "Synthetic QA review");
+      assert.equal(Object.hasOwn(payload, "editedValue"), action === "edit_and_accept");
+      if (edit !== null) assert.equal(payload.editedValue, edit);
+    }
+    assert.equal(writes.length, 3);
+  } finally { delete globals.__b1EvidenceReviews; h.owner.dispose(); }
+});
+
+test("proposal acceptance waits for every exact source anchor to be reviewed", async () => {
+  const h = harness(), read = h.owner.options.transport;
+  let review = "pending", retired: string | null = null, missing = false;
+  h.owner.options.transport = async (path, init) => {
+    if (path.includes("/evidence/anchors")) return Response.json({ source_anchors: [{ source_anchor_id: "anchor_a", document_id: "doc_a", document_version_id: "version_2", document_title: "Synthetic source", version_ordinal: 2, review_state: review, retired_at: retired }] });
+    if (new URL(path,"https://test.invalid").pathname.endsWith("/proposals")) return Response.json({proposals:[{proposal_id:"proposal_a",proposal_type:"fact",proposed_value:"Synthetic proposal",source_anchor_ids:missing?["anchor_a","missing"]:["anchor_a"],review_state:"pending"}]});
+    return read(path, init);
+  };
+  try {
+    h.owner.enter("case_a"); await h.owner.load(); h.owner.navigate("evidence");
+    for (const state of ["pending", "rejected", "accepted", "retired", "missing"]) {
+      review = state === "retired" || state === "missing" ? "accepted" : state;
+      retired = state === "retired" ? "2026-11-18T00:00:00.000Z" : null;
+      missing = state === "missing";
+      await h.owner.load();
+      const html = h.render(), allowed = state === "accepted";
+      for (const label of ["Accept with sources", "Edit and accept"]) {
+        const button = html.match(new RegExp('<button[^>]*>' + label + '</button>'))?.[0];
+        assert.ok(button, label);
+        assert.equal(button.includes('disabled=""'), !allowed, state + ": " + label);
+      }
+      assert.equal(html.includes("Before accepting, review and approve every exact source anchor."), !allowed);
+    }
+  } finally { h.owner.dispose(); }
+});
+
 function navigationDom() {
   const globals = globalThis as unknown as Record<string, unknown>;
   const originals = new Map(["window", "document", "requestAnimationFrame", "cancelAnimationFrame", "__b1Effects"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
