@@ -1,5 +1,7 @@
 # CaseVant backlog and development priorities · 18 November 2026
 
+**18 November 2026 · CV-035 / CV-040 implemented; release pending.** Reran the signed-in v226 Evidence/audit review. Russian forms, source/review controls, notices and known audit labels now have localized presentation. Proposal statements lead the card, original JSON stays inspectable, notes use full width and review panels stack to available workspace width. Local EN/RU draft/notice switching and desktop/phone layout checks passed without writes. Production acceptance awaits green integration and release. CV-010/028/029 remain pending an active client. [Evidence](../testing/cv035-russian-review-layout.md).
+
 Public baseline: v226. The delivery ledger is [development_backlog.md](development_backlog.md). This file sets the order for the next implementation and acceptance work.
 
 **Latest order:** CV-035 Evidence/audit localization, then CV-040 review readability and narrow-layout acceptance. The authorized CV-012 synthetic generation/review/apply journey is verified on v226, including EN/RU continuity and reload; CV-034/036/038/039 are resolved. CV-010/028/029 remain pending an active client. [Evidence](../testing/cv039-generated-proposal-review.md#public-v226--live-acceptance).
