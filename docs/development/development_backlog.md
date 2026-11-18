@@ -1,5 +1,10 @@
 # CaseVant development backlog
 
+**18 November 2026 · CV-035 / CV-040 implemented; release pending.** Reran the signed-in v226 Evidence/audit review. Russian forms, source/review controls, notices and known audit labels now have localized presentation. Proposal statements lead the card, original JSON stays inspectable, notes use full width and review panels stack to available workspace width. Local EN/RU draft/notice switching and desktop/phone layout checks passed without writes. Production acceptance awaits green integration and release. CV-010/028/029 remain pending an active client. [Evidence](../testing/cv035-russian-review-layout.md).
+
+CI review: the first full web run found a legacy source-shape assertion for the citation accessible name. The assertion now follows the localized call, and rendered EN/RU accessible names are explicitly checked. The focused 39-test suite passes. Production acceptance remains pending.
+
+
 **18 November 2026 · Public v226 · CV-012 scoped acceptance complete.** The authorized source→AI proposal→human review→professional assertion journey passed on the existing synthetic version-2 fixture. The original proposal, exact citation, QA note and stored reviewer/timestamp survive EN/RU switching and reload in both locales. CV-034/036/038/039 are resolved and production-verified. CV-037 is released: local pending/rejected/missing/retired-source tests pass; accepted-source enablement is verified live. #321 merged after all 18 checks passed, including the Android retry after Maven 429s. Exact-main passed 2,104 tests and both clean audits; both origins verify 221 assets. [Evidence](../testing/cv039-generated-proposal-review.md#public-v226--live-acceptance).
 
 - **CV-040 · P2 · Evidence review readability — open.** With the case picker expanded, side-by-side assertion/proposal cards become narrow; the review note uses only one metadata column and wraps heavily. The ordinary proposal card also leads with raw JSON. Give reviewed text and notes usable width, retain exact JSON/provenance in inspectable details, and verify expanded/collapsed case picker plus narrow EN/RU layouts without changing records or source links.

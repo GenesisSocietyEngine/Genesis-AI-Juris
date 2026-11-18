@@ -150,3 +150,22 @@
   .workspaceLayout[data-case-first] .catalogue { margin-inline: 8px; }
   .workspaceLayout[data-case-first] .content { padding: 4px 8px 12px; }
 }
+
+/* Review widths follow the available case workspace, including an open picker. */
+.evidenceColumns{grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr))}
+.proposalStatement{font-size:16px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;color:var(--ink)}
+.proposalRaw{margin:12px 0 18px;border-top:1px solid rgba(114,88,168,.25);padding-top:10px}
+.proposalRaw summary{color:#563b8d;font-weight:600;cursor:pointer;min-height:32px}
+.proposedValue{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;line-height:1.6}
+.proposalMeta{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:16px}
+.proposalMeta>div{min-width:0;overflow-wrap:anywhere}
+.proposalMeta .reviewNote{grid-column:1/-1;border-top:1px solid rgba(114,88,168,.2);padding-top:14px}
+.proposalMeta .reviewNote dd{white-space:pre-wrap;line-height:1.65}
+.proposalCard,.assertionCard,.sourceCitation{overflow-wrap:anywhere}
+.proposalHeader{flex-wrap:wrap}
+.proposalHeader span,.assertionCard .recordHeading>span{font:600 12px/1.5 var(--workspace-font);letter-spacing:0}
+.proposalSources>strong,.proposalSources>a{font-size:14px;line-height:1.6}
+.evidenceManual{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:20px;align-items:start}
+.sourceRegister ol{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.casePickerSummary>strong,.casePickerSummary>svg{flex-shrink:0;white-space:nowrap}
+.casePickerSummary>span{min-width:0}

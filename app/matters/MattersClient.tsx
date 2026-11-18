@@ -1,5 +1,6 @@
 "use client";
 
+import { evidenceText, evidenceLabel, evidenceCitationLabel, evidenceNotice, evidenceCount, evidenceIssue, proposalStatement } from "./evidence-copy";
 import Portal from "../portal/Portal";
 import {portalFormGuard} from "../portal/contracts";
 import {calendarFormGuard} from "../calendar/contracts";
@@ -445,7 +446,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           </form>
         </section>}
 
-        {notice && <div className={styles.successBanner} role="status">{notice}</div>}
+        {notice && <div className={styles.successBanner} role="status">{evidenceNotice(notice, createLocale)}</div>}
         {state.targetActive && state.targetNotice && state.target?.destination === destination && <div className={styles.pilotNotice} role="status">{state.targetNotice}</div>}
         {actionIssue && <IssueState issue={actionIssue} onRetry={actionIssue.kind === "stale" && workspace ? () => void loadMatter(workspace.matter.id) : undefined}/>}
 
@@ -777,6 +778,9 @@ function EvidenceSection({ focusedCitationId, onOpenDisposition, matter, documen
   onLinkEvidence: (fields: Record<string, unknown>) => void;
   onLoadMore: () => void;
 }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
   const anchorMap = useMemo(() => new Map(matter.anchors.map((anchor) => [anchor.id, anchor])), [matter.anchors]);
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow={["PROFESSIONAL REVIEW", "ПРОФЕССИОНАЛЬНАЯ ПРОВЕРКА"]} title={["Evidence", "Проверка доказательств"]} description={["Accepted professional records and AI-proposed changes are deliberately separate.", "Утверждённые записи и предложенные ИИ изменения показаны отдельно."]}/>
@@ -784,17 +788,17 @@ function EvidenceSection({ focusedCitationId, onOpenDisposition, matter, documen
     <AiProposalGenerationControls matter={matter} documents={documents} mutationKey={mutationKey} onGenerate={onGenerate}/>
     <ManualEvidenceControls matter={matter} documents={documents} packages={packages} mutationKey={mutationKey} onCreateAnchor={onCreateAnchor} onCreateAssertion={onCreateAssertion} onLinkEvidence={onLinkEvidence}/>
     <div className={styles.evidenceColumns}>
-      <section className={styles.panel} aria-labelledby="accepted-evidence-title"><div className={styles.panelHeading}><h3 id="accepted-evidence-title">Professional assertions</h3><span>{matter.assertions.length} records</span></div>
-        {matter.assertions.length === 0 ? <EmptyState title="No assertions recorded" detail="AI output is not silently promoted into the professional record."/> : <div className={styles.assertionList}>{matter.assertions.map((assertion) => <AssertionCard key={assertion.id} assertion={assertion} anchors={anchorMap} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "assertion-review-" + assertion.id} onReview={onReviewAssertion} onSupersede={onSupersedeAssertion}/>)}</div>}
+      <section className={styles.panel} aria-labelledby="accepted-evidence-title"><div className={styles.panelHeading}><h3 id="accepted-evidence-title">{t("Professional assertions")}</h3><span>{evidenceCount("records", matter.assertions.length, locale)}</span></div>
+        {matter.assertions.length === 0 ? <EmptyState title={t("No assertions recorded")} detail={t("AI output is not silently promoted into the professional record.")}/> : <div className={styles.assertionList}>{matter.assertions.map((assertion) => <AssertionCard key={assertion.id} assertion={assertion} anchors={anchorMap} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "assertion-review-" + assertion.id} onReview={onReviewAssertion} onSupersede={onSupersedeAssertion}/>)}</div>}
       </section>
-      <section className={styles.panel} aria-labelledby="proposal-review-title"><div className={styles.panelHeading}><h3 id="proposal-review-title">AI proposal queue</h3><span>{proposals.filter((proposal) => proposal.reviewState === "pending").length} pending</span></div>
-        <div className={styles.aiBoundary}><strong>AI-PROPOSED · NOT AUTHORITATIVE</strong><p>Confidence is not evidence. Acceptance is explicit, attributable, and unavailable without an inspectable source anchor.</p></div>
-        {proposals.length === 0 ? <EmptyState title="No AI proposals" detail="Manual document and evidence work remains available if AI is unavailable."/> : <div className={styles.proposalList}>{proposals.map((proposal) => <ProposalCard key={proposal.id} proposal={proposal} anchors={anchorMap} canReview={matter.permissions.canReview} view={view} busy={mutationKey === "proposal-" + proposal.id} onReview={onReview}/>)}</div>}
-        {proposals.length >= MAX_PROPOSAL_ITEMS ? <p className={styles.paginationNote}>Client review is bounded to 500 proposal records. Use a refined server query to continue.</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "proposal-more" ? "Loading proposals…" : "Load next proposal page"}</button>}
+      <section className={styles.panel} aria-labelledby="proposal-review-title"><div className={styles.panelHeading}><h3 id="proposal-review-title">{t("AI proposal queue")}</h3><span>{evidenceCount("pending", proposals.filter((proposal) => proposal.reviewState === "pending").length, locale)}</span></div>
+        <div className={styles.aiBoundary}><strong>{t("AI-PROPOSED · NOT AUTHORITATIVE")}</strong><p>{t("Confidence is not evidence. Acceptance is explicit, attributable, and unavailable without an inspectable source anchor.")}</p></div>
+        {proposals.length === 0 ? <EmptyState title={t("No AI proposals")} detail={t("Manual document and evidence work remains available if AI is unavailable.")}/> : <div className={styles.proposalList}>{proposals.map((proposal) => <ProposalCard key={proposal.id} proposal={proposal} anchors={anchorMap} canReview={matter.permissions.canReview} view={view} busy={mutationKey === "proposal-" + proposal.id} onReview={onReview}/>)}</div>}
+        {proposals.length >= MAX_PROPOSAL_ITEMS ? <p className={styles.paginationNote}>{t("Client review is bounded to 500 proposal records. Use a refined server query to continue.")}</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "proposal-more" ? t("Loading proposals…") : t("Load next proposal page")}</button>}
       </section>
     </div>
-    {focusedCitationId && !matter.anchors.some(a=>a.id===focusedCitationId) && <section id={"source-"+focusedCitationId}><button type="button" onClick={() => onOpenDisposition?.("citation", focusedCitationId)}>Open exact citation review →</button></section>}
-    <section className={styles.sourceRegister} aria-labelledby="source-register-title"><div className={styles.panelHeading}><h3 id="source-register-title">Source anchor register</h3><span>{matter.anchors.length} exact citations</span></div>{matter.anchors.length === 0 ? <EmptyState title="No source anchors returned" detail="Evidence cannot be presented as source-grounded without an exact anchor."/> : <ol>{matter.anchors.map((anchor) => <li id={"source-" + anchor.id} key={anchor.id} tabIndex={-1} aria-label={"Source citation: " + sourceCitationLabel(anchor, anchor.id)} aria-describedby={[anchor.excerpt ? "source-excerpt-" + anchor.id : "", "source-status-" + anchor.id].filter(Boolean).join(" ")}><SourceCitation citations={matter.anchors.filter(a=>a.reviewState==="accepted"&&!a.retiredAt&&documents.some(d=>d.id===a.documentId&&d.currentVersionId===a.documentVersionId)).map(a=>({id:a.id,label:a.documentTitle+" · "+(a.heading??a.section??a.excerpt?.slice(0,80)??"citation")}))} caseId={matter.id} onOpenDisposition={onOpenDisposition} anchor={anchor} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "anchor-review-" + anchor.id} onReview={onReviewAnchor} stale={anchor.reviewState === "accepted" && documents.some(document => document.id === anchor.documentId && document.currentVersionId !== anchor.documentVersionId)}/></li>)}</ol>}</section>
+    {focusedCitationId && !matter.anchors.some(a=>a.id===focusedCitationId) && <section id={"source-"+focusedCitationId}><button type="button" onClick={() => onOpenDisposition?.("citation", focusedCitationId)}>{t("Open exact citation review →")}</button></section>}
+    <section className={styles.sourceRegister} aria-labelledby="source-register-title"><div className={styles.panelHeading}><h3 id="source-register-title">{t("Source anchor register")}</h3><span>{evidenceCount("citations", matter.anchors.length, locale)}</span></div>{matter.anchors.length === 0 ? <EmptyState title={t("No source anchors returned")} detail={t("Evidence cannot be presented as source-grounded without an exact anchor.")}/> : <ol>{matter.anchors.map((anchor) => <li id={"source-" + anchor.id} key={anchor.id} tabIndex={-1} aria-label={t("Source citation: ") + sourceCitationLabel(anchor, anchor.id, locale)} aria-describedby={[anchor.excerpt ? "source-excerpt-" + anchor.id : "", "source-status-" + anchor.id].filter(Boolean).join(" ")}><SourceCitation citations={matter.anchors.filter(a=>a.reviewState==="accepted"&&!a.retiredAt&&documents.some(d=>d.id===a.documentId&&d.currentVersionId===a.documentVersionId)).map(a=>({id:a.id,label:a.documentTitle+" · "+(a.heading??a.section??a.excerpt?.slice(0,80)??"citation")}))} caseId={matter.id} onOpenDisposition={onOpenDisposition} anchor={anchor} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "anchor-review-" + anchor.id} onReview={onReviewAnchor} stale={anchor.reviewState === "accepted" && documents.some(document => document.id === anchor.documentId && document.currentVersionId !== anchor.documentVersionId)}/></li>)}</ol>}</section>
   </div>;
 }
 
@@ -804,6 +808,9 @@ function AiProposalGenerationControls({ matter, documents, mutationKey, onGenera
   mutationKey: string | null;
   onGenerate: (documentVersionIds: string[], retryFailed: boolean) => void;
 }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
   const readySources = documents.flatMap((document) => {
     const version = document.versions.find((candidate) => candidate.id === document.currentVersionId);
     return version?.extractionStatus === "ready"
@@ -811,20 +818,20 @@ function AiProposalGenerationControls({ matter, documents, mutationKey, onGenera
       : [];
   });
   return <section className={styles.panel} aria-labelledby="ai-proposal-generation-title">
-    <div className={styles.panelHeading}><h3 id="ai-proposal-generation-title">Generate source-grounded AI proposals</h3><span>Explicit review only</span></div>
-    <div className={styles.aiBoundary}><strong>AI-PROPOSED · NOT AUTHORITATIVE</strong><p>Selected bounded source ranges may be sent to the configured provider. Uploaded text is treated as untrusted evidence, never as instruction.</p></div>
-    {!matter.permissions.canWrite ? <NoPermission detail="Your participant role may inspect proposals but cannot start an AI job."/> : readySources.length === 0 ? <EmptyState title="No extraction-ready current source" detail="Upload a supported text document and wait for its exact current version to reach ready extraction."/> : <form className={styles.actionForm} onSubmit={(event) => {
+    <div className={styles.panelHeading}><h3 id="ai-proposal-generation-title">{t("Generate source-grounded AI proposals")}</h3><span>{t("Explicit review only")}</span></div>
+    <div className={styles.aiBoundary}><strong>{t("AI-PROPOSED · NOT AUTHORITATIVE")}</strong><p>{t("Selected bounded source ranges may be sent to the configured provider. Uploaded text is treated as untrusted evidence, never as instruction.")}</p></div>
+    {!matter.permissions.canWrite ? <NoPermission detail={t("Your participant role may inspect proposals but cannot start an AI job.")}/> : readySources.length === 0 ? <EmptyState title={t("No extraction-ready current source")} detail={t("Upload a supported text document and wait for its exact current version to reach ready extraction.")}/> : <form className={styles.actionForm} onSubmit={(event) => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       const documentVersionIds = form.getAll("documentVersionIds").map(String);
       if (documentVersionIds.length === 0 || form.get("privacyAcknowledged") !== "yes") return;
       onGenerate(documentVersionIds, form.get("retryFailed") === "yes");
     }}>
-      <label className={styles.field}><span>Extraction-ready current versions</span><select name="documentVersionIds" multiple required size={Math.min(readySources.length, 5)}>{readySources.map((source) => <option key={source.versionId} value={source.versionId}>{source.documentTitle} · version {source.ordinal}</option>)}</select></label>
-      <label className={styles.checkField}><input type="checkbox" name="privacyAcknowledged" value="yes" required/><span>I confirm these sources are synthetic or de-identified and understand the bounded provider disclosure.</span></label>
-      <label className={styles.checkField}><input type="checkbox" name="retryFailed" value="yes"/><span>Retry an identical failed job when its bounded retry policy permits.</span></label>
-      <div className={styles.consequenceBox}><strong>Human-review boundary</strong><p>Every candidate must retain an inspectable exact source anchor. Zero grounded candidates is a valid terminal result; provider failure never blocks manual work.</p></div>
-      <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "proposal-generate" ? "Analyzing bounded sources…" : "Generate proposals for review"}</button>
+      <label className={styles.field}><span>{t("Extraction-ready current versions")}</span><select name="documentVersionIds" multiple required size={Math.min(readySources.length, 5)}>{readySources.map((source) => <option key={source.versionId} value={source.versionId}>{source.documentTitle}{t(" · version ")}{source.ordinal}</option>)}</select></label>
+      <label className={styles.checkField}><input type="checkbox" name="privacyAcknowledged" value="yes" required/><span>{t("I confirm these sources are synthetic or de-identified and understand the bounded provider disclosure.")}</span></label>
+      <label className={styles.checkField}><input type="checkbox" name="retryFailed" value="yes"/><span>{t("Retry an identical failed job when its bounded retry policy permits.")}</span></label>
+      <div className={styles.consequenceBox}><strong>{t("Human-review boundary")}</strong><p>{t("Every candidate must retain an inspectable exact source anchor. Zero grounded candidates is a valid terminal result; provider failure never blocks manual work.")}</p></div>
+      <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "proposal-generate" ? t("Analyzing bounded sources…") : t("Generate proposals for review")}</button>
     </form>}
   </section>;
 }
@@ -838,6 +845,9 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
   onCreateAssertion: (fields: Record<string, unknown>) => void;
   onLinkEvidence: (fields: Record<string, unknown>) => void;
 }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
   const currentSources = documents.flatMap((document) => {
     const version = document.versions.find((candidate) => candidate.id === document.currentVersionId) ?? document.versions[0];
     return version ? [{ documentId: document.id, documentTitle: document.title, versionId: version.id, ordinal: version.ordinal }] : [];
@@ -845,11 +855,11 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
   const acceptedAnchors = matter.anchors.filter((anchor) => anchor.reviewState === "accepted");
   const acceptedAssertions = matter.assertions.filter((assertion) => assertion.status === "accepted");
   const currentPackages = packages.filter((item) => item.state === "current");
-  if (!matter.permissions.canWrite) return <section id="anchor-create"><NoPermission detail="Your participant role may inspect evidence but cannot add professional material. Ask the case owner for contributor access to add a replacement source."/></section>;
-  return <div className={styles.twoColumn}>
+  if (!matter.permissions.canWrite) return <section id="anchor-create"><NoPermission detail={t("Your participant role may inspect evidence but cannot add professional material. Ask the case owner for contributor access to add a replacement source.")}/></section>;
+  return <div className={styles.evidenceManual}>
     <section id="anchor-create" className={styles.panel} aria-labelledby="manual-evidence-title">
-      <div className={styles.panelHeading}><h3 id="manual-evidence-title">Manual exact-source evidence</h3><span>Human authored</span></div>
-      {currentSources.length === 0 ? <EmptyState title="A document version is required" detail="Upload a source before creating an exact manual anchor."/> : <form className={styles.actionForm} onSubmit={(event) => {
+      <div className={styles.panelHeading}><h3 id="manual-evidence-title">{t("Manual exact-source evidence")}</h3><span>{t("Human authored")}</span></div>
+      {currentSources.length === 0 ? <EmptyState title={t("A document version is required")} detail={t("Upload a source before creating an exact manual anchor.")}/> : <form className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const source = currentSources.find((candidate) => candidate.versionId === String(form.get("documentVersionId") ?? ""));
@@ -861,10 +871,10 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
           excerpt: String(form.get("excerpt") ?? "").trim() || null,
         });
       }}>
-        <label className={styles.field}><span>Exact immutable source version</span><select name="documentVersionId" required><option value="">Choose a source version</option>{currentSources.map((source) => <option key={source.versionId} value={source.versionId}>{source.documentTitle} · version {source.ordinal}</option>)}</select></label>
-        <label className={styles.field}><span>Paragraph or clause locator</span><input name="paragraph" required maxLength={500} placeholder="e.g. clause 12.4 or paragraph 27"/></label>
-        <label className={styles.field}><span>Bounded source excerpt (optional)</span><textarea name="excerpt" maxLength={500}/></label>
-        <button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "anchor-create" ? "Recording anchor…" : "Create source anchor for review"}</button>
+        <label className={styles.field}><span>{t("Exact immutable source version")}</span><select name="documentVersionId" required><option value="">{t("Choose a source version")}</option>{currentSources.map((source) => <option key={source.versionId} value={source.versionId}>{source.documentTitle}{t(" · version ")}{source.ordinal}</option>)}</select></label>
+        <label className={styles.field}><span>{t("Paragraph or clause locator")}</span><input name="paragraph" required maxLength={500} placeholder={t("e.g. clause 12.4 or paragraph 27")}/></label>
+        <label className={styles.field}><span>{t("Bounded source excerpt (optional)")}</span><textarea name="excerpt" maxLength={500}/></label>
+        <button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "anchor-create" ? t("Recording anchor…") : t("Create source anchor for review")}</button>
       </form>}
       {acceptedAnchors.length > 0 && <form id="assertion-create" className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
@@ -875,16 +885,16 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
           sourceAnchorIds: [String(form.get("sourceAnchorId") ?? "")],
         });
       }}>
-        <h4>Create a professional assertion</h4>
-        <label className={styles.field}><span>Accepted source anchor</span><select name="sourceAnchorId" required>{acceptedAnchors.map((anchor) => <option key={anchor.id} value={anchor.id}>{sourceCitationLabel(anchor, anchor.id)}</option>)}</select></label>
-        <label className={styles.field}><span>Assertion type</span><select name="assertionType" defaultValue="fact"><option value="fact">Fact</option><option value="evidence">Evidence</option><option value="rule">Rule</option><option value="assumption">Assumption</option><option value="date">Date</option><option value="contradiction">Contradiction</option></select></label>
-        <label className={styles.field}><span>Professional statement</span><textarea name="statement" required maxLength={8_000}/></label>
-        <button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "assertion-create" ? "Recording assertion…" : "Create assertion for review"}</button>
+        <h4>{t("Create a professional assertion")}</h4>
+        <label className={styles.field}><span>{t("Accepted source anchor")}</span><select name="sourceAnchorId" required>{acceptedAnchors.map((anchor) => <option key={anchor.id} value={anchor.id}>{sourceCitationLabel(anchor, anchor.id, locale)}</option>)}</select></label>
+        <label className={styles.field}><span>{t("Assertion type")}</span><select name="assertionType" defaultValue="fact"><option value="fact">{t("Fact")}</option><option value="evidence">{t("Evidence")}</option><option value="rule">{t("Rule")}</option><option value="assumption">{t("Assumption")}</option><option value="date">{t("Date")}</option><option value="contradiction">{t("Contradiction")}</option></select></label>
+        <label className={styles.field}><span>{t("Professional statement")}</span><textarea name="statement" required maxLength={8_000}/></label>
+        <button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "assertion-create" ? t("Recording assertion…") : t("Create assertion for review")}</button>
       </form>}
     </section>
     <aside className={styles.panel} aria-labelledby="graph-evidence-title">
-      <div className={styles.panelHeading}><h3 id="graph-evidence-title">Link reviewed evidence to a graph</h3><span>Exact package entity</span></div>
-      {acceptedAnchors.length === 0 || currentPackages.length === 0 ? <EmptyState title="Accepted evidence and a current package are required" detail="Review a source anchor and link an exact decision package before creating a graph relationship."/> : <form className={styles.actionForm} onSubmit={(event) => {
+      <div className={styles.panelHeading}><h3 id="graph-evidence-title">{t("Link reviewed evidence to a graph")}</h3><span>{t("Exact package entity")}</span></div>
+      {acceptedAnchors.length === 0 || currentPackages.length === 0 ? <EmptyState title={t("Accepted evidence and a current package are required")} detail={t("Review a source anchor and link an exact decision package before creating a graph relationship.")}/> : <form className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const assertionId = String(form.get("assertionId") ?? "");
@@ -898,51 +908,60 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
           professionalMeaning: String(form.get("professionalMeaning") ?? "").trim(),
         });
       }}>
-        <label className={styles.field}><span>Current decision package</span><select name="decisionPackageReferenceId" required>{currentPackages.map((item) => <option key={item.id} value={item.id}>{item.packageId} · {item.packageVersion}</option>)}</select></label>
-        <label className={styles.field}><span>Accepted source anchor</span><select name="sourceAnchorId" required>{acceptedAnchors.map((anchor) => <option key={anchor.id} value={anchor.id}>{sourceCitationLabel(anchor, anchor.id)}</option>)}</select></label>
-        <label className={styles.field}><span>Related accepted assertion (optional)</span><select name="assertionId" defaultValue=""><option value="">No assertion binding</option>{acceptedAssertions.map((assertion) => <option key={assertion.id} value={assertion.id}>{sentenceLabel(assertion.type)} · {assertion.statement.slice(0, 80)}</option>)}</select></label>
-        <label className={styles.field}><span>Graph target</span><select name="targetType" defaultValue="graph_node"><option value="graph_node">Graph node</option><option value="graph_edge">Graph edge</option></select></label>
-        <label className={styles.field}><span>Exact graph entity ID</span><input name="targetId" required maxLength={80} pattern="[a-z0-9][a-z0-9_-]{0,79}"/></label>
-        <label className={styles.field}><span>Relationship</span><select name="relation" defaultValue="supports"><option value="supports">Supports</option><option value="contradicts">Contradicts</option><option value="qualifies">Qualifies</option><option value="supersedes">Supersedes</option><option value="source_for">Source for</option></select></label>
-        <label className={styles.field}><span>Professional meaning</span><textarea name="professionalMeaning" required maxLength={1_000}/></label>
-        <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "evidence-link" ? "Linking evidence…" : "Link evidence to graph entity"}</button>
+        <label className={styles.field}><span>{t("Current decision package")}</span><select name="decisionPackageReferenceId" required>{currentPackages.map((item) => <option key={item.id} value={item.id}>{item.packageId} · {item.packageVersion}</option>)}</select></label>
+        <label className={styles.field}><span>{t("Accepted source anchor")}</span><select name="sourceAnchorId" required>{acceptedAnchors.map((anchor) => <option key={anchor.id} value={anchor.id}>{sourceCitationLabel(anchor, anchor.id, locale)}</option>)}</select></label>
+        <label className={styles.field}><span>{t("Related accepted assertion (optional)")}</span><select name="assertionId" defaultValue=""><option value="">{t("No assertion binding")}</option>{acceptedAssertions.map((assertion) => <option key={assertion.id} value={assertion.id}>{evidenceLabel(assertion.type, locale)} · {assertion.statement.slice(0, 80)}</option>)}</select></label>
+        <label className={styles.field}><span>{t("Graph target")}</span><select name="targetType" defaultValue="graph_node"><option value="graph_node">{t("Graph node")}</option><option value="graph_edge">{t("Graph edge")}</option></select></label>
+        <label className={styles.field}><span>{t("Exact graph entity ID")}</span><input name="targetId" required maxLength={80} pattern="[a-z0-9][a-z0-9_-]{0,79}"/></label>
+        <label className={styles.field}><span>{t("Relationship")}</span><select name="relation" defaultValue="supports"><option value="supports">{t("Supports")}</option><option value="contradicts">{t("Contradicts")}</option><option value="qualifies">{t("Qualifies")}</option><option value="supersedes">{t("Supersedes")}</option><option value="source_for">{t("Source for")}</option></select></label>
+        <label className={styles.field}><span>{t("Professional meaning")}</span><textarea name="professionalMeaning" required maxLength={1_000}/></label>
+        <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "evidence-link" ? t("Linking evidence…") : t("Link evidence to graph entity")}</button>
       </form>}
     </aside>
   </div>;
 }
 
 function AssertionCard({ assertion, anchors, view, canReview, busy, onReview, onSupersede }: { assertion: AssertionItem; anchors: Map<string, SourceAnchorItem>; view: MatterView; canReview: boolean; busy: boolean; onReview: (assertion: AssertionItem, decision: "accepted" | "rejected") => void; onSupersede: (assertion: AssertionItem) => void }) {
-  return <article id={"assertion-" + assertion.id} className={styles.assertionCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(assertion.status)}</span><h4>{sentenceLabel(assertion.type)}</h4></div><span>PROFESSIONAL RECORD</span></div><p>{assertion.statement}</p><div className={styles.citationLinks}>{assertion.sourceAnchorIds.length === 0 ? <span>No source anchor recorded</span> : assertion.sourceAnchorIds.map((id) => { const anchor = anchors.get(id); return anchor ? <a key={id} href={"#source-" + id} onClick={event => focusSourceCitation(event, id)} aria-label={"Open source citation " + sourceCitationLabel(anchor, id)}>{sourceCitationLabel(anchor, id)}</a> : <span key={id}>Source citation unavailable</span>; })}</div>{assertion.status === "needs_review" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(assertion, "accepted")}>{busy ? "Recording…" : "Accept assertion"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(assertion, "rejected")}>Reject assertion</button></div>}{assertion.status === "accepted" && canReview && <details className={styles.metadataEditor}><summary>Correct or supersede this assertion</summary><p>Superseding retires this assertion while preserving its history. It does not prove that a contradiction is resolved or create replacement evidence.</p><button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => { if (window.confirm("Retire this accepted assertion as superseded? Its evidence and review history will be preserved; create a reviewed replacement separately.")) onSupersede(assertion); }}>Mark assertion as superseded</button><button type="button" className={styles.linkButton} onClick={() => { if (!focusActionTarget("assertion-create")) focusActionTarget("anchor-create"); }}>Create replacement evidence →</button></details>}{view === "developer" && <p className={styles.rawId}>Assertion <code>{assertion.id}</code> · reviewed by <code>{assertion.reviewedBy ?? "not returned"}</code> at {formatMatterDate(assertion.reviewedAt)}</p>}</article>;
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
+  return <article id={"assertion-" + assertion.id} className={styles.assertionCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{evidenceLabel(assertion.status, locale)}</span><h4>{evidenceLabel(assertion.type, locale)}</h4></div><span>{t("PROFESSIONAL RECORD")}</span></div><p>{assertion.statement}</p><div className={styles.citationLinks}>{assertion.sourceAnchorIds.length === 0 ? <span>{t("No source anchor recorded")}</span> : assertion.sourceAnchorIds.map((id) => { const anchor = anchors.get(id); return anchor ? <a key={id} href={"#source-" + id} onClick={event => focusSourceCitation(event, id)} aria-label={t("Open source citation ") + sourceCitationLabel(anchor, id, locale)}>{sourceCitationLabel(anchor, id, locale)}</a> : <span key={id}>{t("Source citation unavailable")}</span>; })}</div>{assertion.status === "needs_review" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(assertion, "accepted")}>{busy ? t("Recording…") : t("Accept assertion")}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(assertion, "rejected")}>{t("Reject assertion")}</button></div>}{assertion.status === "accepted" && canReview && <details className={styles.metadataEditor}><summary>{t("Correct or supersede this assertion")}</summary><p>{t("Superseding retires this assertion while preserving its history. It does not prove that a contradiction is resolved or create replacement evidence.")}</p><button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => { if (window.confirm(t("Retire this accepted assertion as superseded? Its evidence and review history will be preserved; create a reviewed replacement separately."))) onSupersede(assertion); }}>{t("Mark assertion as superseded")}</button><button type="button" className={styles.linkButton} onClick={() => { if (!focusActionTarget("assertion-create")) focusActionTarget("anchor-create"); }}>{t("Create replacement evidence →")}</button></details>}{view === "developer" && <p className={styles.rawId}>{t("Assertion ")}<code>{assertion.id}</code>{t(" · reviewed by ")}<code>{assertion.reviewedBy ?? t("not returned")}</code>{t(" at ")}{formatMatterDate(assertion.reviewedAt, locale === "ru" ? "ru-RU" : "en-GB")}</p>}</article>;
 }
 
 function ProposalCard({ proposal, anchors, canReview, view, busy, onReview }: { proposal: ProposalItem; anchors: Map<string, SourceAnchorItem>; canReview: boolean; view: MatterView; busy: boolean; onReview: (proposal: ProposalItem, action: "accept" | "edit_and_accept" | "reject", editedValue: string | null, note: string) => void }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
   const [editing, setEditing] = useState(false);
   const [editedValue, setEditedValue] = useWorkspaceDraft("proposal-value-" + proposal.id, proposal.proposedValue);
   const [note, setNote] = useWorkspaceDraft("proposal-note-" + proposal.id, "");
   const sourceAnchors = proposal.sourceAnchorIds.map((id) => anchors.get(id)).filter((anchor): anchor is SourceAnchorItem => Boolean(anchor));
-  const [reviewLocale] = useInterfaceLocale();
   const grounded = sourceAnchors.length > 0;
   const sourcesReviewed = grounded && sourceAnchors.length === proposal.sourceAnchorIds.length
     && sourceAnchors.every((anchor) => anchor.reviewState === "accepted" && !anchor.retiredAt);
   const pending = proposal.reviewState === "pending";
-  return <article id={"proposal-" + proposal.id} className={styles.proposalCard} aria-label={"AI proposal: " + sentenceLabel(proposal.type)}>
-    <div className={styles.proposalHeader}><div><span>AI-PROPOSED · {sentenceLabel(proposal.reviewState)}</span><h4>{sentenceLabel(proposal.type)}</h4></div>{proposal.confidenceCategory && <b>Model confidence: {sentenceLabel(proposal.confidenceCategory)}{proposal.confidenceScore === null ? "" : " · " + Math.round(proposal.confidenceScore * 100) + "%"}</b>}</div>
-    <pre className={styles.proposedValue}>{proposal.proposedValue}</pre>
-    <div className={styles.proposalSources}><strong>Inspectable sources</strong>{sourceAnchors.length === 0 ? <p className={styles.blockingText}>No usable source anchor was returned. Acceptance controls are disabled.</p> : sourceAnchors.map((anchor) => <a key={anchor.id} href={"#source-" + anchor.id} onClick={event => focusSourceCitation(event, anchor.id)} aria-label={"Inspect AI proposal source " + sourceCitationLabel(anchor, anchor.id)}>{sourceCitationLabel(anchor, anchor.id)}{anchor.excerpt ? <q>{anchor.excerpt}</q> : null}</a>)}</div>
-    <dl className={styles.proposalMeta}><div><dt>Destination</dt><dd>{proposal.destinationType ? sentenceLabel(proposal.destinationType) : "Proposed destination not yet accepted"}</dd></div><div><dt>Provenance</dt><dd>{proposal.provider && proposal.model ? proposal.provider + " / " + proposal.model : "Model receipt not returned"}</dd></div>{proposal.reviewNote && <div><dt>Review note</dt><dd>{proposal.reviewNote}</dd></div>}</dl>
-    {pending && canReview && !sourcesReviewed && <p className={styles.blockingText}>{reviewLocale === "ru" ? "Перед принятием проверьте и утвердите каждый точный источник. Откройте ссылки на источники выше." : "Before accepting, review and approve every exact source anchor. Open the source links above."}</p>}
+  const statement = proposalStatement(proposal.proposedValue);
+  return <article id={"proposal-" + proposal.id} className={styles.proposalCard} aria-label={t("AI proposal: ") + evidenceLabel(proposal.type, locale)}>
+    <div className={styles.proposalHeader}><div><span>{t("AI-PROPOSED · ")}{evidenceLabel(proposal.reviewState, locale)}</span><h4>{evidenceLabel(proposal.type, locale)}</h4></div>{proposal.confidenceCategory && <b>{t("Model confidence: ")}{evidenceLabel(proposal.confidenceCategory, locale)}{proposal.confidenceScore === null ? "" : " · " + Math.round(proposal.confidenceScore * 100) + "%"}</b>}</div>
+    {statement !== null ? <><p className={styles.proposalStatement}>{statement}</p><details className={styles.proposalRaw}><summary>{t("Original proposal data")}</summary><pre className={styles.proposedValue}>{proposal.proposedValue}</pre></details></> : <pre className={styles.proposedValue}>{proposal.proposedValue}</pre>}
+    <div className={styles.proposalSources}><strong>{t("Inspectable sources")}</strong>{sourceAnchors.length === 0 ? <p className={styles.blockingText}>{t("No usable source anchor was returned. Acceptance controls are disabled.")}</p> : sourceAnchors.map((anchor) => <a key={anchor.id} href={"#source-" + anchor.id} onClick={event => focusSourceCitation(event, anchor.id)} aria-label={t("Inspect AI proposal source ") + sourceCitationLabel(anchor, anchor.id, locale)}>{sourceCitationLabel(anchor, anchor.id, locale)}{anchor.excerpt ? <q>{anchor.excerpt}</q> : null}</a>)}</div>
+    <dl className={styles.proposalMeta}><div><dt>{t("Destination")}</dt><dd>{proposal.destinationType ? evidenceLabel(proposal.destinationType, locale) : t("Proposed destination not yet accepted")}</dd></div><div><dt>{t("Provenance")}</dt><dd>{proposal.provider && proposal.model ? proposal.provider + " / " + proposal.model : t("Model receipt not returned")}</dd></div>{proposal.reviewNote && <div className={styles.reviewNote}><dt>{t("Review note")}</dt><dd>{proposal.reviewNote}</dd></div>}</dl>
+    {pending && canReview && !sourcesReviewed && <p className={styles.blockingText}>{locale === "ru" ? "Перед принятием проверьте и утвердите каждый точный источник. Откройте ссылки на источники выше." : "Before accepting, review and approve every exact source anchor. Open the source links above."}</p>}
     {pending && canReview && <div className={styles.reviewControls}>
-      <label className={styles.field}><span>Attributable review note (optional)</span><input value={note} onChange={(event) => setNote(event.target.value)} maxLength={1_000}/></label>
-      {editing && <label className={styles.field}><span>Edit proposed value before acceptance</span><textarea value={editedValue} onChange={(event) => setEditedValue(event.target.value)} maxLength={5_000} rows={6}/></label>}
-      <div><button type="button" className={styles.primaryButton} disabled={!sourcesReviewed || busy} onClick={() => onReview(proposal, editing ? "edit_and_accept" : "accept", editing ? editedValue : null, note)}>{busy ? "Recording review…" : editing ? "Accept edited value" : "Accept with sources"}</button><button type="button" className={styles.secondaryButton} disabled={!sourcesReviewed || busy} onClick={() => setEditing((value) => !value)}>{editing ? "Cancel edit" : "Edit and accept"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(proposal, "reject", null, note)}>Reject proposal</button></div>
+      <label className={styles.field}><span>{t("Attributable review note (optional)")}</span><input value={note} onChange={(event) => setNote(event.target.value)} maxLength={1_000}/></label>
+      {editing && <label className={styles.field}><span>{t("Edit proposed value before acceptance")}</span><textarea value={editedValue} onChange={(event) => setEditedValue(event.target.value)} maxLength={5_000} rows={6}/></label>}
+      <div><button type="button" className={styles.primaryButton} disabled={!sourcesReviewed || busy} onClick={() => onReview(proposal, editing ? "edit_and_accept" : "accept", editing ? editedValue : null, note)}>{busy ? t("Recording review…") : editing ? t("Accept edited value") : t("Accept with sources")}</button><button type="button" className={styles.secondaryButton} disabled={!sourcesReviewed || busy} onClick={() => setEditing((value) => !value)}>{editing ? t("Cancel edit") : t("Edit and accept")}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(proposal, "reject", null, note)}>{t("Reject proposal")}</button></div>
     </div>}
-    {pending && !canReview && <NoPermission detail="Your participant role may inspect this proposal but cannot accept or reject it."/>}
-    {view === "developer" && <p className={styles.rawId}>Proposal <code>{proposal.id}</code> · sources <code>{proposal.sourceAnchorIds.join(", ") || "none"}</code></p>}
+    {pending && !canReview && <NoPermission detail={t("Your participant role may inspect this proposal but cannot accept or reject it.")}/>}
+    {view === "developer" && <p className={styles.rawId}>{t("Proposal ")}<code>{proposal.id}</code>{t(" · sources ")}<code>{proposal.sourceAnchorIds.join(", ") || t("none")}</code></p>}
   </article>;
 }
 
 function SourceCitation({ onOpenDisposition, anchor, view, canReview, busy, onReview, stale = false }: { citations:Array<{id:string;label:string}>; caseId: string; onOpenDisposition?: (kind: "deadline" | "citation", id: string) => void; anchor: SourceAnchorItem; view: MatterView; canReview: boolean; busy: boolean; onReview: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void; stale?: boolean }) {
-  return <article className={styles.sourceCitation}><div><strong>{anchor.documentTitle}</strong><span>{anchor.versionOrdinal ? "Version " + anchor.versionOrdinal + " · " : ""}{anchor.pageNumber ? "Page " + anchor.pageNumber : anchor.heading ?? anchor.section ?? "Document-level anchor"}{anchor.paragraph ? " · paragraph " + anchor.paragraph : ""}</span></div>{anchor.excerpt && <blockquote id={"source-excerpt-" + anchor.id}>{anchor.excerpt}</blockquote>}<span id={"source-status-" + anchor.id} className={styles.stateToken}>Review: {sentenceLabel(anchor.reviewState)}{anchor.retiredAt ? "; Retired from current use" : stale ? "; Older file version" : ""}</span>{anchor.retiredAt && <p className={styles.stateToken}>Retired from current use · acceptance history preserved</p>}{stale && !anchor.retiredAt && <div className={styles.consequenceBox}><strong>A newer source version exists</strong><p>This citation refers to an older source. Review its retirement, then review every dependent assertion against current evidence.</p><button type="button" className={styles.secondaryButton} onClick={() => focusActionTarget("anchor-create")}>Add a current-source citation →</button>{canReview && <button type="button" className={styles.secondaryButton} onClick={() => onOpenDisposition?.("citation", anchor.id)}>Review citation retirement →</button>}</div>}{anchor.reviewState === "pending" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(anchor, "accepted")}>{busy ? "Recording…" : "Accept anchor"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(anchor, "rejected")}>Reject anchor</button></div>}{view === "developer" && <dl><div><dt>Anchor ID</dt><dd><code>{anchor.id}</code></dd></div><div><dt>Version ID</dt><dd><code>{anchor.documentVersionId}</code></dd></div><div><dt>Checksum</dt><dd><code>{anchor.checksum ?? "not returned"}</code></dd></div></dl>}</article>;
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
+  return <article className={styles.sourceCitation}><div><strong>{anchor.documentTitle}</strong><span>{anchor.versionOrdinal ? t("Version ") + anchor.versionOrdinal + " · " : ""}{anchor.pageNumber ? t("Page ") + anchor.pageNumber : anchor.heading ?? anchor.section ?? t("Document-level anchor")}{anchor.paragraph ? t(" · paragraph ") + anchor.paragraph : ""}</span></div>{anchor.excerpt && <blockquote id={"source-excerpt-" + anchor.id}>{anchor.excerpt}</blockquote>}<span id={"source-status-" + anchor.id} className={styles.stateToken}>{t("Review: ")}{evidenceLabel(anchor.reviewState, locale)}{anchor.retiredAt ? t("; Retired from current use") : stale ? t("; Older file version") : ""}</span>{anchor.retiredAt && <p className={styles.stateToken}>{t("Retired from current use · acceptance history preserved")}</p>}{stale && !anchor.retiredAt && <div className={styles.consequenceBox}><strong>{t("A newer source version exists")}</strong><p>{t("This citation refers to an older source. Review its retirement, then review every dependent assertion against current evidence.")}</p><button type="button" className={styles.secondaryButton} onClick={() => focusActionTarget("anchor-create")}>{t("Add a current-source citation →")}</button>{canReview && <button type="button" className={styles.secondaryButton} onClick={() => onOpenDisposition?.("citation", anchor.id)}>{t("Review citation retirement →")}</button>}</div>}{anchor.reviewState === "pending" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(anchor, "accepted")}>{busy ? t("Recording…") : t("Accept anchor")}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(anchor, "rejected")}>{t("Reject anchor")}</button></div>}{view === "developer" && <dl><div><dt>{t("Anchor ID")}</dt><dd><code>{anchor.id}</code></dd></div><div><dt>{t("Version ID")}</dt><dd><code>{anchor.documentVersionId}</code></dd></div><div><dt>{t("Checksum")}</dt><dd><code>{anchor.checksum ?? t("not returned")}</code></dd></div></dl>}</article>;
 }
 
 export function DecisionPackagesSection({ onNavigate, focusedPackageId, matter, packages, snapshots, issue, view, mutationKey, onLink, onSnapshot }: { matter: MatterDetail; packages: DecisionPackageItem[]; snapshots: SnapshotItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onLink: (fields: Record<string, unknown>) => void; onSnapshot: (fields: Record<string, unknown>) => void; focusedPackageId?: string; onNavigate?: (target: MatterActionTarget) => void }) {
@@ -1058,11 +1077,14 @@ export function OutputsSection({ onNavigate, matter, outputs, snapshots, issue, 
 }
 
 function ActivitySection({ onNavigate, activity, cursor, issue, view, mutationKey, onLoadMore }: { onNavigate:(target:MatterActionTarget)=>void; activity: ActivityItem[]; cursor: string | null; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onLoadMore: () => void }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow={["ATTRIBUTABLE HISTORY", "ИСТОРИЯ ИЗМЕНЕНИЙ"]} title={["Audit", "Журнал действий"]} description={["See who reviewed evidence, changed the case or approved a report. Earlier decisions remain part of the history.", "Посмотрите, кто проверил доказательства, изменил дело или утвердил отчёт. Предыдущие решения сохраняются в истории."]}/>
     {issue && <IssueState issue={issue} compact/>}
-    {activity.length === 0 && !issue ? <EmptyState title="No activity returned" detail="The server has not returned an attributable audit event for this matter."/> : <ol id="audit-register" className={styles.timeline}>{activity.map((event) => <li id={"audit-" + event.id} key={event.id}><div className={styles.timelineMarker} aria-hidden="true">{event.sequence ?? "·"}</div><article><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(event.eventType)}</span><h3>{sentenceLabel(event.summaryCode)}</h3></div><time dateTime={event.occurredAt ?? undefined}>{formatMatterDate(event.occurredAt)}</time></div>{event.reviewReason && <p>{event.reviewReason}</p>}{event.reviewRecordId && ["HISTORICAL_DEADLINE_DISPOSED","SOURCE_ANCHOR_RETIRED"].includes(event.summaryCode) && <button type="button" className={styles.linkButton} onClick={()=>onNavigate({destination:event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"requests":"evidence",id:(event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"deadline-":"source-")+event.reviewRecordId})}>Open reviewed record →</button>}<p>Actor: {event.actorRole ? sentenceLabel(event.actorRole) : "Role not returned"}{view === "developer" && event.actorId ? " · " + event.actorId : ""}</p>{view === "developer" && <dl className={styles.factList}><div><dt>Event ID</dt><dd><code>{event.id}</code></dd></div><div><dt>Object</dt><dd><code>{event.objectType ?? "?"} / {event.objectId ?? "?"}</code></dd></div><div><dt>Digest</dt><dd><code>{event.eventDigest ?? "not returned"}</code></dd></div>{event.detail && <div><dt>Bounded detail</dt><dd><pre>{event.detail}</pre></dd></div>}</dl>}</article></li>)}</ol>}
-    {activity.length >= MAX_ACTIVITY_ITEMS ? <p className={styles.paginationNote}>Client activity is bounded to 500 events. Use a refined server query for older history.</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "activity-more" ? "Loading history…" : "Load older activity"}</button>}
+    {activity.length === 0 && !issue ? <EmptyState title={t("No activity returned")} detail={t("The server has not returned an attributable audit event for this matter.")}/> : <ol id="audit-register" className={styles.timeline}>{activity.map((event) => <li id={"audit-" + event.id} key={event.id}><div className={styles.timelineMarker} aria-hidden="true">{event.sequence ?? "·"}</div><article><div className={styles.recordHeading}><div><span className={styles.stateToken}>{evidenceLabel(event.eventType, locale)}</span><h3>{evidenceLabel(event.summaryCode, locale)}</h3></div><time dateTime={event.occurredAt ?? undefined}>{formatMatterDate(event.occurredAt, locale === "ru" ? "ru-RU" : "en-GB")}</time></div>{event.reviewReason && <p>{event.reviewReason}</p>}{event.reviewRecordId && ["HISTORICAL_DEADLINE_DISPOSED","SOURCE_ANCHOR_RETIRED"].includes(event.summaryCode) && <button type="button" className={styles.linkButton} onClick={()=>onNavigate({destination:event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"requests":"evidence",id:(event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"deadline-":"source-")+event.reviewRecordId})}>{t("Open reviewed record →")}</button>}<p>{t("Actor: ")}{event.actorRole ? evidenceLabel(event.actorRole, locale) : t("Role not returned")}{view === "developer" && event.actorId ? " · " + event.actorId : ""}</p>{view === "developer" && <dl className={styles.factList}><div><dt>{t("Event ID")}</dt><dd><code>{event.id}</code></dd></div><div><dt>{t("Object")}</dt><dd><code>{event.objectType ?? "?"} / {event.objectId ?? "?"}</code></dd></div><div><dt>{t("Digest")}</dt><dd><code>{event.eventDigest ?? t("not returned")}</code></dd></div>{event.detail && <div><dt>{t("Bounded detail")}</dt><dd><pre>{event.detail}</pre></dd></div>}</dl>}</article></li>)}</ol>}
+    {activity.length >= MAX_ACTIVITY_ITEMS ? <p className={styles.paginationNote}>{t("Client activity is bounded to 500 events. Use a refined server query for older history.")}</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "activity-more" ? t("Loading history…") : t("Load older activity")}</button>}
   </div>;
 }
 
@@ -1073,8 +1095,12 @@ function SectionHeading({ eyebrow, title, description }: { eyebrow: [string, str
 }
 
 function IssueState({ issue, onRetry, compact = false }: { issue: ApiIssue; onRetry?: () => void; compact?: boolean }) {
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
+  const localized = evidenceIssue(issue, locale);
   return <section className={compact ? styles.issueCompact : styles.issueState} role={issue.kind === "error" || issue.kind === "stale" ? "alert" : "status"} data-state={issue.kind}>
-    <span className={styles.issueLabel}>{issue.kind === "permission" ? "ACCESS STATE" : issue.kind === "stale" ? "STALE REVISION" : issue.kind === "unsupported" ? "PILOT LIMIT" : "REQUEST ERROR"}</span><h2>{issue.title}</h2><p>{issue.message}</p>{issue.detail && <details><summary>Technical detail</summary><p>{issue.detail}</p></details>}{onRetry && <button type="button" className={styles.secondaryButton} onClick={onRetry}>{issue.kind === "stale" ? "Reload current revision" : "Try again"}</button>}{issue.kind === "permission" && <Link className={styles.secondaryButton} href="/account">Open account access</Link>}
+    <span className={styles.issueLabel}>{issue.kind === "permission" ? t("ACCESS STATE") : issue.kind === "stale" ? t("STALE REVISION") : issue.kind === "unsupported" ? t("PILOT LIMIT") : t("REQUEST ERROR")}</span><h2>{localized.title}</h2><p>{localized.message}</p>{localized.detail && <details><summary>{t("Technical detail")}</summary><p>{localized.detail}</p></details>}{onRetry && <button type="button" className={styles.secondaryButton} onClick={onRetry}>{issue.kind === "stale" ? t("Reload current revision") : t("Try again")}</button>}{issue.kind === "permission" && <Link className={styles.secondaryButton} href="/account">{t("Open account access")}</Link>}
   </section>;
 }
 
@@ -1094,14 +1120,13 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 }
 
 function NoPermission({ detail }: { detail: string }) {
-  return <div className={styles.noPermission}><strong>Read-only for this action</strong><span>{detail}</span></div>;
+  const [locale] = useInterfaceLocale();
+  const t = (text: string) => evidenceText(text, locale);
+
+  return <div className={styles.noPermission}><strong>{t("Read-only for this action")}</strong><span>{detail}</span></div>;
 }
 
-function sourceCitationLabel(anchor: SourceAnchorItem | undefined, fallbackId: string): string {
-  if (!anchor) return "Source anchor " + fallbackId;
-  const location = anchor.pageNumber ? "page " + anchor.pageNumber : anchor.heading ?? anchor.section ?? "document anchor";
-  return anchor.documentTitle + ", " + (anchor.versionOrdinal ? "version " + anchor.versionOrdinal : "version not returned") + ", " + location + (anchor.paragraph ? ", paragraph " + anchor.paragraph : "");
-}
+const sourceCitationLabel = evidenceCitationLabel;
 
 function CaseDocuments({locale,owner,canWrite,sources}:{locale:"en"|"ru";owner:WorkspaceController;canWrite:boolean;sources:React.ReactNode}) {
   const notebook=owner.workingNotes();
