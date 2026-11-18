@@ -1,5 +1,7 @@
 # CaseVant backlog and development priorities · 19 November 2026
 
+**Current audit slice — CV-032:** all 67 lifecycle, 15 diagnostic, nine applicable deadline tests and 20 shell cases pass on rerun. Close the confirmed editor boot-stage budget/evidence gap with a ten-minute stage limit and retained boot logs, then verify the full hosted pipeline. #331 still awaits green iOS checks. This does not claim to fix the underlying intermittent boot/launch causes. [Audit](../testing/cv032-regression-audit-2026-11-19.md).
+
 **CV-032 discovery-path repair merged and hosted-verified:** #328, #329 and #330 merged in order after 18 passing checks each. Main `bdb40fcc` preserves one verified installation across six real process restarts. Two repaired editor runs passed on attempt 1, with 12/12 matching live/history paths and both downloaded proofs independently verified. Local 67 lifecycle / 15 diagnostic tests pass. First-launch timeout and boot-stall causes remain open; public remains v228. [Evidence](../testing/cv032-ios-install-readiness.md#hosted-stable-install-verification).
 
 **CV-041 complete on public v228.** #324 and #325 merged green. Signed-in EN/RU counts passed at zero, one and three records/citations, with reload and language switching. The authorized synthetic additions remain pending review; pending-proposal 0/1/multiple coverage is local. [Release evidence](../testing/cv041-evidence-counts.md#public-v228--release-and-signed-in-acceptance).

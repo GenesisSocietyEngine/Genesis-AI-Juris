@@ -42,6 +42,7 @@ jobs:
           git diff --exit-code -- pubspec.lock
       - name: Create a fresh isolated iPhone Simulator
         id: simulator
+        timeout-minutes: 10
         env:
           IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
         shell: bash
@@ -65,8 +66,11 @@ jobs:
           test -n "$runtime"
           simulator_id="$(xcrun simctl create "Juris Tax Acceptance $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" "$device_type" "$runtime")"
           echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "$simulator_id"
-          xcrun simctl bootstatus "$simulator_id" -b
+          printf '%s\n' "$simulator_id" > "$IOS_TAX_EVIDENCE_DIR/boot-simulator.log"
+          {
+            xcrun simctl boot "$simulator_id"
+            xcrun simctl bootstatus "$simulator_id" -b
+          } 2>&1 | tee "$IOS_TAX_EVIDENCE_DIR/boot.log"
       - name: Exercise the actual editor across application termination and relaunch
         env:
           IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
