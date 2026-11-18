@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "app/tax-runtime/generated/**",
     // Vendored upstream CommonJS; changes have focused dependency security tests.
     "vendor/braces/**",
+    "vendor/picomatch2/**",
+    "vendor/picomatch4/**",
     // Generated upstream adapter distributions are hash/rebuild verified.
     "vendor/og-adapter/dist/**",
     "next-env.d.ts",

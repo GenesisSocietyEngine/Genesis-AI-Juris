@@ -29,3 +29,13 @@ CV-033 now blocks merging #315. The official advisory reports no patched Picomat
 | Follow-up | CV-011 · Billing acceptance | A second authorized test staff identity. Verify production role boundaries for the already-shipped EUR register. |
 
 CV-028 and CV-029 remain pending. The November 17 release walkthrough found three invited grants and two revoked grants across the two synthetic cases.
+
+## 18 November 2026 - CV-033 security repair
+
+Local maintenance patches for both Picomatch major lines reject ambiguous
+single-branch repeated extglobs using the existing literal fallback. Five focused
+security/compatibility tests pass. Pinned npm resolves the isolated lock with zero
+audit vulnerabilities. Exact-head full CI remains pending. Merge #315 before
+#316; CV-012 release and EN/RU report/CSV live acceptance remain pending.
+CV-010 live receipt checks remain pending an active test client.
+Evidence: docs/testing/cv033-picomatch-security.md.
