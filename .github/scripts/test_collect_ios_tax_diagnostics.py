@@ -62,6 +62,11 @@ class CaptureTests(unittest.TestCase):
 
 
 class RunnerEvidenceTests(unittest.TestCase):
+    service_executable = ("/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/"
+                          "XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/"
+                          "com.apple.CoreSimulator.CoreSimulatorService")
+    # Exact host-inventory row from failed run 44427840405; no app PID existed.
+    service_process = " 2323     1 S    08:56 " + service_executable + "\n"
     device = "EAE525EA-129B-4F71-A068-68898B5F47B6"
     container = ("/Users/runner/Library/Developer/CoreSimulator/Devices/"
                  + device + "/data/Containers/Bundle/Application/"
@@ -183,6 +188,65 @@ class RunnerEvidenceTests(unittest.TestCase):
         calls, result = self.collect({"runner-stacks": ("sample: permission denied\n", "completed", 7)})
         self.assertEqual(result["commands"]["runner-stacks"]["exit_code"], 7)
         self.assertIn("runner-listeners", [name for name, _, _ in calls])
+        self.assertFalse(result["acceptance"])
+
+    def test_service_stack_capture_survives_stalled_simulator_rpcs(self):
+        calls, result = self.collect({
+            "host-processes": (self.service_process, "completed", 0),
+            "simulator-service-identity": ("2323 " + self.service_executable + "\n", "completed", 0),
+            "application-container": ("", "timeout", -15),
+            "installed-applications": ("", "timeout", -15),
+        })
+        names = [name for name, _, _ in calls]
+        command = next(command for name, command, _ in calls if name == "simulator-service-stacks")
+        self.assertEqual(command, ["sample", "2323", "3", "10", "-file", "/dev/stdout"])
+        self.assertEqual(names[names.index("simulator-service-stacks") - 1], "simulator-service-identity")
+        self.assertLess(names.index("simulator-service-stacks"), names.index("vm-announcements"))
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertEqual(result["simulator_service_target"]["pid"], 2323)
+        self.assertEqual(result["runner_target"]["status"], "unverified")
+        self.assertNotIn("runner-stacks", names)
+        self.assertFalse(result["acceptance"])
+
+    def test_service_inventory_rejects_missing_ambiguous_or_foreign_paths(self):
+        for inventory in ("", self.process, self.service_process * 2,
+                          self.service_process.replace("2323", "0"),
+                          self.service_process.replace("/Library/", "/tmp/Library/", 1),
+                          self.service_process.rstrip() + " --argument\n"):
+            with self.subTest(inventory=inventory), self.assertRaises(ValueError):
+                diagnostics.resolve_simulator_service(inventory)
+
+    def test_service_sampling_rejects_reused_pid_and_failed_identity(self):
+        for text, status, code in (("2323 /other/service", "completed", 0),
+                                   ("2323 " + self.service_executable, "timeout", -15),
+                                   ("2323 " + self.service_executable, "completed", 1),
+                                   ("", "budget_exhausted", None)):
+            with self.subTest(status=status, code=code):
+                calls, result = self.collect({
+                    "host-processes": (self.service_process, "completed", 0),
+                    "simulator-service-identity": (text, status, code),
+                })
+                self.assertNotIn("simulator-service-stacks", [name for name, _, _ in calls])
+                self.assertEqual(result["commands"]["simulator-service-stacks"]["status"], "identity_not_verified")
+                self.assertIn("application-log", [name for name, _, _ in calls])
+
+    def test_service_inventory_failure_never_samples_partial_identity(self):
+        for status, code in (("timeout", -15), ("output_limit", 0), ("completed", 1),
+                             ("budget_exhausted", None)):
+            with self.subTest(status=status):
+                calls, result = self.collect({"host-processes": (self.service_process, status, code)})
+                self.assertEqual(result["simulator_service_target"]["status"], "unverified")
+                self.assertFalse(any(name.startswith("simulator-service-") for name, _, _ in calls))
+
+    def test_service_sample_timeout_preserves_later_diagnostics_and_budget(self):
+        calls, result = self.collect({
+            "host-processes": (self.service_process, "completed", 0),
+            "simulator-service-identity": ("2323 " + self.service_executable, "completed", 0),
+            "simulator-service-stacks": ("partial stack", "timeout", -15),
+        })
+        self.assertEqual(result["commands"]["simulator-service-stacks"]["status"], "timeout")
+        self.assertIn("launch-services", [name for name, _, _ in calls])
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
         self.assertFalse(result["acceptance"])
 
 
