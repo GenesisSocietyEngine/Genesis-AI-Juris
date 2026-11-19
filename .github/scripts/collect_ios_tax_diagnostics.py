@@ -134,11 +134,16 @@ def device_launch_targets(manager_text, processes_text):
         rows[pid] = (parent, fields[4])
     if rows.get(manager) != (1, "launchd_sim"):
         raise ValueError("Device manager is not the isolated launchd_sim")
+    runtime = (r"/Library/Developer/CoreSimulator/Volumes/[^/]+/Library/Developer/"
+               r"CoreSimulator/Profiles/Runtimes/[^/]+\.simruntime/Contents/Resources/RuntimeRoot/")
     patterns = {
+        # The first retained failure shows SpringBoard's openApplication waiting
+        # on RunningBoard, plus LaunchServices waiting in notify_check. Capture
+        # those downstream services first, within the same total budget.
+        "runningboard": runtime + r"usr/libexec/runningboardd",
+        "notifyd": runtime + r"usr/sbin/notifyd",
         "bridge": r"/usr/libexec/CoreSimulatorBridge",
-        "springboard": (r"/Library/Developer/CoreSimulator/Volumes/[^/]+/Library/Developer/"
-                        r"CoreSimulator/Profiles/Runtimes/[^/]+\.simruntime/Contents/Resources/"
-                        r"RuntimeRoot/System/Library/CoreServices/SpringBoard\.app/SpringBoard"),
+        "springboard": runtime + r"System/Library/CoreServices/SpringBoard\.app/SpringBoard",
     }
     targets = {}
     for name, pattern in patterns.items():

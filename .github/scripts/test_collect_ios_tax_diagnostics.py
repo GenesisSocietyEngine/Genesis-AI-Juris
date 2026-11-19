@@ -322,6 +322,30 @@ class RunnerEvidenceTests(unittest.TestCase):
         self.assertIn("application-log", [name for name, _, _ in calls])
         self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
 
+    def test_downstream_services_are_device_children_not_host_daemons(self):
+        runtime = self.springboard_path.split("System/Library/")[0]
+        inventory = (self.device_inventory + "150 1 Ss 11:00 /usr/libexec/runningboardd\n"
+                     "141 1 Ss 11:00 /usr/sbin/notifyd\n"
+                     "4713 3066 Ss 08:57 " + runtime + "usr/libexec/runningboardd\n"
+                     "4746 3066 Ss 08:57 " + runtime + "usr/sbin/notifyd\n")
+        targets = diagnostics.device_launch_targets("3066", inventory)
+        self.assertEqual(list(targets), ["runningboard", "notifyd", "bridge", "springboard"])
+        self.assertEqual(targets["runningboard"]["pid"], 4713)
+        self.assertEqual(targets["notifyd"]["pid"], 4746)
+        overrides = self.device_overrides()
+        overrides["device-launch-processes"] = (inventory, "completed", 0)
+        for name in ("runningboard", "notifyd"):
+            target = targets[name]
+            overrides["device-" + name + "-manager"] = ("3066", "completed", 0)
+            overrides["device-" + name + "-identity"] = (
+                f'{target["pid"]} 3066 {target["executable"]}', "completed", 0)
+        calls, result = self.collect(overrides)
+        names = [name for name, _, _ in calls]
+        self.assertLess(names.index("device-runningboard-stacks"), names.index("device-bridge-stacks"))
+        self.assertLess(names.index("device-notifyd-stacks"), names.index("device-bridge-stacks"))
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,3 +21,11 @@ The captures precede slow history/container queries and share the existing 120-s
 ## Verification checkpoint
 
 25 diagnostic tests and 67 lifecycle tests pass. Captured process rows exercise exact-device selection in the presence of another simulator, wrong/ambiguous managers and duplicate PIDs, changed parent/path, partial/exhausted identity, stalled container queries and sample timeout continuation. Whitespace checks pass. Hosted per-device capture and iOS workflow verification remain pending. The underlying bridge/FrontBoard launch stall is still an unconfirmed cause, not a resolved CV-032 item.
+
+## First live per-device comparison
+
+Candidate `b02d65ce1bb936d6f9a6f8a6910404b122259cd4`: [PR run 44486393457 attempt 1](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44486393457/attempts/1) reproduced the first-launch timeout. Exact-device managerpid returned 4697; verified child bridge 4739 and SpringBoard 4710 both sampled successfully (88,619 and 261,689 bytes). The bridge host_support dispatch path stays in semaphore_wait_trap for all 239 samples. SpringBoard’s FBSystemService openApplication path runs through FBProcessManager and RBSConnection executeLaunchRequest into synchronous XPC reply wait for all 176 samples. Separate LaunchServices/icon work also waits in notify_check. This identifies a persistent downstream wait, not yet its initiating cause.
+
+[Push run 44486380375 attempt 1](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44486380375/attempts/1) passed; the downloaded six-phase verifier passed with exact source/nonce. Its bridge/SpringBoard sample lacks the failing host_support/RBSConnection launch-request wait chain. A generic SpringBoard semaphore wait exists in both and is not sufficient to classify this failure.
+
+The next diagnostic slice adds only the observed runtime-scoped runningboardd and notifyd child paths, prioritizing them within the same 120-second budget. It excludes same-named host daemons and other simulators and uses the same manager/PID/parent/executable rechecks. All 26 diagnostic tests pass; unchanged lifecycle suite has 67 passes. This evidence-based extension is not a claim that notifyd or RunningBoard is the ultimate cause. Neither service is restarted or modified. The failed artifact was preserved; no retry of this superseded source was requested.
