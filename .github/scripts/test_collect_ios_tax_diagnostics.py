@@ -377,6 +377,49 @@ class RunnerEvidenceTests(unittest.TestCase):
         self.assertIn("application-log", [name for name, _, _ in calls])
         self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
 
+    def wait_overrides(self):
+        overrides = self.device_overrides()
+        path = self.springboard_path.split("System/Library/")[0] + "usr/libexec/runningboardd"
+        overrides["device-launch-processes"] = (self.device_inventory + "4713 3066 Ss 08:57 " + path + "\n", "completed", 0)
+        for prefix in ("device-runningboard", "device-runningboard-wait"):
+            overrides[prefix + "-manager"] = ("3066", "completed", 0)
+            overrides[prefix + "-identity"] = ("4713 3066 " + path, "completed", 0)
+        return overrides
+
+    def test_kernel_wait_capture_is_target_only_noninteractive_and_bounded(self):
+        calls, result = self.collect(self.wait_overrides())
+        names = [name for name, _, _ in calls]
+        command = next(command for name, command, _ in calls if name == "device-runningboard-wait")
+        self.assertEqual(command, ["sudo", "-n", "/usr/sbin/spindump", "4713", "3", "10",
+                                   "-onlyTarget", "-noFile", "-noBinary", "-timelimit", "10"])
+        self.assertEqual(names[names.index("device-runningboard-wait") - 1], "device-runningboard-wait-identity")
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+        self.assertFalse(any(command[0] == "sudo" for _, command, _ in self.collect()[0]))
+
+    def test_kernel_wait_capture_refuses_changed_or_partial_identity(self):
+        for key, value in [
+            ("device-runningboard-wait-manager", ("4066", "completed", 0)),
+            ("device-runningboard-wait-identity", ("4713 1 /usr/libexec/runningboardd", "completed", 0)),
+            ("device-runningboard-wait-identity", ("", "timeout", -15)),
+        ]:
+            with self.subTest(key=key):
+                overrides = self.wait_overrides(); overrides[key] = value
+                calls, result = self.collect(overrides)
+                self.assertFalse(any(command[0] == "sudo" for _, command, _ in calls))
+                self.assertEqual(result["commands"]["device-runningboard-wait"]["status"], "identity_not_verified")
+
+    def test_kernel_capture_denial_or_low_budget_keeps_other_evidence(self):
+        overrides = self.wait_overrides()
+        overrides["device-runningboard-wait"] = ("sudo: a password is required", "completed", 1)
+        calls, result = self.collect(overrides)
+        self.assertEqual(result["commands"]["device-runningboard-wait"]["exit_code"], 1)
+        self.assertIn("device-bridge-stacks", [name for name, _, _ in calls])
+        with mock.patch.object(diagnostics.time, "monotonic", side_effect=[0, 105]):
+            calls, result = self.collect(self.wait_overrides())
+        self.assertFalse(any(command[0] == "sudo" for _, command, _ in calls))
+        self.assertEqual(result["commands"]["device-runningboard-wait"]["status"], "budget_exhausted")
+
     def test_downstream_services_are_device_children_not_host_daemons(self):
         runtime = self.springboard_path.split("System/Library/")[0]
         inventory = (self.device_inventory + "150 1 Ss 11:00 /usr/libexec/runningboardd\n"

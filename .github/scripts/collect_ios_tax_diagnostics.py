@@ -217,6 +217,28 @@ def collect(device, evidence):
             records["commands"][prefix + "-stacks"] = {"command": command, "status": "identity_not_verified"}
             persist()
 
+        if name == "runningboard":
+            # User-space samples stop at the Mach IPC stub. A target-only
+            # stackshot can retain kernel wait frames without sampling the host.
+            wait_prefix = prefix + "-wait"
+            run(wait_prefix + "-manager", manager_command)
+            run(wait_prefix + "-identity", ["ps", "-p", str(target["pid"]), "-o", "pid=,ppid=,comm="])
+            command = ["sudo", "-n", "/usr/sbin/spindump", str(target["pid"]), "3", "10",
+                       "-onlyTarget", "-noFile", "-noBinary", "-timelimit", "10"]
+            if not (completed(wait_prefix + "-manager") and completed(wait_prefix + "-identity") and
+                    device_target_still_matches(target,
+                        (output / (wait_prefix + "-manager.log")).read_text(encoding="utf-8"),
+                        (output / (wait_prefix + "-identity.log")).read_text(encoding="utf-8"))):
+                records["commands"][wait_prefix] = {"command": command, "status": "identity_not_verified"}
+                persist()
+            elif deadline - time.monotonic() < 22:
+                # Reserve the existing command cap and cleanup margin; never
+                # start a privileged capture at the end of the shared budget.
+                records["commands"][wait_prefix] = {"command": command, "status": "budget_exhausted"}
+                persist()
+            else:
+                run(wait_prefix, command)
+
     run("host-processes", ["ps", "-axo", "pid=,ppid=,stat=,etime=,comm="])
     # A first-launch timeout can also stall container/listapps RPCs, preventing
     # Runner sampling. Capture the host service first, independently of simctl.
