@@ -25,7 +25,9 @@ jobs:
 
       - name: Verify lifecycle orchestration failure handling
         timeout-minutes: 2
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
+        run: |
+          bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_native_diagnostics.py"
 
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -188,6 +190,16 @@ jobs:
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_native_lifecycle.sh" \
             test "${{ steps.simulator.outputs.id }}" "$IOS_NATIVE_EVIDENCE_DIR"
 
+      - name: Capture bounded native worker diagnostics
+        # Use the current XCTest worker, never assume the original destination.
+        if: ${{ failure() && !cancelled() && steps.simulator.outputs.id != '' }}
+        timeout-minutes: 3
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_ios_native_diagnostics.py" \
+            "${{ steps.simulator.outputs.id }}" "$IOS_NATIVE_EVIDENCE_DIR"
+
       - name: Retain lifecycle preparation and execution diagnostics
         env:
           IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
@@ -200,6 +212,7 @@ jobs:
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.log
             ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.xcresult
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/native-diagnostics/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/test-plan.sha256
           if-no-files-found: warn
