@@ -68,6 +68,21 @@ class WorkerTests(unittest.TestCase):
                 record=native.collect_native(BASE,root,collector)
             collector.assert_not_called();self.assertEqual(record['status'],'identity_not_verified')
 
+    def test_system_temp_alias_above_evidence_root_is_allowed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);self.fixture(root);collector=Mock()
+            with patch.object(Path,'is_symlink',lambda path: path == root.parent):
+                native.collect_native(BASE,root,collector)
+            collector.assert_called_once_with(CLONE,root/'native-diagnostics')
+
+    def test_link_inside_result_bundle_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);self.fixture(root);collector=Mock()
+            linked=root/'lifecycle-attempt-1.xcresult'
+            with patch.object(Path,'is_symlink',lambda path: path == linked):
+                native.collect_native(BASE,root,collector)
+            collector.assert_not_called()
+
     def test_existing_capture_is_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);self.fixture(root);collector=Mock()

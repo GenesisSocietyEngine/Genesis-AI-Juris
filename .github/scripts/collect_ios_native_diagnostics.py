@@ -30,7 +30,8 @@ def select_worker(root, original):
         raise ValueError("Unknown native test attempt")
     diagnostics = root / f"lifecycle-attempt-{attempt}.xcresult" / "Staging" / "1_Test" / "Diagnostics"
     # Do not follow links out of this job's result bundle.
-    if any(p.is_symlink() for p in [root, diagnostics, *diagnostics.parents]):
+    if any(p.is_symlink() for p in [diagnostics, *diagnostics.parents]
+           if p == root or root in p.parents):
         raise ValueError("Linked evidence path")
     logs = list(diagnostics.glob("*/scheduling.log"))
     if not logs or len(logs) > 16:
