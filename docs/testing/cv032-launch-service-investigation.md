@@ -10,7 +10,7 @@ Task began on clean #333 head `6b469a9e06a7ee3090a5fb64545f47a297fff4b1`; canoni
 
 The diagnostic manifest records container and listapps queries timing out at about 20 seconds each, while simulator state, launchctl and screenshot queries complete. The host inventory lists CoreSimulatorService PID 2323 and no Runner for the verified container. The application log itself times out while still printing installation-time history. These establish partial Simulator service unresponsiveness, not the cause or permission to retry an ambiguous launch.
 
-SpringBoard reports launch-image security error -67056 and bad launch image. The same messages occur in successful editor artifacts 44417994079 and 44408816067-era retained baselines (`cv032-stable-pr-success` and `cv032-structured-pr-success`). Successful 44417994079 is sufficient counterevidence: these warnings do not independently explain the timeout. No signing, launch flag, deadline or restart change is justified by this evidence.
+SpringBoard reports launch-image security error -67056 and bad launch image. The same messages occur in successful editor run 44417994079 (`cv032-stable-pr-success`): these warnings do not independently explain the timeout. No signing, launch flag, deadline or restart change is justified by this evidence.
 
 ## Confirmed diagnostic defect and repair
 
