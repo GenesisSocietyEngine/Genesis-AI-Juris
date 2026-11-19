@@ -145,7 +145,11 @@ def device_launch_targets(manager_text, processes_text):
         "bridge": r"/usr/libexec/CoreSimulatorBridge",
         "springboard": runtime + r"System/Library/CoreServices/SpringBoard\.app/SpringBoard",
     }
-    targets = {}
+    # Two retained failures stop in OSLaunchdJob submitAndStart, waiting on
+    # launchd IPC. Sample only the manager resolved inside this exact device;
+    # never select the host launchd or a simulator by process name alone.
+    targets = {"launchd": {"pid": manager, "parent": 1,
+                           "executable": "launchd_sim", "manager": manager}}
     for name, pattern in patterns.items():
         matches = [{"pid": pid, "parent": parent, "executable": path}
                    for pid, (parent, path) in rows.items()
@@ -158,7 +162,7 @@ def device_launch_targets(manager_text, processes_text):
 
 def device_target_still_matches(target, manager_text, process_text):
     lines = [line.split(None, 2) for line in process_text.splitlines() if line.strip()]
-    return (manager_text.strip() == str(target["parent"]) and
+    return (manager_text.strip() == str(target.get("manager", target["parent"])) and
             lines == [[str(target["pid"]), str(target["parent"]), target["executable"]]])
 
 
