@@ -236,6 +236,14 @@ def collect(device, evidence):
             records["commands"]["simulator-service-stacks"] = {
                 "command": command, "status": "identity_not_verified"}
             persist()
+    # The retained first-launch failure waits on RunningBoard's synchronous
+    # reply. App-only history omits service events without the bundle ID and
+    # timed out before the wait interval. Preserve a short structured service
+    # window from this exact device before broader history/RPCs. This is only
+    # evidence; it does not authorize a process, retry, or acceptance.
+    run("launch-service-log", ["xcrun", "simctl", "spawn", device, "log", "show",
+                               "--last", "5m", "--style", "json", "--predicate",
+                               'process == "runningboardd" OR process == "notifyd"'])
     # Exact-path discovery can return nothing even when a later compact log has
     # a VM announcement. Retain OS path/sender metadata without filtering on the
     # disputed path, before broad history consumes the shared diagnostic budget.

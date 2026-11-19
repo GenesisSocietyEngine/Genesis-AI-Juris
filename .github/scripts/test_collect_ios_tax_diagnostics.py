@@ -166,6 +166,29 @@ class RunnerEvidenceTests(unittest.TestCase):
         self.assertFalse(result["acceptance"])
         self.assertFalse(any(command[0] == "sample" for _, command, _ in calls))
 
+    def test_service_history_is_device_scoped_and_not_bundle_filtered(self):
+        calls, result = self.collect({"application-log": ("partial", "timeout", -15)})
+        names = [name for name, _, _ in calls]
+        query = next(command for name, command, _ in calls if name == "launch-service-log")
+        self.assertEqual(query[:6], ["xcrun", "simctl", "spawn", self.device, "log", "show"])
+        self.assertEqual(query[query.index("--last") + 1], "5m")
+        self.assertEqual(query[query.index("--style") + 1], "json")
+        self.assertEqual(query[-1], 'process == "runningboardd" OR process == "notifyd"')
+        self.assertLess(names.index("launch-service-log"), names.index("application-log"))
+        self.assertEqual(result["commands"]["launch-service-log"]["status"], "completed")
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+
+    def test_service_history_failure_does_not_skip_other_evidence(self):
+        for status, code in [("timeout", -15), ("output_limit", 0), ("budget_exhausted", None)]:
+            with self.subTest(status=status):
+                calls, result = self.collect({"launch-service-log": ("partial", status, code)})
+                self.assertEqual(result["commands"]["launch-service-log"]["status"], status)
+                self.assertIn("vm-announcements", [name for name, _, _ in calls])
+                self.assertIn("application-log", [name for name, _, _ in calls])
+                self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+                self.assertFalse(result["acceptance"])
+
     def test_vm_metadata_timeout_does_not_skip_other_diagnostics(self):
         calls, result = self.collect({"vm-announcements": ("partial", "timeout", -15)})
         self.assertEqual(result["commands"]["vm-announcements"]["status"], "timeout")
