@@ -35,3 +35,22 @@ Merged main 71d8093f independently passes editor 44603700477-1 (six distinct pro
 Candidate source fef0d46's PR native run 44607091873 passes all nine selector tests on macOS, the existing 20 shell cases and the selected native lifecycle on attempt 1. The failure-only diagnostic step is skipped on this successful run: actual kernel collection from a failed native clone remains unverified. The selector is validated against the real retained failure; existing collector tests pass 33 cases. Candidate editor failure 44607108851 remains retained and is not waived. The follow-up merge reconciliation supersedes any still-running candidate checks and requires fresh CI; it does not inherit a green status from the earlier source.
 
 Documentation conflicts with #344 were reconciled by preserving its audit entry and the new candidate findings. No implementation change is introduced by reconciliation. Progress, backlog and priorities are updated together. CV-032 remains open pending a causal explanation of the original launch stall and hosted native-failure capture. Next: review the reconciled candidate workflows and retain the next native worker report before any retry. No production deployment; v229 unchanged.
+
+## Final #345 integration audit
+
+19 November 2026. Started clean at candidate `3d7a74299087fecbc081104e866cac7fa9fa6d42`, remote main `9e2c3c68`. All 18 checks passed; #345 merged as `051e8806c9d0469302f8364b22d236ea02841f24`. Follow-up branch `codex/cv032-native-diagnostics-audit` starts from that exact merged main; no functional files changed in this audit.
+
+Both final editor artifacts independently verify the exact source and run nonce, all six processes, matching complete pairs, fresh native reopen, incomplete-input error and preserved legacy record:
+
+| Run (attempt 1) | Accepted PIDs | Bundle SHA-256 |
+| --- | --- | --- |
+| PR 44611182094 | 20013, 22814, 24520, 27055, 29676, 32036 | 2aae9a045798f910cc1b015bc6784cd9947c7aad4dd8bdfcb5cf1fbc5f8db3b8 |
+| Push 44611172149 | 20146, 22245, 24740, 27398, 29175, 32076 | 7ae517bb20dc17f0b524f2d3e57b8ddbf8da27d8660aceedf8990286209bb4f9 |
+
+PR kernel capture selects only RunningBoard 5883, exits zero, and retains 26,967 bytes in 6.243 seconds. Push selects only RunningBoard 3636, exits zero, and retains 29,975 bytes in 7.810 seconds. Total diagnostic command durations are 86.268 / 89.344 seconds. Neither report contains submitAndStart or blocked-by metadata. These are healthy comparisons, not a demonstrated cure. The PR service log reaches the output limit and both broad application queries time out; the diagnostic sets are partial.
+
+Native runs 44611181949 and 44611169901 both pass on GitHub attempt 1 and record the selected lifecycle passing on lifecycle attempt 1. Each also passes nine selector tests and the existing 20 isolated shell cases. The failure-only clone diagnostic step is explicitly skipped in both successful jobs. No new completed native failure was found in the latest eight-run audit; earlier selector failures and cancelled runs are already accounted for. Actual failed-clone collection remains a hosted acceptance gate, distinct from the real retained-artifact selector test. Local reruns pass nine selector tests and 33 collector tests.
+
+Two non-iOS merge blockers were retained before one unchanged retry each. Android 44611181641 logs explicit HTTP 429 responses from Maven Central for Kotlin dependencies; attempt 2 passes. Web 44611181661 lacks Chrome DevToolsActivePort during startup; attempt 2 passes. This does not establish the reason Chrome failed to start. No dependency changes, timeout increases, launch resets or acceptance bypasses were made.
+
+CV-032 remains open: no new kernel evidence confirms the initiating launch-stall cause, and no further behavioral fix is justified. Next: preserve the next native failure's selection receipt and clone-specific report before retry, then correlate the actual worker's launch request. Evidence is retained outside git. Audit-documentation and post-merge CI require their own checks and are not covered by the prior head's green status. No production deployment; v229 unchanged.
