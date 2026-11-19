@@ -97,6 +97,27 @@ def target_still_matches(target, process_text):
     return lines == [[str(target["pid"]), target["executable"]]]
 
 
+def resolve_simulator_service(processes_text):
+    """Identify the host service without depending on a stalled simctl RPC.
+
+    This is diagnostic-only, not an app PID or a device acceptance identity.
+    Refuse ambiguous services and paths not observed on the hosted runner.
+    """
+    executable = ("/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/"
+                  "XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/"
+                  "com.apple.CoreSimulator.CoreSimulatorService")
+    matches = []
+    for line in processes_text.splitlines():
+        fields = line.split(None, 4)
+        if len(fields) == 5 and fields[4] == executable:
+            if not fields[0].isdigit() or int(fields[0]) <= 1:
+                raise ValueError("Invalid CoreSimulator service PID")
+            matches.append(int(fields[0]))
+    if len(matches) != 1:
+        raise ValueError("Expected exactly one host CoreSimulator service")
+    return {"pid": matches[0], "executable": executable}
+
+
 def collect(device, evidence):
     output = Path(evidence) / "failure-diagnostics"
     output.mkdir(parents=True, exist_ok=False)
@@ -118,6 +139,28 @@ def collect(device, evidence):
         return result["status"] == "completed" and result["exit_code"] == 0
 
     run("host-processes", ["ps", "-axo", "pid=,ppid=,stat=,etime=,comm="])
+    # A first-launch timeout can also stall container/listapps RPCs, preventing
+    # Runner sampling. Capture the host service first, independently of simctl.
+    # It is shared host infrastructure: never use its PID as app/device proof.
+    try:
+        if not completed("host-processes"):
+            raise ValueError("Host process inventory did not complete successfully")
+        service = resolve_simulator_service((output / "host-processes.log").read_text(encoding="utf-8"))
+        records["simulator_service_target"] = {"status": "matched", **service}
+    except (ValueError, OSError) as error:
+        service = None
+        records["simulator_service_target"] = {"status": "unverified", "error": str(error)}
+    persist()
+    if service is not None:
+        run("simulator-service-identity", ["ps", "-p", str(service["pid"]), "-o", "pid=,comm="])
+        command = ["sample", str(service["pid"]), "3", "10", "-file", "/dev/stdout"]
+        if (completed("simulator-service-identity") and target_still_matches(
+                service, (output / "simulator-service-identity.log").read_text(encoding="utf-8"))):
+            run("simulator-service-stacks", command)
+        else:
+            records["commands"]["simulator-service-stacks"] = {
+                "command": command, "status": "identity_not_verified"}
+            persist()
     # Exact-path discovery can return nothing even when a later compact log has
     # a VM announcement. Retain OS path/sender metadata without filtering on the
     # disputed path, before broad history consumes the shared diagnostic budget.
