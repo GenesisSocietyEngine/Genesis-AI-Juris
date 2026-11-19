@@ -45,3 +45,22 @@ The new native failure 44555875759-1 is separate: `phases.log` records preparati
 #342 integration: all 18 checks pass; editor 44545598976 attempt 3 independently verifies PIDs 17798/21430/22815/25393/26754/29786 and bundle SHA-256 `fa57fb0e16bf7b6aa8f079ea9fd063eb36e4b0312418bc48a158a0ee7fd40ed8`. Merged as `a7f45809e6d2fcdb6bddbf648c4583a1fed5babd`. The unchanged retry is not a cure. #343 then developed only documentation conflicts due to the parent squash merge. Main's tree equals the original #342 head; preserving #343's superseding progress/backlog entries retains every parent entry. Reconciliation changes no implementation and requires fresh CI. The current native retry remains pending at this checkpoint.
 
 The still-running native retry is superseded by publishing the required merge reconciliation. Cancellation is not a pass or a second observed timeout; fresh native jobs on the reconciled source remain required.
+
+## Final #343 verification and integration
+
+19 November 2026. Started clean on `14e64ced66c322306f37c8b45031f280ebee4a02`. All 18 checks passed; #343 merged as `71d8093f1fea6f78e747e2fd6bbaa3a17811ffc4`. Audit branch `codex/cv032-kernel-audit` starts from that exact remote main. No functional files changed in this follow-up.
+
+Both final editor artifacts independently pass the six-process verifier with exact source/nonce, matching complete pairs, fresh native reopen, incomplete-input error and preserved legacy record:
+
+| Run (attempt 1) | Accepted PIDs | Bundle SHA-256 |
+| --- | --- | --- |
+| Push 44596870669 | 17123, 19719, 21108, 24009, 25097, 27804 | 780b3235e679e331c080e5536ab50a32f38393907f9078f73b353fbea743d5a8 |
+| PR 44596888055 | 17487, 19757, 22269, 24814, 26670, 29253 | b540297de963855e9ab7cfc775601ba5be29c23e64780a44b2019ce1e69a0d0c |
+
+Push kernel capture: freshly verified RunningBoard PID 2369; exit 0, 37,294 bytes, 6.765 seconds. PR capture: PID 2408; exit 0, 27,501 bytes, 8.277 seconds. Each report has exactly one process header and kernel frames. Total command durations are 95.223 / 106.194 seconds. Both broad application-log queries time out at the existing per-command limit; other captures complete. Do not describe the whole diagnostic set as complete.
+
+Neither report contains submitAndStart. The healthy push report has 49 samples blocked by a turnstile waiting for RunningBoard thread 0x14ec4 after two hops, with a queue thread to be allocated. This establishes that the report can expose wait metadata, but such a wait in isolation does not distinguish failure. There is still no failed kernel report showing the original synchronous launch request or its reply owner. The latest eight editor runs were checked: completed runs pass, and post-merge main run 44603700477 remains in progress. No new initiating cause or evidence-supported runtime workaround is confirmed; avoid further instrumentation without a demonstrated evidence gap.
+
+Native runs 44596870791 (push) and 44596888370 (PR) both passed GitHub attempt 1 and explicitly record the selected testNativeLogisticsLifecycle passing on lifecycle attempt 1. The earlier preparation timeout remains retained as separate evidence, not a reproduced launch stall. Local reruns pass 33 diagnostic tests and 67 lifecycle tests. Final artifacts/logs remain outside git in the task evidence directory.
+
+CV-032 remains open. Next: retain a recurrence's kernel report before retry and correlate the exact blocked request with device service history. The merged diagnostics are verified; a launch-stall cure is not. Post-merge main and audit-documentation CI are not covered by the prior head's green results. Public v229 unchanged; no deployment performed.
