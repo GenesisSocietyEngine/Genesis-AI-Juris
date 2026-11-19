@@ -282,6 +282,8 @@ class RunnerEvidenceTests(unittest.TestCase):
         return {
             "device-launch-manager": ("3066\n", "completed", 0),
             "device-launch-processes": (self.device_inventory, "completed", 0),
+            "device-launchd-manager": ("3066\n", "completed", 0),
+            "device-launchd-identity": ("3066 1 launchd_sim", "completed", 0),
             "device-bridge-manager": ("3066\n", "completed", 0),
             "device-springboard-manager": ("3066\n", "completed", 0),
             "device-bridge-identity": ("3104 3066 " + self.bridge_path, "completed", 0),
@@ -291,8 +293,38 @@ class RunnerEvidenceTests(unittest.TestCase):
     def test_device_targets_exclude_other_simulators_and_host_services(self):
         other = self.device_inventory.replace("3066", "4066").replace("3104", "4104").replace("3075", "4075")
         targets = diagnostics.device_launch_targets("3066\n", other + self.device_inventory)
-        self.assertEqual({name: value["pid"] for name, value in targets.items()}, {"bridge": 3104, "springboard": 3075})
+        self.assertEqual({name: value["pid"] for name, value in targets.items()}, {"launchd": 3066, "bridge": 3104, "springboard": 3075})
         self.assertEqual(diagnostics.device_launch_targets("4066", other + self.device_inventory)["bridge"]["pid"], 4104)
+
+    def test_launchd_sample_requires_fresh_device_manager_and_parent_identity(self):
+        calls, result = self.collect(self.device_overrides())
+        names = [name for name, _, _ in calls]
+        query = next(command for name, command, _ in calls if name == "device-launchd-stacks")
+        self.assertEqual(query, ["sample", "3066", "3", "10", "-file", "/dev/stdout"])
+        self.assertLess(names.index("device-launchd-stacks"), names.index("device-bridge-stacks"))
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+        for key, value in [
+            ("device-launchd-manager", ("4066", "completed", 0)),
+            ("device-launchd-manager", ("3066", "timeout", -15)),
+            ("device-launchd-identity", ("3066 2 launchd_sim", "completed", 0)),
+            ("device-launchd-identity", ("1 0 /sbin/launchd", "completed", 0)),
+            ("device-launchd-identity", ("3066 1 /other/launchd_sim", "completed", 0)),
+            ("device-launchd-identity", ("", "budget_exhausted", None)),
+        ]:
+            with self.subTest(key=key, value=value):
+                overrides = self.device_overrides(); overrides[key] = value
+                calls, result = self.collect(overrides)
+                self.assertNotIn("device-launchd-stacks", [name for name, _, _ in calls])
+                self.assertFalse(result["acceptance"])
+
+    def test_launchd_sample_refusal_preserves_downstream_capture(self):
+        overrides = self.device_overrides()
+        overrides["device-launchd-stacks"] = ("permission denied", "completed", 1)
+        calls, result = self.collect(overrides)
+        self.assertEqual(result["commands"]["device-launchd-stacks"]["exit_code"], 1)
+        self.assertIn("device-bridge-stacks", [name for name, _, _ in calls])
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
 
     def test_invalid_manager_or_inventory_cannot_select_device_targets(self):
         for manager in ("1", "0", "3066\n4066", "not a PID"):
@@ -352,7 +384,7 @@ class RunnerEvidenceTests(unittest.TestCase):
                      "4713 3066 Ss 08:57 " + runtime + "usr/libexec/runningboardd\n"
                      "4746 3066 Ss 08:57 " + runtime + "usr/sbin/notifyd\n")
         targets = diagnostics.device_launch_targets("3066", inventory)
-        self.assertEqual(list(targets), ["runningboard", "notifyd", "bridge", "springboard"])
+        self.assertEqual(list(targets), ["launchd", "runningboard", "notifyd", "bridge", "springboard"])
         self.assertEqual(targets["runningboard"]["pid"], 4713)
         self.assertEqual(targets["notifyd"]["pid"], 4746)
         overrides = self.device_overrides()
