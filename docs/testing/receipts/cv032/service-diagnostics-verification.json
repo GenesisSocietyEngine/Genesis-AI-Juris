@@ -1,0 +1,131 @@
+{
+  "schema": "casevant.cv032-diagnostic-verification.v1",
+  "merged_pr333": "9db90a230ad9ee0e19d5c8e2c7ef979d15ab96f8",
+  "merged_pr334": "ac57a95d48f56e3dbf4a679704473d64c839a10d",
+  "underlying_timeout_resolved": false,
+  "runs": [
+    {
+      "run": 44476029428,
+      "attempt": 1,
+      "source": "b1fe4f1d92bb24b13d0f376894e325aa15b63a0a",
+      "application_outcome": "six-process acceptance passed",
+      "service_target": {
+        "status": "matched",
+        "pid": 3573,
+        "executable": "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/com.apple.CoreSimulator.CoreSimulatorService"
+      },
+      "identity": {
+        "command": [
+          "ps",
+          "-p",
+          "3573",
+          "-o",
+          "pid=,comm="
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 199,
+        "elapsed_seconds": 0.158
+      },
+      "sample": {
+        "command": [
+          "sample",
+          "3573",
+          "3",
+          "10",
+          "-file",
+          "/dev/stdout"
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 104250,
+        "elapsed_seconds": 4.853
+      },
+      "stack_sha256": "e019e7b21fab86af33be67a315f7234cbadcbc20cd9ed7da8ed4cff555b90f55",
+      "diagnostic_acceptance": false,
+      "total_capture_seconds": 38.146
+    },
+    {
+      "run": 44476036829,
+      "attempt": 1,
+      "source": "b1fe4f1d92bb24b13d0f376894e325aa15b63a0a",
+      "application_outcome": "first launch timed out at 120 seconds; no accepted Runner PID",
+      "service_target": {
+        "status": "matched",
+        "pid": 2532,
+        "executable": "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/com.apple.CoreSimulator.CoreSimulatorService"
+      },
+      "identity": {
+        "command": [
+          "ps",
+          "-p",
+          "2532",
+          "-o",
+          "pid=,comm="
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 199,
+        "elapsed_seconds": 0.239
+      },
+      "sample": {
+        "command": [
+          "sample",
+          "2532",
+          "3",
+          "10",
+          "-file",
+          "/dev/stdout"
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 105904,
+        "elapsed_seconds": 5.968
+      },
+      "stack_sha256": "9d35a001dc4c2319fed9df05ecd97a9aa14dfe7e6e3f31c7ac5429be4df0679f",
+      "diagnostic_acceptance": false,
+      "total_capture_seconds": 79.398
+    },
+    {
+      "run": 44476036829,
+      "attempt": 2,
+      "source": "b1fe4f1d92bb24b13d0f376894e325aa15b63a0a",
+      "application_outcome": "six-process acceptance passed",
+      "service_target": {
+        "status": "matched",
+        "pid": 4266,
+        "executable": "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/com.apple.CoreSimulator.CoreSimulatorService"
+      },
+      "identity": {
+        "command": [
+          "ps",
+          "-p",
+          "4266",
+          "-o",
+          "pid=,comm="
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 199,
+        "elapsed_seconds": 0.21
+      },
+      "sample": {
+        "command": [
+          "sample",
+          "4266",
+          "3",
+          "10",
+          "-file",
+          "/dev/stdout"
+        ],
+        "status": "completed",
+        "exit_code": 0,
+        "bytes": 108960,
+        "elapsed_seconds": 5.226
+      },
+      "stack_sha256": "8e6d82f5c79b4288ed99b249681592b384d49e585a643d9e1bc58fc513448aaf",
+      "diagnostic_acceptance": false,
+      "total_capture_seconds": 54.342
+    }
+  ]
+}
