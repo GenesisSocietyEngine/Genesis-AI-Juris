@@ -20,8 +20,16 @@ Audit the latest iOS orchestration, stable-install proof, failure capture and CI
 | `test_ios_native_lifecycle.sh` | 14 groups / 20 isolated cases pass |
 | Diff whitespace review | Pass |
 
-The checkout has no installed web dependencies, and the locked install harness requires Linux utilities. The candidate's normal hosted pipeline reruns strict types/lint, full web/build tests, packaged browser/Worker checks, PDF gates and both dependency audits, alongside native/mobile/Rust checks. Hosted results and new boot artifacts remain pending at this checkpoint. Local shell tests do not prove macOS boot behavior.
+The checkout has no installed web dependencies, and the locked install harness requires Linux utilities. The normal hosted pipeline therefore supplied the full web/native validation recorded below. Local shell tests do not prove macOS boot behavior.
 
-## Next acceptance
+## Remaining follow-up
 
-Merge #331 only after all checks pass. Verify the candidate's editor workflows retain `boot-simulator.log` and completed `boot.log`, and that the six-phase stable-install proof still passes. Preserve any failed-run evidence before retrying; keep first-launch and boot-stall root causes open unless new evidence establishes them. Update progress and backlog together after hosted verification.
+The confirmed budget/evidence gap is closed. Preserve any future failed-run evidence before retrying; keep first-launch and boot-stall root causes open unless new evidence establishes them. Active-client, EU hosting and provider-dependent acceptance gates remain unchanged. This iteration does not claim a live UI audit or a new website release.
+
+## Hosted rerun evidence
+
+#331 merged as `40a3fa699de94f4453fbd41edc44aa30ba84af28` after all 18 checks passed. The audit candidate is #332, source `195d4a02b8b130c8b7ea12400b0f07ab8438978d`.
+
+[Web/PDF run 44423927044](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44423927044) passed on attempt 1. Downloaded `source.json` matches the candidate. The complete suite reports 2,110 passes, zero failures and three existing skips (2,113 tests total). Full-tree and production dependency audits both report zero vulnerabilities. Strict typecheck/lint, migration/contract checks, packaged browser/Worker checks and PDF gates passed in the hosted workflow. This is test-suite evidence, not fresh signed-in production acceptance.
+
+All 18 #332 checks passed on the candidate, and the PR merged as `f7c4dd16f97b81bb1dffe53acaf39a72b60f4bd7`. Both editor workflows passed on attempt 1. The downloaded [44423927110 artifact](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44423927110) retains `simulator-inventory.json`, `boot-simulator.log` matching the verified launch simulator and a 4,791-byte `boot.log` ending in successful completion after 75 seconds. The committed six-process verifier was rerun against this exact-source artifact and passed. The ten-minute timeout is configured; an actual forced ten-minute stall was not injected. The local boot pipeline returned a failure for an injected failing command without running the following success command, confirming that log piping does not mask that failure. Public v228 is unchanged.
