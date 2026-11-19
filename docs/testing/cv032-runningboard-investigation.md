@@ -15,3 +15,25 @@ The application log ends at 08:27:29 with a terminated-query marker. Its process
 Retain a five-minute structured log of runningboardd and notifyd using `simctl spawn <exact UUID> log show`, before broader app history. Keep app-bundle filtering out of this service query, so unrelated service operations and timestamps can explain the stalled reply. Device-scoped log history is diagnostic only, separate from fresh exact PID/parent/path checks for live sampling. Keep all existing 120-second total, 20-second command and 4 MiB output budgets; no new service restart, launch retry, acceptance path or timeout change.
 
 Acceptance: exact device selector, structured service metadata, service records without app ID, priority over broad app history, shared bounds, and continued evidence collection on query timeout/output limit/exhausted budget. Local 28 diagnostic tests and 67 lifecycle tests pass; diff check passes. Hosted verification is pending. The initiating launch-stall cause remains open and must not be described as fixed by this evidence repair.
+
+## Hosted verification and integration
+
+#338 merged as `6c025eccb8c7153615365f1b7f919df9273b9431` after all 18 checks passed on source `de8679412a1aa34668016128a38785270ffe7862`. No workflow retry was requested. The clean task branch includes canonical main before this documentation follow-up.
+
+| Evidence | Push | PR |
+| --- | --- | --- |
+| Editor, attempt 1 | [44509952907](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44509952907) | [44509965666](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44509965666) |
+| Native lifecycle, attempt 1 | [44509952332](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44509952332) | [44509965967](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44509965967) |
+| Service query bytes / seconds | 3,402,376 / 3.411 | 3,061,344 / 5.141 |
+| Records / records without app bundle ID | 2,560 / 2,025 | 2,297 / 1,815 |
+| Summed diagnostic command seconds | 68.171 | 94.848 |
+
+Both downloaded six-process proofs pass the committed verifier with exact source and run nonce. Push PIDs: 22171, 24766, 26398, 29208, 31731, 33919; bundle SHA-256 `09d6eecb55e4d3d97fbf843af999780abd250188fc1593a0a0c29f44adc65e66`. PR PIDs: 19196, 22543, 24220, 26868, 30476, 33763; bundle SHA-256 `e230d75c7ba7052655f20d6985d6f80163275506e91362ddf0d9ebe07da18748`. Each run keeps its own bundle unchanged across phases; complete pairs, fresh native reopen, incomplete native error and legacy record preservation pass.
+
+Both exact-device service commands completed with exit 0 and retained full arrays beneath the raw `getpwuid_r did not find a match for uid 501` diagnostic preamble. For offline inspection, that exact preamble was identified before parsing the following JSON array; raw evidence was preserved unchanged. The `.log` file is deliberately raw combined output, not an application input or guaranteed standalone JSON file. Returned event paths belong to the runtime runningboardd; these healthy windows contain no notifyd events. All four per-device stack captures and the shared-service sample completed. Both manifests retain `acceptance: false`.
+
+The prior #337 push and PR artifacts (44492882869 / 44492930375) and exact merged-main artifact (44509512285, source `136574ed`) also pass independent six-process verification. These are additional healthy baselines, not reproductions of the stalled reply. [Web PR CI 44509965688](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44509965688) retains 2,110 passes, zero failures, three existing skips and both dependency audits at zero vulnerabilities. Final local review: 28 diagnostic tests / 67 lifecycle tests pass and diff check is clean.
+
+## Handoff and remaining limitation
+
+The confirmed diagnostic filtering gap is repaired, merged and hosted-verified. CV-032 itself stays open: the initiating RunningBoard reply-wait cause remains unconfirmed, and this iteration produced no failed downstream capture. Do not reset services, increase timeouts or change app/signing behavior based on the current healthy results. On recurrence, preserve the first failed service history, manager/PID identities and RunningBoard/notifyd stacks; correlate timestamps with the bridge request and compare with these healthy baselines before proposing a behavioral fix. Public v229 remains unchanged; no site release or signed-in product check applies to this CI-only change.
