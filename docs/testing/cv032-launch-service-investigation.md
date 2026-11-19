@@ -2,7 +2,7 @@
 
 ## Scope and base — 19 November 2026
 
-Task began on clean #333 head `6b469a9e06a7ee3090a5fb64545f47a297fff4b1`; canonical main was `f7c4dd16f97b81bb1dffe53acaf39a72b60f4bd7`, already published as v229. #333 has 16 successful checks and two native checks running at the implementation checkpoint. Both current editor checks passed on attempt 1. The repair is isolated on `codex/cv032-launch-service-diagnostics`. No app, data, release or user-facing localization changes are involved.
+Task began on clean #333 head `6b469a9e06a7ee3090a5fb64545f47a297fff4b1`; canonical main was `f7c4dd16f97b81bb1dffe53acaf39a72b60f4bd7`, already published as v229. #333 subsequently passed all 18 checks and merged as `9db90a230ad9ee0e19d5c8e2c7ef979d15ab96f8` on 19 November 2026. Its downloaded editor proof from run 44472871341 independently verifies six distinct processes, one bundle, exact source/nonce and preserved legacy data. Both editor checks passed on attempt 1. The candidate branch incorporates the new canonical main. The repair is isolated on `codex/cv032-launch-service-diagnostics`. No app, data, release or user-facing localization changes are involved.
 
 ## Retained failure and comparison
 
