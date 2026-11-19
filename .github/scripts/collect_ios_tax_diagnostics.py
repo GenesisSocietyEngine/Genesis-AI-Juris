@@ -118,6 +118,50 @@ def resolve_simulator_service(processes_text):
     return {"pid": matches[0], "executable": executable}
 
 
+def device_launch_targets(manager_text, processes_text):
+    """Bind launch services to the launchd queried inside this exact device."""
+    if not re.fullmatch(r"[0-9]+", manager_text.strip()) or int(manager_text) <= 1:
+        raise ValueError("Invalid device launch manager PID")
+    manager = int(manager_text)
+    rows = {}
+    for line in processes_text.splitlines():
+        fields = line.split(None, 4)
+        if len(fields) != 5 or not fields[0].isdigit() or not fields[1].isdigit():
+            raise ValueError("Malformed process inventory")
+        pid, parent = int(fields[0]), int(fields[1])
+        if pid in rows:
+            raise ValueError("Ambiguous process inventory")
+        rows[pid] = (parent, fields[4])
+    if rows.get(manager) != (1, "launchd_sim"):
+        raise ValueError("Device manager is not the isolated launchd_sim")
+    runtime = (r"/Library/Developer/CoreSimulator/Volumes/[^/]+/Library/Developer/"
+               r"CoreSimulator/Profiles/Runtimes/[^/]+\.simruntime/Contents/Resources/RuntimeRoot/")
+    patterns = {
+        # The first retained failure shows SpringBoard's openApplication waiting
+        # on RunningBoard, plus LaunchServices waiting in notify_check. Capture
+        # those downstream services first, within the same total budget.
+        "runningboard": runtime + r"usr/libexec/runningboardd",
+        "notifyd": runtime + r"usr/sbin/notifyd",
+        "bridge": r"/usr/libexec/CoreSimulatorBridge",
+        "springboard": runtime + r"System/Library/CoreServices/SpringBoard\.app/SpringBoard",
+    }
+    targets = {}
+    for name, pattern in patterns.items():
+        matches = [{"pid": pid, "parent": parent, "executable": path}
+                   for pid, (parent, path) in rows.items()
+                   if pid > 1 and parent == manager and re.fullmatch(pattern, path)
+                   and not any(part in (".", "..") for part in path.split("/"))]
+        if len(matches) == 1:
+            targets[name] = matches[0]
+    return targets
+
+
+def device_target_still_matches(target, manager_text, process_text):
+    lines = [line.split(None, 2) for line in process_text.splitlines() if line.strip()]
+    return (manager_text.strip() == str(target["parent"]) and
+            lines == [[str(target["pid"]), str(target["parent"]), target["executable"]]])
+
+
 def collect(device, evidence):
     output = Path(evidence) / "failure-diagnostics"
     output.mkdir(parents=True, exist_ok=False)
@@ -137,6 +181,37 @@ def collect(device, evidence):
     def completed(name):
         result = records["commands"][name]
         return result["status"] == "completed" and result["exit_code"] == 0
+
+    # Launch can block at the per-device FrontBoard request while the shared
+    # host service remains idle. Resolve the device's own bootstrap manager,
+    # then use only its exact-path children; never sample by process name alone.
+    manager_command = ["xcrun", "simctl", "spawn", device, "launchctl", "managerpid"]
+    run("device-launch-manager", manager_command)
+    run("device-launch-processes", ["ps", "-axo", "pid=,ppid=,stat=,etime=,comm="])
+    try:
+        if not completed("device-launch-manager") or not completed("device-launch-processes"):
+            raise ValueError("Device launch identity did not complete")
+        targets = device_launch_targets(
+            (output / "device-launch-manager.log").read_text(encoding="utf-8"),
+            (output / "device-launch-processes.log").read_text(encoding="utf-8"))
+        records["device_launch_targets"] = targets
+    except (ValueError, OSError) as error:
+        targets = {}
+        records["device_launch_identity_error"] = str(error)
+    persist()
+    for name, target in targets.items():
+        prefix = "device-" + name
+        run(prefix + "-manager", manager_command)
+        run(prefix + "-identity", ["ps", "-p", str(target["pid"]), "-o", "pid=,ppid=,comm="])
+        command = ["sample", str(target["pid"]), "3", "10", "-file", "/dev/stdout"]
+        if (completed(prefix + "-manager") and completed(prefix + "-identity") and
+                device_target_still_matches(target,
+                    (output / (prefix + "-manager.log")).read_text(encoding="utf-8"),
+                    (output / (prefix + "-identity.log")).read_text(encoding="utf-8"))):
+            run(prefix + "-stacks", command)
+        else:
+            records["commands"][prefix + "-stacks"] = {"command": command, "status": "identity_not_verified"}
+            persist()
 
     run("host-processes", ["ps", "-axo", "pid=,ppid=,stat=,etime=,comm="])
     # A first-launch timeout can also stall container/listapps RPCs, preventing
