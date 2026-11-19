@@ -62,6 +62,12 @@ class CaptureTests(unittest.TestCase):
 
 
 class RunnerEvidenceTests(unittest.TestCase):
+    bridge_path = "/usr/libexec/CoreSimulatorBridge"
+    springboard_path = ("/Library/Developer/CoreSimulator/Volumes/iOS_22F77/Library/Developer/"
+                       "CoreSimulator/Profiles/Runtimes/iOS 18.5.simruntime/Contents/Resources/"
+                       "RuntimeRoot/System/Library/CoreServices/SpringBoard.app/SpringBoard")
+    device_inventory = ("3066 1 S 08:01 launchd_sim\n3104 3066 Rs 07:59 " + bridge_path +
+                        "\n3075 3066 Rs 07:59 " + springboard_path + "\n")
     service_executable = ("/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/"
                           "XPCServices/com.apple.CoreSimulator.CoreSimulatorService.xpc/Contents/MacOS/"
                           "com.apple.CoreSimulator.CoreSimulatorService")
@@ -248,6 +254,73 @@ class RunnerEvidenceTests(unittest.TestCase):
         self.assertIn("launch-services", [name for name, _, _ in calls])
         self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
         self.assertFalse(result["acceptance"])
+
+    def device_overrides(self):
+        return {
+            "device-launch-manager": ("3066\n", "completed", 0),
+            "device-launch-processes": (self.device_inventory, "completed", 0),
+            "device-bridge-manager": ("3066\n", "completed", 0),
+            "device-springboard-manager": ("3066\n", "completed", 0),
+            "device-bridge-identity": ("3104 3066 " + self.bridge_path, "completed", 0),
+            "device-springboard-identity": ("3075 3066 " + self.springboard_path, "completed", 0),
+        }
+
+    def test_device_targets_exclude_other_simulators_and_host_services(self):
+        other = self.device_inventory.replace("3066", "4066").replace("3104", "4104").replace("3075", "4075")
+        targets = diagnostics.device_launch_targets("3066\n", other + self.device_inventory)
+        self.assertEqual({name: value["pid"] for name, value in targets.items()}, {"bridge": 3104, "springboard": 3075})
+        self.assertEqual(diagnostics.device_launch_targets("4066", other + self.device_inventory)["bridge"]["pid"], 4104)
+
+    def test_invalid_manager_or_inventory_cannot_select_device_targets(self):
+        for manager in ("1", "0", "3066\n4066", "not a PID"):
+            with self.subTest(manager=manager), self.assertRaises(ValueError):
+                diagnostics.device_launch_targets(manager, self.device_inventory)
+        for inventory in ("", self.device_inventory * 2,
+                          self.device_inventory.replace("launchd_sim", "/other/launchd_sim"),
+                          self.device_inventory + "malformed\n"):
+            with self.subTest(inventory=inventory), self.assertRaises(ValueError):
+                diagnostics.device_launch_targets("3066", inventory)
+        duplicate = self.device_inventory + "3105 3066 Rs 07:59 " + self.bridge_path + "\n"
+        self.assertNotIn("bridge", diagnostics.device_launch_targets("3066", duplicate))
+
+    def test_device_samples_precede_stalled_rpcs_with_one_budget(self):
+        overrides = self.device_overrides()
+        overrides["application-container"] = ("", "timeout", -15)
+        calls, result = self.collect(overrides)
+        names = [name for name, _, _ in calls]
+        for name, pid in (("bridge", 3104), ("springboard", 3075)):
+            prefix = "device-" + name
+            command = next(command for n, command, _ in calls if n == prefix + "-stacks")
+            self.assertEqual(command, ["sample", str(pid), "3", "10", "-file", "/dev/stdout"])
+            self.assertLess(names.index(prefix + "-stacks"), names.index("application-container"))
+            self.assertEqual(names[names.index(prefix + "-stacks") - 1], prefix + "-identity")
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
+        self.assertFalse(result["acceptance"])
+        self.assertEqual(result["runner_target"]["status"], "unverified")
+
+    def test_device_change_pid_reuse_or_partial_identity_blocks_sampling(self):
+        for key, value in (
+            ("device-launch-manager", ("3066", "timeout", -15)),
+            ("device-launch-processes", (self.device_inventory, "output_limit", 0)),
+            ("device-bridge-manager", ("4066", "completed", 0)),
+            ("device-bridge-identity", ("3104 4066 " + self.bridge_path, "completed", 0)),
+            ("device-bridge-identity", ("3104 3066 /other/bridge", "completed", 0)),
+            ("device-bridge-identity", ("", "budget_exhausted", None)),
+        ):
+            with self.subTest(key=key, value=value):
+                overrides = self.device_overrides(); overrides[key] = value
+                calls, result = self.collect(overrides)
+                self.assertNotIn("device-bridge-stacks", [name for name, _, _ in calls])
+                self.assertFalse(result["acceptance"])
+
+    def test_device_sample_failure_keeps_shared_budget_and_other_diagnostics(self):
+        overrides = self.device_overrides()
+        overrides["device-bridge-stacks"] = ("partial stack", "timeout", -15)
+        calls, result = self.collect(overrides)
+        self.assertEqual(result["commands"]["device-bridge-stacks"]["status"], "timeout")
+        self.assertIn("device-springboard-stacks", [name for name, _, _ in calls])
+        self.assertIn("application-log", [name for name, _, _ in calls])
+        self.assertEqual(len({deadline for _, _, deadline in calls}), 1)
 
 
 if __name__ == "__main__":
