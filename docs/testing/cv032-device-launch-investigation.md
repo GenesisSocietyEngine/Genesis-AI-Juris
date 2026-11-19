@@ -29,3 +29,23 @@ Candidate `b02d65ce1bb936d6f9a6f8a6910404b122259cd4`: [PR run 44486393457 attemp
 [Push run 44486380375 attempt 1](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44486380375/attempts/1) passed; the downloaded six-phase verifier passed with exact source/nonce. Its bridge/SpringBoard sample lacks the failing host_support/RBSConnection launch-request wait chain. A generic SpringBoard semaphore wait exists in both and is not sufficient to classify this failure.
 
 The next diagnostic slice adds only the observed runtime-scoped runningboardd and notifyd child paths, prioritizing them within the same 120-second budget. It excludes same-named host daemons and other simulators and uses the same manager/PID/parent/executable rechecks. All 26 diagnostic tests pass; unchanged lifecycle suite has 67 passes. This evidence-based extension is not a claim that notifyd or RunningBoard is the ultimate cause. Neither service is restarted or modified. The failed artifact was preserved; no retry of this superseded source was requested.
+
+## Final hosted verification and integration
+
+Final implementation `da72e4356f9ef75dc476a3db2f2991ead4118664` merged through #336 as `428712200e8cc6970aabaa4486de406e17a837cf` after all 18 checks passed. No failed-run retry was requested in this iteration. The earlier failure artifact remains retained separately from the successful final-source runs.
+
+| Check | Push run | PR run | Result |
+| --- | --- | --- | --- |
+| Editor six-process journey | [44488761812](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488761812) | [44488770876](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488770876) | Both attempt 1 passed; downloaded artifacts independently verified against exact source and nonce |
+| Native lifecycle | [44488762020](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488762020) | [44488771141](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488771141) | Both `testNativeLogisticsLifecycle` passed on attempt 1; exact export gates passed |
+| Web/PDF | [44488762571](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488762571) | [44488772268](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/44488772268) | Green; PR log retains 2,110 passes, zero failures, three existing skips and both dependency audits at zero vulnerabilities |
+
+Push editor proof: PIDs 18892, 21574, 23526, 26138, 27688, 30775; bundle SHA-256 `5224d75ab3de55997ceaa6034af9b152dfc7311d501425ad02876f9001ef2cb1`. PR editor proof: PIDs 21559, 25044, 27037, 29223, 31872, 34536; bundle SHA-256 `b9315a7b0daf3b2205361925c9bb3412fb974c956612d9108df1256c4ed165c6`. Each run preserves its own exact bundle across all six processes; complete pairs, fresh native reopen, incomplete native error and legacy record preservation all pass.
+
+Both baseline manifests retain `acceptance: false`. Push selected manager 3306 and children RunningBoard 3327, notifyd 3360, bridge 3353, SpringBoard 3324. PR selected manager 3326 and children 3506, 3541, 3534, 3503 respectively. All four exact-device identity rechecks and stack commands completed successfully. Stack sizes respectively: push 53,726 / 1,582 / 87,154 / 238,097 bytes; PR 50,607 / 1,510 / 86,635 / 235,575 bytes. Summed command elapsed times are 83.168 and 86.568 seconds within the existing budget. Healthy notifyd samples show its signal/work-queue wait; these are baselines, not failure classifiers.
+
+Final local rerun: 26 collector tests, 67 phase/lifecycle tests and nine applicable deadline tests pass; two POSIX-only tests are skipped on Windows. Diff review confirms only bounded diagnostics and documentation changed: app behavior, acceptance guards, phase deadlines and retry policy are preserved.
+
+### Remaining gate and next action
+
+CV-032 remains open. The first candidate captured the recurring failure through the bridge and SpringBoard; final-source RunningBoard/notifyd captures have so far been verified on successful runs. A healthy run does not establish why RunningBoard failed to answer in the earlier timeout. Preserve the next failed downstream artifact before any retry, compare its RunningBoard/notifyd stacks with these baselines, and change behavior only for a demonstrated cause. No speculative service reset, timeout increase, signing change or app workaround is justified by this evidence. This CI-only iteration does not change public v229 or require a site release.
