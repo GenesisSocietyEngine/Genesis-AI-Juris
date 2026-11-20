@@ -16,7 +16,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'ci' }}
   cancel-in-progress: true
 
 jobs:
