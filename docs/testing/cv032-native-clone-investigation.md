@@ -54,3 +54,23 @@ Native runs 44611181949 and 44611169901 both pass on GitHub attempt 1 and record
 Two non-iOS merge blockers were retained before one unchanged retry each. Android 44611181641 logs explicit HTTP 429 responses from Maven Central for Kotlin dependencies; attempt 2 passes. Web 44611181661 lacks Chrome DevToolsActivePort during startup; attempt 2 passes. This does not establish the reason Chrome failed to start. No dependency changes, timeout increases, launch resets or acceptance bypasses were made.
 
 CV-032 remains open: no new kernel evidence confirms the initiating launch-stall cause, and no further behavioral fix is justified. Next: preserve the next native failure's selection receipt and clone-specific report before retry, then correlate the actual worker's launch request. Evidence is retained outside git. Audit-documentation and post-merge CI require their own checks and are not covered by the prior head's green status. No production deployment; v229 unchanged.
+
+## #346 recurrence audit
+
+19 November 2026. Started clean at a5d1aefd3732c3fdb7a47e7590467a49ba90d36e with remote main 051e8806. #346 merged as 4695bf7204a49f9f08ffa08a40b4da4d9a7659d8 after all 18 checks passed. No retries or functional changes were made in this iteration. Audit branch codex/cv032-recurrence-audit starts from that exact merged main.
+
+Independent editor verification passes all six-process assertions, exact source/run nonce, matching complete pairs, fresh native reopen, incomplete-input error and preserved legacy state:
+
+| Run (attempt 1) | Source | PIDs | Bundle SHA-256 |
+| --- | --- | --- | --- |
+| Push 44622343140 | a5d1aefd | 18992, 21889, 23330, 26313, 29520, 32483 | 77ae161c1ce82769478f31f1c136e12858db61b01a49784edc09db6f6da355f1 |
+| PR 44622389679 | a5d1aefd | 11067, 14592, 15388, 18087, 18873, 21117 | d16d8f21ac90ec1161e80d90b2e531ef1ea14b6fb58204ba62b5c32efa0480de |
+| Main 44622243848 | 051e8806 | 19569, 22849, 24305, 27320, 29443, 31841 | 2099c8eec42273b928aa76063ebe17806d29cf8328a8eaff8c54082d2ccd1f5f |
+
+All three kernel captures complete with exit zero and one RunningBoard process header. Push PID 2689: 41,180 bytes / 7.347 seconds; PR PID 2204: 33,581 bytes / 5.721 seconds; main PID 3038: 31,711 bytes / 7.715 seconds. None contains submitAndStart. Push and main broad application logs time out; PR service history reaches the output limit. These are partial diagnostic sets from healthy runs, not proof of a stall cure.
+
+Native runs 44622343309 and 44622389834 explicitly pass the selected lifecycle on attempt 1, plus nine selector tests and 20 isolated shell cases each. Both failure-only clone diagnostic steps are skipped. Main native 44622243796 also passes the selected lifecycle on attempt 1. No new completed native or editor failure occurred in this audit. Existing failed-run evidence remains retained; no new root cause or behavioral fix is established. Actual failure-path clone collection remains unverified until a suitable hosted recurrence.
+
+No local tests were repeated for this documentation-only iteration; current hosted regression results and independently downloaded editor proofs provide the verification. Evidence remains outside git in the task evidence directory. Post-merge native run 44628037049 is in progress at handoff and is not covered by the previous source's green status. The audit-documentation commit needs its own CI.
+
+CV-032 remains open. Next: preserve the next native failure's selection.json and bounded clone-specific kernel report before retry; correlate the actual worker's launch request without treating healthy waits as a cause. Progress, backlog and priorities updated together. No production deployment; v229 unchanged.
