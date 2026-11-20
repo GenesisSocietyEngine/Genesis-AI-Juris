@@ -28,6 +28,7 @@ jobs:
         run: |
           bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
           python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_native_diagnostics.py"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_xcodebuild_abort.py"
 
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -190,6 +191,13 @@ jobs:
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_native_lifecycle.sh" \
             test "${{ steps.simulator.outputs.id }}" "$IOS_NATIVE_EVIDENCE_DIR"
 
+      - name: Retain exact xcodebuild abort report
+        if: ${{ failure() && !cancelled() }}
+        timeout-minutes: 1
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
+        run: python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_xcodebuild_abort.py" "$IOS_NATIVE_EVIDENCE_DIR"
+
       - name: Capture bounded native worker diagnostics
         # Use the current XCTest worker, never assume the original destination.
         if: ${{ failure() && !cancelled() && steps.simulator.outputs.id != '' }}
@@ -213,6 +221,8 @@ jobs:
             ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}-boot/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.xcresult
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/native-diagnostics/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-abort/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-attempt-*.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/test-plan.sha256
           if-no-files-found: warn

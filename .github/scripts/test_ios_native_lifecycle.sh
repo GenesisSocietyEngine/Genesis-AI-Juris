@@ -33,6 +33,7 @@ device="11111111-1111-1111-1111-111111111111"
 cat > "$sandbox/bin/xcodebuild" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$$" > "$MOCK_ROOT/last-xcode-pid"
 mode="$1"; shift
 derived=""; plan=""; result=""; destination=""; selector=""
 while [[ "$#" -gt 0 ]]; do
@@ -60,6 +61,7 @@ fi
 [[ "$mode" == test-without-building && -f "$plan" ]] || exit 2
 attempts="$(grep -c '^test-without-building|' "$MOCK_ROOT/calls.log")"
 case "${MOCK_MODE:-pass}" in
+  abort) echo "Synthetic xcodebuild abort"; exit 134 ;;
   assertion) echo "Test case 'RunnerTests.testNativeLogisticsLifecycle()' failed"; exit 65 ;;
   empty) echo "** TEST SUCCEEDED **"; exit 0 ;;
   zero-bootstrap) echo "Early unexpected exit, operation never finished bootstrapping"; exit 0 ;;
@@ -120,7 +122,17 @@ grep -Fq "test-without-building|$evidence/DerivedData/Build/Products/Runner.xcte
 test -f "$evidence/lifecycle-attempt-1.log"
 test -d "$evidence/lifecycle-attempt-1.xcresult"
 test ! -s "$sandbox/simulator.log"
+test "$(cut -d ' ' -f 1 "$evidence/xcodebuild-attempt-1.identity")" = "$(cat "$sandbox/last-xcode-pid")"
 passed "exact prepared plan and unchanged selected test pass without rebuild"
+
+new_case
+prepare
+printf 'stale identity\n' > "$evidence/xcodebuild-attempt-1.identity"
+fails execute
+test "$(test_calls)" -eq 0
+test "$(cat "$evidence/xcodebuild-attempt-1.identity")" = "stale identity"
+passed "existing process identity prevents execution and is preserved"
+
 
 new_case
 export MOCK_MODE=build-failure
@@ -154,6 +166,13 @@ printf 'wrong-source\n' > "$evidence/prepared.identity"
 fails execute
 test "$(test_calls)" -eq 0
 passed "source/destination identity mismatch cannot execute"
+
+new_case
+prepare; export MOCK_MODE=abort; fails execute
+test "$(test_calls)" -eq 1
+grep -q 'event=attempt_finished attempt=1 exit=134 capture_exit=0' "$evidence/phases.log"
+test ! -s "$sandbox/simulator.log"
+passed "abort status is preserved without bootstrap retry"
 
 for scenario in assertion empty mixed zero-bootstrap; do
   new_case; prepare; export MOCK_MODE="$scenario"; fails execute
@@ -206,4 +225,4 @@ for scenario in phase destination traversal; do
   test ! -s "$sandbox/calls.log"
 done
 passed "invalid phase, simulator and traversal path stop before preparation"
-printf 'PASS 14 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
+printf 'PASS 16 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"

@@ -76,7 +76,9 @@ run_lifecycle() {
   [[ ! -e "$log_path" && ! -e "$result_path" ]] || { echo "Attempt evidence already exists" >&2; return 1; }
   stamp "event=attempt_start attempt=$attempt" || return 1
   set +e
-  xcodebuild test-without-building \
+  # exec preserves this recorded PID; noclobber prevents stale identity reuse.
+  bash -c 'set -e; set -C; printf "%s %s\n" "$$" "$(date -u +%s)" > "$1"; shift; exec "$@"' \
+    _ "$evidence/xcodebuild-attempt-$attempt.identity" xcodebuild test-without-building \
     -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -only-testing:"$selector" \
