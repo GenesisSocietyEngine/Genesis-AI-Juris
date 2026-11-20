@@ -74,3 +74,26 @@ Native runs 44622343309 and 44622389834 explicitly pass the selected lifecycle o
 No local tests were repeated for this documentation-only iteration; current hosted regression results and independently downloaded editor proofs provide the verification. Evidence remains outside git in the task evidence directory. Post-merge native run 44628037049 is in progress at handoff and is not covered by the previous source's green status. The audit-documentation commit needs its own CI.
 
 CV-032 remains open. Next: preserve the next native failure's selection.json and bounded clone-specific kernel report before retry; correlate the actual worker's launch request without treating healthy waits as a cause. Progress, backlog and priorities updated together. No production deployment; v229 unchanged.
+
+## #347 pre-worker abort audit
+
+20 November 2026 (Europe/Paris). Started clean at ad9501723fe737c56f58bf7bee97fee19749b2fd; remote main 4695bf72. Native PR run 44628210735-1 failed while the paired push run 44628169872-1 and both editors passed. Logs and artifacts were retained before one unchanged retry.
+
+Preparation and plan checksum verification passed. At 23:03:52 UTC on 19 November, lifecycle attempt 1 started; at 23:04:04 xcodebuild PID 40932 exited with Abort trap: 6, status 134, with capture status 0. Its log stops after creating the result bundle. The only staged test diagnostic is a zero-byte scheduling.log; no worker UUID, accepted app launch, test receipt or crash explanation was retained. This is a pre-worker host-tool abort, not evidence of the earlier clone launch IPC stall.
+
+The failure-only clone collector ran successfully and retained selection.json with acceptance=false, status=identity_not_verified and reason=Expected exactly one current test worker. No clone kernel report was collected, as required when identity is absent. This verifies the deployed refusal path on an actual hosted failure; it does not verify successful collection from a failed clone. Existing bootstrap retry rules correctly refused this unclassified abort. No root cause, runtime workaround or additional retry classifier is justified by the available evidence.
+
+GitHub attempt 2 of 44628210735 passed unchanged on 20 November. It explicitly records testNativeLogisticsLifecycle passing on lifecycle attempt 1, and nine selector tests pass. Paired native push 44628169872 passes the selected lifecycle on attempt 1, nine selector tests and 20 orchestration cases. All 18 #347 checks passed; merged as 4224ed8caf2c5daafd8b4fd58b1c185a989c0798. The passing retry is not a cure and does not supersede the retained failure.
+
+Both editor artifacts independently verify the exact source/nonce and every six-process acceptance assertion:
+
+| Run (attempt 1) | Accepted PIDs | Bundle SHA-256 |
+| --- | --- | --- |
+| Push 44628170003 | 16615, 20544, 22541, 24868, 26320, 28945 | 8e60028c2cea43b6bf3d1144ba73194407c590b4a4e8f6dd512d6339be8568ca |
+| PR 44628210562 | 17469, 20409, 22382, 24683, 27075, 29039 | 94ced0eb6c83f3cfb1f4c803f0e8ff8957bd0017c66cf4e1c3eae4c2ac82f06b |
+
+Healthy kernel captures select only RunningBoard 2829 (push: 27,885 bytes, 7.550 seconds) and 3824 (PR: 33,380 bytes, 6.525 seconds), complete with exit zero, and show no submitAndStart. Both broad application logs time out; PR service history reaches the output limit. These partial healthy reports cannot explain the separate pre-worker abort.
+
+No functional changes were made and no local tests were unnecessarily repeated. Hosted regression results, independently verified artifacts and the actual refusal receipt support this audit. Follow-up branch codex/cv032-preworker-abort-audit starts from merged main; progress/backlog/priorities are updated together. Post-merge and documentation CI remain separate acceptance gates.
+
+CV-032 remains open. Next: retain a recurrence's actual worker selection/kernel report, or the host xcodebuild crash report if the tool aborts before assignment. Do not substitute the original destination for an unidentified worker. The original launch-stall cause, pre-worker abort cause and positive hosted failed-clone capture remain unresolved. No deployment; public v229 unchanged.
