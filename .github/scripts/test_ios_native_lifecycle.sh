@@ -182,7 +182,19 @@ done
 passed "assertion failure, empty selection and mixed failure never retry"
 
 new_case
-prepare; export MOCK_MODE=bootstrap; execute
+prepare; export MOCK_MODE=bootstrap
+cat > "$sandbox/bin/python3" <<'MOCK'
+#!/usr/bin/env bash
+# Diagnostic failure must not become test acceptance or prevent the allowed retry.
+test ! -s "$MOCK_ROOT/simulator.log" || exit 90
+printf 'before recovery\n' > "$MOCK_ROOT/runner-capture.log"
+exit 1
+MOCK
+chmod +x "$sandbox/bin/python3"
+IOS_NATIVE_CAPTURE_RUNNER_ABORT=1 execute
+test -s "$sandbox/runner-capture.log"
+grep -q "event=recovery_boot_wait simulator=$device" "$evidence/phases.log"
+grep -q "event=recovery_boot_ready simulator=$device" "$evidence/phases.log"
 test "$(test_calls)" -eq 2
 test "$(wc -l < "$sandbox/simulator.log" | tr -d ' ')" -eq 4
 test -f "$evidence/lifecycle-attempt-1.log"

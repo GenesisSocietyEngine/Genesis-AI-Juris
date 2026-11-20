@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Retain only the Runner identified by the latest failed native attempt."""
+import importlib.util
+import json
+from pathlib import Path
+import re
+import sys
+
+spec = importlib.util.spec_from_file_location('abort', Path(__file__).with_name('collect_xcodebuild_abort.py'))
+abort = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(abort)
+
+
+def read(path, limit=65536):
+    if path.is_symlink() or path.stat().st_size > limit:
+        raise ValueError('Invalid identity evidence')
+    return path.read_text()
+
+
+def identity(root):
+    phases = read(root / 'phases.log')
+    attempts = re.findall(r'phase=test event=attempt_start attempt=(\S+)', phases)
+    if not attempts or attempts[-1] not in ('1', '2'):
+        raise ValueError('No current attempt')
+    attempt = attempts[-1]
+    endings = re.findall(r'utc=(\S+) phase=test event=attempt_finished attempt=' + attempt + r' exit=(\d+) capture_exit=(\d+)', phases)
+    if len(endings) != 1 or endings[0][1:] != ('65', '0'):
+        raise ValueError('Current attempt is not a captured test failure')
+    log = read(root / f'lifecycle-attempt-{attempt}.log', 1024 * 1024)
+    pids = re.findall(r'Runner \((\d+)\) encountered an error \(Early unexpected exit[^\n]*Test crashed with signal abrt before starting test execution', log)
+    if len(pids) != 1:
+        raise ValueError('No unique crashed Runner PID')
+    fields = read(root / f'xcodebuild-attempt-{attempt}.identity', 128).split()
+    if len(fields) != 2 or not all(x.isdecimal() for x in fields):
+        raise ValueError('Invalid attempt start identity')
+    started = int(fields[1]); ended = abort.timestamp(endings[0][0])
+    pid = int(pids[0])
+    if pid <= 1 or not 0 <= ended - started <= 900:
+        raise ValueError('Invalid attempt window')
+    return pid, started, ended, attempt
+
+
+def matches(raw, pid, started, ended):
+    header, body = raw.split('\n', 1)
+    meta, report = json.loads(header), json.loads(body)
+    if not isinstance(meta, dict) or not isinstance(report, dict):
+        return False
+    return (meta.get('bug_type') == '309' and report.get('procName') == 'Runner'
+            and type(report.get('pid')) is int and report['pid'] == pid
+            and isinstance(report.get('bundleInfo'), dict)
+            and report['bundleInfo'].get('CFBundleIdentifier') == 'com.genesissocietyengine.jurisMobile'
+            and re.fullmatch(r'/Users/[^/]+/Library/Developer/CoreSimulator/Devices/[0-9A-Fa-f-]{36}/data/Containers/Bundle/Application/[0-9A-Fa-f-]{36}/Runner.app/Runner', report.get('procPath', '')) is not None
+            and started <= abort.timestamp(report['procLaunch']) <= ended
+            and started <= abort.timestamp(report['captureTime']) <= ended + 2)
+
+
+def collect(root, directories):
+    return abort.collect(root, directories, identity_reader=identity, matcher=matches, name='Runner')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        raise SystemExit('usage: collect_runner_abort.py <evidence-dir>')
+    print(json.dumps(collect(sys.argv[1], [Path.home() / 'Library/Logs/DiagnosticReports', Path('/Library/Logs/DiagnosticReports')])))

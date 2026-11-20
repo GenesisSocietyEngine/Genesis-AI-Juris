@@ -107,6 +107,11 @@ if run_lifecycle 1; then
   exit 0
 fi
 first_log="$evidence/lifecycle-attempt-1.log"
+# Preserve the first failed Runner report before simulator recovery can erase data.
+# CI opts in; collector failure is diagnostic, never test acceptance.
+if [[ "${IOS_NATIVE_CAPTURE_RUNNER_ABORT:-0}" == 1 ]]; then
+  python3 "$(dirname "$0")/collect_runner_abort.py" "$evidence" || echo "Runner report capture unavailable" >&2
+fi
 if [[ "$bootstrap_eligible" != true ]] \
   || ! grep -Fq "Early unexpected exit, operation never finished bootstrapping" "$first_log" \
   || grep -Eq "Test [Cc]ase .*testNativeLogisticsLifecycle" "$first_log"; then
@@ -117,6 +122,8 @@ stamp "event=bootstrap_retry" || exit 1
 xcrun simctl shutdown "$simulator_id" || true
 xcrun simctl erase "$simulator_id" || exit 1
 xcrun simctl boot "$simulator_id" || exit 1
+stamp "event=recovery_boot_wait simulator=$simulator_id" || exit 1
 xcrun simctl bootstatus "$simulator_id" -b || exit 1
+stamp "event=recovery_boot_ready simulator=$simulator_id" || exit 1
 run_lifecycle 2 || exit 1
 stamp "event=passed attempt=2" || exit 1
