@@ -61,6 +61,7 @@ fi
 [[ "$mode" == test-without-building && -f "$plan" ]] || exit 2
 attempts="$(grep -c '^test-without-building|' "$MOCK_ROOT/calls.log")"
 case "${MOCK_MODE:-pass}" in
+  abort) echo "Synthetic xcodebuild abort"; exit 134 ;;
   assertion) echo "Test case 'RunnerTests.testNativeLogisticsLifecycle()' failed"; exit 65 ;;
   empty) echo "** TEST SUCCEEDED **"; exit 0 ;;
   zero-bootstrap) echo "Early unexpected exit, operation never finished bootstrapping"; exit 0 ;;
@@ -166,6 +167,13 @@ fails execute
 test "$(test_calls)" -eq 0
 passed "source/destination identity mismatch cannot execute"
 
+new_case
+prepare; export MOCK_MODE=abort; fails execute
+test "$(test_calls)" -eq 1
+grep -q 'event=attempt_finished attempt=1 exit=134 capture_exit=0' "$evidence/phases.log"
+test ! -s "$sandbox/simulator.log"
+passed "abort status is preserved without bootstrap retry"
+
 for scenario in assertion empty mixed zero-bootstrap; do
   new_case; prepare; export MOCK_MODE="$scenario"; fails execute
   test "$(test_calls)" -eq 1
@@ -217,4 +225,4 @@ for scenario in phase destination traversal; do
   test ! -s "$sandbox/calls.log"
 done
 passed "invalid phase, simulator and traversal path stop before preparation"
-printf 'PASS 15 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
+printf 'PASS 16 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
