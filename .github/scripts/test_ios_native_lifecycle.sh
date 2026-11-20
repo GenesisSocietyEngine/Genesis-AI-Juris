@@ -33,6 +33,7 @@ device="11111111-1111-1111-1111-111111111111"
 cat > "$sandbox/bin/xcodebuild" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$$" > "$MOCK_ROOT/last-xcode-pid"
 mode="$1"; shift
 derived=""; plan=""; result=""; destination=""; selector=""
 while [[ "$#" -gt 0 ]]; do
@@ -120,7 +121,17 @@ grep -Fq "test-without-building|$evidence/DerivedData/Build/Products/Runner.xcte
 test -f "$evidence/lifecycle-attempt-1.log"
 test -d "$evidence/lifecycle-attempt-1.xcresult"
 test ! -s "$sandbox/simulator.log"
+test "$(cut -d ' ' -f 1 "$evidence/xcodebuild-attempt-1.identity")" = "$(cat "$sandbox/last-xcode-pid")"
 passed "exact prepared plan and unchanged selected test pass without rebuild"
+
+new_case
+prepare
+printf 'stale identity\n' > "$evidence/xcodebuild-attempt-1.identity"
+fails execute
+test "$(test_calls)" -eq 0
+test "$(cat "$evidence/xcodebuild-attempt-1.identity")" = "stale identity"
+passed "existing process identity prevents execution and is preserved"
+
 
 new_case
 export MOCK_MODE=build-failure
@@ -206,4 +217,4 @@ for scenario in phase destination traversal; do
   test ! -s "$sandbox/calls.log"
 done
 passed "invalid phase, simulator and traversal path stop before preparation"
-printf 'PASS 14 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
+printf 'PASS 15 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
