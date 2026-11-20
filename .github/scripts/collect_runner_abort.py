@@ -45,13 +45,25 @@ def matches(raw, pid, started, ended):
     meta, report = json.loads(header), json.loads(body)
     if not isinstance(meta, dict) or not isinstance(report, dict):
         return False
+    uuid = r'[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}'
+    path = report.get('procPath', '')
+    if not isinstance(path, str):
+        return False
+    device = re.fullmatch(r'/Users/[^/]+/Library/Developer/(CoreSimulator/Devices|XCTestDevices)/(' + uuid + r')/data/Containers/Bundle/Application/' + uuid + r'/Runner.app/Runner', path)
+    if not device:
+        return False
+    bundle = report.get('bundleInfo')
+    bundle_matches = isinstance(bundle, dict) and bundle.get('CFBundleIdentifier') == 'com.genesissocietyengine.jurisMobile'
+    # Unsigned XCTest-host reports omit bundleInfo. Require the exact clone
+    # coalition to agree with its executable path, in addition to PID/time.
+    unsigned_clone = ('bundleInfo' not in report and device[1] == 'XCTestDevices'
+                      and report.get('coalitionName') == 'com.apple.CoreSimulator.SimDevice.' + device[2])
     return (meta.get('bug_type') == '309' and report.get('procName') == 'Runner'
             and type(report.get('pid')) is int and report['pid'] == pid
-            and isinstance(report.get('bundleInfo'), dict)
-            and report['bundleInfo'].get('CFBundleIdentifier') == 'com.genesissocietyengine.jurisMobile'
-            and re.fullmatch(r'/Users/[^/]+/Library/Developer/CoreSimulator/Devices/[0-9A-Fa-f-]{36}/data/Containers/Bundle/Application/[0-9A-Fa-f-]{36}/Runner.app/Runner', report.get('procPath', '')) is not None
+            and (bundle_matches or unsigned_clone)
             and started <= abort.timestamp(report['procLaunch']) <= ended
             and started <= abort.timestamp(report['captureTime']) <= ended + 2)
+
 
 
 def collect(root, directories):

@@ -36,6 +36,14 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(record['status'],'captured');self.assertFalse(record['acceptance'])
             self.assertTrue((root/'Runner-abort/Runner.ips').exists())
 
+    def test_unsigned_xctest_clone_requires_matching_coalition(self):
+        for coalition, expected in [('com.apple.CoreSimulator.SimDevice.'+DEVICE,'captured'),('other','not_available')]:
+            with self.subTest(coalition=coalition),tempfile.TemporaryDirectory() as folder:
+                root,body=self.fixture(folder);del body['bundleInfo']
+                body['procPath']=body['procPath'].replace('CoreSimulator/Devices','XCTestDevices')
+                body['coalitionName']=coalition;self.report(root,body)
+                self.assertEqual(runner.collect(root,[root/'reports'])['status'],expected)
+
     def test_unrelated_crash_refused(self):
         for change in [{'pid':1234},{'procName':'Other'},{'bundleInfo':{}},{'bundleInfo':[]},{'procPath':'/tmp/Runner'},{'procLaunch':'2026-11-19T00:00:01Z'},{'captureTime':'2026-11-21T00:00:01Z'}]:
             with self.subTest(change=change),tempfile.TemporaryDirectory() as folder:
