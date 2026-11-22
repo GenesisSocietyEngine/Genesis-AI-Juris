@@ -9,8 +9,9 @@ const EVENT = "genesis-interface-change";
 function subscribe(update: () => void) {
   window.addEventListener(EVENT, update);
   window.addEventListener("popstate", update);
+  window.addEventListener("hashchange", update);
   window.addEventListener("storage", update);
-  return () => { window.removeEventListener(EVENT, update); window.removeEventListener("popstate", update); window.removeEventListener("storage", update); };
+  return () => { window.removeEventListener(EVENT, update); window.removeEventListener("popstate", update); window.removeEventListener("hashchange", update); window.removeEventListener("storage", update); };
 }
 
 function localeSnapshot(): InterfaceLocale {

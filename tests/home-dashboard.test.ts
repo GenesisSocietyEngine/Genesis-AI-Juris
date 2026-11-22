@@ -1,9 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { homeDashboard } from "../app/work/home-dashboard";
+import { homeDashboard, homeSummaryLabel } from "../app/work/home-dashboard";
 import { workState, distinctLabels } from "../app/work/work-presentation";
 import { firmHarness } from "./fixtures/firm-work";
 import { zonedMoment } from "../app/matters/practice-scheduling";
+
+test("Home labels agree with zero, singular, few, many and teen counts in EN/RU", () => {
+  for (const [count, expected] of [[0, "Доступных дел"], [1, "Доступное дело"], [2, "Доступных дела"], [5, "Доступных дел"], [11, "Доступных дел"], [21, "Доступное дело"], [22, "Доступных дела"]] as const) {
+    assert.equal(homeSummaryLabel("cases", count, "ru"), expected);
+    assert.equal(homeSummaryLabel("cases", count, "en"), count === 1 ? "Accessible case" : "Accessible cases");
+  }
+  for (const [count, overdue, open] of [[1, "Просроченная задача", "Открытая запись"], [2, "Просроченные задачи", "Открытые записи"], [11, "Просроченных задач", "Открытых записей"]] as const) {
+    assert.equal(homeSummaryLabel("overdue", count, "ru"), overdue);
+    assert.equal(homeSummaryLabel("open", count, "ru"), open);
+  }
+  assert.equal(homeSummaryLabel("overdue", 1, "en"), "Overdue task");
+  assert.equal(homeSummaryLabel("overdue", 0, "en"), "Overdue tasks");
+});
 
 test("Home totals and lists come from saved accessible work without mutating it", () => {
   const { cases } = firmHarness({ overview: true, applications: true });

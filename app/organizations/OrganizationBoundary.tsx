@@ -5,7 +5,7 @@ import { pendingSignOutMessage } from "../session-boundary";
 import { useEffect, useState, type ReactNode } from "react";
 import WorkspaceNavigation from "../WorkspaceNavigation";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
-import { workspaceDestination } from "../workspace-navigation";
+import { workspaceDestination, workspaceSignInPath } from "../workspace-navigation";
 import { setOrganizationSelection, type ClientOrganization } from "../organization-client";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
 import styles from "./organizations.module.css";
@@ -41,7 +41,7 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
       <p>{t("Sign in to continue saved cases, review evidence with your team and prepare reports for approval.", "Войдите, чтобы продолжить сохранённые дела, проверить доказательства с командой и подготовить отчёты к утверждению.")}</p>
       <p>{t("Just exploring? The demo cases are available without an account.", "Знакомитесь с продуктом? Демо-кейсы доступны без аккаунта.")}</p>
       <div className={styles.accessEmptyActions}>
-        <a href={signInUrl} target="_top">{t("Sign in to continue", "Войти и продолжить")}</a>
+        <a href={location === "/" ? signInUrl : workspaceSignInPath(location)} target="_top">{t("Sign in to continue", "Войти и продолжить")}</a>
         <a href={workspaceDestination("/studio?view=demos", location)}>{t("Open demo case", "Открыть демо-кейс")}</a>
         <a href={workspaceDestination("/account", location)}>{t("Account options", "Варианты входа")}</a>
       </div>
