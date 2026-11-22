@@ -1,5 +1,8 @@
 # CaseVant backlog and development priorities · 22 November 2026
 
+**Delivery checkpoint:** [PR #352](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/352) publishes CV-042–044. The 30 focused tests, typecheck, production build and browser review passed on the implementation slice. A final text-only Russian accessible-name correction retains the visible «Показать все» phrase for voice control; hosted CI is rerunning. Merge, release and production acceptance remain pending; public v229 is unchanged. The isolated release checkout is prepared but has not published a version.
+
+
 Current public version: **v229**, confirmed through Sites on 22 November. Canonical base for this audit: PR #350, `d77267b3`. This file is the current work order; historical milestones remain in [development_backlog.md](development_backlog.md) and their linked evidence. Local verification is not production acceptance.
 
 ## Current implementation

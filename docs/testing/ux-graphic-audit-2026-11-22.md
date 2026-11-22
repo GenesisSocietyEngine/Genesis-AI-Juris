@@ -32,3 +32,8 @@ The existing restrained blue/teal palette, colored icons, selected-row borders a
 ## Remaining acceptance
 
 After green integration/release, verify actual sign-in returns to the same Evidence source/document in EN/RU, Home zero/one/multiple counts and both summary action destinations, and repeat narrow layout checks. CV-010/028/029 still need an active test client; CV-009 still needs EU infrastructure/residency evidence. CV-032 remains an independent iOS investigation, not a reason to classify these web findings as resolved.
+
+## Delivery checkpoint
+
+**Delivery checkpoint:** [PR #352](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/352) publishes CV-042–044. The 30 focused tests, typecheck, production build and browser review passed on the implementation slice. A final text-only Russian accessible-name correction retains the visible «Показать все» phrase for voice control; hosted CI is rerunning. Merge, release and production acceptance remain pending; public v229 is unchanged. The isolated release checkout is prepared but has not published a version.
+
