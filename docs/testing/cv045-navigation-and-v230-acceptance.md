@@ -13,6 +13,8 @@ Signed-in production checks used the existing owner and synthetic cases without 
 
 ## Candidate changes
 
+[PR #353](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/353), implementation `d3d1f50`. Hosted CI is pending.
+
 CV-045: compact header retains full title, case identity, status and commands. Technical details move into existing Case checks disclosure. Horizontal tabs reveal the selected section on selection, language change and resize without scrolling the page. Home's duplicate section menu becomes a keyboard-operable disclosure; all destinations remain available.
 
 CV-047: recognize only valid `source-*` fragments on Evidence entries without an explicit target, then use the existing authorized exact-record resolver after case loading. Existing target precedence, case identity checks, missing/denied record handling and focus cancellation remain in force. No generic hash selector or implicit review acceptance.
