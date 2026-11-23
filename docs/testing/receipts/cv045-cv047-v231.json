@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-23",
+  "version": 231,
+  "canonicalSourceCommit": "099144c24853eedecc19e7e4396febbd50fb8bd1",
+  "sitesMirrorCommit": "af1d5e89f90cbd614b1923e9b63cbeefb92b0d75",
+  "previousSourceCommit": "dcc98b2bc4c34823d3dcc8047ffcbe181cfdd154",
+  "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_db97f308fb5481918e3e9cb3a24422c2",
+  "deploymentId": "appgdep_6b0406e5cc808191b4a654d9a8e3935a",
+  "status": "succeeded",
+  "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+  "environmentRevision": 42,
+  "archiveSha256": "4dd6e7fca243d5e0267fe5c2f448cd5b29ac6c23680e1477ef8b44338416bf5e",
+  "assets": {
+    "total": 224,
+    "current": 166,
+    "retained": 58,
+    "failed": 0
+  },
+  "browser": {
+    "signedInOwner": true,
+    "languages": [
+      "en",
+      "ru"
+    ],
+    "widths": [
+      1280,
+      390
+    ],
+    "exactEvidenceReload": true,
+    "homeSectionMenu": true,
+    "mobileSectionSelection": true
+  },
+  "limitations": [
+    "No new sign-out/OAuth round trip in v231; prior v230 EN/RU OAuth URL restoration retained separately.",
+    "Denied/missing-source behavior covered by controller regression tests; no new live access grant or denial scenario."
+  ]
+}

@@ -31,3 +31,8 @@ CV-047: recognize only valid `source-*` fragments on Evidence entries without an
 ## Remaining gates
 
 Candidate CI, integration, release and live EN/RU acceptance remain pending. CV-046 is next unblocked product work. CV-010/028/029 still need an active test client; CV-009 needs EU infrastructure evidence. CV-032/#351 remains independent. No invitation or access grant created for this iteration.
+
+
+## Superseding v231 acceptance · 23 November 2026
+
+PR #353 is merged and released as v231. All 18 CI checks and 224 live assets pass; signed-in EN/RU desktop/mobile navigation and exact Evidence reload acceptance pass. See the [v231 acceptance and CV-046 candidate review](cv046-localization-and-v231-acceptance.md) for precise coverage, retry evidence and remaining limits. Earlier candidate/pending statements above are historical.
