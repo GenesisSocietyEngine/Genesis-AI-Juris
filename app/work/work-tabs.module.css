@@ -5,3 +5,8 @@
 .tabs :focus-visible { outline:3px solid #0f6cbd; outline-offset:2px; }
 .tabs svg { width:17px; height:17px; flex-shrink:0; }
 @media(max-width:800px) { .tabs { gap:0; flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-inline:contain; }.tabs :is(button,a) { padding-inline:8px; flex-shrink:0; white-space:nowrap; }.tabs svg { width:15px; height:15px; } }
+
+.homeSections{margin:8px 0 16px;border-bottom:1px solid var(--work-line,#dce3e8)}
+.homeSections>summary{cursor:pointer;padding:10px 0;color:#305a78;font-size:14px;font-weight:600}
+.homeSections>summary:focus-visible{outline:2px solid #0f6cbd;outline-offset:3px}
+.homeSections[open] .tabs{margin-bottom:12px}

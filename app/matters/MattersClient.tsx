@@ -1,6 +1,7 @@
 "use client";
 
 import { evidenceText, evidenceLabel, evidenceCitationLabel, evidenceNotice, evidenceCount, evidenceIssue, proposalStatement } from "./evidence-copy";
+import { selectedTabScrollLeft } from "./section-visibility";
 import Portal from "../portal/Portal";
 import {portalFormGuard} from "../portal/contracts";
 import {calendarFormGuard} from "../calendar/contracts";
@@ -34,7 +35,7 @@ import { CANOPY_DISCLOSURE, CANOPY_TITLE } from "../canopy-fixture";
 import { organizationScopedUrl } from "../organization-client";
 import styles from "./matters.module.css";
 import documentStyles from "./document-workspace.module.css";
-import { focusSourceCitation, recordedDocumentAcceptance } from "./source-review-presentation";
+import { evidenceFragmentTarget, focusSourceCitation, recordedDocumentAcceptance } from "./source-review-presentation";
 import {
   MATTER_DESTINATIONS,
   apiIssueFor,
@@ -184,11 +185,12 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   }
   useEffect(() => {
     let cancelled = false;
-    const params = new URL(window.location.href).searchParams;
+    const entryUrl = new URL(window.location.href);
+    const params = entryUrl.searchParams;
     void Promise.resolve().then(async () => {
       if (cancelled) return;
       const section = MATTER_DESTINATIONS.find(item => item.key === params.get("section"))?.key;
-      const target = params.get("target");
+      const target = params.get("target") || evidenceFragmentTarget(entryUrl);
       openingExactLink.current = Boolean(section && target);
       const visit = await loadCatalogue(params.get("dossier") ?? undefined, section);
       if (cancelled) return;
@@ -510,7 +512,7 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
       <div><dt>{t("Schema / contract", "Схема / контракт")}</dt><dd><code>{matter.rawSchemaVersion ?? "?"} / {matter.contractVersion ?? t("not returned", "нет данных")}</code></dd></div>
       <div><dt>{t("Build", "Сборка")}</dt><dd><code>{matter.buildVersion ?? t("not returned", "нет данных")}</code></dd></div>
     </dl>}</details>;
-  return <header className={styles.matterHero}>
+  return <header className={styles.matterHero} data-compact={compact || undefined}>
     <div className={styles.heroTop}>
       <div className={styles.heroIdentity}>
         {sectionLabel ? <p className={styles.entrySection}><WorkspaceIcon name="cases"/>{sectionLabel}</p> : <p className={styles.eyebrow}>{reference}</p>}
@@ -544,9 +546,9 @@ function MatterHero({ matter, view, setView, onOpenActions, onEdit, editing, edi
       </section>
     </div>
 
-    {sectionLabel && technicalDetails}
+    {(sectionLabel || compact) && technicalDetails}
     </details>
-    {!sectionLabel && technicalDetails}
+    {!sectionLabel && !compact && technicalDetails}
   </header>;
 }
 
@@ -556,9 +558,25 @@ function sectionName(key: MatterDestination, locale: "en" | "ru") {
 }
 
 export function SectionNavigation({ destination, onChange, portalAllowed=true, locale="en" }: { destination: MatterDestination; onChange: (destination: MatterDestination) => void; portalAllowed?:boolean; locale?:"en"|"ru" }) {
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = strip.current;
+    if (!list) return;
+    const selected = list.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!selected) return;
+    const reveal = () => {
+      const start = selected.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft;
+      list.scrollLeft = selectedTabScrollLeft(list.scrollLeft, list.clientWidth, start, selected.getBoundingClientRect().width);
+    };
+    reveal();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(reveal);
+    observer?.observe(list);
+    observer?.observe(selected);
+    return () => observer?.disconnect();
+  }, [destination, locale, portalAllowed]);
   const sections=MATTER_DESTINATIONS.filter(item=>item.key!=="portal"||portalAllowed).map(item=>({...item,label:sectionName(item.key, locale)}));
   return <nav className={styles.sectionNavigation} aria-label={locale === "ru" ? "Разделы дела" : "Matter sections"}>
-    <div className={styles.sectionTabs} role="tablist" aria-label={locale === "ru" ? "Навигация по разделам дела" : "Matter workspace destinations"}>
+    <div ref={strip} className={styles.sectionTabs} role="tablist" aria-label={locale === "ru" ? "Навигация по разделам дела" : "Matter workspace destinations"}>
       {sections.map((item, index) => <button key={item.key} type="button" role="tab" id={"tab-" + item.key} aria-selected={destination === item.key} aria-controls={"panel-" + item.key} tabIndex={destination === item.key ? 0 : -1} onClick={() => onChange(item.key)} onKeyDown={(event) => {
         const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
         if (!keys.includes(event.key)) return;
