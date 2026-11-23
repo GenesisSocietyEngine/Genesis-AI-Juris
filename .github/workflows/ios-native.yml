@@ -218,9 +218,7 @@ jobs:
         env:
           IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          if [ ! -e "$IOS_NATIVE_EVIDENCE_DIR/Runner-abort/manifest.json" ]; then
-            python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_runner_abort.py" "$IOS_NATIVE_EVIDENCE_DIR"
-          fi
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_runner_abort.py" "$IOS_NATIVE_EVIDENCE_DIR" --final
 
       - name: Capture bounded recovery destination diagnostics
         if: ${{ failure() && !cancelled() && steps.simulator.outputs.id != '' }}
@@ -256,6 +254,7 @@ jobs:
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/native-diagnostics/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-abort/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/Runner-abort/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/Runner-abort-final/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/recovery-diagnostics/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-attempt-*.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity

@@ -1,5 +1,9 @@
 # CV-032: recovered Runner crash and recovery boot evidence
 
+## 23 November continuation
+
+Reconciled PR #351 with current main after CV-046/#354 merged. Fixed a late-report capture gap: an early `not_available` manifest previously suppressed the final collection step. A separate exact-current-attempt final pass now retains late reports without replacing before-recovery evidence. Nine identity tests, six abort-selector tests, nine worker-selector tests and all 22 lifecycle cases pass locally. Fresh hosted CI and actual failure capture remain pending; underlying host faults stay open. [Priority review and precise evidence](backlog-priority-review-2026-11-23.md). Production remains v231.
+
 20 November 2026. #350 merged as d77267b3ea74344fc61a55911bb04a63328f49b9 after all 18 checks passed on 06d63304f0914f07b42f9ed44200a68757033e34. Candidate #351 fixes missing exact Runner/recovery evidence. The immediate Runner abort cause is now established; the initiating host graphics defect and later System App wait remain open. Public v229 unchanged.
 
 ## Exact recovered report and cause

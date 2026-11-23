@@ -57,9 +57,9 @@ def matches(raw, pid, started, ended):
             and started <= timestamp(report["captureTime"]) <= ended + 2)
 
 
-def collect(root, directories, *, identity_reader=identity, matcher=matches, name="xcodebuild"):
+def collect(root, directories, *, identity_reader=identity, matcher=matches, name="xcodebuild", output_name=None):
     root = Path(root)
-    output = root / (name + "-abort")
+    output = root / (output_name or (name + "-abort"))
     output.mkdir(parents=True, exist_ok=False)
     record = {"acceptance": False, "status": "not_available"}
     try:

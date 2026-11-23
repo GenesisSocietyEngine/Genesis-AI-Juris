@@ -36,6 +36,30 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(record['status'],'captured');self.assertFalse(record['acceptance'])
             self.assertTrue((root/'Runner-abort/Runner.ips').exists())
 
+    def test_final_capture_finds_report_written_after_early_capture(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root,body=self.fixture(folder)
+            self.assertEqual(runner.collect(root,[root/'reports'])['status'],'not_available')
+            self.report(root,body)
+            final=runner.collect(root,[root/'reports'],final=True)
+            self.assertEqual(final['status'],'captured')
+            self.assertEqual(final['attempt'],'1')
+            self.assertEqual(json.loads((root/'Runner-abort/manifest.json').read_text())['status'],'not_available')
+            self.assertTrue((root/'Runner-abort-final/Runner.ips').exists())
+
+    def test_final_attempt_does_not_reuse_first_runner(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root,body=self.fixture(folder);self.report(root,body)
+            self.assertEqual(runner.collect(root,[root/'reports'])['status'],'captured')
+            early=(root/'Runner-abort/Runner.ips').read_bytes()
+            p=root/'phases.log';p.write_text(p.read_text()+'phase=test event=attempt_start attempt=2\nutc=2026-11-20T00:00:32Z phase=test event=attempt_finished attempt=2 exit=65 capture_exit=0\n')
+            (root/'xcodebuild-attempt-2.identity').write_text(f'2345 {START+20}\n')
+            (root/'lifecycle-attempt-2.log').write_text((root/'lifecycle-attempt-1.log').read_text().replace('5678','6789'))
+            final=runner.collect(root,[root/'reports'],final=True)
+            self.assertEqual(final['attempt'],'2');self.assertEqual(final['status'],'not_available')
+            self.assertEqual((root/'Runner-abort/Runner.ips').read_bytes(),early)
+            self.assertFalse((root/'Runner-abort-final/Runner.ips').exists())
+
     def test_unsigned_xctest_clone_requires_matching_coalition(self):
         for coalition, expected in [('com.apple.CoreSimulator.SimDevice.'+DEVICE,'captured'),('other','not_available')]:
             with self.subTest(coalition=coalition),tempfile.TemporaryDirectory() as folder:

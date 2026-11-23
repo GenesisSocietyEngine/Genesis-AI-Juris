@@ -66,11 +66,14 @@ def matches(raw, pid, started, ended):
 
 
 
-def collect(root, directories):
-    return abort.collect(root, directories, identity_reader=identity, matcher=matches, name='Runner')
+def collect(root, directories, *, final=False):
+    # Keep before-recovery evidence immutable. Crash reports can arrive later,
+    # and a second attempt must be matched against its own current identity.
+    return abort.collect(root, directories, identity_reader=identity, matcher=matches,
+                         name='Runner', output_name='Runner-abort-final' if final else 'Runner-abort')
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        raise SystemExit('usage: collect_runner_abort.py <evidence-dir>')
-    print(json.dumps(collect(sys.argv[1], [Path.home() / 'Library/Logs/DiagnosticReports', Path('/Library/Logs/DiagnosticReports')])))
+    if len(sys.argv) not in (2, 3) or (len(sys.argv) == 3 and sys.argv[2] != '--final'):
+        raise SystemExit('usage: collect_runner_abort.py <evidence-dir> [--final]')
+    print(json.dumps(collect(sys.argv[1], [Path.home() / 'Library/Logs/DiagnosticReports', Path('/Library/Logs/DiagnosticReports')], final=len(sys.argv) == 3)))
