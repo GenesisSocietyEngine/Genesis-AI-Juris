@@ -1,22 +1,18 @@
-# CaseVant backlog and development priorities · 22 November 2026
+# CaseVant backlog and development priorities · 23 November 2026
 
-**Delivery checkpoint:** [PR #352](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/352) publishes CV-042–044. The 30 focused tests, typecheck, production build and browser review passed on the implementation slice. A final text-only Russian accessible-name correction retains the visible «Показать все» phrase for voice control; hosted CI is rerunning. Merge, release and production acceptance remain pending; public v229 is unchanged. The isolated release checkout is prepared but has not published a version.
-
-
-Current public version: **v229**, confirmed through Sites on 22 November. Canonical base for this audit: PR #350, `d77267b3`. This file is the current work order; historical milestones remain in [development_backlog.md](development_backlog.md) and their linked evidence. Local verification is not production acceptance.
+**23 November 2026 delivery checkpoint:** PR #352 merged as `dcc98b2b` after all 18 checks passed and was released as **v230**. All 256 current/retained assets verify. Real EN/RU sign-in preserves the exact Evidence fragment; Home counts, contextual actions and 390px readability pass. Deeper inspection found **CV-047**: asynchronous Evidence loading leaves the restored source below the viewport. The next candidate fixes this through authorized exact-record resolution and implements **CV-045** compact case headers, selected-tab visibility and a collapsible Home section menu. 71 focused tests, typecheck and production build pass; candidate CI, release and live acceptance remain pending. CV-046 follows; CV-032 and existing provider/client gates remain open.
 
 ## Current implementation
 
-CV-042/043/044 address the confirmed sign-in fragment loss, Home count grammar and Home readability/accessibility findings. Typecheck and 30 focused tests pass; synthetic EN/RU browser checks pass on desktop/narrow layouts. Production build passes; integration and production acceptance are pending. [Audit and acceptance](../testing/ux-graphic-audit-2026-11-22.md).
+Public version **v230** is sourced from canonical `dcc98b2bc4c34823d3dcc8047ffcbe181cfdd154` and Sites mirror `7707b2550031958b4fcf262af55df205004c0123`. CV-042 URL retention and CV-043/044 Home acceptance pass. CV-047 tracks the separate late-rendered source visibility gap. [Audit and acceptance](../testing/cv045-navigation-and-v230-acceptance.md).
 
 ## Next unblocked work
 
 | Order | Item | Deliverable and acceptance |
 | --- | --- | --- |
-| 1 | CV-042 · P2; CV-043/044 · P3 · Current candidate | Complete build/CI, integrate and release exact reviewed source. Verify real EN/RU sign-in retains source/document fragment, Home counts agree at zero/one/multiple, and summary actions preserve their filters. Recheck 390px readability. |
-| 2 | CV-045 · P2 · Navigation hierarchy | Reduce case-header/navigation density and reveal the selected case section in the horizontal tab viewport. Preserve every route, exact case/document/thread context and unsaved-work guards. Compare EN/RU desktop and 390px before publication. |
-| 3 | CV-046 · P3 · Remaining count/title localization | Correct task result counts (observed `1 matching items`) and localized browser titles. Verify zero/one/few/many and language switching; preserve user-authored names. |
-| Separate CI track | CV-032 · P2 · iOS startup investigation | PR #351 remains open at `6473dac0`; do not mix its independent diagnostic work into this UX branch. Retain exact Runner/System App failure evidence and verify workflows before claiming a root-cause fix. Passing retries do not close this item. |
+| 1 | CV-045 · P2; CV-047 · P2 · Candidate | Integrate after green CI and release. Verify compact case identity, selected section visibility, every Home destination, exact-source focus after asynchronous sign-in return/reload, and EN/RU narrow/desktop layouts. Denied or missing sources must not select another record. |
+| 2 | CV-046 · P3 · Remaining count/title localization | Correct task result counts (observed `1 matching items`) and localized browser titles. Verify zero/one/few/many and language switching; preserve user-authored names. |
+| Separate CI track | CV-032 · P2 · iOS startup investigation | Keep independent #351 diagnostics separate. Passing retries do not establish or close the Runner/System App root cause. |
 
 ## Work awaiting a dependency
 

@@ -21,3 +21,11 @@ export function focusSourceCitation(event: Pick<MouseEvent, "button" | "ctrlKey"
   target.focus({ preventScroll: true });
   return true;
 }
+
+/** Translate legacy Evidence fragments into the existing authorized exact-record path. */
+export function evidenceFragmentTarget(url: URL): string | null {
+  if (url.searchParams.get("section") !== "evidence" || url.searchParams.get("target")) return null;
+  let id: string;
+  try { id = decodeURIComponent(url.hash.slice(1)); } catch { return null; }
+  return /^source-[A-Za-z0-9_-]+$/.test(id) ? id : null;
+}

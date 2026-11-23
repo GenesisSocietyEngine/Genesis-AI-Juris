@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { normalizeActivity, normalizeDocuments } from "../app/matters/matter-view-model";
-import { focusSourceCitation, recordedDocumentAcceptance } from "../app/matters/source-review-presentation";
+import { evidenceFragmentTarget, focusSourceCitation, recordedDocumentAcceptance } from "../app/matters/source-review-presentation";
 
 const document = normalizeDocuments({ documents: [{document_id:"doc_a",title:"Synthetic source",status:"accepted_source",current_version_id:"version_2"}],
   document_versions:[{document_id:"doc_a",document_version_id:"version_1",ordinal:1},{document_id:"doc_a",document_version_id:"version_2",ordinal:2}] })[0];
@@ -30,4 +30,16 @@ test("source focus selects the exact container, including repeated activation, a
   assert.equal(focusSourceCitation(click,"missing",root),false);
   for(const change of [{ctrlKey:true},{metaKey:true},{shiftKey:true},{altKey:true},{button:1},{defaultPrevented:true}]) assert.equal(focusSourceCitation({...click,...change},"source_pending",root),false);
   assert.deepEqual(focused,["source-source_pending","source-source_pending","source-source_retired"]);
+});
+
+test("Evidence fragments enter exact authorized resolution without replacing explicit targets", () => {
+  for (const lang of ["en", "ru"]) {
+    const url = new URL(`https://casevant.test/matters?dossier=case_a&section=evidence&lang=${lang}#source-anchor_a`);
+    assert.equal(evidenceFragmentTarget(url), "source-anchor_a");
+    url.searchParams.set("target", "assertion-b");
+    assert.equal(evidenceFragmentTarget(url), null);
+  }
+  for (const suffix of ["?section=documents#source-anchor_a", "?section=evidence#source-", "?section=evidence#source-%", "?section=evidence#source-a%20b", "?section=evidence#document-a", "?section=evidence"]) {
+    assert.equal(evidenceFragmentTarget(new URL("https://casevant.test/matters" + suffix)), null);
+  }
 });
