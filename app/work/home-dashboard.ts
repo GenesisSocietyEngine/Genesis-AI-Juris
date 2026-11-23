@@ -2,6 +2,22 @@ import { calendarDate, calendarDays, localAt } from "../matters/practice-schedul
 import type { FirmCase } from "./work-controller";
 import { caseWorkSummary } from "./case-work-summary";
 
+/** Labels belong to the displayed count; they never change its saved-work scope. */
+export function homeSummaryLabel(kind: "cases" | "overdue" | "open", count: number, locale: "en" | "ru"): string {
+  const form = new Intl.PluralRules(locale).select(count);
+  if (locale === "en") return {
+    cases: form === "one" ? "Accessible case" : "Accessible cases",
+    overdue: form === "one" ? "Overdue task" : "Overdue tasks",
+    open: "Open work",
+  }[kind];
+  const words = {
+    cases: ["Доступное дело", "Доступных дела", "Доступных дел"],
+    overdue: ["Просроченная задача", "Просроченные задачи", "Просроченных задач"],
+    open: ["Открытая запись", "Открытые записи", "Открытых записей"],
+  }[kind];
+  return words[form === "one" ? 0 : form === "few" ? 1 : 2];
+}
+
 export function homeDashboard(cases: FirmCase[], now: number, zone: string, firmItems: import("../matters/practice-plan").PracticeItem[] = []) {
   const today = localAt(now, zone).slice(0, 10);
   const all = cases.flatMap(matter => matter.plan.items.map(item => ({ ...item, caseId: matter.id, caseTitle: matter.title })));
