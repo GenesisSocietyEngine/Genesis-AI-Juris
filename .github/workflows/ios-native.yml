@@ -1,15 +1,27 @@
 name: iOS Native FFI
 
 on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Native run whose retained result bundle should be decoded
+        required: true
+        type: string
+      attempt:
+        description: Retained run attempt
+        required: true
+        default: '1'
+        type: string
   push:
   pull_request:
 
 concurrency:
-  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'ci' }}
   cancel-in-progress: true
 
 jobs:
   simulator-smoke:
+    if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: macos-15-intel
     timeout-minutes: 45
     defaults:
@@ -29,6 +41,7 @@ jobs:
           bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
           python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_native_diagnostics.py"
           python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_xcodebuild_abort.py"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_ios_failure_identity.py"
 
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -184,6 +197,7 @@ jobs:
 
       - name: Run native Logistics lifecycle on iOS Simulator
         env:
+          IOS_NATIVE_CAPTURE_RUNNER_ABORT: "1"
           IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         timeout-minutes: 15
         shell: bash
@@ -197,6 +211,23 @@ jobs:
         env:
           IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         run: python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_xcodebuild_abort.py" "$IOS_NATIVE_EVIDENCE_DIR"
+
+      - name: Retain exact Runner abort report
+        if: ${{ failure() && !cancelled() }}
+        timeout-minutes: 1
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_runner_abort.py" "$IOS_NATIVE_EVIDENCE_DIR" --final
+
+      - name: Capture bounded recovery destination diagnostics
+        if: ${{ failure() && !cancelled() && steps.simulator.outputs.id != '' }}
+        timeout-minutes: 3
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_ios_recovery_diagnostics.py" \
+            "${{ steps.simulator.outputs.id }}" "$IOS_NATIVE_EVIDENCE_DIR"
 
       - name: Capture bounded native worker diagnostics
         # Use the current XCTest worker, never assume the original destination.
@@ -222,8 +253,54 @@ jobs:
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/*.xcresult
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/native-diagnostics/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-abort/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/Runner-abort/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/Runner-abort-final/
+            ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/recovery-diagnostics/
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/xcodebuild-attempt-*.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/prepared.identity
             ${{ env.IOS_NATIVE_EVIDENCE_DIR }}/test-plan.sha256
           if-no-files-found: warn
           retention-days: 14
+
+  retained-result-forensics:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Export diagnostics from the exact retained result bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORENSIC_RUN: ${{ inputs.run_id }}
+          FORENSIC_ATTEMPT: ${{ inputs.attempt }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          run, attempt = os.environ['FORENSIC_RUN'], os.environ['FORENSIC_ATTEMPT']
+          assert run.isdecimal() and attempt.isdecimal() and int(run) > 0 and 0 < int(attempt) < 100
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'retained-native-result'
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'exported-native-result'
+          output.mkdir(exist_ok=False)
+          subprocess.run(['gh', 'run', 'download', run, '--repo', os.environ['GITHUB_REPOSITORY'], '--name', f'ios-native-{run}-{attempt}', '--dir', str(root)], check=True, timeout=120)
+          bundles = list(root.rglob('lifecycle-attempt-*.xcresult'))
+          assert 0 < len(bundles) <= 2
+          records = []
+          for bundle in bundles:
+              assert bundle.name in ('lifecycle-attempt-1.xcresult', 'lifecycle-attempt-2.xcresult')
+              assert not any(p.is_symlink() for p in [bundle, *bundle.parents] if p == root or root in p.parents)
+              destination = output / bundle.stem
+              result = subprocess.run(['xcrun', 'xcresulttool', 'export', 'diagnostics', '--path', str(bundle), '--output-path', str(destination)], capture_output=True, timeout=90)
+              records.append({'bundle': bundle.name, 'exit': result.returncode, 'stdout': result.stdout.decode(errors='replace')[:8192], 'stderr': result.stderr.decode(errors='replace')[:8192]})
+          (output / 'manifest.json').write_text(json.dumps({'acceptance': False, 'source_run': run, 'source_attempt': attempt, 'exports': records}, indent=2))
+          assert all(record['exit'] == 0 for record in records)
+          PY
+      - name: Retain scoped result diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios-result-forensics-${{ github.run_id }}
+          path: ${{ runner.temp }}/exported-native-result/
+          retention-days: 14
+          if-no-files-found: warn

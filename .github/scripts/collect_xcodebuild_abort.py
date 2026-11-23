@@ -57,13 +57,13 @@ def matches(raw, pid, started, ended):
             and started <= timestamp(report["captureTime"]) <= ended + 2)
 
 
-def collect(root, directories):
+def collect(root, directories, *, identity_reader=identity, matcher=matches, name="xcodebuild", output_name=None):
     root = Path(root)
-    output = root / "xcodebuild-abort"
+    output = root / (output_name or (name + "-abort"))
     output.mkdir(parents=True, exist_ok=False)
     record = {"acceptance": False, "status": "not_available"}
     try:
-        pid, started, ended, attempt = identity(root)
+        pid, started, ended, attempt = identity_reader(root)
     except (ValueError, OSError) as error:
         record.update(status="identity_not_verified", reason=str(error))
     else:
@@ -74,7 +74,7 @@ def collect(root, directories):
         total = 0
         exhausted = False
         for directory in directories:
-            for path in Path(directory).glob("xcodebuild*.ips"):
+            for path in Path(directory).glob(name + "*.ips"):
                 inspected += 1
                 if inspected > 64 or time.monotonic() >= deadline:
                     exhausted = True
@@ -92,7 +92,7 @@ def collect(root, directories):
                     if len(raw) > LIMIT:
                         exhausted = True
                         break
-                    if matches(raw.decode("utf-8"), pid, started, ended):
+                    if matcher(raw.decode("utf-8"), pid, started, ended):
                         candidates.append(raw)
                 except (ValueError, OSError, KeyError, TypeError, UnicodeError):
                     continue
@@ -101,7 +101,7 @@ def collect(root, directories):
         if exhausted:
             record["status"] = "budget_exhausted"
         elif len(candidates) == 1:
-            (output / "xcodebuild.ips").write_bytes(candidates[0])
+            (output / (name + ".ips")).write_bytes(candidates[0])
             record.update(status="captured", bytes=len(candidates[0]))
         elif len(candidates) > 1:
             record["status"] = "ambiguous"
