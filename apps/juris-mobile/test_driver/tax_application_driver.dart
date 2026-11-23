@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_driver/flutter_driver.dart';
 import 'package:integration_test/common.dart';
 
+import '../integration_test/support/tax_application_evidence.dart';
 import 'tax_driver_guard.dart';
 
 const List<String> _phases = <String>[
@@ -70,7 +71,7 @@ Future<void> main() async {
       const JsonEncoder.withIndent('  ').convert(retained),
       flush: true,
     );
-    if (retained['schema'] != 'tax-mobile-application-acceptance-v2' ||
+    if (!validTaxImportProbe(retained, phase) ||
         retained['selected_test'] != _testName ||
         retained['phase'] != phase ||
         retained['completed_phase'] != phase ||
@@ -99,7 +100,7 @@ Future<void> main() async {
             '${directory.path}/${_phases[earlier]}.json',
           ).readAsString(),
         ) as Map<String, dynamic>;
-        if (previous['schema'] != 'tax-mobile-application-acceptance-v2' ||
+        if (!validTaxImportProbe(previous, _phases[earlier]) ||
             previous['selected_test'] != _testName ||
             previous['phase'] != _phases[earlier] ||
             previous['completed_phase'] != _phases[earlier] ||
