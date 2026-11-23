@@ -1,0 +1,36 @@
+{
+  "canonical": "dcc98b2bc4c34823d3dcc8047ffcbe181cfdd154",
+  "previous": "f7c4dd16f97b81bb1dffe53acaf39a72b60f4bd7",
+  "saved": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_bfed4445e95c81919fabe693f018254a",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 230,
+    "source": {
+      "commit_sha": "7707b2550031958b4fcf262af55df205004c0123"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000005e1081f489c330e512bacb88",
+      "content_hash": "sha256:3b90fd8c7a607c1b14aabee7ae83f650fd93c80e076d49840c418c17c9597071",
+      "size_bytes": 60088320,
+      "file_count": 762
+    },
+    "screenshot_url": null,
+    "deployment_id": null
+  },
+  "deployment": {
+    "id": "appgdep_6b03dc8d91a08191957d8b2c4dd1a6cd",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "CaseVant by Falcon-Merlin Group",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_bfed4445e95c81919fabe693f018254a",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "failure_message": null,
+    "env_set_revision": 42,
+    "updated_at": "2026-11-23T06:26:40.936943+00:00"
+  }
+}

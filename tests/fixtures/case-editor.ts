@@ -1,7 +1,7 @@
 import { WorkspaceController } from "../../app/matters/workspace-controller";
 
 /** In-memory synthetic server. No production data, credentials or storage. */
-export function caseEditorHarness() {
+export function caseEditorHarness(withEvidence = false) {
   const identity = { actorId: "synthetic-owner", organizationId: "synthetic-org" };
   let dossier = { dossier_id: "synthetic-case", reference: "CASE-2026-014", title: "Supplier agreement review", revision: 4, status: "active", jurisdictions: ["Belgium"], priority: "normal", classification: "confidential", owner_actor_id: identity.actorId, permissions: { role: "owner", can_write: true }, participants: [{ participant_id: "person-a", actor_id: identity.actorId, display_name: "Alex Morgan", role: "owner", status: "active" }] };
   let lose: "before" | "after" | null = null, denied = false, expired = false, changedAccount = false, failReads = false, conflict = false;
@@ -25,6 +25,7 @@ export function caseEditorHarness() {
       return Response.json({ dossier });
     }
     reads.push(url.pathname);
+    if (withEvidence && url.pathname.endsWith("/evidence/anchors")) return Response.json({ source_anchors: [{ source_anchor_id: "qa-anchor", dossier_id: "synthetic-case", document_id: "qa-doc", document_version_id: "qa-version-2", document_title: "Synthetic source / Источник", version_ordinal: 2, review_state: "accepted", excerpt: "Synthetic exact source / Точный источник." }] });
     if (failReads) throw new Error("Synthetic read unavailable");
     if (url.pathname === "/api/dossiers/synthetic-case") return Response.json({ dossier });
     return Response.json({ documents: [], source_anchors: [], assertions: [], requests: [], deadlines: [], proposals: [], decision_packages: [], snapshots: [], outputs: [], events: [] });

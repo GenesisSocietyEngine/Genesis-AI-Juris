@@ -169,3 +169,11 @@
 .sourceRegister ol{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
 .casePickerSummary>strong,.casePickerSummary>svg{flex-shrink:0;white-space:nowrap}
 .casePickerSummary>span{min-width:0}
+
+/* Keep the case identity readable while giving the selected work more room. */
+.matterHero[data-compact] .heroTop{padding:10px 14px;gap:10px}
+.matterHero[data-compact] .heroIdentity{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0}
+.matterHero[data-compact] .heroIdentity h1{flex-basis:100%;font-size:22px;line-height:1.3;margin:0;overflow-wrap:anywhere}
+.matterHero[data-compact] .heroIdentity>p{margin:0}
+.matterHero[data-compact] .heroIdentity>p:first-child{flex-basis:100%}
+.matterHero[data-compact] .caseChecks>summary{padding:8px 14px}

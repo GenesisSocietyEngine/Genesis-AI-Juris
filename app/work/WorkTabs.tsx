@@ -35,7 +35,7 @@ export default function WorkTabs({ locale, active, location, onView, onStudio, o
     if (element && element.scrollWidth > element.clientWidth) element.querySelector<HTMLElement>("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active, locale]);
   const caseOverview = currentCaseOverviewDestination(location);
-  return <nav ref={nav} className={styles.tabs} aria-label={locale === "en" ? "Workspace views" : "Разделы рабочего пространства"}>
+  const tabs = <nav ref={nav} className={styles.tabs} aria-label={locale === "en" ? "Workspace views" : "Разделы рабочего пространства"}>
     {WORK_VIEWS.map(item => {
       const content = <><WorkspaceIcon name={item.icon}/><span>{locale === "en" ? item.en : item.id === "cases" && (onCaseOverview || caseOverview) ? "Обзор дела" : item.ru}</span></>;
       if (item.id === "cases" && onCaseOverview) return <button key={item.id} type="button" aria-current={active === "cases" ? "page" : undefined} onClick={onCaseOverview}>{content}</button>;
@@ -47,4 +47,8 @@ export default function WorkTabs({ locale, active, location, onView, onStudio, o
         : <a key={item.id} href={workspaceDestination(item.id === "studio" ? "/studio?studio_panel=workbench" : `/work?view=${item.id}`, location)} aria-current={active === item.id ? "page" : undefined}>{content}</a>;
     })}
   </nav>;
+  return active === "home" ? <details className={styles.homeSections}>
+    <summary>{locale === "en" ? "Workspace sections" : "Разделы рабочего пространства"}</summary>
+    {tabs}
+  </details> : tabs;
 }
