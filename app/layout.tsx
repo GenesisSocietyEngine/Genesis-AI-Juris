@@ -7,6 +7,7 @@ import "./outlook-controls.css";
 import "./studio-workbench.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
 import NavigationSession from "./NavigationSession";
+import WorkspaceTitle from "./WorkspaceTitle";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://casevant.pro"),
@@ -57,7 +58,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased" data-genesis-juris-release="v62"><StaleChunkRecovery/><NavigationSession>{children}</NavigationSession></body>
+      <body className="antialiased" data-genesis-juris-release="v62"><StaleChunkRecovery/><WorkspaceTitle/><NavigationSession>{children}</NavigationSession></body>
     </html>
   );
 }
